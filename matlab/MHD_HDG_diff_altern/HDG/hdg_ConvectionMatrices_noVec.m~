@@ -1,0 +1,309 @@
+function [ Cv H Hf f fHf ] =...
+    hdg_ConvectionMatrices_noVec(X,T,flipFace,refElv,velo,F_dir,Re)
+
+% mesh data
+Ne = size(T,1);                     % number of elements
+Nv = size(T,2);                     % number of element nodes for the velocity
+nv = size(refElv.NodesCoord1d,1);   % number of face nodes for the velocity
+
+% allocation and initialization
+Cv = zeros(2*Nv,2*Nv,Ne);
+H = zeros(2*Nv,6*nv,Ne);
+Hf = zeros(6*nv,6*nv,Ne);
+f = zeros(2*Nv,1,Ne);
+fHf = zeros(6*nv,1,Ne);
+
+% loop in elements
+for iElem = 1:Ne
+    
+    saveInDebug = 0;
+    if (iElem == 114) || (iElem == 192)
+        saveInDebug = iElem;
+    end
+    
+    
+    ind = (iElem-1)*2*Nv + (1:2*Nv);
+    Te = T(iElem,:);
+    Xe = X(Te,:);
+    velo_e = velo(ind);
+    flipFace_e = flipFace(iElem,:);
+    aux_dir = F_dir(iElem,:);
+    
+    % elemental matrices
+    [Cve He Hfe fe fHfe] = elementalMatrices(Xe,refElv,velo_e,aux_dir,Re,saveInDebug,flipFace_e);  
+      
+    % local assembly indexes
+    ind_1_v_L = (1:2*nv);
+    ind_2_v_L = 2*nv + (1:2*nv);
+    ind_3_v_L = 4*nv + (1:2*nv);
+    
+    if flipFace_e(1)
+        Hfe(ind_1_v_L,:) = flipud2(Hfe(ind_1_v_L,:));
+        Hfe(:,ind_1_v_L) = fliplr2(Hfe(:,ind_1_v_L));
+        fHfe(ind_1_v_L) = flipud2(fHfe(ind_1_v_L));
+    end
+    if flipFace_e(2)
+        Hfe(ind_2_v_L,:) = flipud2(Hfe(ind_2_v_L,:));
+        Hfe(:,ind_2_v_L) = fliplr2(Hfe(:,ind_2_v_L));
+        fHfe(ind_2_v_L) = flipud2(fHfe(ind_2_v_L));
+    end
+    if  flipFace_e(3)
+        Hfe(ind_3_v_L,:) = flipud2(Hfe(ind_3_v_L,:));
+        Hfe(:,ind_3_v_L) = fliplr2(Hfe(:,ind_3_v_L));
+        fHfe(ind_3_v_L) = flipud2(fHfe(ind_3_v_L));
+    end
+       
+    % store matrices
+    Cv(:,:,iElem) = Cve;
+    H(:,:,iElem) = He;
+    Hf(:,:,iElem) = Hfe;
+    f(:,:,iElem) = fe;
+    fHf(:,:,iElem) = fHfe;
+end
+
+%% Elemental matrices
+function [ Cv, H, Hf, f, fHf ] = elementalMatrices(Xe,refElv,velo_e,aux_dir,Re,saveInDebug,flipFace_e)
+
+% mesh data
+Nv = size(refElv.NodesCoord,1);
+nv = size(refElv.NodesCoord1d,1);
+faceNodesv = refElv.faceNodes;
+nOfFaces = size(faceNodesv,1);
+
+% initialize all the matrices
+H1 = zeros(2*Nv,6*nv);
+H2 = zeros(2*Nv,6*nv);
+Hf1 = zeros(6*nv,6*nv);
+Hf2 = zeros(6*nv,6*nv);
+Cvxx = zeros(Nv);
+Cvxy = Cvxx;
+Cvyx = Cvxx;
+Cvyy = Cvxx;
+fvx = zeros(Nv,1);
+fvy = fvx;
+fH = zeros(2*Nv,1);
+fHf = zeros(6*nv,1);
+
+% Information of the reference element for the velocity
+IPw = refElv.IPweights;                 % use the velocity gauss points to integrate
+Niv = refElv.N;
+Nxiv = refElv.Nxi;
+Netav = refElv.Neta;
+IPw_fv = refElv.IPweights1d;
+N1dv = refElv.N1d;
+Nx1dv = refElv.N1dxi;
+
+% Number of Gauss points in the interior 
+ngauss = length(IPw);
+
+% x and y coordinates of the element nodes
+xe = Xe(:,1); ye = Xe(:,2);
+
+% reshape velocity 
+velo_e = reshape(velo_e,2,0.5*numel(velo_e))';
+
+%% VOLUME COMPUTATIONS
+for g = 1:ngauss
+    
+    % Velocity shape functions and derivatives at the current integration point 
+    Niv_g = Niv(g,:);
+    Nxiv_g = Nxiv(g,:);
+    Netav_g = Netav(g,:);
+    
+    % Jacobian
+    J = [Nxiv_g*xe	  Nxiv_g*ye
+        Netav_g*xe  Netav_g*ye];
+    if det(J)<0
+        error('computeElementalMatrices: det(J)<0')
+    end
+    
+    % Integration weight
+    dvolu=IPw(g)*det(J);
+    
+    % x and y derivatives
+    invJ = inv(J);  
+    Nx_g = invJ(1,1)*Nxiv_g + invJ(1,2)*Netav_g;
+    Ny_g = invJ(2,1)*Nxiv_g + invJ(2,2)*Netav_g;
+    
+    % interpolate velocity in the current integration point
+    velox_g = Niv_g*velo_e(:,1);
+    veloy_g = Niv_g*velo_e(:,2);
+    
+    % Contribution of the current integration point to the elemental matrix
+    Cvxx = Cvxx + velox_g*Nx_g'*Niv_g*dvolu;
+    Cvxy = Cvxy + velox_g*Ny_g'*Niv_g*dvolu;
+    Cvyx = Cvyx + veloy_g*Nx_g'*Niv_g*dvolu;
+    Cvyy = Cvyy + veloy_g*Ny_g'*Niv_g*dvolu;
+    fvx = fvx + (velox_g*velox_g*Nx_g' + velox_g*veloy_g*Ny_g')*dvolu;
+    fvy = fvy + (veloy_g*velox_g*Nx_g' + veloy_g*veloy_g*Ny_g')*dvolu;
+end
+
+% expand the matrices
+Cv1 = expandMatrixCv(Cvxx,Cvxy,Cvyx,Cvyy);
+Cv2 = expandMatrixA(Cvxx + Cvyy,2);
+fCv = reshape(transpose([fvx  fvy]),2*Nv,1);
+
+%% FACES COMPUTATIONS:
+ngauss_f = length(IPw_fv);
+for iface = 1:nOfFaces
+    
+    % face nodes
+    nodesv = faceNodesv(iface,:);
+    
+    % indices for local assembly
+    ind_face_2 = (iface-1)*2*nv + (1:2*nv);
+    ind2 = reshape(bsxfun(@plus,(nodesv-1)*2,(1:2)'),2*nv,1); % assembly face to elem for velocity
+    
+    xf = xe(nodesv);
+    yf = ye(nodesv);
+    velo_f = velo_e(nodesv,:);
+    
+    % exact velocity in the faces for Dirichlet boundary
+    xyfg = N1dv*[xf yf];
+    velo_ex = setDirichletBoundaryConditions(xyfg,Re);
+    
+    % initialize local matrices
+    Hxx = zeros(nv);
+    Hxy = Hxx;
+    Hyx = Hxx;
+    Hyy = Hxx;
+    ffx = zeros(nv,1);
+    ffy = ffx;
+    ffx_dir = ffx;
+    ffy_dir = ffx;
+    
+    %  LOOP IN GAUSS POINTS
+    for g = 1:ngauss_f 
+        
+        % Velocity shape functions and derivatives at the current integration point
+        Nfv_g = N1dv(g,:);
+        Nfxiv_g = Nx1dv(g,:);
+        
+        % interpolate velocity in the current integration point
+        velofx_g = Nfv_g*velo_f(:,1);
+        velofy_g = Nfv_g*velo_f(:,2);
+              
+        %Integration weight
+        xyDer_g = Nfxiv_g*[xf yf];
+        xyDerNorm_g = norm(xyDer_g);
+        dline = IPw_fv(g)*xyDerNorm_g;
+        
+        %Unit normal to the boundary
+        t_g = xyDer_g/xyDerNorm_g;
+        n_g = [t_g(2) -t_g(1)];
+        
+        %Contribution of the current integration point to the elemental
+        %matrix
+        Hxx = Hxx + Nfv_g'*Nfv_g*n_g(1)*velofx_g*dline;
+        Hxy = Hxy + Nfv_g'*Nfv_g*n_g(2)*velofx_g*dline;
+        Hyx = Hyx + Nfv_g'*Nfv_g*n_g(1)*velofy_g*dline;
+        Hyy = Hyy + Nfv_g'*Nfv_g*n_g(2)*velofy_g*dline;
+        ffx = ffx + (Nfv_g'*n_g(1)*velofx_g*velofx_g + Nfv_g'*n_g(2)*velofx_g*velofy_g)*dline;
+        ffy = ffy + (Nfv_g'*n_g(1)*velofy_g*velofx_g + Nfv_g'*n_g(2)*velofy_g*velofy_g)*dline;
+        ffx_dir = ffx_dir + (Nfv_g'*n_g(1)*velo_ex(g,1)*velo_ex(g,1) + Nfv_g'*n_g(2)*velo_ex(g,1)*velo_ex(g,2))*dline;
+        ffy_dir = ffy_dir + (Nfv_g'*n_g(1)*velo_ex(g,2)*velo_ex(g,1) + Nfv_g'*n_g(2)*velo_ex(g,2)*velo_ex(g,2))*dline;
+    end
+    
+    % expand the matrices
+    H1_loc = expandMatrixCv(Hxx,Hxy,Hyx,Hyy);
+    H2_loc = expandMatrixA(Hxx+Hyy,2);
+    ff_loc = reshape(transpose([ffx  ffy]),2*nv,1);
+    ff_dir_loc = reshape(transpose([ffx_dir  ffy_dir]),2*nv,1);
+    
+    % elemental assembly
+    H1(ind2,ind_face_2) = H1(ind2,ind_face_2) + ~aux_dir(iface)*H1_loc;
+    H2(ind2,ind_face_2) = H2(ind2,ind_face_2) + ~aux_dir(iface)*H2_loc;
+    Hf1(ind_face_2,ind_face_2) = Hf1(ind_face_2,ind_face_2) + ~aux_dir(iface)*H1_loc;
+    Hf2(ind_face_2,ind_face_2) = Hf2(ind_face_2,ind_face_2) + ~aux_dir(iface)*H2_loc;
+    fH(ind2) = fH(ind2) + ~aux_dir(iface)*ff_loc - aux_dir(iface)*ff_dir_loc;
+    fHf(ind_face_2) = fHf(ind_face_2) + ~aux_dir(iface)*ff_loc;
+
+end
+
+Cv = Cv1+Cv2;
+H = H1+H2;
+Hf = Hf1+Hf2;
+f = fH-fCv;
+
+% DEBUG
+if saveInDebug
+    % local assembly indexes
+    ind_1_v_L = (1:2*nv);
+    ind_2_v_L = 2*nv + (1:2*nv);
+    ind_3_v_L = 4*nv + (1:2*nv);
+    if flipFace_e(1)
+        Hf1(ind_1_v_L,:) = flipud2(Hf1(ind_1_v_L,:));
+        Hf1(:,ind_1_v_L) = fliplr2(Hf1(:,ind_1_v_L));
+        Hf2(ind_1_v_L,:) = flipud2(Hf2(ind_1_v_L,:));
+        Hf2(:,ind_1_v_L) = fliplr2(Hf2(:,ind_1_v_L));
+
+    end
+    if flipFace_e(2)
+        Hf1(ind_2_v_L,:) = flipud2(Hf1(ind_2_v_L,:));
+        Hf1(:,ind_2_v_L) = fliplr2(Hf1(:,ind_2_v_L));
+        Hf2(ind_2_v_L,:) = flipud2(Hf2(ind_2_v_L,:));
+        Hf2(:,ind_2_v_L) = fliplr2(Hf2(:,ind_2_v_L));
+    end
+    if  flipFace_e(3)
+        Hf1(ind_3_v_L,:) = flipud2(Hf1(ind_3_v_L,:));
+        Hf1(:,ind_3_v_L) = fliplr2(Hf1(:,ind_3_v_L));
+        Hf2(ind_3_v_L,:) = flipud2(Hf2(ind_3_v_L,:));
+        Hf2(:,ind_3_v_L) = fliplr2(Hf2(:,ind_3_v_L));
+    end
+    
+    if saveInDebug ==114;
+        Hf1_el114_fa2 = Hf1(ind_2_v_L,ind_2_v_L);
+        Hf2_el114_fa2 = Hf2(ind_2_v_L,ind_2_v_L);
+        save('Hf1_el114_fa2.mat','Hf1save_el114_fa2');
+        save('Hf2_el114_fa2.mat','Hf2save_el114_fa2');
+    elseif saveInDebug==192;
+        Hf1_el192_fa1 = Hf1(ind_1_v_L,ind_1_v_L);
+        Hf2_el192_fa1 = Hf2(ind_1_v_L,ind_1_v_L);
+        save('Hf1_el192_fa1.mat','Hf1save_el192_fa1');
+        save('Hf2_el192_fa1.mat','Hf2save_el192_fa1');
+    end
+end
+%% additional routines
+
+function res = expandMatrixCv(Cxx,Cxy,Cyx,Cyy)
+% expand matrix Cv
+%   [ Cxx Cxy
+%     Cyx Cyy ]
+res = zeros([size(Cxx) 2 2]);
+res(:,:,[1 3 2 4]) = cat(3,Cxx,Cxy,Cyx,Cyy);
+res = permute(res, [3 1 4 2]);
+res = reshape(res, 2*size(Cxx,1),2*size(Cxx,2));
+
+function res = expandMatrixA(A,n)
+% expand matrix A and M
+%  [ A 0 0 0 
+%    0 A 0 0
+%    0 0 A 0
+%    0 0 0 A ]
+% dimension n
+res = zeros([size(A) n n]);
+res(:,:,1:n+1:n^2) = repmat(A, [1 1 n]);
+res = permute(res, [3 1 4 2]);
+res = reshape(res, n*size(A));
+
+function res = flipud2(A)
+% [ 1 1 1      [ 5 5 5 
+%   2 2 2        6 6 6
+%   3 3 3  ===>  3 3 3
+%   4 4 4        4 4 4
+%   5 5 5        1 1 1
+%   6 6 6 ]      2 2 2 ]
+res = zeros(size(A));
+res(end-1:-2:1,:) = A(1:2:end-1,:);
+res(end:-2:2,:) = A(2:2:end,:);
+
+function res = fliplr2(A)
+% [ 1 1 1      [ 5 5 5 
+%   2 2 2        6 6 6
+%   3 3 3  ===>  3 3 3
+%   4 4 4        4 4 4
+%   5 5 5        1 1 1
+%   6 6 6 ]      2 2 2 ]
+res = zeros(size(A));
+res(:,end-1:-2:1) = A(:,1:2:end-1);
+res(:,end:-2:2) = A(:,2:2:end);

@@ -1,0 +1,70 @@
+function [U0 Uf P0 Pf] = hdg_MappingProjection_second_onlyf(...
+    flipFace,Nv,Np,M,Mp,O,O_dir,R,W,dt,u0)
+% matrix multiplication to get the mapping
+
+% number of elements
+Ne = size(flipFace,1);
+
+% initialization
+U0 = zeros(2*Nv,1,Ne);
+Uf = Uro;
+P0 = zeros(Np,1,Ne);
+Pf = Pro;
+
+% loop in elements
+for iElem = 1:Ne
+    
+    ind_u = (iElem-1)*2*Nv + (1:2*Nv);
+    u0e = u0(ind_u);
+    
+    % elemental matrices
+    [U0e Ufe P0e Pfe] = elementalMatrices...
+        (M(:,:,iElem),Mp(:,:,iElem),...
+        O(:,:,iElem),O_dir(:,iElem),R(:,:,iElem),W(:,:,iElem),dt,u0e);
+        
+    % store mapping
+    U0(:,:,iElem) = U0e;
+    Uf(:,:,iElem) = Ufe;
+    P0(:,:,iElem) = P0e;
+    Pf(:,:,iElem) = Pfe;
+end
+
+%% Elemental matrices
+function [UU UU0 UUro UUf PP PP0 PPro PPf] = elementalMatrices...
+    (M,Mp,O,O_dir,R,W,dt,u0e)
+
+% second set
+Gp = (R*(M\Mp))*dt;
+Gu_tilde = -O;
+Gu = R*u0e;
+Gf = -O_dir;
+
+% third set
+K = [Gp W; W' 0];
+invK = K\eye(size(K));
+
+% mapping for the pressure
+PP = invK(1:end-1,1:end-1)*Gu_tilde;
+PP0 = invK(1:end-1,1:end-1)*Gu;
+PPro = invK(1:end-1,end);
+PPf = invK(1:end-1,1:end-1)*Gf;
+
+% mapping for the velocity
+UU = -M\(Mp*PP)*dt;
+UU0 = u0e - dt*(M\(Mp*PP0));
+UUro = -dt*(M\(Mp*PPro));
+UUf = -dt*(M\(Mp*PPf));
+
+%% additional routines
+
+function res = fliplr2(A)
+% [ 1 1 1      [ 5 5 5 
+%   2 2 2        6 6 6
+%   3 3 3  ===>  3 3 3
+%   4 4 4        4 4 4
+%   5 5 5        1 1 1
+%   6 6 6 ]      2 2 2 ]
+res = zeros(size(A));
+res(:,end-1:-2:1) = A(:,1:2:end-1);
+res(:,end:-2:2) = A(:,2:2:end);
+

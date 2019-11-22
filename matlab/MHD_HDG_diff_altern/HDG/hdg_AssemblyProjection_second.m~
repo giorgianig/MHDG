@@ -1,0 +1,114 @@
+function [KK f] = hdg_AssemblyProjection_second...
+    (Fcon,nv,U,U0,Uro,P,P0,Pro,Ff,Df,Ef,elemSize,Y,F_dir,P_cond)
+
+% mesh data
+Ne = size(Fcon,1);                     % number of elements
+nOfFaces = max(max(Fcon));          % number of faces
+nDirFaces = sum(sum(F_dir));
+
+% allocation and initialization
+v_unk = (nOfFaces-nDirFaces)*nv*2;
+p_unk = Ne;
+if P_cond
+    dim = max(Fcon(:))*2*nv + p_unk + 1 ;
+    allocation = 9*Ne*(2*nv)^2 + 3*2*2*nv*Ne + 2*Ne;
+    % assembly index for the pressure lagrangian
+    ind_lambda_p = v_unk + Ne + 1;
+else
+    dim = max(Fcon(:))*2*nv + p_unk;
+    allocation = 9*Ne*(2*nv)^2 + 3*2*2*nv*Ne;
+end
+
+aux_ones_v = ones(1,6*nv);
+index = 0;
+I = zeros(allocation,1);
+J = zeros(allocation,1);
+K = zeros(allocation,1);
+f = zeros(dim,1);
+
+% loop in elements
+for iElem = 1:Ne
+
+    Fcone = Fcon(iElem,:);
+    aux_ex = Fcone > nIntFaces;
+
+    if aux_ex(1)
+        Ff(ind_1_v_L,ind_1_v_L,iElem) = 0;
+        Ef(ind_1_v_L,:,iElem) = 0;
+    end
+    if aux_ex(2)
+        Ff(ind_2_v_L,ind_2_v_L,iElem) = 0;
+        Ef(ind_2_v_L,:,iElem) = 0;
+    end
+    if aux_ex(3)
+        Ff(ind_3_v_L,ind_3_v_L,iElem) = 0;
+        Ef(ind_3_v_L,:,iElem) = 0;
+    end
+    
+    % global assembly indexes for the velocity
+    ind_1_v_G = (Fcone(1)-1)*2*nv + (1:2*nv);
+    ind_2_v_G = (Fcone(2)-1)*2*nv + (1:2*nv);
+    ind_3_v_G = (Fcone(3)-1)*2*nv + (1:2*nv);
+
+    % global assembly indexes for the pressure
+    ind_p_G = v_unk + iElem;
+
+    % faces matrices
+    KKe_v = Ff(:,:,iElem)*P(:,:,iElem) + Df(:,:,iElem)*U(:,:,iElem) ...
+        -Ef(:,:,iElem);
+    KKe_p = Ff(:,:,iElem)*Pro(:,:,iElem) + Df(:,:,iElem)*Uro(:,:,iElem);
+    ffe =  - Ff(:,:,iElem)*P0(:,:,iElem) - ...
+          Df(:,:,iElem)*(U0(:,:,iElem));
+
+    % assembly for velocity: momentum
+    indv_m = [ind_1_v_G ind_2_v_G ind_3_v_G];
+    indv_m = indv_m(:);
+    indv_transp_m = transpose(indv_m);
+    aux_row = indv_transp_m(:,aux_ones_v(:));
+    aux_col = indv_m(aux_ones_v(:),:);
+    index = index(end) + (1:numel(indv_m)^2);
+    I(index) = aux_row(:);
+    J(index) = aux_col(:);
+    K(index) = KKe_v(:,:);
+    f(indv_m) = f(indv_m) + ffe(:);
+
+    % assembly for the velocity: continuity
+    indv_c = ind_p_G;
+    aux_col = indv_transp_m;
+    aux_row = indv_c(:,aux_ones_v(:));
+    index = index(end) + (1:numel(aux_col));
+    I(index) = aux_row(:);
+    J(index) = aux_col(:);
+    K(index) = Y(iElem,:);
+    f(indv_c) = f(indv_c) ;
+
+    % assembly for pressure
+    indp = ind_p_G;
+    aux_col = indp(:,aux_ones_v(:));
+    aux_row = indv_transp_m;
+    index = index(end) + (1:numel(aux_col));
+    I(index) = aux_row(:);
+    J(index) = aux_col(:);
+    K(index) = KKe_p(:);
+
+    % if I have an outlet, I don't put a global condition on the pressure
+    if P_cond
+
+        % assembly the Lagrange multipliers for pressure
+        aux_col = [ind_lambda_p ind_p_G];
+        aux_row = [ind_p_G ind_lambda_p];
+        index = index(end) + (1:2);
+        I(index) = aux_row(:);
+        J(index) = aux_col(:);
+        K(index) = [elemSize(iElem) elemSize(iElem)];
+    end
+
+end
+
+% check allocation
+if size(I,1)>allocation
+    error('size overpassed')
+end
+
+% create sparse matrix
+KK = sparse(I(I~=0),J(I~=0),K(I~=0),dim,dim);

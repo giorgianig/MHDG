@@ -1,0 +1,194 @@
+function [ Cv H Hf f fHf ] =...
+    hdg_ConvectionMatrices_newBC(Cv_tens,H_tens,f_dir,velo,refElv,flipFace,F_dir)
+
+% mesh data
+Ne = size(Cv_tens,6);                     % number of elements
+Nv = size(Cv_tens,1);                     % number of element nodes for the velocity
+nv = size(H_tens,1);   % number of face nodes for the velocity
+nD = 2; %x,y
+
+%Information of the reference element
+faceNodes = refElv.faceNodes;          % nOfFaceNodes x nOfElementFaces
+nf = size(faceNodes,1);
+
+% reshape velocity
+velo = reshape(velo,2,0.5*numel(velo));         % nD x Nv*Ne
+velo_faux = reshape(velo,[nD Nv 1 Ne]);         % nD x Nv x 1 x Ne
+velo_faux = permute(velo_faux,[2 1 3 4]);       % Nv x nD x 1 x e
+velo_f(:,:,1,:) = velo_faux(faceNodes(1,:),:,:,:);       % nv x nD x f x e
+velo_f(:,:,2,:) = velo_faux(faceNodes(2,:),:,:,:);       % nv x nD x f x e
+velo_f(:,:,3,:) = velo_faux(faceNodes(3,:),:,:,:);       % nv x nD x f x e
+velo_f = reshape(velo_f,[1 1 nv nD 1 nf Ne]);     % 1 x 1 x nv x 1 x nD x f x e
+velo_el = transpose(velo);                      % Nv*Ne x nD
+velo_el = reshape(velo_el,[Nv Ne nD]);          % Nv x Ne x nD
+velo_el = permute(velo_el,[1 3 2]);             % Nv x nD x Ne
+velo_el = reshape(velo_el,[1 1 Nv nD 1 Ne]);    % 1 x 1 x Nv x nD x 1 x Ne
+
+% compute matrices
+% Cv
+Cv_velo = bsxfun(@times,Cv_tens,velo_el);
+Cv_velo = reshape(sum(Cv_velo,3),[Nv Nv nD nD Ne]);
+Cv1 = expandMatrixCv_vec(Cv_velo(:,:,1,1,:),Cv_velo(:,:,1,2,:), ...
+    Cv_velo(:,:,2,1,:),Cv_velo(:,:,2,2,:));
+Cv2 = expandMatrixA_vec(Cv_velo(:,:,1,1,:)+Cv_velo(:,:,2,2,:),2);
+Cv = Cv1+Cv2;
+
+% fCv
+velo_el = reshape(velo_el,[1 Nv 1 nD Ne]);
+f_tens = bsxfun(@times,Cv_velo,velo_el);
+f_tens = sum(f_tens,2);
+f_tens = sum(f_tens,4); 
+f_tens = reshape(f_tens,[Nv nD Ne]);
+fCv = reshape(permute(f_tens,[2 1 3]),[2*Nv,1,Ne]);
+
+% H & Hf
+H_velo = bsxfun(@times,H_tens,velo_f);
+H_velo = reshape(sum(H_velo,3),[nv nv nD nD nf Ne]);
+H1_loc = expandMatrixCv_vec(H_velo(:,:,1,1,:,:),H_velo(:,:,1,2,:,:),H_velo(:,:,2,1,:,:),H_velo(:,:,2,2,:,:));
+H2_loc = expandMatrixA_vec(H_velo(:,:,1,1,:,:)+H_velo(:,:,2,2,:,:),2);
+ind_face_2 = bsxfun(@plus,transpose((1:3)-1)*2*nv,(1:2*nv));
+ind2 = zeros(nf,2*nv);
+ind2(:,1:2:end-1) = (faceNodes-1)*2+1;
+ind2(:,2:2:end) = (faceNodes)*2;
+H1 = zeros(2*Nv,6*nv,1,Ne);
+H1(ind2(1,:),ind_face_2(1,:),:,:) = H1(ind2(1,:),ind_face_2(1,:),:,:) + H1_loc(:,:,1,:);
+H1(ind2(2,:),ind_face_2(2,:),:,:) = H1(ind2(2,:),ind_face_2(2,:),:,:) + H1_loc(:,:,2,:);
+H1(ind2(3,:),ind_face_2(3,:),:,:) = H1(ind2(3,:),ind_face_2(3,:),:,:) + H1_loc(:,:,3,:);
+H2 = zeros(2*Nv,6*nv,1,Ne);
+H2(ind2(1,:),ind_face_2(1,:),:,:) = H2(ind2(1,:),ind_face_2(1,:),:,:) + H2_loc(:,:,1,:);
+H2(ind2(2,:),ind_face_2(2,:),:,:) = H2(ind2(2,:),ind_face_2(2,:),:,:) + H2_loc(:,:,2,:);
+H2(ind2(3,:),ind_face_2(3,:),:,:) = H2(ind2(3,:),ind_face_2(3,:),:,:) + H2_loc(:,:,3,:);
+H = reshape(H1+H2,[2*Nv 6*nv Ne]);
+Hf1 = zeros(6*nv,6*nv,1,Ne);
+Hf1(ind_face_2(1,:),ind_face_2(1,:),:,:) = Hf1(ind_face_2(1,:),ind_face_2(1,:),:,:) + H1_loc(:,:,1,:);
+Hf1(ind_face_2(2,:),ind_face_2(2,:),:,:) = Hf1(ind_face_2(2,:),ind_face_2(2,:),:,:) + H1_loc(:,:,2,:);
+Hf1(ind_face_2(3,:),ind_face_2(3,:),:,:) = Hf1(ind_face_2(3,:),ind_face_2(3,:),:,:) + H1_loc(:,:,3,:);
+Hf2 = zeros(6*nv,6*nv,1,Ne);
+Hf2(ind_face_2(1,:),ind_face_2(1,:),:,:) = Hf2(ind_face_2(1,:),ind_face_2(1,:),:,:) + H2_loc(:,:,1,:);
+Hf2(ind_face_2(2,:),ind_face_2(2,:),:,:) = Hf2(ind_face_2(2,:),ind_face_2(2,:),:,:) + H2_loc(:,:,2,:);
+Hf2(ind_face_2(3,:),ind_face_2(3,:),:,:) = Hf2(ind_face_2(3,:),ind_face_2(3,:),:,:) + H2_loc(:,:,3,:);
+Hf = reshape(Hf1+Hf2,[6*nv 6*nv Ne]);
+
+% fH
+velo_f = reshape(velo_f,[1 nv 1 nD nf Ne]);
+% velo_f(:,:,:,:,F_dir') = 0; %%%%%%%%%%%%%% è necessario????????
+fH_tens = bsxfun(@times,H_velo,velo_f);
+fH_tens = sum(fH_tens,2);
+fH_tens = sum(fH_tens,4);
+fH_tens = reshape(fH_tens,[nv nD nf Ne]);
+ff_loc = reshape(permute(fH_tens,[2 1 3 4]),[2*nv nf Ne]);   % 2*nv x nf x Ne
+fH = zeros(2*Nv,1,Ne);
+fHf = zeros(6*nv,1,Ne);
+fH(ind2(1,:),:,:) = fH(ind2(1,:),:,:) + ff_loc(:,1,:);
+fH(ind2(2,:),:,:) = fH(ind2(2,:),:,:) + ff_loc(:,2,:);
+fH(ind2(3,:),:,:) = fH(ind2(3,:),:,:) + ff_loc(:,3,:);
+fHf(ind_face_2(1,:),:,:) = fHf(ind_face_2(1,:),:,:) + ff_loc(:,1,:);
+fHf(ind_face_2(2,:),:,:) = fHf(ind_face_2(2,:),:,:) + ff_loc(:,2,:);
+fHf(ind_face_2(3,:),:,:) = fHf(ind_face_2(3,:),:,:) + ff_loc(:,3,:);
+
+% Apply Dirichlet
+aux_1 = nnz(F_dir(:,1));
+aux_2 = aux_1 + 1 + nnz(F_dir(:,2));
+aux_3 = aux_2 + 1 +  nnz(F_dir(:,3));
+fH(ind2(1,:),:,F_dir(:,1)) = fH(ind2(1,:),:,F_dir(:,1)) - f_dir(:,1:aux_1);
+fH(ind2(2,:),:,F_dir(:,2)) = fH(ind2(2,:),:,F_dir(:,2)) - f_dir(:,aux_1:aux_2);
+fH(ind2(3,:),:,F_dir(:,3)) = fH(ind2(3,:),:,F_dir(:,3)) - f_dir(:,aux_2:aux_3);
+
+
+% f
+f = fH-fCv;
+
+% flipfaces
+[Hf,fHf] = flipTensorFaces(Hf,fHf,flipFace);
+
+%% additional routines
+
+function res = expandMatrixA_vec(A,n)
+% expand matrix A and M
+%  [ A 0 0 0
+%    0 A 0 0
+%    0 0 A 0
+%    0 0 0 A ]
+% dimension n
+A = squeeze(A);
+Nf = size(A,3);
+Ne = size(A,4);
+A = reshape(A,[size(A,1) size(A,2) Nf*Ne]);
+res = zeros([size(A(:,:,1)) n n Ne*Nf]);
+ind = 1:n+1:n^2;
+% ind = bsxfun(@plus,ind,(ind(end)*((1:Ne)-1))');
+ind = bsxfun(@plus,ind,(ind(end)*((1:Ne*Nf)-1))');
+res(:,:,ind(:)) = repmat(A, [1 1 n]);
+res = permute(res,[4 1 3 2 5]);
+res = reshape(res, n*size(A,1), n*size(A,2), Nf, Ne);
+
+function res = expandMatrixCv_vec(Cxx,Cxy,Cyx,Cyy)
+% expand matrix Cv
+%   [ Cxx Cxy
+%     Cyx Cyy ]
+Cxx = squeeze(Cxx);Cxy = squeeze(Cxy);
+Cyx = squeeze(Cyx);Cyy = squeeze(Cyy);
+Nf = size(Cxx,3);
+Ne = size(Cxx,4);
+Cxx = reshape(Cxx,[size(Cxx,1) size(Cxx,2) Nf*Ne]);
+Cxy = reshape(Cxy,[size(Cxx,1) size(Cxx,2) Nf*Ne]);
+Cyx = reshape(Cyx,[size(Cxx,1) size(Cxx,2) Nf*Ne]);
+Cyy = reshape(Cyy,[size(Cxx,1) size(Cxx,2) Nf*Ne]);
+res = zeros([size(Cxx,1) size(Cxx,2) 2 2 Nf*Ne]);
+ind = bsxfun(@plus,Ne*Nf*([1 3 2 4]-1)',(1:Nf*Ne));
+[a pos] = sort(ind(:));
+res(:,:,pos) = cat(3,Cxx,Cxy,Cyx,Cyy);
+res = permute(res,[3 1 4 2 5]);
+res = reshape(res, 2*size(Cxx,1),2*size(Cxx,2),Nf,Ne);
+
+function res = flipud2(A)
+% [ 1 1 1      [ 5 5 5
+%   2 2 2        6 6 6
+%   3 3 3  ===>  3 3 3
+%   4 4 4        4 4 4
+%   5 5 5        1 1 1
+%   6 6 6 ]      2 2 2 ]
+res = zeros(size(A));
+res(end-1:-2:1,:) = A(1:2:end-1,:);
+res(end:-2:2,:) = A(2:2:end,:);
+
+function res = fliplr2(A)
+% [ 1 1 1      [ 5 5 5
+%   2 2 2        6 6 6
+%   3 3 3  ===>  3 3 3
+%   4 4 4        4 4 4
+%   5 5 5        1 1 1
+%   6 6 6 ]      2 2 2 ]
+res = zeros(size(A));
+res(:,end-1:-2:1) = A(:,1:2:end-1);
+res(:,end:-2:2) = A(:,2:2:end);
+
+function [Hf,fHf] = flipTensorFaces(Hf,fHf,flipFace)
+
+Ne = size(Hf,3);
+nv = size(Hf,1)/6;
+for ielem = 1:Ne
+    flipFace_e = flipFace(ielem,:);
+    
+    % local assembly indexes
+    ind_1_v_L = (1:2*nv);
+    ind_2_v_L = 2*nv + (1:2*nv);
+    ind_3_v_L = 4*nv + (1:2*nv);
+    
+    if flipFace_e(1)
+        Hf(ind_1_v_L,:,ielem) = flipud2(Hf(ind_1_v_L,:,ielem));
+        Hf(:,ind_1_v_L,ielem) = fliplr2(Hf(:,ind_1_v_L,ielem));
+        fHf(ind_1_v_L,:,ielem) = flipud2(fHf(ind_1_v_L,:,ielem));
+    end
+    if flipFace_e(2)
+        Hf(ind_2_v_L,:,ielem) = flipud2(Hf(ind_2_v_L,:,ielem));
+        Hf(:,ind_2_v_L,ielem) = fliplr2(Hf(:,ind_2_v_L,ielem));
+        fHf(ind_2_v_L,:,ielem) = flipud2(fHf(ind_2_v_L,:,ielem));
+    end
+    if  flipFace_e(3)
+        Hf(ind_3_v_L,:,ielem) = flipud2(Hf(ind_3_v_L,:,ielem));
+        Hf(:,ind_3_v_L,ielem) = fliplr2(Hf(:,ind_3_v_L,ielem));
+        fHf(ind_3_v_L,:,ielem) = flipud2(fHf(ind_3_v_L,:,ielem));
+    end
+    
+end
