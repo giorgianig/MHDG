@@ -1,0 +1,2040 @@
+\documentclass[a4paper,10pt]{article}
+% \documentclass[proc]{edpsmath}
+% \usepackage{times}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{hyperref}
+% \usepackage{amsfonts}
+\usepackage{amssymb}
+% %\usepackage[spanish]{babel}   % for spanish
+\usepackage{geometry}
+% \usepackage[bf,SL,BF]{subfigure}
+% \usepackage{fancyhdr}
+% \usepackage{algorithm2e}
+% \pagestyle{fancyplain}
+% \usepackage{verbatim}
+% \usepackage{pstricks}
+\usepackage{multirow}
+% \usepackage{pst-all}
+% \usepackage{url}
+\usepackage{tikz}
+\usepackage[makeroom]{cancel}
+\usetikzlibrary{fadings}
+\usetikzlibrary{patterns}
+% define the class name,  the author name and email address
+\def \clase{Finite Elements in Fluids}
+\def \tema{The N-Gamma-Ti-Te model}
+\def \autor{Giorgio Giorgiani}
+\def \correoe{giorgio.giorgiani@upc.edu}
+
+% no indent, or indent = 0.0in
+% \setlength{\parindent}{0in}
+% \fancyhead{}
+% \fancyfoot{}
+% \rfoot[{\footnotesize \autor}]{{\footnotesize \thepage}}
+% \lfoot[{\footnotesize \thepage}]{{\footnotesize \autor}}
+% \rhead[{{\footnotesize \tema}}]{{\footnotesize \clase}}
+% \lhead[{{\footnotesize \clase}}]{{\footnotesize \tema}}
+\definecolor{mcyan}{rgb}{0.4, 1.00, 1.00}
+\definecolor{myellow}{rgb}{1.0, 1.00, 0.60}
+\definecolor{mgreen}{rgb}{0.5, 1.00, 0.80}
+\definecolor{bgblue}{rgb}{0.04, 0.39, 0.53}
+\definecolor{dicblue}{rgb}{0.8, 0.39, 0.13}
+\definecolor{dicred}{rgb}{0.9, 0.7, 0.0}
+\definecolor{bgreen}{rgb}{0., 0.5, 0.5}
+\definecolor{bs}{rgb}{0.9, 0., 0.1}
+\definecolor{bm}{rgb}{0.0, 0.6, 0.5}
+\definecolor{bp}{rgb}{0.0, 0.8, 0.2}
+\definecolor{bsm}{rgb}{0.0, 0., 1}
+\definecolor{bb}{rgb}{0.2, 0., 0.9}
+\definecolor{bbm}{rgb}{0.5, 0.1, 0.5} % {0.2, 0., 0.9}
+\definecolor{ora}{rgb}{0.9, 0., 0.1}
+\definecolor{oran}{rgb}{0.0, 0.6, 0.5}
+
+\newcommand{\colortest}[1]{{\color{dicred} #1\color{black}}}
+
+
+\newcommand{\jump}[1]{\llbracket #1\rrbracket}%\newcommand{\jump}[1]{\ensuremath{[\![#1]\!]}}
+\newcommand{\norm}[2][]{\lVert#2\rVert_{#1}}
+\newcommand{\abs}[1]{\lvert#1\rvert}
+\newcommand{\bm}[1]{\text{\boldmath$#1$\unboldmath}}
+\newcommand{\RR}{\mathbb{R}}
+\newcommand{\nsd}  {d}
+\newcommand{\scal}{\! \cdot \! }
+\newcommand{\nedge}{\ensuremath{\texttt{n}_{\texttt{eg}}}}
+\newcommand{\nface}{\ensuremath{\texttt{n}_{\texttt{fc}}}}
+\newcommand{\nbf} {\text{n}_\text{bf}}
+\newcommand{\numel}{\ensuremath{{\texttt{n}_{\texttt{el}}}}}
+\newcommand{\numnp}{\ensuremath{\texttt{n}_{\texttt{np}}}}
+%\newcommand{\lap}[1]{\nabla^2 #1}
+\newcommand{\parti}[2]{\frac{\partial #1}{\partial #2}}
+\newcommand{\partis}[2]{ #1_{,#2}}
+\newcommand{\traceh} {\ensuremath{\Lambda^h}}
+\newcommand{\stesth} {\ensuremath{\mathcal{V}}^{h*}}
+\newcommand{\testh} {\ensuremath{\mathcal{V}}^h}
+\newcommand{\eltwo}{\ensuremath{\mathcal{L}^{2}}}
+\newcommand{\sprod}[2][K]{\Bigl(#2\Bigr)_{#1}}
+\newcommand{\dprod}[2][\partial K]{\Bigl\langle#2\Bigr\rangle_{#1}}
+\newcommand{\dprodg}[2]{\Bigl\langle#2\Bigr\rangle_{#1}}
+\renewcommand{\t}{\theta}
+\newcommand{\bx}{\bm{x}}
+\newcommand{\bn}{\bm{n}}
+\newcommand{\bu}{\bm{u}}
+\newcommand{\bhu}{\bm{\hat{u}}}
+\newcommand{\bv}{\bm{v}}
+\newcommand{\bhv}{\bm{\hat{v}}}
+\newcommand{\isdef}{\mathrel{\mathop:}=}
+\newcommand{\mat}[1]{\mathbf{#1}}
+\newcommand{\Div}{{\bm{\nabla}\cdot}}
+\newcommand{\Grad}{\bm{\nabla}}
+\newcommand{\GG}[1]{{\color{red} #1\color{black}}}
+\newcommand{\rr}[1]{{\color{red} #1\color{black}}}
+\renewcommand{\gg}[1]{{\color{green} #1\color{black}}}
+\newcommand{\bb}[1]{{\color{blue} #1\color{black}}}
+\newcommand{\vectwo}[2]{\begin{Bmatrix}
+      #1 \\
+      #2
+    \end{Bmatrix}}
+\newcommand{\onedot}{$\mathsurround0pt\ldotp$}    
+\newcommand{\cddot}{% two dots stacked vertically
+  \mathbin{\vcenter{\baselineskip.67ex
+    \hbox{\onedot}\hbox{\onedot}}%
+  }}%    
+\newcommand{\sot}[1]{\bar{\bar{\bar{\bm{#1}}}}}  % third order tensor
+\newcommand{\pla}{{\color{red} {\Omega_{2D}} \color{black}}}
+\newcommand{\dpla}{\ d {\color{red} { \xi} \color{black}}}
+\newcommand{\dte}{\ d{\color{green} { \t} \color{black}}}
+\newcommand{\ga}{\ d {\color{red} { \gamma} \color{black}}}
+\renewcommand{\d}{\ d \Omega} 
+\renewcommand{\r}{{\color{red} r \color{black}}}
+\newcommand{\z}{{\color{red} z \color{black}}}
+\renewcommand{\t}\theta
+\newcommand{\te}{{\color{green} \t \color{black}}}
+\renewcommand{\vec}{\bm}
+\newcommand{\ten}{\mat}
+\newcommand{\test} {\vec{W}}
+\newcommand{\vr}{{\color{red}   { \vec{e}_r} \color{black}}}
+\newcommand{\vt}{{\color{green} { \vec{e}_{\t}} \color{black}}}
+\newcommand{\vz}{{\color{red}   { \vec{e}_z} \color{black}}}
+\newcommand{\per}{\!\cdot\!}
+\renewcommand{\b}{\bm{b}}
+
+\newcommand{\DiscFunc}[1]{\bm{#1}}
+\newcommand{\qq}{\qquad\qquad}
+\newcommand{\SecOrdTens}[1]{\bm{\mathcal{#1}}}
+\renewcommand{\u}{\DiscFunc{U}}
+\newcommand{\hu}{\widehat{\DiscFunc{U}}}
+\newcommand{\hv}{\widehat{\DiscFunc{w}}}
+\newcommand{\w}{\DiscFunc{w}}
+\renewcommand{\v}{\DiscFunc{v}}
+\newcommand{\F}{\SecOrdTens{F}}
+\newcommand{\G}{\SecOrdTens{Q}}
+\renewcommand{\H}{b}
+\newcommand{\Gt}{\G_t}
+\newcommand{\W}{\DiscFunc{W}}
+\newcommand{\B}{\bm{B}}
+\newcommand{\id}{\SecOrdTens{I}}
+\newcommand{\Y}{\SecOrdTens{Y}}
+\newcommand{\M}{\SecOrdTens{M}}
+\newcommand{\A}{\SecOrdTens{A}}
+\newcommand{\I}{\SecOrdTens{I}}
+\newcommand{\tot}[1]{\mathbb{#1}}  % third order tensor
+\newcommand{\g}{\gamma_g}
+\newcommand{\bc}{\xi}
+\newcommand{\kt}{c_s^2}
+\newcommand{\Gradpar}{\Grad_{\parallel}}
+\newcommand{\Gradper}{\Grad_{\perp}}
+\newcommand{\Diff}{D_f}
+\newcommand{\oi}{\Omega_i}
+\newcommand{\Gm}{\Gamma}
+\newcommand{\poi}{\partial \oi}
+\newcommand{\bigsp}{\qquad \qquad \qquad}
+\newcommand{\vcenteredinclude}[1]{\begingroup
+\setbox0=\hbox{\includegraphics{#1}}%
+\parbox{\wd0}{\box0}\endgroup}
+\DeclareMathOperator{\sign}{sign}
+\newcommand*{\vcenteredhbox}[1]{\begingroup
+\setbox0=\hbox{#1}\parbox{\wd0}{\box0}\endgroup}
+% \newtheorem{remark}{Remark}
+\newcommand{\yd}[1]{{\color{red} #1\color{black}}} % dimensional values
+\newcommand{\nd}[1]{{\color{blue} #1\color{black}}} % non-dimensional coefficients
+\newcommand{\fo}[1]{{ \color{red} ( #1 )\color{black} }} % function of
+\newcommand{\vs}[1]{\scriptscriptstyle{\textsc{#1}}}
+\def\Lz{\yd{L_0}}
+\def\tz{\yd{t_0}}
+\def\nz{\yd{n_0}}
+\def\uz{\yd{u_0}}
+\def\Tz{\yd{T_0}}
+\def\Mref{\nd{M_{ref}}}
+\def\kb{\yd{k_b}}
+\def\mi{\yd{m_i}}
+\def\e{\yd{e}}
+\def\me{\yd{m_e}}
+\def\kp{\yd{k_{\parallel}}}
+\def\kpi{\yd{k_{\parallel i}}}
+\def\kpe{\yd{k_{\parallel e}}}
+\def\drho{\yd{D}}
+\def\dcon{\yd{\mu}}
+\def\denei{\yd{\chi_i}}
+\def\denee{\yd{\chi_e}}
+\def\epsz{\yd{\varepsilon_0}}
+\def\tie{\yd{\tau_{ie}}}
+\def\kpai{\nd{k_{\parallel i}}}
+\def\kpae{\nd{k_{\parallel e}}}
+\def\drhoa{\nd{D}}
+\def\dcona{\nd{\mu}}
+\def\deneai{\nd{\chi_i}}
+\def\deneae{\nd{\chi_e}}
+\def\tiea{\nd{\tau_{ie}}}
+\def\T{\colortest{\SecOrdTens{G}}}
+\def\t{\colortest{\bm{v}}}
+\def\f{\colortest{\bm{\phi}}}
+\def\tt{\bm{\tau}}
+\newcommand{\cq}[1]{{\color{red} #1\color{black}}}
+\newcommand{\cu}[1]{{\color{blue} #1\color{black}}}
+\newcommand{\ch}[1]{{\color{bp} #1\color{black}}}
+\begin{document}
+
+% Article top matter
+\title{\tema}
+\author{Giorgio Giorgiani}
+\date{}  %\today is replaced with the current date
+\maketitle
+
+\section{Introduction}
+The equations considered are: 
+\begin{itemize}
+ \item Continuity equation
+ \begin{equation}
+  \partial_t n + \Div (nu\b)-\Div(\drho \Gradper n) = \hat{S}_n.
+ \end{equation}
+ \item Momentum equation
+ \begin{equation}
+  \partial_t (\mi n u) + \Div(\mi n u^2 \b) + \Gradpar (\kb n (T_e+T_i) ) - \Div(\dcon\Gradper(\mi n u)) = \hat{S}_{\Gm}.
+ \end{equation}
+ \item Total ions energy equation
+ \begin{equation}
+ \begin{aligned}
+  &\partial_t( \frac{3}{2}\kb n T_i+\frac{1}{2}\mi n u^2)+\Div((\frac{5}{2}\kb n T_i + \frac{1}{2}\mi n u^2)u\b) - nueE_{\parallel} 
+  + \\ &-\Div \left(\frac{3}{2}\kb (Ti \drho \Gradper n + n \denei  \Gradper T_i)\right) - \Div(-\frac{1}{2}\mi u^2 \drho \Gradper n + \frac{1}{2}\mi \dcon n \Gradper u^2)+\\
+  &-\Div(\kpi T_i^{5/2}\Gradpar T_i\b)+\frac{3}{2}\frac{\kb n}{\hat{\tie} }(T_e-T_i) =\hat{S}_{E_i}.
+ \end{aligned}
+ \end{equation}
+  \item Total electrons energy equation
+  \begin{equation}
+   \begin{aligned}
+    &\partial_t(\frac{3}{2}\kb n T_e) + \Div (\frac{5}{2}\kb n T_e u \b) + nueE_{\parallel} - \Div\left(\frac{3}{2}\kb(T_e \drho \Gradper n +  n \denee \Gradper T_e)\right) + \\ & - \Div(\kpe T_e^{5/2}\Gradpar T_e \b) - \frac{3}{2}\frac{\kb n}{\hat{\tie} }(T_e-T_i) = \hat{S}_{E_e}.
+   \end{aligned}
+  \end{equation}
+\end{itemize}
+The ion and electron pressures are defined as 
+\begin{equation}
+ \hat{p}_i = n T_i \kb \quad \hat{p}_e= nT_e \kb,
+\end{equation}
+while the parallel electric field is given by
+\begin{equation}
+ n e E_{\parallel} = -\Gradpar (\kb n T_e) = -\Gradpar \hat{p}_e.
+\end{equation}
+Finally the temperature exchange coefficient $\hat{\tie}\sim [s]$ is written as
+\begin{equation}
+ \hat{\tie} = \tie \frac{T_e^{3/2}}{n},
+\end{equation}
+where $\tie$ can be computed as
+\begin{equation}
+ \tie = \frac{3\sqrt{2}}{\e^4} \frac{\epsz^2}{\Lambda} \pi^{\frac{3}{2}}\frac{\mi}{\me}\sqrt{\me} \ \e^{\frac{3}{2}},
+\end{equation}
+and $\Lambda\approx 12$.
+
+
+\subsection{Some assumptions and arrangements}
+The equations presented are re-elaborated: 
+\begin{itemize}
+ \item Continuity equation: this equation is left unchanged. 
+ \item Momentum equation: this equation is divided by $\mi$ and the specific pressures $p_i,p_e \sim [m^{-1}s^{-2}]$ are introduced
+ \begin{equation}
+  p_i = \frac{\hat{p}_i}{\mi}, \quad p_e = \frac{\hat{p}_e}{\mi},
+ \end{equation}
+ hence it becomes
+ \begin{equation}
+  \partial_t (nu)  + \Div (nu^2\b + nu \bu_\bot) +  \Gradpar(p_i+p_e) - \Div (\dcon \Gradper nu) =S_{\Gm},\\
+ \end{equation}
+ where $S_{\Gm} = \hat{S}_{\Gm}/\mi$.
+ \item Total ions energy equation: this equation is divided by $\mi$ and the specific total energy for ions $E_i\sim [m^2 s^{-2}]$ is introduced 
+ \begin{equation}
+  E_i = \frac{3}{2}\frac{\kb}{\mi} T_i+\frac{1}{2} u^2 = \frac{3}{2} \frac{p_i}{n}+\frac{1}{2} u^2.
+ \end{equation}
+ The assumption $\drho=\dcon=\denei$ is made, hence the equation becomes
+ \begin{equation}
+ \begin{aligned}
+  &\partial_t (nE_i)  + \Div \big( (nE_i+p_i)u\b + nE_i \bu_\bot \big) - \Div (\denei \Gradper nE_i) - \Div (\frac{\kpi}{\mi} T_i^{5/2}\Gradpar T_i\b) +u\Gradpar p_e\\ &\qq+ \frac{3}{2}\frac{n^2 \kb}{\tie \mi T_e^{3/2}}(T_e-T_i) =S_{E_i},
+ \end{aligned}
+ \end{equation}
+ where $S_{E_i} = \hat{S}_{E_i}/\mi$.
+
+ \item Total electrons energy equation: this equation is divided by $\mi$ and the specific total energy for electrons $E_e\sim [m^2 s^{-2}]$ is introduced 
+ \begin{equation}
+  E_e = \frac{3}{2}\frac{\kb}{\mi} T_e = \frac{3}{2} \frac{p_i}{n}.
+ \end{equation}
+ The assumption $\drho=\dcon=\denee$ is made, hence the equation becomes
+\end{itemize}
+ \begin{equation}
+ \begin{aligned}
+&\partial_t (nE_e)  + \Div \big( (nE_e+p_e)u\b + nE_e \bu_\bot \big) - \Div (\denee \Gradper nE_e) - \Div (\frac{\kpe}{\mi} T_e^{5/2}\Gradpar T_e\b) -u\Gradpar p_e\\ &\qq-\frac{3}{2}\frac{n^2 \kb}{\tie\mi T_e^{3/2}}(T_e-T_i)=S_{E_e},
+ \end{aligned}
+ \end{equation}
+ where $S_{E_e} = \hat{S}_{E_e}/\mi$.
+ 
+\section{System of dimensional equations}
+The system of equations is
+\begin{equation}\label{eq:model}
+\left\{
+\begin{aligned}
+ &\partial_tn + \Div (nu\b + n \bu_\bot) - \Div (\drho \Gradper n) = S_n,\\
+ &\partial_t (nu)  + \Div (nu^2\b + nu \bu_\bot) +  \Gradpar(p_i+p_e) - \Div (\dcon \Gradper nu) =S_{\Gm},\\
+ &\partial_t (nE_i)  + \Div \big( (nE_i+p_i)u\b + nE_i \bu_\bot \big) - \Div (\denei \Gradper nE_i) - \Div (\frac{\kpi}{\mi} T_i^{5/2}\Gradpar T_i\b) +u\Gradpar p_e\\ &\qq+ \frac{3}{2}\frac{n^2 \kb}{\tie \mi T_e^{3/2}}(T_e-T_i) =S_{E_i},\\
+ &\partial_t (nE_e)  + \Div \big( (nE_e+p_e)u\b + nE_e \bu_\bot \big) - \Div (\denee \Gradper nE_e) - \Div (\frac{\kpe}{\mi} T_e^{5/2}\Gradpar T_e\b) -u\Gradpar p_e\\ &\qq-\frac{3}{2}\frac{n^2 \kb}{\tie\mi T_e^{3/2}}(T_e-T_i)=S_{E_e},
+ \end{aligned}\right.
+\end{equation}
+where the ionic and electronic specific pressures are
+\begin{equation}
+ p_i=\frac{nT_i \kb}{\mi}, \quad p_e=\frac{nT_e \kb}{\mi},
+\end{equation}
+and the ionic and electronic energies are
+\begin{equation}
+ E_i=\frac{1}{2}u^2+\frac{3}{2}\frac{p_i}{n}, \quad E_e=\frac{3}{2}\frac{p_e}{n}.
+\end{equation}
+The Bohm boundary condition is expressed in terms of parallel flux of energies for ions and electrons, that is
+\begin{equation*}
+\begin{aligned}
+ q_{\parallel}^i &= \nd{\gamma_i} u p_i + \frac{1}{2} n u^3,\\
+ q_{\parallel}^e &= \nd{\gamma_e} u p_e,
+\end{aligned}
+\end{equation*}
+which provides, after replacing the expression of the parallel energy fluxes, 
+\begin{equation}\label{eq:bohm}
+\begin{aligned}
+ (n E_i + p_i)u - \frac{\kpi}{\mi} T_i^{5/2}\Gradpar T_i &= \nd{\gamma_i} u p_i + \frac{1}{2} n u^3,\\
+ (n E_e + p_e)u - \frac{\kpe}{\mi} T_e^{5/2}\Gradpar T_e &= \nd{\gamma_e} u p_e.
+\end{aligned}
+\end{equation}
+
+
+
+\section{Non-dimensionalization}
+A set of reference values is defined
+\begin{align*}
+ &\text{Density:}     & \nz,\\
+ &\text{Length:}      & \Lz,\\
+ &\text{Time:}        & \tz,\\
+ &\text{Velocity:}    & \uz=\frac{\Lz}{\tz},\\
+ &\text{Temperature:} & \Tz,\\
+\end{align*}
+and the non-dimensional quantities and operators are
+\begin{align*}
+ &\text{Density:}          & n^*=\frac{n}{\nz},\\
+ &\text{Velocity:}           & u^*=\frac{u}{\uz},\\
+ &\text{Energy:}           & E^*=\frac{E}{\uz^2},\\
+ &\text{Time derivative:}  & \partial_t^*=\frac{\partial_t}{\tz},\\
+ &\text{Nabla:}            & \Grad^*= \frac{\Grad}{\Lz}.
+\end{align*}
+
+
+\subsection{The continuity equation}
+The continuity equation 
+\[
+\partial_tn + \Div (nu\b + n \bu_\bot) - \Div (\drho \Gradper n) = S_n,
+\]
+is rewritten using the reference values
+\[
+\frac{\nz}{\tz}\partial^*_t n^* + \frac{\nz \uz}{\Lz}\Div^* (n^*u^*\b + n^* \bu_\bot^*) - \frac{\nz }{\Lz^2}\Div^* (\drho \Gradper^* n^*) = S_n,
+\]
+and rearranging and dropping the stars gives
+\begin{equation}\label{eq:cont-ad}
+\partial_tn + \Div (nu\b + n \bu_\bot) - \frac{\tz}{\Lz^2}\ \Div (\drho \Gradper n) = \frac{\tz}{\nz} S_n,
+\end{equation}
+which allows to define the non-dimensional perpendicular coefficient for the density
+\begin{equation}
+\boxed{
+\drhoa = \drho \frac{\tz}{\Lz^2}
+},
+\end{equation}
+and the non-dimensional source of density
+\[
+ \nd{S_{n}} =\frac{\tz}{\nz} S_{n}.
+\]
+
+
+
+
+
+\subsection{The momentum equation}
+From definition of the specific pressures 
+\[
+ p_i=nT_i\kb/\mi,\quad p_e=nT_e\kb/\mi,
+\]
+the non-dimensional specific pressures is obtained
+\begin{equation*}
+ p_i^*=n^*T_i^*,\quad p_e^*=n^*T_e^*,
+\end{equation*}
+hence
+\begin{equation}\label{eq:pres-ad}
+p_i=\frac{\nz \Tz \kb}{\mi} p_i^*,\quad p_e=\frac{\nz \Tz \kb}{\mi} p_e^*,
+\end{equation}
+
+
+The momentum equation 
+\[
+\partial_t (nu)  + \Div (nu^2\b + nu \bu_\bot) +  \Gradpar(p_i+p_e) - \Div (\dcon \Gradper nu) =S_{\Gm}
+\]
+is rewritten using the reference values
+\[
+\frac{\nz \uz}{\tz}\partial^*_t (n^*u^*)  + \frac{\nz \uz^2}{\tz} \Div^* (n^*{u^*}^2\b + n^*u^* \bu_\bot) + \frac{\nz \Tz \kb}{\Lz \mi} \Gradpar^* (p_i^*+p_e^*) - \frac{\nz \uz}{\Lz^2} \Div^* (\dcon \Gradper n^*u^*) =S_{\Gm}.
+\]
+Defining the reference Mach (squared)
+\[
+\boxed{
+\Mref = \frac{\Tz \kb}{\mi \uz^2}
+}
+\]
+rearranging the terms and dropping the stars, we obtain
+\begin{equation}\label{eq:mome-ad}
+\partial_t (nu)  + \Div (nu^2\b + nu \bu_\bot) +   \Mref \Gradpar(p_i+p_e) -\frac{\tz}{\Lz^2} \Div (\dcon \Gradper nu) =\frac{\tz}{\nz \uz}S_{\Gm},
+\end{equation}
+which allows to define the non-dimensional perpendicular diffusion coefficient for the momentum,
+\begin{equation}
+\boxed{
+\dcona= \dcon \frac{\tz}{\Lz^2}
+},
+\end{equation}
+and the non-dimensional source of momentum
+\[
+ \nd{S_{\Gm}} =\frac{\tz}{\nz \uz} S_{\Gm}.
+\]
+
+
+\subsection{The ions energy equation}
+From the ion energy definition, using \eqref{eq:pres-ad}, we obtain
+\[
+ E_i=\frac{1}{2}u^2+\frac{3}{2}\frac{p_i}{n} = \uz^2\frac{1}{2}{u^*}^2+\frac{\cancel{\nz} \Tz \kb}{\mi \cancel{\nz}} \frac{3}{2}\frac{p_i^*}{n^*},
+\]
+and therefore the non-dimensional energy for the ions is
+\[
+ E_i^* = \frac{E_i}{\uz^2} = \frac{1}{2}{u^*}^2+\frac{3}{2}\frac{p_i^*}{n^*} \Mref. \\
+\]
+The ions energy equation
+\[
+ \partial_t (nE_i)  + \Div \big( (nE_i+p_i)u\b + nE_i \bu_\bot \big) - \Div (\denei \Gradper nE_i) - \Div (\kpi T_i^{5/2}\Gradpar T_i\b) +u\Gradpar p_e+\frac{3}{2}\frac{n^2}{\tie T_e^{3/2}}(T_e-T_i) =S_{E_i}
+\]
+becomes then
+\begin{equation*}
+\begin{split}
+ \frac{\nz \uz^2}{\tz} \partial_t^*(n^*E_i^*) +& \frac{1}{\Lz} \Div^* \big( (\nz \uz^2n^*E_i^*+\frac{\nz \Tz \kb}{\mi}p_i^*)\uz u\b\big)-\frac{\nz \uz^2}{\Lz^2}\Div^*(\denei\Gradper^*(n^*E_i^*))+\\
+ &-\frac{\Tz^{7/2}}{\Lz^2}\Div^* (\frac{\kpi}{\mi} {T_i^*}^{5/2}\Gradpar^* T_i^*\b)+ \frac{\uz \nz \Tz \kb}{\Lz\mi}u^*\Gradpar (p_e^*)+\frac{3}{2}\frac{\kb \nz^2 \Tz}{\mi\tie \Tz^{3/2}} \frac{{n^*}^2}{{T_e^*}^{3/2}}(T_e^*-T_i^*) =S_{E_i}.
+\end{split}
+\end{equation*}
+Rearranging the terms and dropping the stars we obtain
+\begin{equation}\label{eq:ener-ad}
+\begin{split}
+  \partial_t (nE_i)  + \Div \big( (nE_i+ \Mref p_i)u\b + nE_i \bu_\bot \big) - \frac{\tz}{\Lz^2}\Div (\denei \Gradper nE_i) -\frac{\tz^3 \Tz^{7/2}}{\Lz^4 \nz}\Div (\frac{\kpi}{\mi} T_i^{5/2}\Gradpar T_i\b)\\
+ +\Mref u\Gradpar p_e+\frac{3}{2}\frac{\tz \nz \kb}{\tie \mi \Tz^{1/2} \uz^2}\frac{n^2}{T_e^{3/2}}(T_e-T_i) =\frac{\tz}{\nz \uz^2} S_{E_i},
+\end{split}
+\end{equation}
+which allows to define the non-dimensional perpendicular diffusion coefficient for the ion energy
+\begin{equation}
+\boxed{
+\deneai = \denei \frac{\tz}{\Lz^2}
+},
+\end{equation}
+the non-dimensional parallel diffusion coefficient for the temperature
+\begin{equation}
+\boxed{
+\kpai = \kpi \frac{\tz^3 \Tz^{7/2}}{\Lz^4 \nz \mi}
+},
+\end{equation}
+the non-dimensional relaxation time for ion-energy temperatures
+\begin{equation}
+\boxed{
+\tiea = \frac{2}{3}\frac{\tie\Tz^{1/2}\mi \uz^2}{\nz\tz\kb}
+},
+\end{equation}
+and the non-dimensional source of energy
+\[
+ \nd{S_{E}} =\frac{\tz}{\nz \uz^2} S_{E}.
+\]
+
+
+
+
+\subsection{The electron energy equation}
+From the electron energy definition, using \eqref{eq:pres-ad}, we obtain
+\[
+ E_e=\frac{3}{2}\frac{p_e}{n} = \frac{\cancel{\nz} \Tz \kb}{\mi \cancel{\nz}} \frac{3}{2}\frac{p_e^*}{n^*},
+\]
+and therefore the non-dimensional energy for the electrons is
+\[
+ E_e^*= \frac{E_e}{\uz^2} = \frac{3}{2}\frac{p_e^*}{n^*} \Mref, \\
+\]
+The electron energy equation
+\[
+ \partial_t (nE_e)  + \Div \big( (nE_e+p_e)u\b + nE_e \bu_\bot \big) - \Div (\denee \Gradper nE_e) - \Div (\frac{\kpe}{\mi} T_e^{5/2}\Gradpar T_e\b) -u\Gradpar p_e -\frac{3}{2}\frac{n^2 \kb}{\tie \mi T_e^{3/2}}(T_e-T_i) =S_{E_e}
+\]
+becomes then
+\begin{equation*}
+\begin{split}
+ \frac{\nz \uz^2}{\tz} \partial_t^*(n^*E_e^*) +& \frac{1}{\Lz} \Div^* \big( (\nz \uz^2n^*E_e^*+\frac{\nz \Tz \kb}{\mi}p_e^*)\uz u\b\big)-\frac{\nz \uz^2}{\Lz^2}\Div^*(\denee\Gradper^*(n^*E_e^*))+\\
+ &-\frac{\Tz^{7/2}}{\Lz^2}\Div^* (\frac{\kpe}{\mi} {T_e^*}^{5/2}\Gradpar^* T_e^*\b) -\frac{\uz \nz \Tz \kb}{\Lz\mi}u^*\Gradpar (p_e^*) -\frac{3}{2}\frac{\nz^2 \kb \Tz}{\tie \mi \Tz^{3/2}} \frac{{n^*}^2}{{T_e^*}^{3/2}}(T_e^*-T_i^*) =S_{E_e}.
+\end{split}
+\end{equation*}
+Rearranging the terms and dropping the stars we obtain
+\begin{equation}\label{eq:ener-ad}
+\begin{split}
+  \partial_t (nE_e)  + \Div \big( (nE_e+ \Mref p_e)u\b + nE_e \bu_\bot \big) - &\frac{\tz}{\Lz^2}\Div (\denee \Gradper nE_e) 
+  -\frac{\tz^3 \Tz^{7/2}}{\Lz^4 \nz \mi}\Div (\kpe T_e^{5/2}\Gradpar T_e\b)\\ &-\Mref u\Gradpar p_e-\frac{3}{2}\frac{\tz \nz \kb}{\tie \mi \Tz^{1/2} \uz^2}\frac{n^2}{T_e^{3/2}}(T_e-T_i) =\frac{\tz}{\nz \uz^2} S_{E_e}, 
+\end{split}
+\end{equation}
+which allows to define the non-dimensional perpendicular diffusion coefficient for the electron energy
+\begin{equation}
+\boxed{
+\deneae = \denee \frac{\tz}{\Lz^2}
+},
+\end{equation}
+and the non-dimensional parallel diffusion coefficient for the electron temperature
+\begin{equation}
+\boxed{
+\kpae = \kpe \frac{\tz^3 \Tz^{7/2}}{\Lz^4 \nz \mi}
+},
+\end{equation}
+and the non-dimensional source of energy
+\[
+ \nd{S_{E_e}} =\frac{\tz}{\nz \uz^2} S_{E_e}.
+\]
+
+\subsection{The Bohm boundary condition}
+
+Using \eqref{eq:pres-ad}, the Bohm boundary condition \eqref{eq:bohm} 
+\begin{equation*}
+\begin{aligned}
+ ( n E_i + p_i)u - \frac{\kpi}{\mi} T_i^{5/2}\Gradpar T_i &= \nd{\gamma_i} u p_i + \frac{1}{2} n u^3,\\
+ (n E_e + p_e)u - \frac{\kpe}{\mi} T_e^{5/2}\Gradpar T_e &= \nd{\gamma_e} u p_e.
+\end{aligned}
+\end{equation*}
+is written as
+\begin{equation*}
+\begin{aligned}
+ (\nz \uz^2 n^* E_i^* + \frac{\nz \Tz \kb}{\mi} p_i^*)\uz u^* - \frac{\Tz^{7/2}}{\Lz\mi} \kpi {T_i^*}^{5/2}\Gradpar T_i^* &= \nd{\gamma_i} \frac{\nz \Tz \kb}{\mi} \uz u^* p_i^* + \nz \uz^3 \frac{1}{2} n^* {u^*}^3,\\
+ (\nz \uz^2 n^* E_e^* + \frac{\nz \Tz \kb}{\mi} p_e^*)\uz u^* - \frac{\Tz^{7/2}}{\Lz\mi} \kpe {T_e^*}^{5/2}\Gradpar T_e^* &= \nd{\gamma_e} \frac{\nz \Tz \kb}{\mi} \uz u^* p_e^*.
+\end{aligned}
+\end{equation*}
+Rearranging the terms and dropping the stars we obtain
+\begin{equation*}
+\begin{aligned}
+ (n E_i + \frac{\Tz \kb}{\mi \uz^2} p_i) u - \frac{\tz^3 \Tz^{7/2}}{\Lz^4 \nz \mi} \kpi {T_i}^{5/2}\Gradpar T_i &= \nd{\gamma_i} \frac{\Tz \kb}{\mi \uz^2} u p_i +   \frac{1}{2} n u^3,\\
+ (n E_e + \frac{\Tz \kb}{\mi \uz^2} p_e) u - \frac{\tz^3 \Tz^{7/2}}{\Lz^4 \nz \mi} \kpe {T_e}^{5/2}\Gradpar T_e &= \nd{\gamma_e} \frac{\Tz \kb}{\mi \uz^2} u p_e.
+\end{aligned}
+\end{equation*}
+which gives
+\begin{equation}\label{eq:bohm_ad}
+\begin{aligned}
+ &\Big(n E_i + \Mref (1-\nd{\gamma_i}) p_i \Big) u -  \kpai {T_i}^{5/2}\Gradpar T_i -  \frac{1}{2} n u^3 = 0,\\
+ &\Big(n E_e + \Mref (1-\nd{\gamma_e}) p_e \Big) u -  \kpae {T_e}^{5/2}\Gradpar T_e = 0.
+\end{aligned}
+\end{equation}
+\clearpage
+\subsection{Reference values and physical parameters}
+The choice of the reference values is 
+ \begin{align*}
+  & \Lz  && 1.901 \ 10^{-3}   & [m] \\
+  & \tz  && 1.3736 \ 10^{-7}  & [s] \\
+  & \nz  && 10^{19}           & [m^{-3}] \\
+  & \uz  && 1.3839 \ 10^{4}   & [m s^{-1}] \\
+  & \Tz  && 50                & [eV] \\
+ \end{align*}
+
+  
+ Other useful physical parameters are
+ \begin{align*}
+ &\text{Boltzmann constant}  & \kb:                & \ 1.38 \ 10^{-23}  & [kg\ m^2 s^{-2} K^{-1} ]\\
+ &\text{Ionic mass}          & \mi:                & \ 3.35 \ 10^{-27}        & [kg]\\
+ &\text{Electronic mass}     & \me:                & \ 9.11 \ 10^{-31}       & [kg]\\
+ &\text{Vacuum permeability} & \epsz:              & \ 8.85 \ 10^{-12}       & [\text{C } \text{N}^{-1} m^{-1}]\\
+ &\text{Electron charge}     & \e:                 & \ 1.60 \ 10^{-19}       & [\text{C }]\\
+\end{align*}
+
+Considering that the conversion between Kelvin $K$ and electronvolt $eV$ is 
+\begin{equation*}
+ T_{K} = T_{eV}  \frac{\e}{\kb},
+\end{equation*}
+the non-dimensional values are computed next.  
+
+The reference Mach is
+\begin{align*}
+\Mref = \frac{\Tz \kb}{\mi \uz^2} = \frac{\Tz[eV] \e \cancel{\kb}}{\mi \cancel{\kb} \uz^2} \approx 12.5. 
+\end{align*}
+
+The perpendicular diffusion coefficients are chosen as 
+\[
+ \drho=\dcon=\denei=\denee = 1 \ [m^2 s^{-1}],
+\]
+which gives 
+\[
+ \drhoa=\dcona=\deneai=\deneae= 1*\frac{\tz}{\Lz^2} = 0.038.
+\]
+The parallel diffusion coefficients are taken from [Ref: Stangeby]. For the ions is
+\[
+ \kpi = 33,  
+\]
+which gives 
+\[
+  \kpai = \kpi \frac{\tz^3 \Tz^{7/2}}{\Lz^4 \nz \mi} = 1.74 \ 10^5
+\]
+while for the electron it is
+\[
+ \kpe = 2000,
+\]
+which gives 
+\[
+  \kpae = \kpe \frac{\tz^3 \Tz^{7/2}}{\Lz^4 \nz \mi} \approx 10^7.
+\]
+
+
+The exchange temperature term is 
+\[
+ \tie = \frac{3\sqrt{2}}{\e^4} \frac{\epsz^2}{\Lambda} \pi^{\frac{3}{2}}\frac{\mi}{\me}\sqrt{\me} \ \e^{\frac{3}{2}}\approx 5.27\ 10^{13},\footnote{Note that using the reference values $\nz$ and $\Tz$, we obtain $\hat{\tie} =\tie \frac{\Tz^{3/2}}{\nz} \approx 1.9 \ 10^{-3} s$ }
+\]
+which gives 
+\[
+ \tiea =  \frac{2}{3}\frac{\tie\Tz^{1/2}\mi \uz^2}{\nz\tz\kb}\approx 8.4 \ 10^{6}. 
+\]
+
+
+
+
+
+\section{Conservative form of the non-dimensional system}
+The non-dimensional equations \eqref{eq:cont-ad},\eqref{eq:mome-ad} and \eqref{eq:ener-ad} are rewritten as
+\begin{equation*}
+\begin{aligned}
+ &\partial_tn + \Div (nu\b + n \bu_\bot) -  \Div ( \drhoa \Gradper n) =  \nd{S_n},\\
+ &\partial_t (nu)  + \Div (nu^2\b + nu \bu_\bot)  +  \Mref \Gradpar (p_i+p_e) - \Div (\dcona \Gradper nu) =\nd{S_{\Gm}},\\
+ &\partial_t (nE_i)  + \Div \big( (nE_i+ \Mref p_i)u\b + nE_i \bu_\bot \big) - \Div (\deneai \Gradper nE_i) -\Div (\kpai T_i^{5/2}\Gradpar T_i\b)\\ &\qq+\Mref u\Gradpar p_e+\frac{n^2}{\tiea}\frac{(T_e-T_i)}{T_e^{3/2}} = \nd{S_{E_i}},\\
+ &\partial_t (nE_e)  + \Div \big( (nE_e+ \Mref p_e)u\b + nE_e \bu_\bot \big) - \Div (\deneae \Gradper nE_e) -\Div (\kpae T_e^{5/2}\Gradpar T_e\b)\\ &\qq-\Mref u\Gradpar p_e-\frac{n^2}{\tiea}\frac{(T_e-T_i)}{T_e^{3/2}} = \nd{S_{E_e}} 
+\end{aligned} 
+\end{equation*}
+The momentum equation is rewritten in the following form
+\begin{equation*}
+\partial_t (nu)  + \Div (nu^2\b + nu \bu_\bot + \Mref (p_i+p_e)\b) -   \Mref (p_i+p_e)\Div\b - \Div (\dcona \Gradper nu) =\nd{S_{\Gm}},
+\end{equation*}
+using the relation 
+\[
+ \Gradpar (p_i+p_e) = \Grad (p_i+p_e) \cdot \b = \Div\Big( (p_i+p_e) \b\Big)-(p_i+p_e)\Div \b,
+\]
+while the drift term is simplified considering a divergence-free drift velocity, $\Div \bu_\bot=0$. This leads to a new form of the system 
+\begin{equation}\label{eq:sys-ad}
+\boxed{
+\begin{aligned}
+ &\partial_tn + \Div (nu\b) + \bu_\bot\scal \Grad n  -  \Div ( \drhoa \Gradper n) =  \nd{S_n},\\
+&\partial_t (nu)  + \Div (nu^2\b  + \Mref (p_i+p_e)\b) + \bu_\bot\scal \Grad(nu) -   \Mref (p_i+p_e)\Div\b - \Div (\dcona \Gradper nu) =\nd{S_{\Gm}},\\
+&\partial_t (nE_i)  + \Div \big( (nE_i+ \Mref p_i)u\b  \big)+\bu_\bot\scal \Grad(nE_i) - \Div (\deneai \Gradper nE_i) -\Div (\kpai T_i^{5/2}\Gradpar T_i\b)\\ &\qq+\Mref u\Gradpar p_e+\frac{n^2}{\tiea}\frac{(T_e-T_i)}{T_e^{3/2}} = \nd{S_{E_i}}, \\
+&\partial_t (nE_e)  + \Div \big( (nE_e+ \Mref p_e)u\b  \big)+\bu_\bot\scal \Grad(nE_e) - \Div (\deneae \Gradper nE_e) -\Div (\kpae T_e^{5/2}\Gradpar T_e\b)\\ &\qq-\Mref u\Gradpar p_e-\frac{n^2}{\tiea}\frac{(T_e-T_i)}{T_e^{3/2}} = \nd{S_{E_e}},  
+\end{aligned}
+}
+\end{equation}
+with the following added relations
+\begin{equation*}
+\boxed{
+\begin{aligned}
+ E_i = \frac{1}{2}u^2+\frac{3}{2} \Mref \frac{p_i}{n}& \rightarrow p_i=\frac{2}{3}\frac{n}{ \Mref }(E_i-\frac{1}{2}u^2),\\
+ E_e = \frac{3}{2} \Mref \frac{p_e}{n}& \rightarrow p_e=\frac{2}{3}\frac{n}{ \Mref }E_e,\\ 
+  p_i=nT_i & \rightarrow T_i=\frac{2}{3  \Mref } (E_i-\frac{1}{2}u^2),\\
+  p_e=nT_e & \rightarrow T_e=\frac{2}{3  \Mref } E_e,
+\end{aligned}
+}
+\end{equation*}
+and the Bohm boundary conditions
+\begin{equation*}
+\boxed{
+\begin{aligned}
+ &\Big(n E_i + \Mref (1-\nd{\gamma_i}) p_i \Big) u -  \kpai {T_i}^{5/2}\Gradpar T_i -  \frac{1}{2} n u^3 = 0,\\
+ &\Big(n E_e + \Mref (1-\nd{\gamma_e}) p_e \Big) u -  \kpae {T_e}^{5/2}\Gradpar T_e = 0.
+\end{aligned}
+}
+\end{equation*}
+
+System \eqref{eq:sys-ad} is recast in first order conservative form 
+\begin{equation}\label{eq:sys-cons}
+\boxed{
+ \partial_t \u+(\bu_\bot\scal\Grad)\u+ \Div \F - \Div(D_f \G)+\Div (D_f \G\b \otimes \b)-\Div \F_t + \bm{f}_{E_{\parallel}}+ \bm{f}_{EX}-\bm{g} = \bm{s}
+ }
+\end{equation}
+using the following definition of the conservative variables,
+\begin{equation*}
+ \u = \begin{Bmatrix}
+                     U_1\\
+                     U_2\\
+                     U_3\\
+                     U_4
+       \end{Bmatrix}, = 
+       \begin{Bmatrix}
+                     n  \\
+                     nu \\
+                     nE_i\\
+                     nE_e
+       \end{Bmatrix}
+\end{equation*}
+and the tensor of the conservative variable derivatives,
+\[
+\G = \Grad \u
+=\begin{bmatrix}
+ U_{1,x} & U_{1,y}\\
+ U_{2,x} & U_{2,y}\\
+ U_{3,x} & U_{3,y}\\
+ U_{4,x} & U_{4,y}
+\end{bmatrix}=
+\begin{bmatrix}
+ \Grad U_1^T\\
+ \Grad U_2^T\\
+ \Grad U_3^T\\
+ \Grad U_4^T
+\end{bmatrix}=
+\begin{bmatrix}
+ \mathcal{Q}_{11} & \mathcal{Q}_{12} \\
+ \mathcal{Q}_{21} & \mathcal{Q}_{22} \\
+ \mathcal{Q}_{31} & \mathcal{Q}_{32} \\
+ \mathcal{Q}_{41} & \mathcal{Q}_{42} 
+\end{bmatrix}
+.
+\]
+The pressure and temperature are written as 
+\begin{align*}
+        p_i&=\frac{2}{3 \Mref }\Big(U_3 -\frac{1}{2}\frac{U_2^2}{U_1}\Big),\\
+        p_e&=\frac{2}{3 \Mref } U_4,\\
+        T_i&=\frac{2}{3 \Mref }\Big(\frac{U_3}{U_1}- \frac{1}{2}\frac{U_2^2}{U_1^2}\Big),\\
+        T_e&=\frac{2}{3 \Mref } \frac{U_4}{U_1}.
+\end{align*}
+
+
+The convective flux is written as
+\begin{equation*}
+ \F = \begin{Bmatrix}
+                     nu \\
+                    (nu^2+ \Mref (p_i+p_e) ) \\
+                    (nE_i+ \Mref p_i)u \\
+                    (nE_e+ \Mref p_e)u
+       \end{Bmatrix}\otimes \b^T = 
+       \begin{Bmatrix}
+                     U_2   \\
+                   \frac{U_2^2}{U_1} +  \frac{2}{3}\Big(U_3+U_4-\frac{1}{2}\frac{U_2^2}{U_1}\Big) \\
+                  \Big( U_3 +\frac{2}{3}(U_3-\frac{1}{2}\frac{U_2^2}{U_1})   \Big)\frac{U_2}{U_1}\\
+                  \Big( U_4 +\frac{2}{3} U_4   \Big)\frac{U_2}{U_1}
+       \end{Bmatrix}\otimes \b^T.
+\end{equation*}
+
+
+The ions temperature gradient is written as
+\begin{equation*}
+\Grad T_i = \frac{2}{3  \Mref }\Grad\Big(\frac{U_3}{U_1}- \frac{1}{2}\frac{U_2^2}{U_1^2} \Big) = 
+ \frac{2}{3 \Mref }\Big( \Grad U_1 (\frac{U_2^2}{U_1^3}-\frac{U_3}{U_1^2}) + \Grad U_2 (-\frac{U_2}{U_1^2}) + \Grad U_3 (\frac{1}{U_1}) \Big), 
+\end{equation*}
+and can be simplified using the following definition 
+\begin{equation}\label{eq:vi}
+  \bm{V}_i\fo{\u} =\begin{Bmatrix}
+             \frac{U_2^2}{U_1^3}-\frac{U_3}{U_1^2}\\
+             -\frac{U_2}{U_1^2}\\
+             \frac{1}{U_1}\\
+             0
+            \end{Bmatrix}
+\end{equation}
+as
+\[
+ \Grad T_i = \frac{2}{3 \Mref }\Gt  \bm{V}_i\fo{\u},
+\]
+where the transpose of the variable gradient has been introduced, $\Gt=\G^T$.
+
+The electrons temperature gradient is written as
+\begin{equation*}
+\Grad T_e = \frac{2}{3  \Mref }\Grad\Big(\frac{U_4}{U_1}\Big) = 
+ \frac{2}{3 \Mref }\Big( \Grad U_1 (-\frac{U_4}{U_1^2}) + \Grad U_4 (\frac{1}{U_1}) \Big), 
+\end{equation*}
+and can be simplified using the following definition 
+\begin{equation}\label{eq:ve}
+  \bm{V}_e\fo{\u} =\begin{Bmatrix}
+             -\frac{U_4}{U_1^2}\\
+                   0\\
+                   0\\
+             \frac{1}{U_1}
+            \end{Bmatrix}
+\end{equation}
+as
+\[
+ \Grad T_e = \frac{2}{3 \Mref }\Gt  \bm{V}_e\fo{\u} .
+\]
+
+
+Hence, using the definition of the parallel gradient, we have
+\begin{align*}
+ \Gradpar T_i = \Grad T_i \cdot \b = \frac{2}{3 \Mref }\Gt  \bm{V}_i\fo{\u} \cdot \b,\\
+ \Gradpar T_e = \Grad T_e \cdot \b = \frac{2}{3 \Mref }\Gt  \bm{V}_e\fo{\u} \cdot \b,\\
+\end{align*}
+and the energy flux related to the parallel diffusion of the temperature is written as
+\begin{equation*}
+ \F_t = \begin{Bmatrix}
+                     0 \\
+                     0\\
+                    \kpai T_i^{5/2}\Gradpar T_i\\
+                    \kpae T_e^{5/2}\Gradpar T_e\\
+       \end{Bmatrix}\otimes \b^T = 
+       \begin{Bmatrix}
+                     0 \\
+                     0 \\
+                  \kpai \Big(\dfrac{2}{3 \Mref}\Big)^{7/2}\Big(\dfrac{U_3}{U_1}- \dfrac{1}{2}\dfrac{U_2^2}{U_1^2}\Big)^{5/2}\Gt  \bm{V}_i\fo{\u} \cdot \b\\
+                  \kpae \Big(\dfrac{2}{3 \Mref}\Big)^{7/2}\Big(\dfrac{U_4}{U_1}\Big)^{5/2}\Gt  \bm{V}_e\fo{\u} \cdot \b
+       \end{Bmatrix}\otimes \b^T.
+\end{equation*}
+
+
+
+The  vector related to the parallel electric field $\bm{f}_{E_{\parallel}}$ is
+\begin{equation*}
+ \bm{f}_{E_{\parallel}}  = \Mref u\Gradpar p_e \begin{Bmatrix}
+                     0 \\
+                     0\\
+                     1\\
+                    -1
+       \end{Bmatrix}= \frac{2}{3} \frac{U_2}{U_1}\Grad U_4\cdot \b \begin{Bmatrix}
+                     0 \\
+                     0\\
+                     1\\
+                    -1
+       \end{Bmatrix} 
+\end{equation*}
+and can be rewritten as 
+\begin{equation*}
+ \bm{f}_{E_{\parallel}}  = \frac{2}{3} \Gt \W\fo{\u}\cdot \b \begin{Bmatrix}
+                     0 \\
+                     0\\
+                     1\\
+                    -1\\
+       \end{Bmatrix} 
+\end{equation*}
+having defined the vector
+\[
+ \W\fo{\u} = \begin{Bmatrix}
+                     0 \\
+                     0\\
+                     0\\
+                    \frac{U_2}{U_1}\\
+              \end{Bmatrix}.
+\]
+
+
+The  vector of temperature exchange between ions and electrons is $\bm{f}_{EX}$ is
+  
+\begin{equation*}
+ \bm{f}_{EX}  = \frac{n^2}{\tiea}\frac{(T_e-T_i)}{T_e^{3/2}} \begin{Bmatrix}
+                     0 \\
+                     0\\
+                     1\\
+                    -1
+       \end{Bmatrix}= \frac{1}{\tiea}\Big(\frac{2}{3  \Mref }\Big)^{-1/2}\frac{{U_1}^{5/2}}{{U_4}^{3/2}}\Big(U_3-U_4+ \frac{1}{2}\frac{U_2^2}{U_1}\Big) \begin{Bmatrix}
+                     0 \\
+                     0\\
+                     1\\
+                    -1
+       \end{Bmatrix}.
+\end{equation*}
+
+Finally, the curvature term $\bm{g}$ is 
+\begin{equation*}
+  \bm{g} = \begin{Bmatrix}
+                     0 \\                    
+                     (p_i+p_e)\Div \b \\
+                     0  \\
+                     0
+            \end{Bmatrix} = 
+            \begin{Bmatrix}
+                     0 \\                    
+                     \dfrac{2}{3}\Big(U_3+U_4 -\dfrac{1}{2}\dfrac{U_2^2}{U_1}\Big)\Div \b \\
+                     0 \\
+                     0
+            \end{Bmatrix}.
+\end{equation*}
+
+The Bohm boundary conditions are re-written using the conservative variables and \eqref{eq:ve},\eqref{eq:vi} as 
+\begin{equation*}
+ \begin{aligned}
+ &\frac{5-2\nd{\gamma_i}}{3}\frac{U_2}{U_1}\Big( U_3 - \frac{1}{2}\frac{U_2^2}{U_1} \Big)-\kpai \Big(\dfrac{2}{3 \Mref}\Big)^{7/2}\Big(\dfrac{U_3}{U_1}- \dfrac{1}{2}\dfrac{U_2^2}{U_1^2}\Big)^{5/2}\Gt  \bm{V}_i\fo{\u} \cdot \b= 0,\\
+  & \frac{5-2\nd{\gamma_e}}{3}\frac{U_2 U_4}{U_1}- \kpae \Big(\dfrac{2}{3 \Mref}\Big)^{7/2}\Big(\dfrac{U_4}{U_1}\Big)^{5/2}\Gt  \bm{V}_e\fo{\u} \cdot \b  = 0,
+ \end{aligned}
+\end{equation*}
+and are re-cast in a vector form using the boundary vector 
+\begin{equation*}
+  \B = \begin{Bmatrix}
+                     0 \\                    
+                     0\\
+                     \frac{5-2\nd{\gamma_i}}{3}\frac{U_2}{U_1}\Big( U_3 - \frac{1}{2}\frac{U_2^2}{U_1} \Big)-\kpai \Big(\dfrac{2}{3 \Mref}\Big)^{7/2}\Big(\dfrac{U_3}{U_1}- \dfrac{1}{2}\dfrac{U_2^2}{U_1^2}\Big)^{5/2}\Gt  \bm{V}_i\fo{\u} \cdot \b  \\
+                     \frac{5-2\nd{\gamma_e}}{3}\frac{U_2 U_4}{U_1}- \kpae \Big(\dfrac{2}{3 \Mref}\Big)^{7/2}\Big(\dfrac{U_4}{U_1}\Big)^{5/2}\Gt  \bm{V}_e\fo{\u} \cdot \b
+            \end{Bmatrix} 
+\end{equation*}
+as 
+\begin{equation*}
+ \B=0, \text{ on } \partial \Omega_{\text{Bohm}}.
+\end{equation*}
+
+
+
+\section{Treatment of the non-linear terms}
+The convective flux $\F$, the parallel diffusion flux $\F_t$ and the vectors $\bm{f}_{E_{\parallel}}$, $\bm{f}_{EX}$ and $\bm{g}$ are non-linear terms. In a Newton-Raphson (NR) framework, the bilinear forms related to these terms are linearized using a second-order approximation. The linearization used for a generic term $\bm{f}$  is the following
+\begin{equation}\label{eq:linearization}
+\begin{split}
+ \bm{f}\fo{\bm{w}_1^k,\bm{w}_2^k,...} = \bm{f}\fo{\bm{w}_1^{k-1},\bm{w}_2^{k-1},...} + \frac{d}{d\varepsilon}f\fo{\bm{w}_1^{k-1}+\varepsilon \bm{dw}_1,\bm{w}_2^{k-1}+\varepsilon \bm{dw}_2,...}\big|_{\varepsilon=0} \\ + \mathcal{O}\fo{\bm{dw}_1^2,\bm{dw}_2^2,...},
+\end{split}
+\end{equation}
+where $k$ is the NR iteration and $\bm{dw}_i = \bm{w}_i^k-\bm{w}_i^{k-1}$.
+% 
+\subsection{Linearization of the convective term}\label{sc:lin_conv}
+The convective term 
+\begin{equation*}
+ \F =        \begin{Bmatrix}
+                     U_2   \\
+                  \frac{2}{3}\Big(U_3+U_4+\frac{U_2^2}{U_1}\Big) \\
+                  \frac{5}{3}\frac{U_3 U_2}{U_1} -\frac{1}{3}\frac{U_2^3}{U_1^2}\\
+                  \frac{5}{3} \frac{U_4 U_2}{U_1}
+       \end{Bmatrix}\otimes \b^T
+\end{equation*}
+can be written as 
+\begin{equation}\label{eq:hom1or}
+ \F = \frac{d\F}{d\u}\u=\tot{A}\fo{\u} \u,
+\end{equation}
+where the Jacobian third order tensor has been introduced
+%
+\begin{equation*}
+ \tot{A} = \frac{d\F}{d\u}=
+                                  \begin{bmatrix}
+                 0            &            1           &             0            &             0\\ 
+     -\frac{2}{3} {\frac{ U_2^2}{U_1^2}} & \frac{4}{3} {\frac {U_2}{U_1}}&\frac{2}{3} & \frac{2}{3}\\ 
+\frac{2}{3} \frac {U_2^3}{U_1^3}-\frac{5}{3}\frac{U_3 U_2}{U_1^2} 
+& \frac{5}{3}\frac{U_3}{U_1}-\frac{U_2^2}{U_1^2}
+ & \frac{5}{3} \frac { U_2}{U_1} & 0 \\ 
+-\frac{5}{3} \frac {U_4 U_2}{U_1^2} & \frac{5}{3} \frac{U_4}{U_1} & 0 & \frac{5}{3} \frac { U_2}{U_1}
+ \end{bmatrix}\otimes \b^T =\A\otimes\b^T,
+\end{equation*}
+where $\A$ is a second order tensor.
+%
+Deriving \eqref{eq:hom1or} with respect to $\u$ we obtain 
+\begin{equation}\label{eq:rel1}
+ \frac{d\F}{d\u} = \tot{A}\fo{\u} + \frac{d\tot{A}\fo{\u}}{d\u} \u \rightarrow \frac{d\tot{A}\fo{\u}}{d\u} \u = \bm{0}.
+\end{equation}
+Applying now \eqref{eq:linearization} to the convective flux, we obtain
+\begin{equation*}
+\begin{split}
+ \F\fo{\u^k} &= \tot{A}\fo{\u^k}\u^k = \tot{A}\fo{\u^{k-1}}\u^{k-1}+\frac{d}{d\varepsilon}\Big(\tot{A}\fo{\u^{k-1}+\varepsilon\bm{dU}}(\u^{k-1}+\varepsilon\bm{dU})\Big)\Big|_{\varepsilon=0} + \mathcal{O}\fo{\bm{dU}^2} \\
+ &=\tot{A}\fo{\u^{k-1}}\u^{k-1}+\tot{A}\fo{\u^{k-1}+\varepsilon\bm{dU}}\Big|_{\varepsilon=0} \bm{dU}+\frac{d\tot{A}}{d\u}\Big|_{k-1} \bm{dU}(\u^{k-1}+\varepsilon\bm{dU})\Big|_{\varepsilon=0}+ \mathcal{O}\fo{\bm{dU}^2}.
+\end{split}
+\end{equation*}
+Substituting $\varepsilon=0$ and $\bm{dU}=\u^k-\u^{k-1}$ we obtain
+\begin{equation*}
+\begin{split}
+ &\F\fo{\u^k} = \tot{A}\fo{\u^{k-1}}\u^{k-1} +\tot{A}\fo{\u^{k-1}}(\u^k-\u^{k-1})+ \frac{d\tot{A}}{d\u}\Big|_{k-1}(\u^k-\u^{k-1})\u^{k-1} + \mathcal{O}\fo{\bm{dU}^2}\\ &=\cancel{\tot{A}\fo{\u^{k-1}}\u^{k-1}}+\tot{A}\fo{\u^{k-1}}\u^k - \cancel{\tot{A}\fo{\u^{k-1}}\u^{k-1}}+\Big(\frac{d\tot{A}}{d\u}\Big|_{k-1}\u^k\Big)\u^{k-1} - \cancelto{0}{\Big(\frac{d\tot{A}}{d\u}\Big|_{k-1}\u^{k-1}\Big)}\u^{k-1}\\
+ &\qquad\qquad\qquad\qquad\qquad\qquad\qquad\qquad+\mathcal{O}\fo{\bm{dU}^2}.
+\end{split}
+\end{equation*}
+where eq.\eqref{eq:rel1} has been used in the last expression. Now, it results that, [see appendix]
+\[
+ \Big(\frac{d\tot{A}}{d\u}\Big|_{k-1}\u^k\Big)\u^{k-1} = \bm{0}
+\]
+hence
+\begin{equation}\label{eq:lin-conv}
+\boxed{
+ \F\fo{\u^k} = \tot{A}\fo{\u^{k-1}}\u^k +\mathcal{O}\fo{\bm{dU}^2}
+ }.
+\end{equation}
+
+
+
+\subsection{Linearization of the curvature term \bm{g}}
+The curvature term is
+\begin{equation*}
+  \bm{g} =  \begin{Bmatrix}
+                     0 \\                    
+                     \dfrac{2}{3}\Big(U_3+U_4 -\dfrac{1}{2}\dfrac{U_2^2}{U_1}\Big)\Div \b \\
+                     0 \\
+                     0
+            \end{Bmatrix}.
+\end{equation*}
+Applying \eqref{eq:linearization} we get
+\begin{equation*}
+\begin{split}
+ \bm{g}\fo{\u^k} &= \bm{g}\fo{\u^{k-1}}+\frac{d}{d\varepsilon}\Big(\bm{g}\fo{\u^{k-1}+\varepsilon\bm{dU}}\Big)\Big|_{\varepsilon=0}+\mathcal{O}\fo{\bm{dU}^2}
+              = \bm{g}\fo{\u^{k-1}}+\frac{d\bm{g}}{d\u}\Big|_{k-1}(\u^k-\u^{k-1})+\mathcal{O}\fo{\bm{dU}^2}.
+\end{split}
+\end{equation*}
+We also have
+\begin{equation*}
+ \frac{d\bm{g}}{d\u} = \frac{2}{3}\Div\b\begin{bmatrix}
+                        0 & 0 & 0 & 0 \\
+                        \dfrac{1}{2} \dfrac{U_2^2}{U_1^2} & -\dfrac{U_2}{U_1} & 1 & 1\\
+                         0 & 0 & 0 & 0 \\
+                         0 & 0 & 0 & 0 
+                       \end{bmatrix},
+\end{equation*}
+which verifies
+\[
+ \bm{g} = \frac{d\bm{g}}{d\u} \u.
+\]
+Therefore, the linearization of the $\bm{g}$ term results
+\begin{equation*}
+\boxed{
+ \bm{g}\fo{\u^k} = \frac{d\bm{g}}{d\u}\Big|_{k-1}\u^k+\mathcal{O}\fo{\bm{dU}^2}
+ }.
+\end{equation*}
+
+
+
+
+
+\subsection{Linearization of the parallel diffusion flux}\label{sc:lin_par_diff}
+The parallel diffusion flux is rewritten as
+\begin{equation*}
+ \F_t = \begin{Bmatrix}
+                     0 \\
+                     0 \\
+                  \kpai \Big(\dfrac{2}{3 \Mref}\Big)^{7/2}\Big(\dfrac{U_3}{U_1}- \dfrac{1}{2}\dfrac{U_2^2}{U_1^2}\Big)^{5/2}\Gt  \bm{V}_i\fo{\u} \cdot \b\\
+                  \kpae \Big(\dfrac{2}{3 \Mref}\Big)^{7/2}\Big(\dfrac{U_4}{U_1}\Big)^{5/2}\Gt  \bm{V}_e\fo{\u} \cdot \b
+       \end{Bmatrix}\otimes \b^T=       
+       \begin{Bmatrix}
+                     0 \\
+                     0 \\
+                     \kpai \Big(\dfrac{2}{3 \Mref }\Big)^{7/2}\bm{f}_i\fo{\u,\Gt} \cdot \b\\
+                     \kpae \Big(\dfrac{2}{3 \Mref }\Big)^{7/2}\bm{f}_e\fo{\u,\Gt} \cdot \b
+       \end{Bmatrix}\otimes \b^T,
+\end{equation*}
+where the vector function $\bm{f}_i\fo{\u,\Gt}$ and $\bm{f}_e\fo{\u,\Gt}$ are
+\begin{align}\label{eq:ffunc}
+ \bm{f}_i\fo{\u,\Gt} =  r_i\fo{\u} \Gt  \bm{V}_i\fo{\u} ,\\
+ \bm{f}_e\fo{\u,\Gt} =  r_e\fo{\u} \Gt  \bm{V}_e\fo{\u} ,
+\end{align}
+and the scalar functions $ r_i\fo{\u} $ and $ r_e\fo{\u} $ are
+\begin{align}\label{eq:r}
+  &r_i\fo{\u}  = \Big(\dfrac{U_3}{U_1}- \dfrac{1}{2}\dfrac{U_2^2}{U_1^2}\Big)^{5/2},\\
+  &r_e\fo{\u}  = \Big(\dfrac{U_4}{U_1}\Big)^{5/2}.
+\end{align}
+The linearization of $\F_t$ reduces to the linearization of $\bm{f}\fo{\u,\Gt}$ ($=\bm{f}_{i,e}\fo{\u,\Gt}$). Applying \eqref{eq:linearization} to $\bm{f}\fo{\u,\Gt}$ we have
+\begin{equation}\label{eq:linear-ft}
+ \begin{split}
+  \bm{f}\fo{\u^k,\Gt^k}  =  \bm{f}\fo{\u^{k-1},\Gt^{k-1}} +\frac{d}{d\varepsilon}\bm{f}\fo{\u^{k-1}+\varepsilon\bm{dU},\Gt^{k-1}+\varepsilon \bm{d}\Gt}\Big|_{\varepsilon=0}+\mathcal{O}\fo{\bm{dU}^2,\bm{d}\Gt^2}\\
+ =r\fo{\u^{k-1}}\Gt^{k-1} \bm{V}\fo{\u^{k-1}}+ \frac{d}{d\varepsilon}\Big(r\fo{\u^{k-1}+\varepsilon\bm{dU}}(\Gt^{k-1}+\varepsilon \bm{d}\Gt) \bm{V}\fo{\u^{k-1}+\varepsilon\bm{dU}}\Big)\Big|_{\varepsilon=0}+\mathcal{O}\fo{\bm{dU}^2,\bm{d}\Gt^2}.
+ \end{split}
+\end{equation}
+Developing the derivative term $\dfrac{d}{d\varepsilon}(...)$ we obtain
+\begin{equation}\label{eq:linear-ft-1}
+ \begin{split}
+ \dfrac{d}{d\varepsilon}(...)_{\varepsilon=0} &= 
+ \dfrac{dr}{d\u}\Big|_{k-1}\scal \bm{dU}(\Gt^{k-1}+\varepsilon \bm{d}\Gt)\Big|_{\varepsilon=0}\bm{V}\fo{\u^{k-1}+\varepsilon\bm{dU}}\Big|_{\varepsilon=0} \\
+ &+ r\fo{\u^{k-1}+\varepsilon\bm{dU}}\Big|_{\varepsilon=0}\bm{d}\Gt\bm{V}\fo{\u^{k-1}+\varepsilon\bm{dU}}\Big|_{\varepsilon=0}\\
+ &+ r\fo{\u^{k-1}+\varepsilon\bm{dU}}\Big|_{\varepsilon=0}(\Gt^{k-1}+\varepsilon \bm{d}\Gt)\Big|_{\varepsilon=0}\dfrac{d\bm{V}}{d\u}\Big|_{k-1}d\u \\
+ &=\dfrac{dr}{d\u}\Big|_{k-1} \bm{dU}\Gt^{k-1}\bm{V}\fo{\u^{k-1}}+r\fo{\u^{k-1}}\bm{d}\Gt\bm{V}\fo{\u^{k-1}}+r\fo{\u^{k-1}}\Gt^{k-1}\dfrac{d\bm{V}}{d\u}\Big|_{k-1}d\u,
+ \end{split},
+\end{equation}
+where the derivatives are
+\begin{equation*}
+ \dfrac{dr_i}{d\u} = \dfrac{5}{2}\Big( \dfrac{U_3}{U_1}-\dfrac{1}{2}\dfrac{U_2^2}{U_1^2}\Big)^{3/2}
+ \begin{Bmatrix}
+  -\frac{U_3}{U_1^2}+\frac{U_2^2}{U_1^3}\\
+  -\frac{U_2}{U_1^2}\\
+  \frac{1}{U_1}\\
+  0
+ \end{Bmatrix},
+\end{equation*}
+
+\begin{equation*}
+ \dfrac{dr_e}{d\u} = \dfrac{5}{2}\Big( \dfrac{U_4}{U_1} \Big)^{3/2}
+ \begin{Bmatrix}
+  -\frac{U_4}{U_1^2}\\
+  0\\
+  0\\
+  \frac{1}{U_1}
+ \end{Bmatrix},
+\end{equation*}
+
+and 
+\begin{equation*}
+ \dfrac{d\bm{V}_i}{d\u} = \begin{bmatrix}
+       -3 \frac {U_2^2}{U_1^4}+2\frac {U_3}{U_1^3} &   2\frac{U_2}{U_1^3}   & -\frac{1}{U_1^2} & 0 \\
+                           2\frac{U_2}{U_1^3}            &    -\frac{1}{U_1^2}    &        0   & 0 \\
+                            -\frac{1}{U_1^2}             &          0             &        0   & 0 \\
+                            0                            &          0             &        0   & 0 \\
+                        \end{bmatrix},
+\end{equation*}
+
+\begin{equation*}
+ \dfrac{d\bm{V}_e}{d\u} = \begin{bmatrix}
+       2\frac {U_4}{U_1^3} &   0      & 0 & -\frac{1}{U_1^2} \\
+          0               &    0      &        0   & 0 \\
+                            0            &          0             &        0   & 0 \\
+                      -\frac{1}{U_1^2}   &          0             &        0   & 0 \\
+                        \end{bmatrix},
+\end{equation*}
+
+
+Replacing $\bm{dU}=\u^k-\u^{k-1}$ and $\bm{d}\Gt=\Gt^k-\Gt^{k-1}$ and plugging \eqref{eq:linear-ft-1} into \eqref{eq:linear-ft}  we obtain
+\begin{equation*}
+ \begin{split}
+  \bm{f}\fo{\u^k,\Gt^k}  &= \cancel{r\fo{\u^{k-1}}\Gt^{k-1} \bm{V}\fo{\u^{k-1}}} + 
+                     \dfrac{dr}{d\u}\Big|_{k-1} \u^k\Gt^{k-1}\bm{V}\fo{\u^{k-1}}-\cancelto{0}{\dfrac{dr}{d\u}\Big|_{k-1}\scal \u^{k-1} \Gt^{k-1}\bm{V}\fo{\u^{k-1}}}\\
+                     &+r\fo{\u^{k-1}}\Gt^k \bm{V}\fo{\u^{k-1}}-\cancel{r\fo{\u^{k-1}}\Gt^{k-1} \bm{V}\fo{\u^{k-1}}}\\
+                     &+r\fo{\u^{k-1}}\Gt^{k-1}\dfrac{d\bm{V}}{d\u}\Big|_{k-1}\u^k-r\fo{\u^{k-1}}\Gt^{k-1}\dfrac{d\bm{V}}{d\u}\Big|_{k-1}\u^{k-1}\\
+                     &+\mathcal{O}\fo{\bm{dU}^2,\bm{d}\Gt^2}
+ \end{split}
+\end{equation*}
+where we have used the fact that 
+\[
+ \dfrac{dr}{d\u}\Big|_{k-1}\scal \u^{k-1} = 0. 
+\]
+Finally, the linearization of $\bm{f}\fo{\u,\Gt}$ results
+\begin{equation*}
+\boxed{
+ \begin{split}
+ \bm{f}\fo{\u^k,\Gt^k} &=  (\dfrac{dr}{d\u}\Big|_{k-1}\cdot \u^k)\Gt^{k-1}\bm{V}\fo{\u^{k-1}} +        r\fo{\u^{k-1}}\Gt^k \bm{V}\fo{\u^{k-1}} \\
+               &+  r\fo{\u^{k-1}}\Gt^{k-1}\dfrac{d\bm{V}}{d\u}\Big|_{k-1}\u^k  -r\fo{\u^{k-1}}\Gt^{k-1}\dfrac{d\bm{V}}{d\u}\Big|_{k-1}\u^{k-1}\\
+               &+  \mathcal{O}\fo{\bm{dU}^2,\bm{d}\Gt^2}.
+ \end{split}
+ }
+\end{equation*}
+
+The parallel diffusion flux can be written as
+\[
+\F_t\fo{\u^k,\Gt^k} = \F_t^{\G}\fo{\u^{k-1},\Gt^k}+\F_t^{\u}\fo{\u^k,\Gt^{k-1}}+\F_t^0\fo{\u^{k-1},\Gt^{k-1}} +  \mathcal{O}\fo{\bm{dU}^2,\bm{d}\Gt^2}
+\]
+where the terms are defined as
+\begin{equation*}
+ \F_t^\G = \Big(\dfrac{2}{3 \Mref }\Big)^{7/2} \begin{Bmatrix}
+                     0 \\
+                     0 \\
+                     \kpai  r_i\fo{\u^{k-1}}\Gt^k \bm{V}_i\fo{\u^{k-1}} \cdot \b\\
+                     \kpae  r_e\fo{\u^{k-1}}\Gt^k \bm{V}_e\fo{\u^{k-1}} \cdot \b
+       \end{Bmatrix}\otimes \b^T,
+\end{equation*}
+
+\begin{equation*}
+ \F_t^\u = \Big(\dfrac{2}{3 \Mref }\Big)^{7/2} \begin{Bmatrix}
+                     0 \\
+                     0 \\
+                     \kpai \Big( (\dfrac{dr_i}{d\u}\Big|_{k-1}\cdot \u^k)\Gt^{k-1}\bm{V}_i\fo{\u^{k-1}}+ r_i\fo{\u^{k-1}}\Gt^{k-1}\dfrac{d\bm{V}_i}{d\u}\Big|_{k-1}\u^k   \Big)    \cdot \b\\
+                     \kpae \Big( (\dfrac{dr_e}{d\u}\Big|_{k-1}\cdot \u^k)\Gt^{k-1}\bm{V}_e\fo{\u^{k-1}}+ r_e\fo{\u^{k-1}}\Gt^{k-1}\dfrac{d\bm{V}_e}{d\u}\Big|_{k-1}\u^k   \Big)    \cdot \b
+       \end{Bmatrix}\otimes \b^T,
+\end{equation*}
+
+\begin{equation*}
+ \F_t^0 = -\Big(\dfrac{2}{3 \Mref }\Big)^{7/2} \begin{Bmatrix}
+                     0 \\
+                     0 \\
+                     \kpai  r_i\fo{\u^{k-1}}\Gt^{k-1}\dfrac{d\bm{V}_i}{d\u}\Big|_{k-1}\u^{k-1} \cdot \b\\
+                     \kpae  r_e\fo{\u^{k-1}}\Gt^{k-1}\dfrac{d\bm{V}_e}{d\u}\Big|_{k-1}\u^{k-1} \cdot \b
+       \end{Bmatrix}\otimes \b^T.
+\end{equation*}
+
+\subsection{Linearization of the parallel current vector}
+The parallel current vector is re-written as
+\begin{equation*}
+ \bm{f}_{E_{\parallel}}  = \frac{2}{3} \Gt \W\fo{\u}\cdot \b \begin{Bmatrix}
+                     0 \\
+                     0\\
+                     1\\
+                    -1\\
+       \end{Bmatrix},= \frac{2}{3} \bm{h}\fo{\u}\cdot \b \begin{Bmatrix}
+                     0 \\
+                     0\\
+                     1\\
+                    -1\\
+       \end{Bmatrix},
+\end{equation*}
+having defined the vector function  $\bm{h}\fo{\u,\Gt}=\Gt \W\fo{\u}$. The linearization of $\bm{f}_{E_{\parallel}}$ reduces to the linearization of $\bm{h}\fo{\Gt,\u}$ which is
+\begin{equation*}
+ \begin{split}
+ \bm{h}\fo{\u^k,\Gt^k}  &=  \bm{h}\fo{\u^{k-1},\Gt^{k-1}} +\frac{d}{d\varepsilon}\bm{h}\fo{\u^{k-1}+\varepsilon\bm{dU},\Gt^{k-1}+\varepsilon \bm{d}\Gt}\Big|_{\varepsilon=0}+\mathcal{O}\fo{\bm{dU}^2,\bm{d}\Gt^2}=\\
+ &\Gt^{k-1} \W\fo{\u^{k-1}} + \frac{d}{d\varepsilon}\Big((\Gt^{k-1}+\varepsilon \bm{d}\Gt) \W\fo{\u^{k-1}+\varepsilon\bm{dU}}\Big)\Big|_{\varepsilon=0}+\mathcal{O}\fo{\bm{dU}^2,\bm{d}\Gt^2}=\\
+ &\Gt^{k-1} \W\fo{\u^{k-1}} + \bm{d}\Gt \W\fo{\u^{k-1}} + \Gt^{k-1}\dfrac{d\W}{d\u}\Big|_{k-1}d\u+\mathcal{O}\fo{\bm{dU}^2,\bm{d}\Gt^2}=\\
+  \cancel{\Gt^{k-1} \W\fo{\u^{k-1}}} &+ \Gt^{k} \W\fo{\u^{k-1}} -\cancel{\Gt^{k-1} \W\fo{\u^{k-1}}} + 
+  \Gt^{k-1}\dfrac{d\W}{d\u}\Big|_{k-1}\u^k-\cancelto{0}{\Gt^{k-1}\dfrac{d\W}{d\u}\Big|_{k-1}\u^{k-1}}\\
+  &\bigsp\bigsp\bigsp\bigsp+ \mathcal{O}\fo{\bm{dU}^2,\bm{d}\Gt^2}.
+ \end{split}
+\end{equation*}
+Hence, the linearization of $\bm{h}\fo{\u^k,\Gt^k} $ results
+\[
+\boxed{
+ \bm{h}\fo{\u^k,\Gt^k} = \Gt^{k} \W\fo{\u^{k-1}} +\Gt^{k-1}\dfrac{d\W}{d\u}\Big|_{k-1}\u^k+ \mathcal{O}\fo{\bm{dU}^2,\bm{d}\Gt^2}
+ },
+\]
+where the derivative $\dfrac{d\W}{d\u}$ is
+\begin{equation*}
+ \dfrac{d\W}{d\u} = \begin{bmatrix}
+       0               &          0           &          0   &   0 \\
+       0               &          0           &          0   &   0 \\
+       0               &          0           &          0   &   0 \\
+-\frac{U_2}{U_1^2}     &  \frac{1}{U_1}   &          0   &   0 
+                        \end{bmatrix}.
+\end{equation*}
+
+The parallel current vector can be written as
+\[
+ \bm{f}_{E_{\parallel}} = \bm{f}_{E_{\parallel}}^\G+\bm{f}_{E_{\parallel}}^\u,
+\]
+where the two terms are defined as
+\begin{align*}
+ \bm{f}_{E_{\parallel}}^\G &= \frac{2}{3} \Gt^{k} \W\fo{\u^{k-1}}\cdot \b \begin{Bmatrix}
+                     0 \\
+                     0\\
+                     1\\
+                    -1\\
+       \end{Bmatrix}, \\
+ \bm{f}_{E_{\parallel}}^\u &= \frac{2}{3} \Gt^{k-1}\dfrac{d\W}{d\u}\Big|_{k-1}\u^k \cdot \b \begin{Bmatrix}
+                     0 \\
+                     0\\
+                     1\\
+                    -1\\
+       \end{Bmatrix}, 
+\end{align*}
+
+
+
+\subsection{Linearization of the temperature exchange vector}
+The vector of temperature exchange between ions and electrons is $\bm{f}_{EX}$ is
+\begin{equation*}
+ \bm{f}_{EX}  =  \frac{1}{\tiea}\Big(\frac{2}{3  \Mref }\Big)^{-1/2}\frac{{U_1}^{5/2}}{{U_4}^{3/2}}\Big(U_4-U_3 + \frac{1}{2}\frac{U_2^2}{U_1}\Big)            \begin{Bmatrix}
+                     0 \\
+                     0\\
+                     1\\
+                    -1
+       \end{Bmatrix}=  \frac{1}{\tiea}\Big(\frac{2}{3  \Mref }\Big)^{-1/2}s\fo{\u}            \begin{Bmatrix}
+                     0 \\
+                     0\\
+                     1\\
+                    -1
+       \end{Bmatrix},
+\end{equation*}
+having defined the scalar function
+\[
+s\fo{\u}=\frac{{U_1}^{5/2}}{{U_4}^{3/2}}\Big(U_4-U_3 + \frac{1}{2}\frac{U_2^2}{U_1}\Big).
+\]
+Hence, the linearization of the term $\bm{f}_{EX}$ reduces to the linearization of the function $s\fo{\u}$, that is
+\begin{equation*}
+\begin{split}
+ s\fo{\u^k} = &s\fo{\u^{k-1}}+\frac{d}{d\varepsilon}\Big(s\fo{\u^{k-1}+\varepsilon\bm{dU}}\Big)\Big|_{\varepsilon=0}+\mathcal{O}\fo{\bm{dU}^2} = \\
+ &s\fo{\u^{k-1}}+\frac{d s}{d\u}\Big|_{k-1}d\u+\mathcal{O}\fo{\bm{dU}^2}=\\        
+ &s\fo{\u^{k-1}}+\frac{d s}{d\u}\Big|_{k-1}\u^k-\frac{d s}{d\u}\Big|_{k-1} \u^{k-1}+\mathcal{O}\fo{\bm{dU}^2}.
+\end{split}
+\end{equation*}
+It can be shown that
+\begin{equation*}
+ \frac{d s}{d\u}\Big|_{k-1} \u^{k-1} = 2 s\fo{\u^{k-1}},
+\end{equation*}
+therefore the linearization of $s\fo{\u}$ finally gives
+\[
+\boxed{
+ s\fo{\u^k} = \frac{d s}{d\u}\Big|_{k-1}\cdot\u^k - s\fo{\u^{k-1}}+\mathcal{O}\fo{\bm{dU}^2}
+ },
+\]
+where the derivative $\frac{d s}{d\u}$ is
+\begin{equation*}
+ \frac{d s}{d\u} = \begin{Bmatrix}
+   \frac{5}{2} \Big(\frac{U_1}{U_4}\Big)^{3/2} (U_4-U_3 +\frac{1}{2}\frac{U_2^2}{U_1}) - \frac{1}{2} \frac{U_1^{1/2}U_2^2}{U_4^{3/2}}\\
+   U_2(\frac{U_1}{U_4})^{3/2}\\
+   -\frac{{U_1}^{5/2}}{{U_4}^{3/2}} \\
+   -\frac{3}{2}(\frac{U_1}{U_4})^{5/2}(U_4 -U_3+\frac{1}{2}\frac{U_2^2}{U_1})+\frac{{U_1}^{5/2}}{U_4^{3/2}}
+                        \end{Bmatrix}.
+\end{equation*}
+
+The temperature exchange vector can be written as
+\[
+ \bm{f}_{EX}  = \bm{f}_{EX}^\u + \bm{f}_{EX}^0,
+\]
+where the two terms are
+\begin{align*}
+ \bm{f}_{EX}^\u &= \frac{1}{\tiea}\Big(\frac{2}{3  \Mref }\Big)^{-1/2} \frac{d s}{d\u}\Big|_{k-1}\cdot\u^k         \begin{Bmatrix}
+                     0 \\
+                     0\\
+                     1\\
+                    -1
+       \end{Bmatrix},\\
+ \bm{f}_{EX}^0 &= -\frac{1}{\tiea}\Big(\frac{2}{3  \Mref }\Big)^{-1/2} s\fo{\u^{k-1}}         \begin{Bmatrix}
+                     0 \\
+                     0\\
+                     1\\
+                    -1
+       \end{Bmatrix},\\       
+\end{align*}
+
+
+
+\subsection{Linearization of the Bohm boundary conditions}\label{sc:lin_bohm}
+The Bohm boundary conditions for ions and electrons are
+\begin{equation*}
+ \begin{aligned}
+ &\frac{5-2\nd{\gamma_i}}{3}\frac{U_2}{U_1}\Big( U_3 - \frac{1}{2}\frac{U_2^2}{U_1} \Big)-\kpai \Big(\dfrac{2}{3 \Mref}\Big)^{7/2}\Big(\dfrac{U_3}{U_1}- \dfrac{1}{2}\dfrac{U_2^2}{U_1^2}\Big)^{5/2}\Gt  \bm{V}_i\fo{\u} \cdot \b= 0,\\
+  & \frac{5-2\nd{\gamma_e}}{3}\frac{U_2 U_4}{U_1}- \kpae \Big(\dfrac{2}{3 \Mref}\Big)^{7/2}\Big(\dfrac{U_4}{U_1}\Big)^{5/2}\Gt  \bm{V}_e\fo{\u} \cdot \b  = 0.
+ \end{aligned}
+\end{equation*}
+and can be re-written as, using \eqref{eq:ffunc},
+as 
+\begin{equation*}
+ \B=0, \text{ on } \partial \Omega_{\vs{Bohm}}.
+\end{equation*}
+where
+\begin{equation*}
+  \B = \B_c - \B_t
+\end{equation*}
+and the terms $ \B_c $ and $ \B_t$ are 
+\begin{equation*}
+  \B_c = \frac{1}{3} \begin{Bmatrix}
+                     0 \\                    
+                     0\\
+                    (5-2\nd{\gamma_i})\frac{U_2}{U_1}\Big( U_3 - \frac{1}{2}\frac{U_2^2}{U_1} \Big)  \\
+                    (5-2\nd{\gamma_e})\frac{U_2 U_4}{U_1}
+            \end{Bmatrix} 
+\end{equation*}
+and 
+\begin{equation*}
+  \B_t = \begin{Bmatrix}
+                     0 \\                    
+                     0\\
+                    \kpai \Big(\dfrac{2}{3 \Mref}\Big)^{7/2} \bm{f}_i\fo{\u,\Gt} \cdot \b  \\
+                    \kpae \Big(\dfrac{2}{3 \Mref}\Big)^{7/2} \bm{f}_e\fo{\u,\Gt} \cdot \b
+            \end{Bmatrix} .
+\end{equation*}
+The linearization of the Bohm boundary conditions reduces to the linearization of $\bm{f}_i\fo{\u,\Gt}$ and $\bm{f}_i\fo{\u,\Gt}$, already threated in \ref{sc:lin_par_diff}, and to the linearization of $\B_c$. It results 
+\begin{equation*}
+  \B_c\fo{\u} =\frac{d \B_c\fo{\u}}{d \u} \u,
+\end{equation*}
+and therefore, similarly to \ref{sc:lin_conv}, it gives
+\begin{equation*}
+  \B_c\fo{\u^k} =\frac{d \B_c\fo{\u}}{d \u}\Big|_{k-1} \u^k  +\mathcal{O}\fo{\bm{dU}^2},
+\end{equation*}
+where the Jacobian is
+\begin{equation*}
+ \frac{d \B_c\fo{\u}}{d \u} = \frac{1}{3}\begin{bmatrix}
+        0               &          0           &          0   &   0 \\
+       0               &          0           &          0   &   0 \\
+       -(5-2\nd{\gamma_i}) \Big( \frac{U_2 U_3}{U_1^2} - \frac{U_2^3}{U_1^3}\Big)              &         (5-2\nd{\gamma_i}) \Big(\frac{U_3}{U_1} -\frac{3}{2} \frac{U_2^2}{U_1^2} \Big)          &          (5-2\nd{\gamma_i})\frac{U_2}{U_1}   &   0 \\
+ -(5-2\nd{\gamma_e}) \frac{U_2 U_4}{U_1^2}   &  (5-2\nd{\gamma_e})\frac{U_4}{U_1}   &          0   &  (5-2\nd{\gamma_e}) \frac{U_2}{U_1} 
+
+
+                        \end{bmatrix}.
+\end{equation*}
+From the linearization of the parallel diffusion term, we have
+\[
+ \B_t\fo{\u^k,\Gt^k} = \B_t^{\G}\fo{\u^{k-1},\Gt^k}+\B_t^{\u}\fo{\u^k,\Gt^{k-1}}+\B_t^0\fo{\u^{k-1},\Gt^{k-1}} +  \mathcal{O}\fo{\bm{dU}^2,\bm{d}\Gt^2}
+\]
+where
+
+\begin{equation*}
+ \B_t^{\G} = \Big(\dfrac{2}{3 \Mref }\Big)^{7/2} \begin{Bmatrix}
+                     0 \\
+                     0 \\
+                     \kpai  r_i\fo{\u^{k-1}}\Gt^k \bm{V}_i\fo{\u^{k-1}} \cdot \b\\
+                     \kpae  r_e\fo{\u^{k-1}}\Gt^k \bm{V}_e\fo{\u^{k-1}} \cdot \b
+       \end{Bmatrix},
+\end{equation*}
+
+\begin{equation*}
+ \B_t^{\u} = \Big(\dfrac{2}{3 \Mref }\Big)^{7/2} \begin{Bmatrix}
+                     0 \\
+                     0 \\
+                     \kpai \Big( (\dfrac{dr_i}{d\u}\Big|_{k-1}\cdot \u^k)\Gt^{k-1}\bm{V}_i\fo{\u^{k-1}}+ r_i\fo{\u^{k-1}}\Gt^{k-1}\dfrac{d\bm{V}_i}{d\u}\Big|_{k-1}\u^k   \Big)    \cdot \b\\
+                     \kpae \Big( (\dfrac{dr_e}{d\u}\Big|_{k-1}\cdot \u^k)\Gt^{k-1}\bm{V}_e\fo{\u^{k-1}}+ r_e\fo{\u^{k-1}}\Gt^{k-1}\dfrac{d\bm{V}_e}{d\u}\Big|_{k-1}\u^k   \Big)    \cdot \b
+       \end{Bmatrix},
+\end{equation*}
+
+\begin{equation*}
+ \B_t^0 = -\Big(\dfrac{2}{3 \Mref }\Big)^{7/2} \begin{Bmatrix}
+                     0 \\
+                     0 \\
+                     \kpai  r_i\fo{\u^{k-1}}\Gt^{k-1}\dfrac{d\bm{V}_i}{d\u}\Big|_{k-1}\u^{k-1} \cdot \b\\
+                     \kpae  r_e\fo{\u^{k-1}}\Gt^{k-1}\dfrac{d\bm{V}_e}{d\u}\Big|_{k-1}\u^{k-1} \cdot \b
+       \end{Bmatrix}, 
+\end{equation*}
+Therefore, it results 
+\begin{equation*}
+ \B\fo{\u^k,\Gt^k}= \frac{d \B_c\fo{\u}}{d \u}\Big|_{k-1} \u^k -  \B_t^{\G} \fo{\u^{k-1},\Gt^k}- \B_t^{\u}\fo{\u^k,\Gt^{k-1}} - \B_t^0\fo{\u^{k-1},\Gt^{k-1}} +  \mathcal{O}\fo{\bm{dU}^2,\bm{d}\Gt^2}
+\end{equation*}
+
+
+
+\section{Weak form of the system}\label{sc:wf}
+\subsection{The local problems}
+Using \eqref{eq:sys-cons} and the definition of the variable gradient, the system to solve is
+%
+\begin{equation}\label{eq:sys_st}
+\begin{aligned}
+&\G -\Grad \u = 0\\ 
+&\partial_t \u+ \Div ( \F -D_f \G + D_f \G\b \otimes \b - \F_t)\\
+ & \bigsp+ (\bu_\bot\scal\Grad)\u +  \bm{f}_{E_{\parallel}}+ \bm{f}_{EX}-\bm{g} = \bm{s}.  
+\end{aligned}
+\end{equation}
+%
+Multiplying the first equation by the tensor test function $\T$ and the second by a vector test function $\t$ and integrating in each element, we obtain
+%
+\begin{equation*}
+\begin{aligned}
+&\sprod{\T,\G} -\sprod{\T,\Grad \u} = 0\\ 
+&\sprod{\t,\partial_t \u}+ \sprod{\t,\Div ( \F -D_f \G + D_f \G\b \otimes \b - \F_t)}\\
+ & \bigsp+ \sprod{\t,(\bu_\bot\scal\Grad)\u} +  \sprod{\t,\bm{f}_{E_{\parallel}}}+ \sprod{\t,\bm{f}_{EX}}-\sprod{\t,\bm{g}} = \sprod{\t,\bm{s}},
+\end{aligned}
+\end{equation*}
+%
+which gives, after integration by parts,
+%
+\begin{equation*}
+\begin{aligned}
+&\sprod{\T,\G} +\sprod{\Div \T, \u}-\dprod{\T\bn, \hu} = 0\\ 
+&\sprod{\t,\partial_t \u}- \sprod{\Grad \t, \F -D_f \G + D_f \G\b \otimes \b - \F_t}+\dprod{\t, (\widehat{\F} -D_f \widehat{\G} + D_f  \widehat{\G}\b\otimes \b  - \widehat{\F_t})\bn}\\
+ & \bigsp+ \sprod{\t,(\bu_\bot\scal\Grad)\u} +  \sprod{\t,\bm{f}_{E_{\parallel}}}+ \sprod{\t,\bm{f}_{EX}}-\sprod{\t,\bm{g}} = \sprod{\t,\bm{s}}.
+\end{aligned}
+\end{equation*}
+%
+The definition of the numerical traces is 
+\begin{align*}
+ \widehat{\F}\fo{\hu} &= \F\fo{\hu} + \tt(\u-\hu)\otimes\bn,\\
+ \widehat{\G} &= \G, \\
+ \widehat{\F_t}\fo{\hu} &= \F_t\fo{\hu}, \\
+\end{align*}
+%
+which gives
+\begin{equation*}\label{eq:sys_wf}
+\begin{aligned}
+&\sprod{\T,\G} +\sprod{\Div \T, \u}-\dprod{\T\bn, \hu} = 0\\ 
+&\sprod{\t,\partial_t \u}- \sprod{\Grad \t, \F\fo{\u} -D_f \G + D_f \G\b \otimes \b - \F_t\fo{\u}}+\dprod{\t, (\F\fo{\hu} -D_f \G + D_f \G\b \otimes \b - \F_t\fo{\hu})\bn}\\
+ &  \bigsp+\dprod{\t,\tt(\u-\hu)}+ \sprod{\t,(\bu_\bot\scal\Grad)\u} +  \sprod{\t,\bm{f}_{E_{\parallel}}}+ \sprod{\t,\bm{f}_{EX}}-\sprod{\t,\bm{g}} = \sprod{\t,\bm{s}}.
+\end{aligned}
+\end{equation*}
+
+The time derivative is discretized using an implicit scheme of the form
+\[
+ \partial_t\u \approx \delta \frac{\u}{\Delta t} - \bm{f}_0
+\]
+where $\delta$ is a constant parameter that depends of the time integration scheme, and $\bm{f}_0$ is a vector that takes into account the previous time steps. 
+
+
+Using the linearization techniques introduced before, and rearranging the terms with reference to the three variables of the local problems $\cq{\G},\cu{\u},\ch{\hu}$, we obtain
+
+
+% \begin{equation*}
+% \begin{aligned}
+% &\sprod{\T,\G} +\sprod{\Div \T, \u}-\dprod{\T\bn, \hu} = 0\\ 
+% & \sprod{\Grad \t, D_f \G - D_f \G\b \otimes \b + \F_t^\G}+\dprod{\t, (-D_f \G + D_f \G\b \otimes \b - \F_t^\G)\bn} +  \sprod{\t,\bm{f}_{E_{\parallel}}^\G} \\
+% &+ \sprod{\t,\frac{\delta}{\Delta t} \u}-\sprod{\Grad \t,\tot{A}^{k-1}\u -\F_t^\u} + \dprod{\t,(\tot{A}^{k-1}\u -\F_t^\u)\bn}+\dprod{\t,\tt\u}\\ & + 
+% \sprod{\t,(\bu_\bot\scal\Grad)\u} + \sprod{\t,\bm{f}_{E_{\parallel}}^\u}+ \sprod{\t,\bm{f}_{EX}^\u}-\sprod{\t,\frac{d\bm{g}}{d\u}\Big|_{k-1}\u}
+%    -\dprod{\t,\tt\hu}  \\
+%    &= \sprod{\t,\bm{s}}-\sprod{\Grad \t, \F_t^0}+\dprod{\t, \F_t^0\bn}- \sprod{\t,\bm{f}_{EX}^0}.
+% \end{aligned}
+% \end{equation*}
+
+
+
+
+\begin{equation}\label{eq:local-pb}
+\begin{aligned}
+& \sprod{\Grad \t, D_f \cq{\G} - D_f \b \otimes \cq{\G} \b + \cq{\F_t^\G}}+\dprod{\t, (-D_f \cq{\G} + D_f \b \otimes \cq{\G}\b - \cq{\F_t^\G})\bn} +  \sprod{\t,\cq{\bm{f}_{E_{\parallel}}^\G}} \\
+&+ \sprod{\t,\frac{\delta}{\Delta t} \cu{\u}}-\sprod{\Grad \t,\tot{A}^{k-1}_{(\cu{\u})}\cu{\u} -\cu{\F_t^\u}} +\dprod{\t,\tt \cu{\u}}\\ & + 
+\sprod{\t,(\bu_\bot\scal\Grad)\cu{\u}} + \sprod{\t,\cu{\bm{f}_{E_{\parallel}}^\u}}+ \sprod{\t,\cu{\bm{f}_{EX}^\u}}-\sprod{\t,\frac{d\bm{g}}{d\u}\Big|_{k-1}\cu{\u}}\\
+&+ \dprod{\t,(\tot{A}^{k-1}_{(\ch{\hu})}\ch{\hu} - \ch{\F_t^{\hu}})\bn} -\dprod{\t,\tt\ch{\hu}}  \\
+   &= \sprod{\t,\bm{f}_0} +\sprod{\t,\bm{s}}-\sprod{\Grad \t, \F_t^0}+\dprod{\t, \F_t^0\bn}- \sprod{\t,\bm{f}_{EX}^0},\\
+   &\sprod{\T,\cq{\G}} +\sprod{\Div \T, \cu{\u}}-\dprod{\T\bn, \ch{\hu}} = 0. 
+\end{aligned}
+\end{equation}
+
+
+System \eqref{eq:local-pb} can be rewritten as
+\begin{equation*}
+ \begin{aligned}
+   A_{uq} \cq{\G} + A_{uu} \cu{\u} + A_{ul} \bm{\ch{\hu}} = \bm{S} \\
+   A_{qq} \cq{\G} + A_{qu} \cu{\u} + A_{ql} \bm{\ch{\hu}} = \bm{0}
+ \end{aligned}
+\end{equation*}
+where the bilinear forms are
+
+\begin{align*}
+ A_{uq} &= \sprod{\Grad \t, D_f \G}-\dprod{\t, D_f \G \bn}\\
+ &- \sprod{\Grad \t,D_f \G \b \otimes \b} + \dprod{\t,D_f (\G\b \otimes \b)\bn} \\
+ &+ \sprod{\Grad \t,\F_t^\G} - \dprod{\t,\F_t^\G\bn} +  \sprod{\t,\bm{f}_{E_{\parallel}}^\G},
+\end{align*}
+
+\begin{align*}
+ A_{uu} &=\sprod{\t,\frac{\delta}{\Delta t} \u} +\dprod{\t,\tt \u} + \sprod{\t,(\bu_\bot\scal\Grad)\u} \\
+        &-\sprod{\Grad \t,\tot{A}^{k-1}\u} +\sprod{\Grad \t,\F_t^\u}  \\ 
+        &+\sprod{\t,\bm{f}_{E_{\parallel}}^\u}+ \sprod{\t,\bm{f}_{EX}^\u}-\sprod{\t,\frac{d\bm{g}}{d\u}\Big|_{k-1}\u},
+\end{align*}
+
+\begin{align*}
+ A_{ul} = + \dprod{\t,(\tot{A}^{k-1}\hu)\bn} - \dprod{\t,\F_t^{\hu}\bn}-\dprod{\t,\tt\hu},
+\end{align*}
+
+\begin{align*}
+ A_{qq} = \sprod{\T,\G} ,
+\end{align*}
+
+\begin{align*}
+ A_{qu} = \sprod{\Div \T, \u},
+\end{align*}
+
+\begin{align*}
+ A_{qu} = -\dprod{\T\bn, \hu}
+\end{align*}
+
+
+
+\begin{align*}
+ \bm{S} =\sprod{\t,\bm{f}_0} +\sprod{\t,\bm{s}}-\sprod{\Grad \t, \F_t^0}+\dprod{\t, \F_t^0\bn}- \sprod{\t,\bm{f}_{EX}^0}.
+\end{align*}
+
+\subsection{The global problem}
+The global problem derives from the imposition of the continuity of the fluxes in the normal direction of the interior faces, and the boundary conditions, that is
+
+\begin{equation*}
+ \dprodg{\partial \mathcal{T}_h \setminus \partial\Omega}{\bm{\mu}, (\widehat{\F} -D_f \widehat{\G} + D_f   \widehat{\G}\b \otimes \b - \widehat{\F_t})\bn}+\dprodg{\partial\Omega}{\bm{\mu}, \bm{B}_{\vs{BC}}}=0,\\
+\end{equation*}
+where $\mathcal{T}_h$ represents the skeleton of the triangulation and $\bm{B}_{\vs{BC}}$ is a vector that defines the boundary conditions on $\partial \Omega$. In particular, for the Bohm boundary condition $\bm{B}_{\vs{BC}} = \bm{B}$ on $\partial \Omega_{\vs{Bohm}}$, as defined in \ref{sc:lin_bohm}.
+
+Substituting the definition of the fluxes and $\bm{B}$ we obtain
+\begin{equation*}
+  \dprodg{\partial \mathcal{T}_h \setminus \partial\Omega}{\bm{\mu}, (\F -D_f \G + D_f \G\b \otimes \b - \F_t)\bn+\tt(\u-\hu)}+\dprodg{\partial\Omega}{\bm{\mu}, \bm{B}_{\vs{BC}}}=0,\\
+\end{equation*}
+
+\clearpage
+
+
+
+\section{Discrete form in 2D Cartesian/axisymmetric configuration}
+A planar configuration is considered. The $x$ and $y$ axis define the coordinate plane. The derivative rules used in the following for Cartesian or axisymmetric configuration are, considering a generic scalar function $f$ and a generic vector function $\bm{v}$
+
+\[
+ \text{Cartesian:  } \Grad f = \parti{f}{x} \hat{\bm{e}}_x + \parti{f}{y} \hat{\bm{e}}_y,\quad \Div \bm{v} = \parti{v_x}{x} +\parti{v_y}{y},
+\]
+
+\[
+ \text{Axisymmetric:  } \Grad f = \parti{f}{x} \hat{\bm{e}}_x + \parti{f}{y} \hat{\bm{e}}_y,\quad \Div \bm{v} = \parti{v_x}{x}+\frac{1}{x} v_x +\parti{v_y}{y}.
+\]
+
+In order to develop a high-order finite-element scheme, high-order polynomial interpolation is considered in each element to represent the unknowns. Defining a set of basis function, a generic scalar function can be represented in a generic point $\bm{x}$ of the element $K$ as
+\[
+ f|_{K}\fo{\bm{x}} = \sum_{j=1}^{N_p} N_j\fo{\bm{x}} f_j,
+\]
+where $N_p$ is the number of nodes in each element, $N_j$ is the $j-th$ basis and $f_j$ is the nodal value of the function $f$ in the $j-th$ node.
+
+Similarly, the vector of nodal values for the vector unknown $\u$ in the element $K$ can be represented as (dropping some symbols to easy the notation) 
+
+\[
+ \u = \begin{Bmatrix}
+               U_1\\
+               U_2\\
+               U_3\\
+               U_4               
+              \end{Bmatrix}=
+\sum_{j=1}^{N_p} \begin{bmatrix}
+                  N_j   &       0      &       0     &       0 \\ 
+                  0     &      N_j     &       0     &       0 \\
+                  0     &       0      &      N_j    &       0 \\
+                  0     &       0      &       0     &       N_j 
+                 \end{bmatrix}
+                 \begin{Bmatrix}
+                    U_1^j\\
+                    U_2^j\\
+                    U_3^j\\
+                    U_4^j  
+                 \end{Bmatrix}=
+\sum_{j=1}^{N_p} N_j \I_4 \u^j,
+\]
+while the vector of nodal values for the tensor unknown $\G$ in the same element can be written as
+\[
+ \G = \begin{Bmatrix}
+               \mathcal{Q}_{11}\\
+               \mathcal{Q}_{12}\\
+               \mathcal{Q}_{21}\\
+               \mathcal{Q}_{22}\\               
+               \mathcal{Q}_{31}\\
+               \mathcal{Q}_{32}\\
+               \mathcal{Q}_{41}\\
+               \mathcal{Q}_{42}
+              \end{Bmatrix}=
+\sum_{j=1}^{N_p} \begin{bmatrix}
+                  N_j   &       0      &       0     &       0       &       0      &       0     &       0      &       0 \\ 
+                  0     &      N_j     &       0     &       0       &       0      &       0     &       0      &       0 \\ 
+                  0     &       0      &      N_j    &       0       &       0      &       0     &       0      &       0 \\ 
+                  0     &       0      &       0     &       N_j     &       0      &       0     &       0      &       0 \\ 
+                  0     &       0      &       0     &       0       &      N_j     &       0     &       0      &       0 \\ 
+                  0     &       0      &       0     &       0       &       0      &      N_j    &       0      &       0 \\ 
+                  0     &       0      &       0     &       0       &       0      &       0     &      N_j     &       0 \\ 
+                  0     &       0      &       0     &       0       &       0      &       0     &       0      &      N_j
+                 \end{bmatrix}
+                 \begin{Bmatrix}
+               \mathcal{Q}_{11}^j\\
+               \mathcal{Q}_{12}^j\\
+               \mathcal{Q}_{21}^j\\
+               \mathcal{Q}_{22}^j\\               
+               \mathcal{Q}_{31}^j\\
+               \mathcal{Q}_{32}^j\\
+               \mathcal{Q}_{41}^j\\
+               \mathcal{Q}_{42}^j
+                 \end{Bmatrix}= 
+\sum_{j=1}^{N_p} N_j \I_8 \bm{Q}^j,
+\]
+where $\I_n$ is the identity matrix of rank $n$, and $\u^j$ and $\bm{Q}^j$ are the vectors of the nodal values for the unknowns $\u$ and $\G$ for the node $j$.  
+
+It is useful to define in this framework also some operations applied to the unknowns. For example, the gradient of $\u$ is 
+\[
+ \Grad \u =\begin{bmatrix}
+ U_{1,x} & U_{1,y}\\
+ U_{2,x} & U_{2,y}\\
+ U_{3,x} & U_{3,y}\\
+ U_{4,x} & U_{4,y}
+\end{bmatrix},
+\]
+and can be written in vector-nodal notation as 
+\[
+ \Grad \u =\begin{Bmatrix}
+ U_{1,x} \\
+ U_{1,y} \\
+ U_{2,x} \\
+ U_{2,y} \\
+ U_{3,x} \\
+ U_{3,y} \\
+ U_{4,x} \\
+ U_{4,y}
+\end{Bmatrix} =
+\sum_{j=1}^{N_p} \begin{bmatrix}
+                  N_{j,x}   &       0      &       0     &       0       \\ 
+                  N_{j,y}   &       0      &       0     &       0       \\ 
+                  0         &    N_{j,x}   &       0     &       0       \\ 
+                  0         &    N_{j,y}   &       0     &       0       \\ 
+                  0         &       0      &    N_{j,x}  &       0       \\ 
+                  0         &       0      &    N_{j,y}  &       0       \\ 
+                  0         &       0      &       0     &     N_{j,x}   \\ 
+                  0         &       0      &       0     &     N_{j,y}   \\ 
+                 \end{bmatrix}
+                 \begin{Bmatrix}
+                    U_1^j\\
+                    U_2^j\\
+                    U_3^j\\
+                    U_4^j  
+                 \end{Bmatrix}.            
+\]
+
+
+The product of $\u$ with the Jacobian matrix $\tot{A}$ is 
+\[
+ \tot{A} \u = \A \u\otimes \b^T = \A 
+\begin{bmatrix}
+                  N_j   &       0      &       0     &       0 \\ 
+                  0     &      N_j     &       0     &       0 \\
+                  0     &       0      &      N_j    &       0 \\
+                  0     &       0      &       0     &       N_j 
+                 \end{bmatrix}
+                 \begin{Bmatrix}
+                    U_1^j\\
+                    U_2^j\\
+                    U_3^j\\
+                    U_4^j  
+                 \end{Bmatrix}\otimes\b^T.
+\]
+Hence, in vector-nodal notation it becomes
+\[
+  \tot{A} \u = 
+\sum_{j=1}^{N_p} \begin{bmatrix}
+          \mathcal{A}_{11} N_jb_x   &  \mathcal{A}_{12} N_jb_x  & \mathcal{A}_{13} N_jb_x & \mathcal{A}_{14} N_jb_x  \\ 
+          \mathcal{A}_{11} N_jb_y   &  \mathcal{A}_{12} N_jb_y  & \mathcal{A}_{13} N_jb_y & \mathcal{A}_{14} N_jb_y  \\  
+          \mathcal{A}_{21} N_jb_x   &  \mathcal{A}_{22} N_jb_x  & \mathcal{A}_{23} N_jb_x & \mathcal{A}_{24} N_jb_x  \\ 
+          \mathcal{A}_{21} N_jb_y   &  \mathcal{A}_{22} N_jb_y  & \mathcal{A}_{23} N_jb_y & \mathcal{A}_{24} N_jb_y  \\ 
+          \mathcal{A}_{31} N_jb_x   &  \mathcal{A}_{32} N_jb_x  & \mathcal{A}_{33} N_jb_x & \mathcal{A}_{34} N_jb_x  \\ 
+          \mathcal{A}_{31} N_jb_y   &  \mathcal{A}_{32} N_jb_y  & \mathcal{A}_{33} N_jb_y & \mathcal{A}_{34} N_jb_y  \\ 
+          \mathcal{A}_{41} N_jb_x   &  \mathcal{A}_{42} N_jb_x  & \mathcal{A}_{43} N_jb_x & \mathcal{A}_{44} N_jb_x  \\ 
+          \mathcal{A}_{41} N_jb_y   &  \mathcal{A}_{42} N_jb_y  & \mathcal{A}_{43} N_jb_y & \mathcal{A}_{44} N_jb_y            
+                 \end{bmatrix}
+                 \begin{Bmatrix}
+                    U_1^j\\
+                    U_2^j\\
+                    U_3^j\\
+                    U_4^j  
+                 \end{Bmatrix}.
+\]
+
+
+
+The divergence of $\G$ can be written as
+\[
+ \Div \G = 
+ \begin{bmatrix}
+  \mathcal{Q}_{11,x} + \mathcal{Q}_{12,y} \\
+  \mathcal{Q}_{21,x} + \mathcal{Q}_{22,y} \\
+  \mathcal{Q}_{31,x} + \mathcal{Q}_{32,y} \\
+  \mathcal{Q}_{41,x} + \mathcal{Q}_{42,y} \\
+ \end{bmatrix}=\sum_{j=1}^{N_p}
+\begin{bmatrix}
+\tilde{N}_{j,x}&    N_{j,y}   &       0       &       0       &       0       &       0      &       0     &       0\\ 
+       0       &      0       &\tilde{N}_{j,x}&     N_{j,y}   &       0       &       0      &       0     &       0\\ 
+       0       &      0       &       0       &       0       &\tilde{N}_{j,x}&    N_{j,y}   &       0     &       0\\ 
+       0       &      0       &       0       &       0       &       0       &       0      &\tilde{N}_{j,x}&    N_{j,y}
+\end{bmatrix}  
+\begin{Bmatrix}
+  \mathcal{Q}_{11}^j\\
+  \mathcal{Q}_{12}^j\\
+  \mathcal{Q}_{21}^j\\
+  \mathcal{Q}_{22}^j\\               
+  \mathcal{Q}_{31}^j\\
+  \mathcal{Q}_{32}^j\\
+  \mathcal{Q}_{41}^j\\
+  \mathcal{Q}_{42}^j
+\end{Bmatrix},
+\]
+where $\tilde{N}_{j,x}$ corresponds to $N_{j,x}$ for Cartesian computations and to $N_{j,x}+\frac{1}{x}N_j$ for axisymmetric computations. 
+
+The product of $\G$ for a generic 2D vector $\bm{q} = \{q_x,q_y\}^T$ is
+\[
+ \G \bm{q} =  \G
+  \begin{Bmatrix}
+  q_x\\
+  q_y
+ \end{Bmatrix}=
+ \begin{bmatrix}
+  \mathcal{Q}_{11}q_x + \mathcal{Q}_{12}q_y \\
+  \mathcal{Q}_{21}q_x + \mathcal{Q}_{22}q_y \\
+  \mathcal{Q}_{31}q_x + \mathcal{Q}_{32}q_y \\
+  \mathcal{Q}_{41}q_x + \mathcal{Q}_{42}q_y \\
+ \end{bmatrix} 
+=\sum_{j=1}^{N_p}
+\begin{bmatrix}
+    N_j q_x   &    N_j q_y   &       0     &       0       &       0     &       0      &       0     &       0\\ 
+       0      &      0       &    N_j q_x  &     N_j q_y   &       0     &       0      &       0     &       0\\ 
+       0      &      0       &       0     &       0       &   N_j q_x   &    N_j q_y   &       0     &       0\\ 
+       0      &      0       &       0     &       0       &       0     &       0      &    N_j q_x   &    N_j q_y
+\end{bmatrix}  
+\begin{Bmatrix}
+  \mathcal{Q}_{11}^j\\
+  \mathcal{Q}_{12}^j\\
+  \mathcal{Q}_{21}^j\\
+  \mathcal{Q}_{22}^j\\               
+  \mathcal{Q}_{31}^j\\
+  \mathcal{Q}_{32}^j\\
+  \mathcal{Q}_{41}^j\\
+  \mathcal{Q}_{42}^j
+\end{Bmatrix}.
+\]
+Finally, the tensor term $\G \b \otimes \b$ is 
+\[
+\G \b \otimes \b =
+\begin{bmatrix}
+  b_x (\mathcal{Q}_{11}b_x + \mathcal{Q}_{12}b_y ) & b_y (\mathcal{Q}_{11}b_x + \mathcal{Q}_{12}b_y ) \\
+  b_x (\mathcal{Q}_{21}b_x + \mathcal{Q}_{22}b_y ) & b_y (\mathcal{Q}_{21}b_x + \mathcal{Q}_{22}b_y ) \\
+  b_x (\mathcal{Q}_{31}b_x + \mathcal{Q}_{32}b_y ) & b_y (\mathcal{Q}_{31}b_x + \mathcal{Q}_{32}b_y ) \\
+  b_x (\mathcal{Q}_{41}b_x + \mathcal{Q}_{42}b_y ) & b_y (\mathcal{Q}_{41}b_x + \mathcal{Q}_{42}b_y ) \\
+\end{bmatrix},
+\]
+and can be written in vector-nodal notation as 
+\[
+ \G \b \otimes \b =
+ \begin{Bmatrix}
+  b_x (\mathcal{Q}_{11}b_x + \mathcal{Q}_{12}b_y ) \\
+  b_y (\mathcal{Q}_{11}b_x + \mathcal{Q}_{12}b_y ) \\
+  b_x (\mathcal{Q}_{21}b_x + \mathcal{Q}_{22}b_y ) \\
+  b_y (\mathcal{Q}_{21}b_x + \mathcal{Q}_{22}b_y ) \\
+  b_x (\mathcal{Q}_{31}b_x + \mathcal{Q}_{32}b_y ) \\
+  b_y (\mathcal{Q}_{31}b_x + \mathcal{Q}_{32}b_y ) \\
+  b_x (\mathcal{Q}_{41}b_x + \mathcal{Q}_{42}b_y ) \\
+  b_y (\mathcal{Q}_{41}b_x + \mathcal{Q}_{42}b_y ) 
+\end{Bmatrix}=
+\]
+\[
+\sum_{j=1}^{N_p} \begin{bmatrix}
+            N_j b_x b_x  &  N_j b_x b_y  &       0       &       0       &       0       &       0       &       0       &       0       \\ 
+            N_j b_x b_y  &  N_j b_y b_y  &       0       &       0       &       0       &       0       &       0       &       0       \\ 
+                  0      &       0       &  N_j b_x b_x  &  N_j b_x b_y  &       0       &       0       &       0       &       0       \\ 
+                  0      &       0       &  N_j b_x b_x  &  N_j b_x b_y  &       0       &       0       &       0       &       0       \\ 
+                  0      &       0       &       0       &       0       &  N_j b_x b_x  &  N_j b_x b_y  &       0       &       0       \\ 
+                  0      &       0       &       0       &       0       &  N_j b_x b_x  &  N_j b_x b_y  &       0       &       0       \\ 
+                  0      &       0       &       0       &       0       &       0       &       0       &  N_j b_x b_x  &  N_j b_x b_y  \\ 
+                  0      &       0       &       0       &       0       &       0       &       0       &  N_j b_x b_x  &  N_j b_x b_y   
+                 \end{bmatrix} 
+\begin{Bmatrix}
+  \mathcal{Q}_{11}^j\\
+  \mathcal{Q}_{12}^j\\
+  \mathcal{Q}_{21}^j\\
+  \mathcal{Q}_{22}^j\\               
+  \mathcal{Q}_{31}^j\\
+  \mathcal{Q}_{32}^j\\
+  \mathcal{Q}_{41}^j\\
+  \mathcal{Q}_{42}^j
+\end{Bmatrix}.                
+\]
+
+
+
+To define a Galerkin method, the test functions are chosen in the same space of the basis functions. Hence, the functions $\t_i (\t_i)$ and $\T (\T_i)$ are defined as
+\[
+ \t = 
+  N_i \I_4\bm{v},\quad
+\T =  N_i\I_8 \bm{\mathcal{G}}
+\]
+where the vector $\bm{v}$ takes the values
+\[
+ \bm{v} = \begin{Bmatrix}
+           1\\
+           0\\
+           0\\
+           0
+          \end{Bmatrix}
+\text{for the first equation,}\quad
+ \bm{v} = \begin{Bmatrix}
+           0\\
+           1\\
+           0\\
+           0
+          \end{Bmatrix}
+\text{for the second equation,}
+\]
+\[
+ \bm{v} = \begin{Bmatrix}
+           0\\
+           0\\
+           1\\
+           0
+          \end{Bmatrix}
+\text{for the third equation,}\quad
+ \bm{v} = \begin{Bmatrix}
+           0\\
+           0\\
+           0\\
+           1
+          \end{Bmatrix}
+\text{for the fourth equation.}
+\]
+The vector $\bm{\mathcal{G}}$ is constructed in a similar way.
+
+Similarly to the basis functions, some operations on the  test functions can be defined as
+\[
+ \Grad \t = 
+  \begin{bmatrix}
+                  N_{i,x}   &       0      &       0     &       0       \\ 
+                  N_{i,y}   &       0      &       0     &       0       \\ 
+                  0         &    N_{i,x}   &       0     &       0       \\ 
+                  0         &    N_{i,y}   &       0     &       0       \\ 
+                  0         &       0      &    N_{i,x}  &       0       \\ 
+                  0         &       0      &    N_{i,y}  &       0       \\ 
+                  0         &       0      &       0     &     N_{i,x}   \\ 
+                  0         &       0      &       0     &     N_{i,y}   \\ 
+                 \end{bmatrix} \bm{v},
+\]
+
+\[
+  \Div \T = 
+\begin{bmatrix}
+\tilde{N}_{i,x}   &    N_{i,y}   &       0       &       0       &       0       &       0      &       0          &       0\\ 
+       0          &      0       &\tilde{N}_{i,x}&     N_{i,y}   &       0       &       0      &       0          &       0\\ 
+       0          &      0       &       0       &       0       &\tilde{N}_{i,x}&    N_{i,y}   &       0          &       0\\ 
+       0          &      0       &       0       &       0       &       0       &       0      &\tilde{N}_{i,x}   &    N_{i,y}
+\end{bmatrix} \bm{\mathcal{G}},
+\]
+\[
+  \T\bn = 
+\begin{bmatrix}
+    N_i b_x   &    N_i b_y   &       0     &       0       &       0     &       0      &       0     &       0\\ 
+       0      &      0       &    N_i b_x  &     N_i b_y   &       0     &       0      &       0     &       0\\ 
+       0      &      0       &       0     &       0       &   N_i b_x   &    N_i b_y   &       0     &       0\\ 
+       0      &      0       &       0     &       0       &       0     &       0      &    N_i b_x   &    N_i b_y
+\end{bmatrix} \bm{\mathcal{G}}.
+\]
+\clearpage
+
+\subsection{Discretization of the bilinear forms}
+The discretization introduced before allows to discretize the bilinear forms introduced in \ref{sc:wf}. As an example, the term $\sprod{\Grad \t, D_f \G} $ becomes
+\[
+ \sprod{\Grad \t, D_f \G} = D_f \int_K (\Grad \t)^T : \G dK = 
+\]
+\[
+ \sum_{j=1}^{N_p} \bm{v}^t D_f \int_K 
+\M dK
+\begin{Bmatrix}
+    \mathcal{Q}_{11}^j\\
+    \mathcal{Q}_{12}^j\\
+    \mathcal{Q}_{21}^j\\
+    \mathcal{Q}_{22}^j\\               
+    \mathcal{Q}_{31}^j\\
+    \mathcal{Q}_{32}^j\\
+    \mathcal{Q}_{41}^j\\
+    \mathcal{Q}_{42}^j
+\end{Bmatrix},
+\]
+where the matrix is $\M$
+\[
+\M=
+  \begin{bmatrix}
+    N_{i,x}   &    N_{i,y}   &       0     &       0       &       0     &       0      &       0     &       0\\ 
+       0      &      0       &    N_{i,x}  &     N_{i,y}   &       0     &       0      &       0     &       0\\ 
+       0      &      0       &       0     &       0       &   N_{i,x}   &    N_{i,y}   &       0     &       0\\ 
+       0      &      0       &       0     &       0       &       0     &       0      &    N_{i,x}   &    N_{i,y}
+\end{bmatrix} 
+ \begin{bmatrix}
+    N_j   &       0      &       0     &       0       &       0      &       0     &       0      &       0 \\ 
+    0     &      N_j     &       0     &       0       &       0      &       0     &       0      &       0 \\ 
+    0     &       0      &      N_j    &       0       &       0      &       0     &       0      &       0 \\ 
+    0     &       0      &       0     &       N_j     &       0      &       0     &       0      &       0 \\ 
+    0     &       0      &       0     &       0       &      N_j     &       0     &       0      &       0 \\ 
+    0     &       0      &       0     &       0       &       0      &      N_j    &       0      &       0 \\ 
+    0     &       0      &       0     &       0       &       0      &       0     &      N_j     &       0 \\ 
+    0     &       0      &       0     &       0       &       0      &       0     &       0      &      N_j
+\end{bmatrix},
+\]
+Hence,
+\[
+\M=\begin{bmatrix}
+N_{i,x} N_j  &    N_{i,y} N_j   &       0     &       0       &       0     &       0      &       0     &       0\\ 
+    0      &      0       &    N_{i,x} N_j &     N_{i,y} N_j   &       0     &       0      &       0     &       0\\ 
+    0      &      0       &       0     &       0       &   N_{i,x} N_j  &    N_{i,y} N_j   &       0     &       0\\ 
+    0      &      0       &       0     &       0       &       0     &       0      &    N_{i,x} N_j  &    N_{i,y} N_j
+\end{bmatrix}
+\]
+
+In the following part are shown the matrices related to different bilinear forms. 
+\[
+  \sprod{\Grad \t, \G} \rightarrow N_j
+\begin{bmatrix}
+N_{i,x}   &    N_{i,y}    &       0     &       0       &       0     &       0      &       0     &       0\\ 
+    0      &      0       &    N_{i,x}  &     N_{i,y}    &       0     &       0      &       0     &       0\\ 
+    0      &      0       &       0     &       0       &   N_{i,x}   &    N_{i,y}    &       0     &       0\\ 
+    0      &      0       &       0     &       0       &       0     &       0      &    N_{i,x}   &    N_{i,y} 
+\end{bmatrix}  
+\]
+
+\[
+  \dprod{\t, \G\bn} \rightarrow N_i N_j
+\begin{bmatrix}
+ n_x  &     n_y   &       0     &       0       &       0     &       0      &       0     &       0\\ 
+    0      &      0       &     n_x &      n_y   &       0     &       0      &       0     &       0\\ 
+    0      &      0       &       0     &       0       &    n_x  &     n_y   &       0     &       0\\ 
+    0      &      0       &       0     &       0       &       0     &       0      &     n_x  &     n_y
+\end{bmatrix}  
+\]
+
+\[
+  \sprod{\Grad \t,\G \b \otimes \b} \rightarrow  (N_{i,x}b_x+N_{i,y}b_y)N_j
+\begin{bmatrix}
+b_x  &    b_y   &       0     &       0       &       0     &       0      &       0     &       0\\ 
+              0                &                  0                 &    b_x  &    b_y   &       0     &       0      &       0     &       0\\ 
+    0      &      0       &       0     &       0       &  b_x  &    b_y   &       0     &       0\\ 
+    0      &      0       &       0     &       0       &       0     &       0      &    b_x  &    b_y
+\end{bmatrix}  
+\]
+\[
+ \dprod{\t,(\G\b \otimes \b)\bn} \rightarrow \bn \cdot \b N_i N_j
+\begin{bmatrix}
+b_x  &    b_y   &       0     &       0       &       0     &       0      &       0     &       0\\ 
+              0                &                  0                 &    b_x  &    b_y   &       0     &       0      &       0     &       0\\ 
+    0      &      0       &       0     &       0       &  b_x  &    b_y   &       0     &       0\\ 
+    0      &      0       &       0     &       0       &       0     &       0      &    b_x  &    b_y
+\end{bmatrix}  
+\]
+
+\[
+ \sprod{\Grad \t,\tot{A}^{k-1}\u} \rightarrow  (N_{i,x}b_x+N_{i,y}b_y)N_j \A^{k-1}
+\]
+
+\[
+ \dprod{\t,(\tot{A}^{k-1}\hu)\bn}\rightarrow \bn \cdot \b N_iN_j \A^{k-1}
+\]
+
+
+\section{Discrete form in 3D with Fourier series in the toroidal direction}
+In this section, the HDG scheme is the 2D poloidal plane is coupled with a finite-element scheme based on Fourier expansions in the toroidal direction $\phi$. To this aim, some notation is introduced. The gradient of a generic function $f$ is written as
+\[
+ \Grad f = \Grad f_{pol} + \frac{1}{x}\parti{f}{\phi}\hat{\bm{e}}_{\phi},
+\]
+where $\Grad f_{pol}$ is the projection of the gradient in the poloidal plane. Therefore the gradient of the vector variable $\u$ is
+\[
+ \Grad \u = \Grad\u_{pol}+ \frac{1}{x}\parti{\u}{\phi}\otimes\hat{\bm{e}}_{\phi}=\G+ \frac{1}{x}\parti{\u}{\phi}\otimes\hat{\bm{e}}_{\phi},
+\]
+
+
+Hence, \ref{eq:sys_st} is rewritten as 
+\begin{equation*}
+\begin{aligned}
+&\G -\Grad \u_{pol} = 0\\ 
+&\partial_t \u+ \Div ( \F -D_f \G -D_f\frac{1}{x} \parti{\u}{\phi} \otimes\hat{\bm{e}}_{\phi} + D_f \G\b \otimes \b +D_f \frac{1}{x} \parti{\u}{\phi} b_{\phi}\otimes \b - \F_t)\\
+ & \bigsp+ (\bu_\bot\scal\Grad)\u +  \bm{f}_{E_{\parallel}}+ \bm{f}_{EX}-\bm{g} = \bm{s},
+\end{aligned}
+\end{equation*}
+that is
+\begin{equation*}\label{eq:sys_st_four}
+\begin{aligned}
+&\G -\Grad \u_{pol} = 0\\ 
+&\partial_t \u+ \Div ( \F -D_f \G  + D_f \G\b \otimes \b  - \F_t) + \Div (-D_f\frac{1}{x} \parti{\u}{\phi} \otimes\hat{\bm{e}}_{\phi} +D_f \frac{1}{x} \parti{\u}{\phi} b_{\phi}\otimes \b)\\
+ & \bigsp+ (\bu_\bot\scal\Grad)\u +  \bm{f}_{E_{\parallel}}+ \bm{f}_{EX}-\bm{g} = \bm{s}.  
+\end{aligned}
+\end{equation*}
+
+% The terms in the divergence are computed as
+% \[
+%  \Div (D_f\frac{1}{x} \parti{\u}{\phi} \otimes\hat{\bm{e}}_{\phi}) = D_f \frac{1}{x^2}\frac{\partial^2 \u }{\partial \phi^2},
+% \]
+% and
+% \[
+%  a
+% \]
+% 
+% where the rule $\Div (\bm{u}\otimes\bm{v}) = \bm{u} \Div \bm{v}+\Grad \bm{u} \ \bm{v}$ has been used.
+
+
+In order to develop a 3D scheme using Fourier series in the toroidal direction, the following approximation of a generic periodic function is considered
+\[
+ f\fo{\phi} \approx a_0 + \sum_{m=1}^{N_m} a_m \cos\fo{m\phi} + b_m \sin\fo{m\phi},
+\]
+where $N_m$ is the number of modes and the $a_m$ and $b_m$ are the coefficients of the modal expansion.
+
+A 3D function in the toroidal space will be defined by the poloidal position $\bm{x}$ and the toroidal position $\phi$. Using high-order polynomials in the poloidal plane and the Fourier expansion in the toroidal direction, a generic function can be approximated as
+\[
+ f|_{K}\fo{\bm{x},\phi} = \sum_{j=1}^{N_p} N_j\fo{\bm{x}} f_j ( a_0 + \sum_{m=1}^{N_m} a_m \cos\fo{m\phi} + b_m \sin\fo{m\phi}).
+\]
+
+Hence, the unknowns $\u$ and $\G$ are written as 
+\[
+ \u\fo{\bm{x},\phi} =  \sum_{j=1}^{N_p}  N_j\fo{\bm{x}} \I_4 \u^j   ( a_0 + \sum_{m=1}^{N_m} a_m \cos\fo{m\phi} + b_m \sin\fo{m\phi}),
+\]
+\[
+ \G\fo{\bm{x},\phi} =  \sum_{j=1}^{N_p}  N_j\fo{\bm{x}} \I_8 \bm{Q}^j   ( a_0 + \sum_{m=1}^{N_m} a_m \cos\fo{m\phi} + b_m \sin\fo{m\phi}),
+\]
+which provides, 
+\[
+ \u\fo{\bm{x},\phi} =  \sum_{j=1}^{N_p}  N_j\fo{\bm{x}} \I_4 ( \u_0^j + \sum_{m=1}^{N_m} \u_{cm}^j \cos\fo{m\phi} + \u_{sm}^j \sin\fo{m\phi}),
+\]
+\[
+ \G\fo{\bm{x},\phi} =  \sum_{j=1}^{N_p}  N_j\fo{\bm{x}} \I_8  ( \bm{Q}^j_0 + \sum_{m=1}^{N_m} \bm{Q}^j_{cm} \cos\fo{m\phi} + \bm{Q}^j_{sm} \sin\fo{m\phi}),
+\]
+where $\u_0^j$, $\u_{cm}^j$ and $\u_{sm}^j$ and $\bm{Q}_0^j$, $\bm{Q}_{cm}^j$ and $\bm{Q}_{sm}^j$ are the nodal values for the modal expansions respectively for the variable $\u$ and $\G$. Note that the problem presents $2N_m-1$ vector unknowns for each variable. 
+
+The test functions are defined in this case as
+\[
+ \t = N_i \I_4 \bm{v}\f,\quad \T = N_i\I_8 \bm{\mathcal{G}} \f,
+\]
+where $\f$ are the test functions in the toroidal directions, that is
+\[
+ \f = 1,\cos(n\phi),\sin(n\phi), \text{ for } n=1,\cdots,N_m,
+\]
+that is, there are $2N_m-1$ test functions in the toroidal direction. 
+
+
+
+\begin{equation*}\label{eq:sys_wf_tor}
+\begin{aligned}
+&\sprod{\T,\G} +\sprod{\Div \T, \u}-\dprod{\T\bn, \hu} = 0\\ 
+&\sprod{\t,\partial_t \u}- \sprod{\Grad \t, \F\fo{\u} -D_f \G + D_f \G\b \otimes \b - \F_t\fo{\u}}+\dprod{\t, (\F\fo{\hu} -D_f \G + D_f \G\b \otimes \b - \F_t\fo{\hu})\bn}\\
+ &\bigsp +\sprod{\Grad\t, D_f\frac{1}{x} \parti{\u}{\phi} \otimes\hat{\bm{e}}_{\phi} -D_f \frac{1}{x} \parti{\u}{\phi} b_{\phi}\otimes \b}
+   -\dprod{\t, (D_f\frac{1}{x} \parti{\u}{\phi} \otimes\hat{\bm{e}}_{\phi} -D_f \frac{1}{x} \parti{\u}{\phi} b_{\phi}\otimes \b)\bn}\\
+ &  \bigsp+\dprod{\t,\tt(\u-\hu)}+ \sprod{\t,(\bu_\bot\scal\Grad)\u} +  \sprod{\t,\bm{f}_{E_{\parallel}}}+ \sprod{\t,\bm{f}_{EX}}-\sprod{\t,\bm{g}} = \sprod{\t,\bm{s}}.
+\end{aligned}
+\end{equation*}
+
+
+
+\end{document}
+
+
+
+
+
+% EOF
