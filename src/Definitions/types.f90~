@@ -1,0 +1,360 @@
+!************************************************************
+! project: MHDG
+! file: types.f90
+! date: 06/09/2016
+! Declaration of all the types used 
+! in the code
+!************************************************************
+
+
+
+
+MODULE types
+   USE prec_const
+   IMPLICIT NONE
+
+
+
+   !*******************************************************
+   ! Boundary condition flags
+   !*******************************************************   
+   ! 1-10 Dirichlet type 
+   INTEGER, PARAMETER, PUBLIC :: bc_dirichlet                        = 1
+   INTEGER, PARAMETER, PUBLIC :: bc_dirichlet_weak_form              = 2
+   ! 20-.. In out type
+   INTEGER, PARAMETER, PUBLIC :: bc_inout                            = 20
+   ! 30-.. Neumann type
+   INTEGER, PARAMETER, PUBLIC :: bc_NeumannH                         = 30
+   ! 50-.. Bohm type
+   INTEGER, PARAMETER, PUBLIC :: bc_Bohm                             = 50
+   ! 60-.. Slip wall type
+   INTEGER, PARAMETER, PUBLIC :: bc_slip_wall                        = 60
+   
+   ! Boundary conditions flags and names
+   CHARACTER(100) ::  bc_flag_type(10), bc_flag_name(100)
+   
+   
+   
+   !*******************************************************
+   ! Reference element
+   !*******************************************************
+     TYPE :: Reference_element_type
+     integer*4 :: elemType      ! type of mesh elements (0 = triangles, 1 = quadrilaterals, 2 = thetrahedra, 3 = hexahedra)
+     integer*4 :: Nvertices     ! Number of vertices of the element: 3 for triangles, 4 for quads and thetraedra, 8 for hexahedra      
+     integer*4 :: Ndeg          ! degree of interpolation     
+     integer*4 :: Nnodes3D      ! number of 3D nodes in the element
+     integer*4 :: Nnodes2D      ! number of 2D nodes in the element
+     integer*4 :: Nnodes1D      ! number of 1D nodes in the element
+     integer*4 :: Nfaces        ! number of faces in the element: a face in a 2D mesh is a segment, in a 3D mesh is a 2D entity
+     integer*4 :: Nbords        ! number of bords (only in 3D), is the number of 1D entities of the element
+     integer*4 :: Nextnodes     ! number of exterior nodes of the element
+     integer*4 :: Nfacenodes    ! number of nodes in each face of the element
+     integer*4 :: Nfacenodeslin ! number of nodes in each linear face of the element
+     integer*4 :: Nbordnodes    ! number of nodes in each bord of the element (only in 3D)
+     integer*4 :: Ninnernodes   ! number of inner nodes of the element
+     integer*4 :: Ninnernodesface  ! number of inner nodes of the 2D faces (only for 3D meshes)
+     integer*4 :: NGauss1D      ! number of Gauss points of the 1D quadrature
+     integer*4 :: NGauss2D      ! number of Gauss points of the 2D quadrature     
+     integer*4 :: NGauss3D      ! number of Gauss points of the 3D quadrature                    
+     integer*4,allocatable :: Face_nodes(:,:)  ! numbering of the face nodes
+     integer*4,allocatable :: Bord_nodes(:)    ! numbering of the 1D edge nodes (for 3D meshes)
+     integer*4,allocatable :: inner_nodes(:)   ! numbering of the inner nodes          
+     integer*4,allocatable :: inner_nodes_face(:)   ! numbering of the inner nodes for 2D faces (for 3D meshes)
+     real*8,pointer :: coord3d(:,:) =>null()       ! spatial coordinates of the 3D nodes
+     real*8,pointer :: coord2d(:,:) =>null()       ! spatial coordinates of the 2D nodes
+     real*8,pointer :: coord1d(:)   =>null()       ! spatial coordinates of the 1D nodes     
+     real*8,allocatable :: gauss_points3D(:,:) ! Gauss integration points for the 3D quadrature
+     real*8,allocatable :: gauss_points2D(:,:) ! Gauss integration points for the 2D quadrature    
+     real*8,allocatable :: gauss_points1D(:)   ! Gauss integration points for the 1D quadrature  
+     real*8,allocatable :: gauss_weights3D(:)  ! Weights of the integration points for the 3D quadrature
+     real*8,allocatable :: gauss_weights2D(:)  ! Weights of the integration points for the 2D quadrature
+     real*8,allocatable :: gauss_weights1D(:)  ! Weights of the integration points for the 1D quadrature
+     real*8,allocatable :: N3D(:,:)      ! Shape functions 3D at the Gauss points
+     real*8,allocatable :: Nxi3D(:,:)    ! Derivative with respect to xi of the shape functions 3D at the Gauss points
+     real*8,allocatable :: Neta3D(:,:)   ! Derivative with respect to eta of the shape functions 3D at the Gauss points
+     real*8,allocatable :: Nzeta3D(:,:)  ! Derivative with respect to zeta of the shape functions 3D at the Gauss points
+     real*8,allocatable :: N2D(:,:)      ! Shape functions 2D at the Gauss points
+     real*8,allocatable :: Nxi2D(:,:)    ! Derivative with respect to xi of the shape functions 2D at the Gauss points
+     real*8,allocatable :: Neta2D(:,:)   ! Derivative with respect to eta of the shape functions 2D at the Gauss points
+     real*8,allocatable :: N1D(:,:)      ! Shape functions 1D at the Gauss points
+     real*8,allocatable :: Nxi1D(:,:)    ! Derivative of the shape functions 1D at the Gauss points
+     real*8,allocatable :: Nlin(:,:)     ! Linear shape functions 2D at the nodes of the element (only used in shock capturing so far...)
+  END TYPE Reference_element_type
+
+
+
+
+   !*******************************************************
+   ! Mesh
+   !*******************************************************  
+  TYPE :: Mesh_type
+     integer*4 :: Ndim                ! Number of dimensions of the mesh
+     integer*4 :: Nnodes              ! Number of nodes in the mesh
+     integer*4 :: Nnodesperelem       ! Number of nodes per element in the mesh (dimension 2 of the connectvity matrix)
+     integer*4 :: Nnodesperface       ! Number of nodes per face in the mesh (dimension 2 of boundary connectvity matrix )
+     integer*4 :: Nelems              ! Number of elements in the mesh
+     integer*4 :: Nfaces              ! Number of faces in the mesh
+     integer*4 :: Nextfaces           ! Number of exterior faces 
+     integer*4 :: Nintfaces           ! Number of interior faces
+     integer*4 :: elemType            ! 0 for quads - 1 for triangles - 2 for thetra - 3 for hexa
+     integer*4 :: ndir                ! number of Dirichlet faces
+     integer*4 :: ukf                 ! number of faces in the mesh minus the number of Dirichlet faces
+     integer*4,pointer :: T(:,:)    =>null()    ! Elements connectivity matrix
+     integer*4,pointer :: Tlin(:,:) =>null()    ! Elements linear connectivity matrix
+     integer*4,pointer :: Tb(:,:)   =>null()    ! Outer faces connectivity matrix
+     integer*4,pointer :: boundaryFlag(:) ! Flag for the boundary condition for each external face
+     integer*4,allocatable :: F(:,:)          ! Faces connectivity matrix
+     integer*4,allocatable :: N(:,:)          ! Nodes connectivity matrix
+     integer*4,allocatable :: faces(:,:,:)    ! for each triangle i, stores info k on each face j: faces(i,j,1) = # of neighbouring triangle (0 if external
+                                              ! boundary), faces(i,j,2) = type of boundary (), faces(i,j,3) = type of boundary condition
+     integer*4,allocatable :: extfaces(:,:)   ! for each exterior face, stores the number of the triangle, the number of the face, and the type of BC
+     integer*4,allocatable :: intfaces(:,:)   ! for each interior face, stores the number of the triangle, the number of the face, the number of the 
+                                              ! neighboring triangle, the number of its face and the number of the node of the neighboring triangle that
+                                              ! matches the first knot of the triangle
+     logical ,allocatable :: flipface(:,:)    ! for each triangle, and for each face, 0 if the order of the numbering in the face is to be kept, 1 if the
+                                              ! order is to be reversed
+     logical,allocatable    :: Fdir(:,:)         ! for each element states if each local face is of Dirichlet type
+     integer*4,allocatable  :: Diric(:)
+     integer*4,allocatable  :: numberbcs(:)
+     real*8,allocatable     :: elemSize(:)   ! element size (area in 2D, volume in 3D) [Number of elements]
+     real*8,pointer         :: X(:,:)  =>null()    ! nodes coordinates
+     ! Limiting & shock capturing stuff
+     integer,allocatable    :: flag_elems_rho(:)      ! Flagged elements for limiting rho [Number of elements]
+     integer,allocatable    :: flag_elems_sc(:)     !  Flagged elements for shock-capturing [Number of elements]
+     real*8,allocatable     :: minrho_elems(:)        ! Minimum value of density in the flagged elements[Number of elements]
+     real*8,allocatable     :: sour_elems(:)          ! Source to limit rho in the flagged elements[Number of elements]
+     real*8,allocatable     :: diff_elems(:)          ! Diffusion to limit rho in the flagged elements[Number of elements]
+     real*8,allocatable     :: scdiff_nodes(:,:)      ! Shock capturing diffusion in each node [Number of elements,Number of nodes per element]
+
+     
+     
+#ifdef PARALL
+     integer,pointer       :: loc2glob_fa(:)     ! mapping number of the faces for creating the global matrix [number of faces in the mesh]
+     integer,pointer       :: loc2glob_el(:)     ! mapping number of the elements from local to global [number of elements in the mesh]
+     integer,pointer       :: ghostfaces(:)      ! integer that states if a face is to be assembled locally or not [number of faces in the mesh]
+     integer               :: nghostfaces        ! number of ghost faces
+     ! readed from input
+     integer,pointer       :: ghostflp(:)        ! flipFaces for the ghost faces [number of ghost faces]
+     integer,pointer       :: ghostloc(:)        ! local numbering of the ghost face in the process that assemble it [number of ghost faces]
+     integer,pointer       :: ghostpro(:)        ! the process that assemble the ghost face [number of ghost faces]
+     ! built after reading from input
+     integer,allocatable   :: fc2sd(:)          ! face 2 send: faces computed locally that the local process has to send (vector)
+     integer,allocatable   :: pr2sd(:)          ! process 2 send: to which process the faces computed locally need to be sent (vector)
+     integer,allocatable   :: fc2rv(:)          ! face 2 receive: ghost faces computed by other processes that the local process need to receive[number of ghost faces]
+     integer,allocatable   :: pr2rv(:)          ! process 2 receive: from which process the faces computed externally need to be receive [number of ghost faces] (it is the same as ghostpro)     
+     integer,allocatable   :: connpro(:)        ! processes connected to the local process
+#endif     
+  END TYPE Mesh_type
+  
+  
+   !*******************************************************
+   ! Physics: type for physical model info
+   !*******************************************************
+   TYPE Physics_type
+      integer     :: neq            ! Number of equations 
+      integer     :: npv            ! Number of physical variables
+      real*8      :: diff_n, diff_u ! Perpendicular diffusion in the continuity and momentum equation
+      real*8      :: a              ! Proportionality constant between pressure and density for isothermal model (p = a*rho)
+      real*8      :: dfcoef         ! Constant related to the drift velocity 
+      integer*4   :: bcflags(1:10)  ! Set the correspondence between boundary flag and boundary condition
+      character(LEN=20),pointer:: phyVarNam(:) =>Null() ! Names of the physical variables (set in initPhys)
+      character(LEN=20),pointer:: conVarNam(:) =>Null() ! Names of the conservative variables (set in initPhys)
+      real*8             :: lscale       ! Length scale for the non-dimensionalization of the equations
+      ! Magnetic field structures: defined for each node of the mesh. This field is filled only if 
+      ! the magnetic field is loaded from a file, otherwise is computed on the fly in each Gauss point
+      real*8,pointer :: b(:,:)       ! Adimensional magnetic field projected on the poloidal plane 
+      real*8,pointer :: divb(:)      ! Divergence of b
+      real*8,pointer :: drift(:,:)   ! Diamagnetic curvature drift
+      real*8,pointer :: flux2d(:)    ! Magnetic flux
+      real*8         :: bohmth       ! Threshold for imposing the Bohm boundary condition 
+      ! Case evolving magnetic field
+      real*8,pointer :: Br(:)        ! Magnetic field (tesla) in the r direction [n of nodes]
+      real*8,pointer :: Bz(:)        ! Magnetic field (tesla) in the z direction [n of nodes] 
+      real*8,pointer :: Bt(:)        ! Magnetic field (tesla) in the t direction [n of nodes]  
+      ! Energy equation coefficients
+      real*8         :: diff_e       ! Perpendicular diffusion in the energy equation
+      real*8         :: epn          ! Exponential of the parallel diffusion (usually 5/2)
+      real*8         :: Mref         ! Reference Mach number
+      real*8         :: diff_par     ! Parallel diffusion for the temperature (usually 1e7)
+      real*8         :: Gmbohm       ! gamma for Bohm boundary condition on energy: 
+   END TYPE Physics_type
+    
+    
+    
+   !*******************************************************
+   ! Geometry: type for geometry info
+   !*******************************************************
+   TYPE Geometry_type
+      integer     :: ndim     ! Number of dimensions of the problem (can be different from the ndim of the mesh)
+      real*8      :: R0       ! Major radius at the magnetic axis
+      real*8      :: q        ! Safety factor
+   END TYPE Geometry_type 
+   
+   
+   !*******************************************************
+   ! Switches: type for main code switches
+   !*******************************************************
+   TYPE Switches_type
+      logical :: restart ! Is it a restart simulation?
+      ! false = not a restart simulation, the solution is initialized with an initial 
+      !         condition determined by init_cond
+      ! true  = restart simulation, the solution is loaded from a file
+      logical :: axisym ! Is it an axisymmetric simulation?
+      ! true = 
+      ! false = 
+      logical :: driftvel ! Set to TRUE to consider perpendicular advection terms
+      logical :: steady   
+      ! Set to TRUE for a steady state computation
+      ! Set to FALSE for a transient computation
+      integer :: init_cond ! Which initial condition ?
+      integer :: testcase  ! Define the testcase ( which analytical solution, body force, magnetic field...)
+      logical :: psdtime ! Reduce the diffusion every time we reach the steady state 
+                         ! condition (only works if steady=.false.)
+      real*8  :: diffred ! Reduction factor of the diffusion for psdtime simulation
+      real*8  :: diffmin ! Minimum value of the diffusion for a psdtime simulation
+      integer :: shockcp ! Shock capturing option
+      integer :: limrho  ! Add a source for limiting the min value of rho
+      integer :: difcor  ! Add diffusion in corners
+      integer :: thresh  ! Use a threshold for limiting the min value of rho
+   END TYPE Switches_type
+
+
+   !*******************************************************
+   ! Time: type for the time stepping information
+   !*******************************************************
+   TYPE Time_type
+      real*8      :: dt0  ! initial time step
+      real*8      :: dt   ! current time step
+      real*8      :: tfi  ! final time of the simulation
+      integer     :: it   ! the number of the current time step 
+      integer     :: ik   ! same as it but always incrementing (also in case of pseudotime..)
+      integer     :: ndt  ! max number of time steps to do in the current session
+      integer     :: tsw  ! switch to modify the time step
+      integer     :: nts  ! max number of time iterations to do in the current session (only for transient simulations)
+      integer     :: tis  ! time integration scheme
+                          ! 1 - first order
+                          ! 2 - second order
+      real*8      :: t    ! time of the simulation (initialized to finish time of previous simulation if restart, to 0 if new simulation)
+   END TYPE Time_type   
+
+
+
+
+
+
+   !*******************************************************
+   ! Numerics: type for numeric scheme parameters
+   !*******************************************************
+   TYPE Numeric_type
+      integer     :: nrp      ! Max number of Newton-Raphson iterations
+      real*8      :: tNR      ! Tolerance of the Newton-Raphson scheme
+      real*8      :: tTM      ! Tolerance for the steady state achievement 
+      real*8      :: div      ! Divergence detector
+      real*8      :: tau      ! Stabilization parameter
+      real*8      :: sc_coe   ! Shock capturing coefficient
+      real*8      :: sc_sen   ! Shock capturing sensibility
+      real*8      :: minrho   ! Value of rho to start applying limiting
+      real*8      :: so_coe   ! Source coefficient for limiting rho
+      real*8      :: df_coe   ! Diffusion coefficient for limiting rho
+      real*8      :: dc_coe   ! Diffusion coefficient in corners
+      real*8      :: thr      ! Threshold to limit rho
+   END TYPE Numeric_type 
+
+
+
+   
+   !*******************************************************
+   ! Utilities: type for printing/debugging/saving...
+   !*******************************************************
+   TYPE Utils_type
+      integer :: printint       ! Integer for printing
+      logical :: timing         ! Timing of the code
+      integer :: freqdisp       ! Frequency of results display
+      integer :: freqsave       ! Frequency of solution save
+   END TYPE Utils_type    
+
+
+
+   !**********************************************************
+   ! Solution: contains the solution at the current time step
+   !**********************************************************
+   TYPE Sol_type
+      real*8, pointer :: u(:)       => null()  ! Elemental solution
+      real*8, pointer :: u_tilde(:) => null()  ! Face solution
+#ifdef ENERGY      
+      real*8, pointer :: q(:)       => null()  ! Elemental solution for the gradient
+#endif      
+      real*8, allocatable :: tres(:)           ! Time residual
+   END TYPE Sol_type   
+
+   !**********************************************************
+   ! Elemental matrices: type to store the elemental matrices
+   ! used during the computation
+   !**********************************************************
+   TYPE :: elmat_type
+     real*8,allocatable :: M(:,:,:)
+     real*8,allocatable :: Cv(:,:,:)
+     real*8,allocatable :: H(:,:,:)
+     real*8,allocatable :: Hdir(:,:)
+     real*8,allocatable :: D(:,:,:)
+     real*8,allocatable :: E(:,:,:)
+     real*8,allocatable :: Edir(:,:)
+     real*8,allocatable :: S(:,:)
+     real*8,allocatable :: UU(:,:,:)
+     real*8,allocatable :: U0(:,:)
+     real*8,allocatable :: Hf(:,:,:)
+     real*8,allocatable :: Df(:,:,:)
+     real*8,allocatable :: Ef(:,:,:)
+     real*8,allocatable :: fH(:,:)
+#ifdef NGAMMA
+     real*8,allocatable :: B(:,:,:)
+     real*8,allocatable :: C(:,:,:)
+     real*8,allocatable :: Cdir(:,:)
+     real*8,allocatable :: P(:,:,:)
+     real*8,allocatable :: G(:,:,:)
+     real*8,allocatable :: IL(:,:,:)
+     real*8,allocatable :: Lf(:,:,:)
+     real*8,allocatable :: Qf(:,:,:)
+     real*8,allocatable :: LL(:,:,:)
+     real*8,allocatable :: L0(:,:)  
+     ! Limiting rho
+     real*8,allocatable :: S_lrho(:,:)
+     real*8,allocatable :: P_lrho(:,:,:)
+     ! Shock capturing
+     real*8,allocatable :: P_sc(:,:,:)
+     real*8,allocatable :: Lf_sc(:,:,:)
+#ifdef ENERGY
+     real*8,allocatable :: TQ(:,:,:)
+     real*8,allocatable :: TQhf(:,:,:)
+     real*8,allocatable :: Tfhf(:,:)
+     real*8,allocatable :: Tf(:,:)     
+     real*8,allocatable :: Thdir(:,:)
+#endif     
+#endif
+     
+   END TYPE elmat_type      
+ 
+ CONTAINS
+ 
+ SUBROUTINE set_boundary_flag_names()
+   bc_flag_type(1) = 'Tb_Dirichlet'
+   bc_flag_type(2) = 'Tb_LEFT'
+   bc_flag_type(3) = 'Tb_RIGHT'
+   bc_flag_type(4) = 'Tb_UP'
+   bc_flag_type(5) = 'Tb_DOWN'
+   bc_flag_type(6) = 'Tb_WALL'
+   bc_flag_type(7) = 'Tb_LIM'
+   bc_flag_type(8) = 'Tb_IN'
+   bc_flag_type(9) = 'Tb_OUT'
+   bc_flag_type(10) = 'Tb_ULIM'
+   
+   bc_flag_name(1)   = 'Dirichlet strong form'
+   bc_flag_name(2)   = 'Dirichlet weak form'
+   bc_flag_name(20)  = 'Inlet-Outlet'
+   bc_flag_name(30)  = 'Neumann homogeneus'
+   bc_flag_name(50)  = 'Bohm'
+   bc_flag_name(60)  = 'Slip wall'
+   
+ END SUBROUTINE set_boundary_flag_names
+   
+END MODULE types
