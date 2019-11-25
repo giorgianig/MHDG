@@ -503,6 +503,37 @@ module HDF5_io_module
   !************************************************
   !  HDF5 READING
   !************************************************
+
+  !---------------------------------------- 
+  ! HDF5 get dimensions of a 1d dataset
+  !----------------------------------------
+  subroutine HDF5_getdim(file_id,dsetname,res)
+    use HDF5
+    use prec_const
+    integer(HID_T)  , intent(in)  :: file_id   ! file identifier
+    character(LEN=*), intent(in)  :: dsetname  ! dataset name
+    integer(HSIZE_T), intent(out) :: res       ! the dataset size
+
+    integer             :: error      ! error flag
+    integer             :: rank       ! dataset rank
+    integer(HSIZE_T), &
+      dimension(1)      :: dims,maxdims        ! dataset dimensions
+    integer(HID_T)      :: dataset    ! dataset identifier
+    integer(HID_T)      :: dataspace  ! dataspace identifier
+    integer(HID_T)      :: data_type
+
+    !*** file opening ***
+    call H5Dopen_f(file_id,trim(dsetname),dataset,error)   
+
+    ! Get dataset dimensions for allocation
+    CALL h5dget_space_f(dataset,dataspace,error)
+    CALL h5sget_simple_extent_dims_f(dataspace,dims,maxdims,error)
+    res = dims(1)
+
+    !*** Closing ***
+    call H5Dclose_f(dataset,error)
+  end subroutine HDF5_getdim
+
   !---------------------------------------- 
   ! HDF5 reading for an integer 
   !----------------------------------------

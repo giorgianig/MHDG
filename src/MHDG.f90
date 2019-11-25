@@ -545,15 +545,13 @@ write(6,* ) "STARTING"
 
 
 !#ifdef PARALL
-!write(namemat,'(A,I0,A,I0)') "MatK_", MPIvar%glob_id,"_",MPIvar%glob_size            
-!call save_CSR_matrix_txt(matK,trim(adjustl(namemat)) )
-!write(namemat,'(A,I0,A,I0)') "rhs_", MPIvar%glob_id,"_",MPIvar%glob_size 
-!call save_CSR_vector_txt(rhs,trim(adjustl(namemat)))
+!call HDF5_save_CSR_matrix('MatK' )
+!call HDF5_save_CSR_vector('rhs')
 !call MPI_BARRIER(MPI_COMM_WORLD, ierr)
 !stop
 !#else
-!call save_CSR_matrix_txt(matK, 'MatK_seq' )
-!call save_CSR_vector_txt(rhs,'rhs_seq')
+!call HDF5_save_CSR_matrix('MatK_seq' )
+!call HDF5_save_CSR_vector('rhs_seq')
 !stop
 !#endif
 

@@ -343,6 +343,7 @@ end subroutine HDF5_save_solution
 !**********************************************************************
 subroutine HDF5_load_solution(fname)
    USE globals
+   USE LinearAlgebra, ONLY: tensorsumint,colint
    implicit none
    
    character(LEN=*) :: fname
@@ -352,17 +353,29 @@ subroutine HDF5_load_solution(fname)
    integer(HID_T) :: file_id
    real,pointer :: oldtres(:),oldtime(:)
    real,pointer:: u_aux(:),u_tilde_aux(:),q_aux(:)
-   
-   integer :: Neq,Ndim,Ntor,N2d,Nel,Np1d,Np2d,Np,Nfl,Nfp,Nfg,Nf,sizeutilde,sizeu
-   integer :: iel,ifa,iface,Fi,itor,dd,delta,i,it,iel3
-   real,allocatable    :: u2D(:),q2D(:),ut2D(:)
+#ifdef TOR3D
+    character(70)  :: nip,nit,ngd
+    integer :: ntorloc
+#endif      
+   integer :: Neq,Ndim,N2d,Nel,Np1d,Np2d,Np,Nfl,Nfp,Nfg,Nf,sizeutilde,sizeu
+   integer :: iel,ifa,iface,Fi,itor,dd,delta,i,j,it,iel3
+   real,allocatable    :: u2D(:),q2D(:),ut2D(:),q2D_add(:,:)
    integer,allocatable :: indu2D(:),indq2D(:),indu3D(:),indq3D(:),indufp(:),induf2D(:),induf3D(:),indul(:),indql(:),indutl(:)
+   integer,allocatable :: ind_q_add(:)
     Neq         = phys%Neq   
 #ifdef TOR3D     
+#ifdef PARALL
+    IF (MPIvar%ntor.gt.1) THEN
+       ntorloc = numer%ntor/MPIvar%ntor+1
+    ELSE
+       ntorloc = numer%ntor
+    ENDIF
+#else
+    ntorloc = numer%ntor
+#endif 
     Ndim        = 3                             ! N. of dimensions
-    Ntor        = numer%ntor                    ! N. of toroidal divisions
     N2d         = Mesh%Nelems                   ! N. of 2D elements
-    Nel         = N2d*ntor                      ! N. of 3D elements
+    Nel         = N2d*ntorloc                      ! N. of 3D elements
     Np1d        = refElTor%Nnodes1D             ! N. of nodes for each toroidal 1d element  
     Np2d        = refElPol%Nnodes2D             ! N. of nodes for each poloidal 2D element
     Np          = Np2d*Np1d                     ! N. of nodes for each 3D element
@@ -370,7 +383,15 @@ subroutine HDF5_load_solution(fname)
     Nfg         = Np2d*2+refElPol%Nfaces*Nfl    ! N. of nodes in all the faces of a 3D element
     Nf          = Mesh%Nfaces                   ! N. of faces in the 2D mesh
     sizeu       = Neq*Nel*Np                    ! Size of u    
-    sizeutilde  = Neq*numer%ntor*(Nfl*Nf + Np2d*N2d)! Size of utilde    
+#ifdef PARALL
+    if (MPIvar%ntor.gt.1) then
+       sizeutilde  = Neq*ntorloc*(Nfl*Nf + Np2d*N2d) + Neq*Np2d*N2d! Size of utilde    
+    else
+       sizeutilde  = Neq*ntorloc*(Nfl*Nf + Np2d*N2d)! Size of utilde    
+    endif
+#else    
+    sizeutilde  = Neq*ntorloc*(Nfl*Nf + Np2d*N2d)! Size of utilde    
+#endif   
 #else				 
     Ndim        = 2
     Nel         = Mesh%Nelems
@@ -386,22 +407,27 @@ subroutine HDF5_load_solution(fname)
 #ifdef TEMPERATURE  		    
       ALLOCATE(sol%q(sizeu*Ndim))		    
 #endif
-						IF (MPIvar%glob_size.GT.1) THEN
-						   write(nid,*) MPIvar%glob_id+1
-						   write(npr,*) MPIvar%glob_size
-						   fname_complete = trim(adjustl(fname))//'_'//trim(adjustl(nid))//'_'//trim(adjustl(npr))//'.h5'
-						ELSE
-						   fname_complete = trim(adjustl(fname))//'.h5'
-						END IF      		    
+      		    
       
 #ifdef TOR3D     
 !*************************************
 !              3D case
 !*************************************
  
-      IF (fname_complete(1:5)=='Sol3D') THEN
+      IF (fname(1:5)=='Sol3D') THEN
 ! Initialization with a 3D solution      
          WRITE(6,*) "3D initial solution"
+         
+               
+						   IF (MPIvar%glob_size.GT.1) THEN
+            write(nip,*) MPIvar%ipol
+            write(nit,*) MPIvar%itor
+            write(ngd,*) MPIvar%glob_size   
+            fname_complete = trim(adjustl(fname))//'_ip'//trim(adjustl(nip))//'_it'//trim(adjustl(nit))//'_np'//trim(adjustl(ngd))//'.h5'
+						   ELSE
+						      fname_complete = trim(adjustl(fname))//'.h5'
+						   END IF
+						         
          CALL HDF5_open(fname_complete,file_id,IERR)
          CALL HDF5_array1D_reading(file_id,sol%u,'u')
          CALL HDF5_array1D_reading(file_id,sol%u_tilde,'u_tilde')
@@ -430,9 +456,18 @@ subroutine HDF5_load_solution(fname)
          CALL HDF5_array1D_reading(file_id,sol%q,'q')
 #endif       
          CALL HDF5_close(file_id)
-      ELSEIF (fname_complete(1:5)=='Sol2D') THEN
+      ELSEIF (fname(1:5)=='Sol2D') THEN
 ! Initialization with a 2D solution      
          WRITE(6,*) "2D initial solution: propagating in the torus..."
+
+         IF (MPIvar%glob_size.GT.1) THEN
+            write(nid,*) MPIvar%ipol
+            write(npr,*) MPIvar%npol
+            fname_complete = trim(adjustl(fname))//'_'//trim(adjustl(nid))//'_'//trim(adjustl(npr))//'.h5'
+         ELSE
+            fname_complete = trim(adjustl(fname))//'.h5'
+         END IF          
+         
   		     ALLOCATE(u_aux(Neq*N2d*Np))
 		       ALLOCATE(u_tilde_aux(Neq*Mesh%Nfaces*Mesh%Nnodesperface))
          ALLOCATE(u2D(Np2D*Neq))
@@ -449,11 +484,15 @@ subroutine HDF5_load_solution(fname)
 
 
 #ifdef TEMPERATURE  		    
-         ALLOCATE(q_aux(Neq*N2d*Np*Ndim))		  
-         ALLOCATE(q2D(Np2D*Neq*Ndim))  
-         ALLOCATE(indq2D(Np2D*Neq*Ndim))
+         ALLOCATE(q_aux(Neq*N2d*Np*(Ndim-1)))		  
+         ALLOCATE(q2D(Np2D*Neq*(Ndim-1))) 
+         ALLOCATE(q2D_add(Np2D,Ndim*Neq))  
+         ALLOCATE(indq2D(Np2D*Neq*(Ndim-1)))
          ALLOCATE(indq3D(Np*Neq*Ndim))
          ALLOCATE(indql(Np2D*Neq*Ndim))
+         ALLOCATE(ind_q_add(Neq*(Ndim-1)))
+         q2D_add = 0.
+         ind_q_add = colint(tensorsumint( (/(j,j=1,(ndim-1))/),ndim*(/(i,i=0,(Neq-1))/) ))
 #endif
 
 
@@ -467,14 +506,24 @@ subroutine HDF5_load_solution(fname)
 #endif          
          CALL HDF5_close(file_id)         
          
+         
+#ifdef PARALL      
+      WRITE(6,*) "Process: ", MPIvar%glob_id, "-- readed solution file: ",trim(adjustl(fname_complete))
+#else
+      WRITE(6,*) "Readed solution file: ",trim(adjustl(fname_complete))
+#endif    
+
+         
          DO iel = 1,N2D
             indu2D = (iel-1)*Np2d*Neq + (/(i,i=1,Np2d*Neq)/)
             u2D    = u_aux(indu2D)
 #ifdef TEMPERATURE
-            indq2D = (iel-1)*Np2d*Neq*Ndim + (/(i,i=1,Np2d*Neq*Ndim)/)
+            indq2D = (iel-1)*Np2d*Neq*(Ndim-1) + (/(i,i=1,Np2d*Neq*(Ndim-1))/)
             q2D    = q_aux(indq2D)
+            q2d_add(:,ind_q_add) = transpose(reshape(q2D,[ (Ndim-1)*Neq,Np2d ] ))
+            
 #endif            
-            DO itor = 1,Ntor
+            DO itor = 1, ntorloc
                iel3   = (itor-1)*N2d+iel
                indu3D = (iel3-1)*Np*Neq + (/(i,i=1,Np*Neq)/)
 #ifdef TEMPERATURE            
@@ -485,10 +534,10 @@ subroutine HDF5_load_solution(fname)
                sol%u_tilde(indufp) = u2d
                DO it = 1,Np1d
                   indul = (it-1)*Np2D*Neq + (/(i,i=1,Np2D*Neq)/)
-                  sol%u(indu3D(indul)) = u_aux(indu2D)
+                  sol%u(indu3D(indul)) = u2D
 #ifdef TEMPERATURE   
                   indql = (it-1)*Np2D*Neq*Ndim + (/(i,i=1,Np2D*Neq*Ndim)/)
-                  sol%q(indq3D(indql)) = q_aux(indq2D)         
+                  sol%q(indq3D(indql)) =  reshape(transpose(q2d_add), (/Np2d*Neq*Ndim/) )          
 #endif               
                END DO
             END DO
@@ -498,7 +547,7 @@ subroutine HDF5_load_solution(fname)
             Fi = iface
             induf2D = (Fi-1)*refElPol%Nnodes1D*Neq+(/(i,i=1,refElPol%Nnodes1D*Neq)/)
             ut2d = u_tilde_aux(induf2D)
-            DO itor = 1,Ntor
+            DO itor = 1,ntorloc
                dd = (itor-1)*(N2D*Np2D+(Mesh%Nfaces-Mesh%Ndir)*Nfl)*Neq+(N2D*Np2D+(Fi-1)*Nfl)*Neq
                induf3D = dd+(/(i,i=1,Nfl*Neq)/)
                DO it = 1,Np1d
@@ -515,7 +564,7 @@ subroutine HDF5_load_solution(fname)
             Fi = iface+Mesh%Nintfaces
             induf2D = (Fi-1)*refElPol%Nnodes1D*Neq+(/(i,i=1,refElPol%Nnodes1D*Neq)/)
             ut2d = u_tilde_aux(induf2D)
-            DO itor = 1,Ntor
+            DO itor = 1,ntorloc
                dd = (itor-1)*(N2D*Np2D+(Mesh%Nfaces-Mesh%Ndir)*Nfl)*Neq+(N2D*Np2D+(Fi-1)*Nfl)*Neq
                induf3D = dd+(/(i,i=1,Nfl*Neq)/)
                DO it = 1,Np1d
@@ -526,11 +575,31 @@ subroutine HDF5_load_solution(fname)
          END DO
 
          
+#ifdef PARALL
+      ! Add solution on toroidal ghost faces
+      IF (MPIvar%ntor.gt.1) THEN
+         
+         DO iel = 1,N2D
+            indu2D = (iel-1)*Np2d*Neq + (/(i,i=1,Np2d*Neq)/)
+            u2D    = u_aux(indu2D)
+#ifdef TEMPERATURE
+            indq2D = (iel-1)*Np2d*Neq*Ndim + (/(i,i=1,Np2d*Neq*Ndim)/)
+            q2D    = q_aux(indq2D)
+#endif            
+            DO itor = 1, ntorloc
+               dd = ntorloc*(N2D*Np2D+(Mesh%Nfaces-Mesh%Ndir)*Nfl)*Neq+(iel-1)*Np2D*Neq
+               indufp = dd+(/(i,i=1,Np2D*Neq)/)
+               sol%u_tilde(indufp) = u2d
+            END DO
+         END DO    
+      ENDIF
+#endif         
+         
           WRITE(6,*) "Done!"
 
          DEALLOCATE(u_aux,u_tilde_aux,u2D,ut2D,indu2D,indu3D,indufp,induf2D,induf3D,indul,indutl)      
 #ifdef TEMPERATURE
-         DEALLOCATE(q_aux,q2D,indq2D,indq3D,indql)
+         DEALLOCATE(q_aux,q2D,q2D_add,indq2D,indq3D,indql,ind_q_add)
 #endif
       END IF
 
@@ -593,6 +662,43 @@ subroutine HDF5_save_CSR_matrix(fname)
    
 end subroutine HDF5_save_CSR_matrix
 
+
+
+
+
+
+!**********************************************************************
+! Save HDG vector (CSR) in HDF5 file format
+!**********************************************************************
+subroutine HDF5_save_CSR_vector(fname)
+   USE globals
+   implicit none
+   
+   character(LEN=*) :: fname
+   character(70)  :: npr,nid
+   integer :: ierr
+   character(len=1000) :: fname_complete
+   integer(HID_T) :: file_id
+   
+   IF (MPIvar%glob_size.GT.1) THEN
+      write(nid,*) MPIvar%glob_id+1
+      write(npr,*) MPIvar%glob_size
+      fname_complete = trim(adjustl(fname))//'_'//trim(adjustl(nid))//'_'//trim(adjustl(npr))//'.h5'
+   ELSE
+      fname_complete = trim(adjustl(fname))//'.h5'
+   END IF      
+      call HDF5_create(fname_complete,file_id,ierr)
+      call HDF5_integer_saving(file_id,rhs%n,'n')
+      call HDF5_array1D_saving_int(file_id,rhs%loc2glob,rhs%n,'loc2glob')
+      call HDF5_array1D_saving(file_id,rhs%vals,rhs%n,'vals')
+      call HDF5_close(file_id)
+      ! Message to confirm succesful creation and filling of file
+!      IF (MPIvar%glob_id.eq.0) THEN
+!						   print*,'Output written to file ', trim(adjustl(fname_complete))
+!						   print*,'	'
+!      END IF
+   
+end subroutine HDF5_save_CSR_vector
 
 
 !**********************************************************************

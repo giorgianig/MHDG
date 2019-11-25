@@ -168,11 +168,17 @@ globals.F : $(SDIR)/Definitions/globals.f90
 
 globals.o : globals.F types.o matrices_types.o
 	$(FC) -c $(FCFLAGS) $(INC)  $< -o $@	
-	
+
+LinearAlgebra.F : $(SDIR)/LinearAlgebra/LinearAlgebra.f90
+	$(CMP) -s $< $@ || $(CP) -f $< $@
+
+LinearAlgebra.o : LinearAlgebra.F
+	$(FC) -c $(FCFLAGS) $(INC)  $< -o $@
+		
 inout.F : $(SDIR)/InOut/inout.f90
 	$(CMP) -s $< $@ || $(CP) -f $< $@
 
-inout.o : inout.F HDF5_io.o globals.o PrintUtils.o
+inout.o : inout.F HDF5_io.o globals.o PrintUtils.o LinearAlgebra.o
 	$(FC) -c $(FCFLAGS) $(INC)  $< -o $@
 		
 Debug.F : $(SDIR)/Utils/Debug.f90
@@ -180,13 +186,7 @@ Debug.F : $(SDIR)/Utils/Debug.f90
 
 Debug.o : Debug.F globals.o PrintUtils.o inout.o
 	$(FC) -c $(FCFLAGS) $(INC)  $< -o $@
-	
-LinearAlgebra.F : $(SDIR)/LinearAlgebra/LinearAlgebra.f90
-	$(CMP) -s $< $@ || $(CP) -f $< $@
-
-LinearAlgebra.o : LinearAlgebra.F
-	$(FC) -c $(FCFLAGS) $(INC)  $< -o $@
-	
+		
 physics.F : $(SDIR)/Models/$(RMDL)/physics.f90
 	$(CMP) -s $< $@ || $(CP) -f $< $@
 
