@@ -102,6 +102,57 @@ USE in_out
   END SUBROUTINE print_matrices_hdf5
     
    
+   
+   
+   
+  SUBROUTINE print_matrices_hdf5_parall()
+  USE MPI_OMP
+  CHARACTER(LEN = 60)  :: num
+     
+  write(6,*) "Saving elemental matrices in hdf5"  
+     call HDF5_save_array(elMat%M, 'M' )
+     call HDF5_save_array(elMat%Cv,'Cv')
+     call HDF5_save_array(elMat%H, 'H')
+     IF (Mesh%ndir.gt.0) THEN
+        call HDF5_save_matrix(elMat%Hdir, 'Hdir')
+        call HDF5_save_matrix(elMat%Edir,'Edir')
+     END IF
+     call HDF5_save_array(elMat%D, 'D')
+     call HDF5_save_array(elMat%E,'E')     
+     call HDF5_save_matrix(elMat%S,'S')
+     call HDF5_save_array(elMat%UU,'UU')
+     call HDF5_save_matrix(elMat%U0,'U0')
+     call HDF5_save_array(elMat%Hf,'Hf')
+     call HDF5_save_array(elMat%Df,'Df')
+     call HDF5_save_array(elMat%Ef,'Ef')
+     call HDF5_save_matrix(elMat%fH,'fH')  
+     call HDF5_save_array(elMat%B, 'B')
+     call HDF5_save_array(elMat%C, 'C')
+     IF (Mesh%ndir.gt.0) THEN     
+        call HDF5_save_matrix(elMat%Cdir, 'Cdir')
+     END IF
+     call HDF5_save_array(elMat%P, 'P')
+     call HDF5_save_array(elMat%G, 'G')
+     call HDF5_save_array(elMat%iL, 'iL')
+     call HDF5_save_array(elMat%Lf, 'Lf')
+     call HDF5_save_array(elMat%Qf, 'Qf')
+     call HDF5_save_array(elMat%LL,'LL')
+     call HDF5_save_matrix(elMat%L0,'L0')     
+#ifdef TEMPERATURE
+     call HDF5_save_array(elMat%TQ, 'TQ')
+     call HDF5_save_array(elMat%TQhf, 'TQhf')
+     call HDF5_save_matrix(elMat%Tfhf, 'Tfhf')
+     call HDF5_save_matrix(elMat%Tf, 'Tf')
+     IF (Mesh%ndir.gt.0) THEN
+        call HDF5_save_matrix(elMat%Thdir, 'Thdir')
+     END IF
+#endif  
+  END SUBROUTINE print_matrices_hdf5_parall
+  
+  
+  
+  
+     
   
   SUBROUTINE print_matrices_singleElem_tex(iel)
   integer,intent(in) :: iel
@@ -159,6 +210,22 @@ USE in_out
   
   END SUBROUTINE print_elmat_tex
   
+
+
+  SUBROUTINE print_elmat_tex_par(K,f,iel)
+  USE MPI_OMP
+  REAL, INTENT(IN)     :: K(:,:), f(:)
+  INTEGER,INTENT(IN)   :: iel
+  CHARACTER(LEN = 60)  :: num
+
+  WRITE(num,"(A,I0,A,I0,A,I0)") "iel", iel,"_ipr",MPIvar%glob_id,"_npr",MPIvar%glob_size
+  CALL  saveMatrix(K,"K_" // ADJUSTL(num) )
+  CALL  saveVector(f,"f_" // ADJUSTL(num) )
+  
+  END SUBROUTINE print_elmat_tex_par
+
+
+
   
   FUNCTION maxmat(V) RESULT(m)
   REAL     :: V(:,:)

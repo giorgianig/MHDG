@@ -39,10 +39,10 @@ MODULE analytical
   N2D = size(x,1)
   N1D = size(t,1)
   
-  xmax = maxval(Mesh%X(:,1))
-  xmin = minval(Mesh%X(:,1))
-  ymax = maxval(Mesh%X(:,2))
-  ymin = minval(Mesh%X(:,2))
+  xmax = Mesh%xmax
+  xmin = Mesh%xmin
+  ymax = Mesh%ymax
+  ymin = Mesh%ymin
   xm = 0.5*(xmax+xmin)
   ym = 0.5*(ymax+ymin)  
   
@@ -106,10 +106,10 @@ MODULE analytical
   N2D = size(x,1)
   N1D = size(t,1)
   
-  xmax = maxval(Mesh%X(:,1))
-  xmin = minval(Mesh%X(:,1))
-  ymax = maxval(Mesh%X(:,2))
-  ymin = minval(Mesh%X(:,2))
+  xmax = Mesh%xmax
+  xmin = Mesh%xmin
+  ymax = Mesh%ymax
+  ymin = Mesh%ymin
   xm = 0.5*(xmax+xmin)
   ym = 0.5*(ymax+ymin)  
 

@@ -39,10 +39,10 @@ MODULE analytical
   N2D = size(x,1)
   N1D = size(t,1)
   
-  xmax = maxval(Mesh%X(:,1))
-  xmin = minval(Mesh%X(:,1))
-  ymax = maxval(Mesh%X(:,2))
-  ymin = minval(Mesh%X(:,2))
+  xmax = Mesh%xmax
+  xmin = Mesh%xmin
+  ymax = Mesh%ymax
+  ymin = Mesh%ymin
   xm = 0.5*(xmax+xmin)
   ym = 0.5*(ymax+ymin)  
   
@@ -74,7 +74,19 @@ MODULE analytical
 															up(ind,1) = 2+sin(a* xx)*sin(a* yy)
 															up(ind,2) = cos(a* xx)*cos(a* yy)
 															up(ind,3) = 20+cos(a*xx)*sin(a*yy)
-															up(ind,4) = 10-sin(a*xx)*cos(a*yy)															
+															up(ind,4) = 10-sin(a*xx)*cos(a*yy)			
+															
+											CASE(3)
+											! Axisimmetric case with div(b)~=0
+														IF (.not.switch%axisym) THEN
+																 WRITE(6,*) "This is an axisymmetric test case!"
+																 stop
+														END IF 
+															up(ind,1) = 2+sin(a* tt)
+															up(ind,2) = cos(a* tt)
+															up(ind,3) = 20+cos(a*tt)
+															up(ind,4) = 10-sin(a*tt)
+																																										
 											CASE(50:63)
 														 up(ind,1) = 1.
 														 up(ind,3) = 18.
@@ -123,10 +135,10 @@ MODULE analytical
   N2D = size(x,1)
   N1D = size(t,1)
   
-  xmax = maxval(Mesh%X(:,1))
-  xmin = minval(Mesh%X(:,1))
-  ymax = maxval(Mesh%X(:,2))
-  ymin = minval(Mesh%X(:,2))
+  xmax = Mesh%xmax
+  xmin = Mesh%xmin
+  ymax = Mesh%ymax
+  ymin = Mesh%ymin
   xm = 0.5*(xmax+xmin)
   ym = 0.5*(ymax+ymin)  
   upx = 0.
@@ -174,6 +186,16 @@ MODULE analytical
 														 upy(ind,2) = -a*cos(a*xx)*sin(a*yy)
 														 upy(ind,3) =  a*cos(a*xx)*cos(a*yy)
 														 upy(ind,4) =  a*sin(a*xx)*sin(a*yy)
+													CASE(3)
+													! Axisimmetric case with div(b)~=0, n = 2+sin(wx*x )*sin(wy*y),  u = cos(wx*x)*cos(wy*y), Ei = 20+cos(wx*x)*sin(wy*y), Ee = 10-sin(wx*x)*cos(wy*y)
+																IF (.not.switch%axisym) THEN
+																			WRITE(6,*) "This is an axisymmetric test case!"
+																			stop
+																END IF 														 
+															upt(ind,1) = +a*cos(a* tt)
+															upt(ind,2) = -a*sin(a* tt)
+															upt(ind,3) = -a*sin(a*tt)
+															upt(ind,4) = -a*cos(a*tt)														 
 													CASE(5)
 														   ! Do nothing
 													CASE(6)
@@ -223,15 +245,15 @@ MODULE analytical
   real*8 :: t41,t42,t43,t44,t45,t46,t47,t48,t49,t50
   real*8 :: t51,t52,t53,t54,t55,t56,t57,t58,t59,t60
   real*8 :: t61,t62,t63,t64,t65,t66,t67,t68,t69,t70
-  real*8 :: cx,cy,sx,sy,cx2,sx2,cy2,sy2,r2,cc,ss
+  real*8 :: cx,cy,sx,sy,cx2,sx2,cy2,sy2,r2,cc,ss,ct,st
  
   N2D = size(x,1)
   N1D = size(t,1)
   
-  xmax = maxval(Mesh%X(:,1))
-  xmin = minval(Mesh%X(:,1))
-  ymax = maxval(Mesh%X(:,2))
-  ymin = minval(Mesh%X(:,2))
+  xmax = Mesh%xmax
+  xmin = Mesh%xmin
+  ymax = Mesh%ymax
+  ymin = Mesh%ymin
   xm = 0.5*(xmax+xmin)
   ym = 0.5*(ymax+ymin)  
   
@@ -1070,7 +1092,137 @@ MODULE analytical
                          &xx    
 
 
+           CASE(3)
+						     ! Axisimmetric case with div(b)~=0, n = 2+sin(2*pi*x)*sin(2*pi*y),  u = cos(2*pi*x)*cos(2*pi*y), Ei = 20+cos(wx*x)*sin(wy*y), Ee = 10-sin(wx*x)*cos(wy*y)
+						        IF (.not.switch%axisym) THEN
+						           WRITE(6,*) "This is an axisymmetric test case!"
+						           stop
+						        END IF
+									     a = 2*pi
+									     b = 2*pi
 
+									     D     = phys%diff_n
+									     mu    = phys%diff_u
+									     csii  = phys%diff_e
+									     csie  = phys%diff_ee
+									     kpari = phys%diff_pari
+									     kpare = phys%diff_pare
+									     Mref  = phys%Mref
+									     epn   = phys%epn
+									     tie   = phys%tie
+									     pcourr = 1.
+									     
+              st = sin(a*tt)
+              ct = cos(a*tt)
+              r = (xm**2-2*ym*yy-2*xm*xx+2*xx**2+ym**2+yy**2)
+              
+              
+              f(ind,1) = D*((a**2*1.0D0/xx**2*sin(a*tt)*(xm*xx*(-2.0D0)-ym*yy*2.0D0+xm&
+          &**2+xx**2+ym**2+yy**2))/(xm*xx*(-2.0D0)-ym*yy*2.0D0+xm**2+xx**2*2.&
+          &0D0+ym**2+yy**2)+a*cos(a*tt)*(ym*2.0D0-yy*2.0D0)*(xm-xx)*1.0D0/(xm&
+          &*xx*(-2.0D0)-ym*yy*2.0D0+xm**2+xx**2*2.0D0+ym**2+yy**2)**2-(a*cos(&
+          &a*tt)*(ym-yy)*(ym*yy*(-2.0D0)+xm**2-xx**2*2.0D0+ym**2+yy**2)*1.0D0&
+          &/(xm*xx*(-2.0D0)-ym*yy*2.0D0+xm**2+xx**2*2.0D0+ym**2+yy**2)**2)/xx&
+          &)-(a*1.0D0/sqrt(1.0D0/xx**2*(xm*xx*(-2.0D0)-ym*yy*2.0D0+xm**2+xx**&
+          &2*2.0D0+ym**2+yy**2))*(sin(a*tt)*2.0D0+sin(a*tt)**2*2.0D0-1.0D0))/&
+          &xx-1.0D0/xx**4*cos(a*tt)*(sin(a*tt)+2.0D0)*(ym-yy)*1.0D0/(1.0D0/xx&
+          &**2*(xm*xx*(-2.0D0)-ym*yy*2.0D0+xm**2+xx**2*2.0D0+ym**2+yy**2))**(&
+          &3.0D0/2.0D0)*(-xm*xx-ym*yy*2.0D0+xm**2+ym**2+yy**2)+(1.0D0/xx**3*c&
+          &os(a*tt)*(sin(a*tt)+2.0D0)*(ym*2.0D0-yy*2.0D0)*(xm-xx)*1.0D0/(1.0D&
+          &0/xx**2*(xm*xx*(-2.0D0)-ym*yy*2.0D0+xm**2+xx**2*2.0D0+ym**2+yy**2)&
+          &)**(3.0D0/2.0D0))/2.0D0
+          
+          f(ind,2) = mu*(-a*(ym*2.0D0-yy*2.0D0)*(xm-xx)*(sin(a*tt)*2.0D0+sin(a*tt)&
+          &**2*2.0D0-1.0D0)*1.0D0/(xm*xx*(-2.0D0)-ym*yy*2.0D0+xm**2+xx**2*2.0&
+          &D0+ym**2+yy**2)**2+(a**2*1.0D0/xx**2*(cos(a*tt)*4.0D0+cos(a*tt)*si&
+          &n(a*tt)*8.0D0)*(xm*xx*(-2.0D0)-ym*yy*2.0D0+xm**2+xx**2+ym**2+yy**2&
+          &))/(xm*xx*(-4.0D0)-ym*yy*4.0D0+xm**2*2.0D0+xx**2*4.0D0+ym**2*2.0D0&
+          &+yy**2*2.0D0)+(a*(ym-yy)*(sin(a*tt)*2.0D0+sin(a*tt)**2*2.0D0-1.0D0&
+          &)*(ym*yy*(-2.0D0)+xm**2-xx**2*2.0D0+ym**2+yy**2)*1.0D0/(xm*xx*(-2.&
+          &0D0)-ym*yy*2.0D0+xm**2+xx**2*2.0D0+ym**2+yy**2)**2)/xx)-(a*1.0D0/s&
+          &qrt(1.0D0/xx**2*(xm*xx*(-2.0D0)-ym*yy*2.0D0+xm**2+xx**2*2.0D0+ym**&
+          &2+yy**2))*(cos(a*tt)*(-5.8D+1)+sin(a*tt)*4.0D0-cos(a*tt)**2*4.0D0+&
+          &cos(a*tt)**3*3.0D0+2.0D0))/(xx*3.0D0)-(a*cos(a*tt)*1.0D0/sqrt(1.0D&
+          &0/xx**2*(xm*xx*(-2.0D0)-ym*yy*2.0D0+xm**2+xx**2*2.0D0+ym**2+yy**2)&
+          &)*(sin(a*tt)*4.0D0+sin(a*tt)**2*3.0D0-1.0D0))/xx+(1.0D0/xx**3*cos(&
+          &a*tt)**2*(sin(a*tt)+2.0D0)*(ym*2.0D0-yy*2.0D0)*(xm-xx)*1.0D0/(1.0D&
+          &0/xx**2*(xm*xx*(-2.0D0)-ym*yy*2.0D0+xm**2+xx**2*2.0D0+ym**2+yy**2)&
+          &)**(3.0D0/2.0D0))/2.0D0-1.0D0/xx**4*cos(a*tt)**2*(sin(a*tt)+2.0D0)&
+          &*(ym-yy)*1.0D0/(1.0D0/xx**2*(xm*xx*(-2.0D0)-ym*yy*2.0D0+xm**2+xx**&
+          &2*2.0D0+ym**2+yy**2))**(3.0D0/2.0D0)*(-xm*xx-ym*yy*2.0D0+xm**2+ym*&
+          &*2+yy**2)
+                     
+                     
+          f(ind,3) = csii*(a*(ym*2.0D0-yy*2.0D0)*(xm-xx)*(cos(a*tt)*2.0D+1+cos(a*t&
+          &t*2.0D0)-sin(a*tt)*2.0D0)*1.0D0/(xm*xx*(-2.0D0)-ym*yy*2.0D0+xm**2+&
+          &xx**2*2.0D0+ym**2+yy**2)**2+(a**2*1.0D0/xx**2*(cos(a*tt)*2.0D0+sin&
+          &(a*tt)*2.0D+1+sin(a*tt*2.0D0)*2.0D0)*(xm*xx*(-2.0D0)-ym*yy*2.0D0+x&
+          &m**2+xx**2+ym**2+yy**2))/(xm*xx*(-2.0D0)-ym*yy*2.0D0+xm**2+xx**2*2&
+          &.0D0+ym**2+yy**2)-(a*(ym-yy)*(cos(a*tt)*2.0D+1+cos(a*tt*2.0D0)-sin&
+          &(a*tt)*2.0D0)*(ym*yy*(-2.0D0)+xm**2-xx**2*2.0D0+ym**2+yy**2)*1.0D0&
+          &/(xm*xx*(-2.0D0)-ym*yy*2.0D0+xm**2+xx**2*2.0D0+ym**2+yy**2)**2)/xx&
+          &)-kpari*((3.0D0**(-epn-1.0D0)*a**2*((cos(a*tt)*2.0D0-cos(a*tt)**2+&
+          &4.0D+1)/Mref)**epn*(cos(a*tt)-1.0D0)*(epn*(-2.0D0)+cos(a*tt)*8.2D+&
+          &1+epn*cos(a*tt)*2.0D0+epn*cos(a*tt)**2*2.0D0-epn*cos(a*tt)**3*2.0D&
+          &0+cos(a*tt)**2*3.0D0-cos(a*tt)**3*2.0D0+4.0D+1)*2.0D0)/(Mref*(cos(&
+          &a*tt)*2.0D0-cos(a*tt)**2+4.0D+1)*(xm*xx*(-2.0D0)-ym*yy*2.0D0+xm**2&
+          &+xx**2*2.0D0+ym**2+yy**2))+(3.0D0**(-epn-1.0D0)*a*sin(a*tt)*(ym*2.&
+          &0D0-yy*2.0D0)*(xm-xx)*((cos(a*tt)*2.0D0-cos(a*tt)**2+4.0D+1)/Mref)&
+          &**epn*(cos(a*tt)-1.0D0)*1.0D0/(xm*xx*(-2.0D0)-ym*yy*2.0D0+xm**2+xx&
+          &**2*2.0D0+ym**2+yy**2)**2*2.0D0)/Mref-(3.0D0**(-epn-1.0D0)*a*sin(a&
+          &*tt)*(ym-yy)*((cos(a*tt)*2.0D0-cos(a*tt)**2+4.0D+1)/Mref)**epn*(co&
+          &s(a*tt)-1.0D0)*(ym*yy*(-2.0D0)+xm**2-xx**2*2.0D0+ym**2+yy**2)*1.0D&
+          &0/(xm*xx*(-2.0D0)-ym*yy*2.0D0+xm**2+xx**2*2.0D0+ym**2+yy**2)**2*2.&
+          &0D0)/(Mref*xx))-(a*1.0D0/sqrt(1.0D0/xx**2*(xm*xx*(-2.0D0)-ym*yy*2.&
+          &0D0+xm**2+xx**2*2.0D0+ym**2+yy**2))*(cos(a*tt)*1.0D+1+sin(a*tt)*1.&
+          &94D+2+sin(a*tt*2.0D0)*1.0D+1+sin(a*tt)**3*6.0D0-cos(a*tt)**2*2.03D&
+          &+2-cos(a*tt)**3*1.5D+1+cos(a*tt)**4*4.0D0+1.0D+2))/(xx*3.0D0)+(sqr&
+          &t(3.0D0)*(sin(a*tt)+2.0D0)**2*1.0D0/sqrt(-(sin(a*tt)*2.0D0-2.0D+1)&
+          &/Mref)*(-cos(a*tt*2.0D0)+sqrt(2.0D0)*sin(3.141592653589793D0/4.0D0&
+          &+a*tt)*4.0D0+3.9D+1))/(tie*(sin(a*tt)-1.0D+1)*4.0D0)-(a*pcourr*cos&
+          &(a*tt)**2*(sin(a*tt)-4.0D0)*1.0D0/sqrt(1.0D0/xx**2*(xm*xx*(-2.0D0)&
+          &-ym*yy*2.0D0+xm**2+xx**2*2.0D0+ym**2+yy**2))*(4.0D0/3.0D0))/xx-(1.&
+          &0D0/xx**4*cos(a*tt)*(sin(a*tt)+2.0D0)*(ym-yy)*1.0D0/(1.0D0/xx**2*(&
+          &xm*xx*(-2.0D0)-ym*yy*2.0D0+xm**2+xx**2*2.0D0+ym**2+yy**2))**(3.0D0&
+          &/2.0D0)*(cos(a*tt)*5.0D0-cos(a*tt)**2+1.0D+2)*(-xm*xx-ym*yy*2.0D0+&
+          &xm**2+ym**2+yy**2))/3.0D0+(1.0D0/xx**3*cos(a*tt)*(sin(a*tt)+2.0D0)&
+          &*(ym*2.0D0-yy*2.0D0)*(xm-xx)*1.0D0/(1.0D0/xx**2*(xm*xx*(-2.0D0)-ym&
+          &*yy*2.0D0+xm**2+xx**2*2.0D0+ym**2+yy**2))**(3.0D0/2.0D0)*(cos(a*tt&
+          &)*5.0D0-cos(a*tt)**2+1.0D+2))/6.0D0
+                     
+                     
+                     
+          f(ind,4) = csie*((a**2*1.0D0/xx**2*(sin(a*tt)*4.0D0-sin(a*tt)**2*2.0D0+1&
+          &.0D0)*(xm*xx*(-2.0D0)-ym*yy*2.0D0+xm**2+xx**2+ym**2+yy**2)*2.0D0)/&
+          &(xm*xx*(-2.0D0)-ym*yy*2.0D0+xm**2+xx**2*2.0D0+ym**2+yy**2)-a*cos(a&
+          &*tt)*(sin(a*tt)-4.0D0)*(ym*2.0D0-yy*2.0D0)*(xm-xx)*1.0D0/(xm*xx*(-&
+          &2.0D0)-ym*yy*2.0D0+xm**2+xx**2*2.0D0+ym**2+yy**2)**2*2.0D0+(a*cos(&
+          &a*tt)*(sin(a*tt)-4.0D0)*(ym-yy)*(ym*yy*(-2.0D0)+xm**2-xx**2*2.0D0+&
+          &ym**2+yy**2)*1.0D0/(xm*xx*(-2.0D0)-ym*yy*2.0D0+xm**2+xx**2*2.0D0+y&
+          &m**2+yy**2)**2*2.0D0)/xx)+kpare*((3.0D0**(-epn-1.0D0)*a**2*(-(sin(&
+          &a*tt)*2.0D0-2.0D+1)/Mref)**epn*(epn+sin(a*tt)*1.0D+1-sin(a*tt)**2-&
+          &epn*sin(a*tt)**2)*2.0D0)/(Mref*(sin(a*tt)-1.0D+1)*(xm*xx*(-2.0D0)-&
+          &ym*yy*2.0D0+xm**2+xx**2*2.0D0+ym**2+yy**2))+(3.0D0**(-epn-1.0D0)*a&
+          &*cos(a*tt)*(ym*2.0D0-yy*2.0D0)*(-(sin(a*tt)*2.0D0-2.0D+1)/Mref)**e&
+          &pn*(xm-xx)*1.0D0/(xm*xx*(-2.0D0)-ym*yy*2.0D0+xm**2+xx**2*2.0D0+ym*&
+          &*2+yy**2)**2*2.0D0)/Mref-(3.0D0**(-epn-1.0D0)*a*cos(a*tt)*(-(sin(a&
+          &*tt)*2.0D0-2.0D+1)/Mref)**epn*(ym-yy)*(ym*yy*(-2.0D0)+xm**2-xx**2*&
+          &2.0D0+ym**2+yy**2)*1.0D0/(xm*xx*(-2.0D0)-ym*yy*2.0D0+xm**2+xx**2*2&
+          &.0D0+ym**2+yy**2)**2*2.0D0)/(Mref*xx))-(a*1.0D0/sqrt(1.0D0/xx**2*(&
+          &xm*xx*(-2.0D0)-ym*yy*2.0D0+xm**2+xx**2*2.0D0+ym**2+yy**2))*(sin(a*&
+          &tt)*2.2D+1+sin(a*tt)**2*1.6D+1-sin(a*tt)**3*3.0D0-8.0D0)*(5.0D0/3.&
+          &0D0))/xx-(sqrt(3.0D0)*(sin(a*tt)+2.0D0)**2*1.0D0/sqrt(-(sin(a*tt)*&
+          &2.0D0-2.0D+1)/Mref)*(-cos(a*tt*2.0D0)+sqrt(2.0D0)*sin(3.1415926535&
+          &89793D0/4.0D0+a*tt)*4.0D0+3.9D+1))/(tie*(sin(a*tt)-1.0D+1)*4.0D0)-&
+          &1.0D0/xx**4*cos(a*tt)*(ym-yy)*1.0D0/(1.0D0/xx**2*(xm*xx*(-2.0D0)-y&
+          &m*yy*2.0D0+xm**2+xx**2*2.0D0+ym**2+yy**2))**(3.0D0/2.0D0)*(sin(a*t&
+          &t)*(4.0D+1/3.0D0)-sin(a*tt)**2*(5.0D0/3.0D0)+1.0D+2/3.0D0)*(-xm*xx&
+          &-ym*yy*2.0D0+xm**2+ym**2+yy**2)+(a*pcourr*cos(a*tt)**2*(sin(a*tt)-&
+          &4.0D0)*1.0D0/sqrt(1.0D0/xx**2*(xm*xx*(-2.0D0)-ym*yy*2.0D0+xm**2+xx&
+          &**2*2.0D0+ym**2+yy**2))*(4.0D0/3.0D0))/xx+(1.0D0/xx**3*cos(a*tt)*(&
+          &ym*2.0D0-yy*2.0D0)*(xm-xx)*1.0D0/(1.0D0/xx**2*(xm*xx*(-2.0D0)-ym*y&
+          &y*2.0D0+xm**2+xx**2*2.0D0+ym**2+yy**2))**(3.0D0/2.0D0)*(sin(a*tt)*&
+          &(4.0D+1/3.0D0)-sin(a*tt)**2*(5.0D0/3.0D0)+1.0D+2/3.0D0))/2.0D0
 
   
    
@@ -1259,10 +1411,10 @@ MODULE analytical
   real*8 :: cx2,sx2,cy2,sy2
   
   n = size(x)
-  xmax = maxval(Mesh%X(:,1))
-  xmin = minval(Mesh%X(:,1))
-  ymax = maxval(Mesh%X(:,2))
-  ymin = minval(Mesh%X(:,2))
+  xmax = Mesh%xmax
+  xmin = Mesh%xmin
+  ymax = Mesh%ymax
+  ymin = Mesh%ymin
   xm = 0.5*(xmax+xmin)
   ym = 0.5*(ymax+ymin)    
     f = 0.

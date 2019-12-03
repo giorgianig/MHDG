@@ -102,9 +102,9 @@ USE printUtils
 		 real*8, intent(in)  :: U(:)
 		 real*8, intent(out) :: A(:,:)
 !		[       0,                                                1,                                    0,              0; ...
-!     -2/3*U(2)^2/U(1)^2                              4/3*U(2)/U(1)                               2/3,            2/3; ...
-!     -5/3*U(2)*U(3)/U(1)^2+2/3*U(2)^3/U(1)^3      5/3*U(3)/U(1)-U(2)^2/U(1)^2                5/3*U(2)/U(1),       0 ;   ...
-!     -5/3*U(4)*U(2)/U(1)^2,                           5/3*U(4)/U(1),                             0,           5/3*U(2)/U(1)]
+!     -2/3*U(2)**2/U(1)**2                              4/3*U(2)/U(1)                               2/3,            2/3; ...
+!     -5/3*U(2)*U(3)/U(1)**2+2/3*U(2)**3/U(1)**3      5/3*U(3)/U(1)-U(2)**2/U(1)**2                5/3*U(2)/U(1),       0 ;   ...
+!     -5/3*U(4)*U(2)/U(1)**2,                           5/3*U(4)/U(1),                             0,           5/3*U(2)/U(1)]
                
 			A       = 0.d0
    if (switch%decoup) then
@@ -214,7 +214,7 @@ USE printUtils
 
 
 !G = divb*[              0,                            0,                            0                              0; ...
-!                  1/3*U(2)^2/U(1)^2            -2/3*U(2)/U(1)                      2/3,                           2/3;...
+!                  1/3*U(2)**2/U(1)**2            -2/3*U(2)/U(1)                      2/3,                           2/3;...
 !                        0                             0                             0                              0; ...
 !                        0                             0                             0                              0];
                                 
@@ -652,10 +652,10 @@ USE printUtils
 
   N2d = size(X,1)
   N1d = size(t,1)
-  xmax = maxval(Mesh%X(:,1))
-  xmin = minval(Mesh%X(:,1))
-  ymax = maxval(Mesh%X(:,2))
-  ymin = minval(Mesh%X(:,2))
+  xmax = Mesh%xmax
+  xmin = Mesh%xmin
+  ymax = Mesh%ymax
+  ymin = Mesh%ymin
   xm = 0.5*(xmax+xmin)
   ym = 0.5*(ymax+ymin)
 !  xm = -0.5
@@ -695,6 +695,16 @@ USE printUtils
 		           Bz = (-xx+xm)/xx
 		           Bt = 1.
 		           divbp = (xx**2*yy-xx**2*ym+xm**2*yy-xm**2*ym+3*yy*ym**2-3*yy**2*ym+yy**3-ym**3-2*xx*xm*yy+2*xx*xm*ym)/(xx**4*((xx-xm)**2/xx**2+(yy-ym)**2/xx**2+1)**(1.5))
+												CASE(3)
+													IF (.not.switch%axisym) THEN
+																WRITE(6,*) "This is an axisymmetric test case!"
+																stop
+ 												END IF													
+													! Axysimmetric case, circular field centered in [xm, ym] in the poloidal plane, Bt = 1
+		           Br = (yy-ym)/xx
+		           Bz = (-xx+xm)/xx
+		           Bt = 1.
+		           divbp = (xx**2*yy-xx**2*ym+xm**2*yy-xm**2*ym+3*yy*ym**2-3*yy**2*ym+yy**3-ym**3-2*xx*xm*yy+2*xx*xm*ym)/(xx**4*((xx-xm)**2/xx**2+(yy-ym)**2/xx**2+1)**(1.5))		           
 															              
 													CASE(50:59)
 														  write(6,*) "Error in defineMagneticField: you should not be here!"
@@ -726,6 +736,12 @@ USE printUtils
 																				    drift(:,2) =  -1./R0*phys%lscale
 																		   END IF
 																		endif
+																		
+
+																		
+																		
+																		
+																																				
 													CASE DEFAULT
 																	WRITE(6,*) "Error! Test case not valid"
 																	STOP
@@ -754,10 +770,10 @@ USE printUtils
   ! Initialization
   b     = 0.
   auxdivb(:) = 0.
-  xmax = maxval(Mesh%X(:,1))
-  xmin = minval(Mesh%X(:,1))
-  ymax = maxval(Mesh%X(:,2))
-  ymin = minval(Mesh%X(:,2))
+  xmax = Mesh%xmax
+  xmin = Mesh%xmin
+  ymax = Mesh%ymax
+  ymin = Mesh%ymin
   xm = 0.5*(xmax+xmin)
   ym = 0.5*(ymax+ymin)
 !  xm = -0.5

@@ -135,6 +135,7 @@ MODULE types
      real*8,allocatable     :: sour_elems(:)          ! Source to limit rho in the flagged elements[Number of elements]
      real*8,allocatable     :: diff_elems(:)          ! Diffusion to limit rho in the flagged elements[Number of elements]
      real*8,allocatable     :: scdiff_nodes(:,:)      ! Shock capturing diffusion in each node [Number of elements,Number of nodes per element]
+     real*8                 :: xmax,xmin,ymax,ymin    ! Limit of the GLOBAL matrix, across mpi partitions
 
      
      

@@ -191,9 +191,17 @@ SUBROUTINE load_mesh(fname)
          WRITE(6,*) "Error reading ghostPro" 
          STOP
       ENDIF       
+      
 #ifdef TOR3D
-      ALLOCATE(Mesh%ghelspro(ghfa))
-      ALLOCATE(Mesh%ghelsloc(ghfa))
+      IF (MPIvar%ntor>1) THEN
+         DO i=1,size(Mesh%ghostPro)
+            IF (Mesh%ghostPro(i).gt.-1) THEN
+               Mesh%ghostPro(i) = Mesh%ghostPro(i)+(MPIvar%itor-1)*MPIvar%npol
+            ENDIF
+         END DO
+      ENDIF      
+      ALLOCATE(Mesh%ghelspro(ghel))
+      ALLOCATE(Mesh%ghelsloc(ghel))
       CALL HDF5_array1D_reading_int(file_id,Mesh%ghelsLoc,'ghelsLoc',ierr)
       IF (IERR .ne. 0) THEN
          WRITE(6,*) "Error reading ghelsLoc" 
@@ -203,10 +211,19 @@ SUBROUTINE load_mesh(fname)
       IF (IERR .ne. 0) THEN
          WRITE(6,*) "Error reading ghelsPro" 
          STOP
-      ENDIF       
+      ENDIF   
+      IF (MPIvar%ntor.gt.1) then    
+         DO i=1,size(Mesh%ghelspro)
+            IF (Mesh%ghelspro(i).gt.-1) THEN
+               Mesh%ghelsPro(i) = Mesh%ghelsPro(i)+(MPIvar%itor-1)*MPIvar%npol
+            END IF
+         END DO
+      END IF       
 #endif 
 #endif      
       CALL HDF5_close(file_id)  
+      
+      
 !************************************************************************      
 !   CONFIRMATION MESSAGE FOR THE USER
 !************************************************************************
@@ -245,6 +262,19 @@ SUBROUTINE load_mesh(fname)
    
    ! Apply length scale
    Mesh%X = Mesh%X/phys%lscale
+   
+   
+   Mesh%xmax = maxval(Mesh%X(:,1))
+   Mesh%xmin = minval(Mesh%X(:,1))   
+   Mesh%ymax = maxval(Mesh%X(:,2))
+   Mesh%ymin = minval(Mesh%X(:,2)) 
+   
+#ifdef PARALL
+      CALL MPI_ALLREDUCE(MPI_IN_PLACE,Mesh%xmax,1,MPI_DOUBLE,MPI_MAX,MPI_COMM_WORLD,ierr)
+      CALL MPI_ALLREDUCE(MPI_IN_PLACE,Mesh%ymax,1,MPI_DOUBLE,MPI_MAX,MPI_COMM_WORLD,ierr)
+      CALL MPI_ALLREDUCE(MPI_IN_PLACE,Mesh%xmin,1,MPI_DOUBLE,MPI_MIN,MPI_COMM_WORLD,ierr)
+      CALL MPI_ALLREDUCE(MPI_IN_PLACE,Mesh%ymin,1,MPI_DOUBLE,MPI_MIN,MPI_COMM_WORLD,ierr)    
+#endif   
    
    IF (utils%printint>0) then
      IF (MPIvar%glob_id.eq.0) THEN
@@ -771,7 +801,7 @@ end subroutine HDF5_save_matrix
 
 
 !**********************************************************************
-! Save 2D array in HDF5 file format
+! Save 1D array in HDF5 file format
 !**********************************************************************
 subroutine HDF5_save_vector(Vec,fname)
    USE globals
@@ -801,6 +831,41 @@ subroutine HDF5_save_vector(Vec,fname)
 !      END IF
    
 end subroutine HDF5_save_vector
+
+
+
+
+!**********************************************************************
+! Save 1D array in HDF5 file format
+!**********************************************************************
+subroutine HDF5_save_vector_int(Vec,fname)
+   USE globals
+   implicit none
+   
+   INTEGER, DIMENSION(:), INTENT(IN) :: Vec
+   character(LEN=*) :: fname
+   character(70)  :: npr,nid
+   integer :: ierr
+   character(len=1000) :: fname_complete
+   integer(HID_T) :: file_id
+   
+   IF (MPIvar%glob_size.GT.1) THEN
+      write(nid,*) MPIvar%glob_id+1
+      write(npr,*) MPIvar%glob_size
+      fname_complete = trim(adjustl(fname))//'_'//trim(adjustl(nid))//'_'//trim(adjustl(npr))//'.h5'
+   ELSE
+      fname_complete = trim(adjustl(fname))//'.h5'
+   END IF      
+      call HDF5_create(fname_complete,file_id,ierr)
+      call HDF5_array1D_saving_int(file_id,Vec,size(Vec,1),'vec')
+      call HDF5_close(file_id)
+      ! Message to confirm succesful creation and filling of file
+!      IF (MPIvar%glob_id.eq.0) THEN
+!						   print*,'Output written to file ', trim(adjustl(fname_complete))
+!						   print*,'	'
+!      END IF
+   
+end subroutine HDF5_save_vector_int
 
 
 END MODULE in_out

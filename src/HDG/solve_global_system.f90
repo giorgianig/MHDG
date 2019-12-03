@@ -28,6 +28,7 @@ SUBROUTINE solve_global_system
 #ifdef PARALL
   integer*4             :: ierr,Neq,Nfp
   integer*4             :: ct,indg(refElPol%Nfacenodes*phys%Neq),indl(refElPol%Nfacenodes*phys%Neq)
+  real*8,allocatable    :: aux_sol(:)
 #ifdef TOR3D
   integer*4             :: Nfl,N2d,Np2d,itor,Nfaces,Nfdir,Nghostf,Nghoste,dd,ddl,ntorass
   integer*4             :: indgp(refElPol%Nnodes2D*phys%Neq),indlp(refElPol%Nnodes2D*phys%Neq),indgt(refElTor%Nfl*phys%Neq),indlt(refElTor%Nfl*phys%Neq)
@@ -95,6 +96,12 @@ SUBROUTINE solve_global_system
   ! Store face solution
   !********************************
 #ifdef PARALL
+  ALLOCATE(aux_sol(matK%n) )
+  IF (lssolver%sollib .eq. 1) THEN
+     aux_sol = matPASTIX%rhs
+  ELSE
+     aux_sol = matPSBLAS%x%get_vect()
+  ENDIF
 #ifdef TOR3D
   ! ********* Parallel 3D ***********
   IF (MPIvar%ntor.gt.1) THEN
@@ -120,7 +127,7 @@ SUBROUTINE solve_global_system
         ct = ct+1
         indgp = dd  +(i- 1)*Np2D*Neq +(/(j,j=0,Np2D*Neq-1)/)
         indlp = ddl +(ct-1)*Np2D*Neq +(/(j,j=0,Np2D*Neq-1)/)
-        sol%u_tilde(indgp) = (1.-numer%dumpnr)*sol%u_tilde(indgp) + numer%dumpnr*matPASTIX%rhs(indlp)
+        sol%u_tilde(indgp) = (1.-numer%dumpnr)*sol%u_tilde(indgp) + numer%dumpnr*aux_sol(indlp)
      END DO
   END IF     
   DO itor = 1,ntorass
@@ -136,7 +143,7 @@ SUBROUTINE solve_global_system
         ct = ct+1
         indgp = dd  +(i- 1)*Np2D*Neq +(/(j,j=0,Np2D*Neq-1)/)
         indlp = ddl +(ct-1)*Np2D*Neq +(/(j,j=0,Np2D*Neq-1)/)
-        sol%u_tilde(indgp) = (1.-numer%dumpnr)*sol%u_tilde(indgp) + numer%dumpnr*matPASTIX%rhs(indlp)
+        sol%u_tilde(indgp) = (1.-numer%dumpnr)*sol%u_tilde(indgp) + numer%dumpnr*aux_sol(indlp)
      END DO
      ct = 0
      dd = dd + (N2D*Np2D)*Neq
@@ -147,7 +154,7 @@ SUBROUTINE solve_global_system
         ct = ct+1
         indgt = dd + (i -1)*Nfl*Neq + (/(j,j=0,Neq*Nfl-1)/)
         indlt = ddl+ (ct-1)*Nfl*Neq + (/(j,j=0,Neq*Nfl-1)/)
-        sol%u_tilde(indgt) = (1.-numer%dumpnr)*sol%u_tilde(indgt) + numer%dumpnr*matPASTIX%rhs(indlt)
+        sol%u_tilde(indgt) = (1.-numer%dumpnr)*sol%u_tilde(indgt) + numer%dumpnr*aux_sol(indlt)
      END DO
   END DO
   IF (MPIvar%ntor.gt.1 .and. MPIvar%itor.ne.MPIvar%ntor) THEN
@@ -160,7 +167,7 @@ SUBROUTINE solve_global_system
         ct = ct+1
         indgp = dd  +(i- 1)*Np2D*Neq +(/(j,j=0,Np2D*Neq-1)/)
         indlp = ddl +(ct-1)*Np2D*Neq +(/(j,j=0,Np2D*Neq-1)/)
-        sol%u_tilde(indgp) = (1.-numer%dumpnr)*sol%u_tilde(indgp) + numer%dumpnr*matPASTIX%rhs(indlp)
+        sol%u_tilde(indgp) = (1.-numer%dumpnr)*sol%u_tilde(indgp) + numer%dumpnr*aux_sol(indlp)
      END DO
   END IF
   
@@ -174,17 +181,18 @@ SUBROUTINE solve_global_system
      ct = ct+1
      indg = (i-1) *Neq*Nfp+(/(j, j=1, Neq*Nfp)/)
      indl = (ct-1)*Neq*Nfp+(/(j, j=1, Neq*Nfp)/)
-     sol%u_tilde(indg) = (1.-numer%dumpnr)*sol%u_tilde(indg) + numer%dumpnr*matPASTIX%rhs(indl)
+     sol%u_tilde(indg) = (1.-numer%dumpnr)*sol%u_tilde(indg) + numer%dumpnr*aux_sol(indl)
   END DO
 #endif  
+
+DEALLOCATE(aux_sol )
+
 #else  
   ! ********* Sequential 2D and 3D ***********
   IF (lssolver%sollib .eq. 1) THEN
-     DO i = 1, matK%n
-         sol%u_tilde(i) = (1.-numer%dumpnr)*sol%u_tilde(i) + numer%dumpnr*matPASTIX%rhs(i)
-     ENDDO
+     sol%u_tilde = (1.-numer%dumpnr)*sol%u_tilde + numer%dumpnr*matPASTIX%rhs
   ELSE
-  sol%u_tilde = (1.-numer%dumpnr)*sol%u_tilde + numer%dumpnr*matPSBLAS%x%get_vect()
+     sol%u_tilde = (1.-numer%dumpnr)*sol%u_tilde + numer%dumpnr*matPSBLAS%x%get_vect()
  END IF 
 #endif
  

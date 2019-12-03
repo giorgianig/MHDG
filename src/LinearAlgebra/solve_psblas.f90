@@ -6,6 +6,7 @@ MODULE solve_psblas
   use psb_prec_mod
   use psb_krylov_mod
   use psb_util_mod
+  use mpi_omp
 #ifdef WITH_MLD2P4  
   use mld_prec_mod
 #endif    
@@ -85,7 +86,12 @@ MODULE solve_psblas
  !******************************************
  !  Allocate a communication descriptor    
  !******************************************
-   call psb_cdall(matPSBLAS%ictxt,matPSBLAS%desc_a,info,nl=matK%n)
+!   call psb_cdall(matPSBLAS%ictxt,matPSBLAS%desc_a,info,nl=matK%n)
+
+   allocate(rows(matK%n))
+   rows = matK%loc2glob
+   call psb_cdall(matPSBLAS%ictxt,matPSBLAS%desc_a,info,vl=rows)
+   deallocate(rows)
    
  !******************************************
  !  Create the communication descriptor    
@@ -94,7 +100,7 @@ MODULE solve_psblas
        ncoef = matK%rowptr(irow+1)-matK%rowptr(irow)
        allocate(rows(ncoef),ind(ncoef),cols(ncoef))
        ind=(/(i,i=matK%rowptr(irow),matK%rowptr(irow+1)-1)/)
-       rows = irow
+       rows =  matK%loc2glob(irow)
        cols = matK%cols(ind)
        call psb_cdins(ncoef,rows,cols,matPSBLAS%desc_a,info)
        if (info .ne. psb_success_) write(6,*) "failed filling matrix!"
@@ -154,7 +160,7 @@ MODULE solve_psblas
        ncoef = matK%rowptr(irow+1)-matK%rowptr(irow)
        allocate(rows(ncoef),ind(ncoef),cols(ncoef),vals(ncoef))
        ind=(/(i,i=matK%rowptr(irow),matK%rowptr(irow+1)-1)/)
-       rows = irow
+       rows = matK%loc2glob(irow)
        cols = matK%cols(ind)
        vals = matK%vals(ind)
        call psb_spins(ncoef,rows,cols,vals,matPSBLAS%mat,matPSBLAS%desc_a,info)
@@ -339,7 +345,7 @@ MODULE solve_psblas
 !***********************************************  
   SUBROUTINE fill_vec_PSBLAS(matPSBLAS)
    TYPE(PSBLAS_STRUC) :: matPSBLAS
-   integer(psb_lpk_),allocatable   :: ind(:)
+   integer(psb_lpk_),allocatable   :: rows(:)
    integer(psb_ipk_)  :: info,n,i
 			real*8  :: tps, tpe
 			integer :: cks,clock_rate,cke
@@ -348,8 +354,24 @@ MODULE solve_psblas
 					call system_clock(cks,clock_rate)      
 			endif
 
-     call matPSBLAS%b%set(rhs%vals)
-     call matPSBLAS%x%set(sol%u_tilde)
+!     call matPSBLAS%b%set(rhs%vals)
+!     call matPSBLAS%x%set(sol%u_tilde)
+
+
+
+     n = matPSBLAS%mat%get_nrows() 
+     call matPSBLAS%x%zero()
+     call matPSBLAS%b%zero() 
+     allocate(rows(n))
+     rows =  matK%loc2glob 
+     call psb_geins(n,rows,rhs%vals,matPSBLAS%b,matPSBLAS%desc_a,info)
+#ifdef PARALL
+     call getFirstGuessInParallel(matPSBLAS,rows)
+#else
+     call psb_geins(n,rows,sol%u_tilde,matPSBLAS%x,matPSBLAS%desc_a,info) 
+#endif
+     deallocate(rows)  
+
      
    
 !     n = matPSBLAS%mat%get_nrows() 
@@ -440,4 +462,130 @@ MODULE solve_psblas
   call psb_exit(matPSBLAS%ictxt)
   END SUBROUTINE terminate_PSBLAS
   
+
+
+
+#ifdef PARALL
+!********************************************
+!  Get the first guess in parallel
+!********************************************
+   SUBROUTINE getFirstGuessInParallel(matPSBLAS,rows)
+   TYPE(PSBLAS_STRUC) :: matPSBLAS
+   integer(psb_lpk_),intent(in)   :: rows(:)
+   integer(psb_ipk_)     :: info
+   
+   integer*4             :: i,j,n
+#ifdef PARALL
+   integer*4             :: ierr,Neq,Nfp
+   integer*4             :: ct,indg(refElPol%Nfacenodes*phys%Neq),indl(refElPol%Nfacenodes*phys%Neq)
+   real*8,allocatable    :: aux_sol(:)
+#ifdef TOR3D
+   integer*4             :: Nfl,N2d,Np2d,itor,Nfaces,Nfdir,Nghostf,Nghoste,dd,ddl,ntorass
+   integer*4             :: indgp(refElPol%Nnodes2D*phys%Neq),indlp(refElPol%Nnodes2D*phys%Neq),indgt(refElTor%Nfl*phys%Neq),indlt(refElTor%Nfl*phys%Neq)
+#endif  
+#endif  
+
+#ifdef TOR3D
+  ! ********* Parallel 3D ***********
+  IF (MPIvar%ntor.gt.1) THEN
+     ntorass = numer%ntor/MPIvar%ntor
+  ELSE
+     ntorass = numer%ntor
+  ENDIF
+  
+  Neq = phys%Neq
+  Nfl = refElTor%Nfl
+  N2d = Mesh%Nelems
+  Np2d= refElPol%Nnodes2D
+  Nfaces  = Mesh%Nfaces
+  Nfdir   = Mesh%Ndir
+  Nghostf=Mesh%nghostfaces
+  Nghoste=Mesh%nghostelems 
+  IF (MPIvar%ntor.gt.1 .and. MPIvar%itor.eq.MPIvar%ntor) THEN
+     ct = 0
+     dd = 1+ntorass*( N2D*Np2D + (Nfaces-Nfdir)*Nfl)*Neq
+     ddl= 1   
+     n =  Np2D*Neq
+     DO i = 1,N2D
+        IF (Mesh%ghostelems(i).eq.1) CYCLE
+        ct = ct+1
+        indgp = dd  +(i- 1)*Np2D*Neq +(/(j,j=0,Np2D*Neq-1)/)
+        indlp = ddl +(ct-1)*Np2D*Neq +(/(j,j=0,Np2D*Neq-1)/)
+        call psb_geins(n,rows(indlp),sol%u_tilde(indgp),matPSBLAS%x,matPSBLAS%desc_a,info)
+
+!        aux_sol(indlp) = sol%u_tilde(indgp)
+     END DO
+  END IF     
+  DO itor = 1,ntorass
+     ct = 0
+     dd = 1+(itor-1)*( N2D*Np2D + (Nfaces-Nfdir)*Nfl)*Neq
+     ddl= 1+(itor-1)*((N2D-Nghoste)*Np2D+(Nfaces-Nfdir-Nghostf)*Nfl)*Neq
+     IF (MPIvar%ntor.gt.1 .and. MPIvar%itor.ne.MPIvar%ntor) THEN
+        ddl = ddl-(N2D-Nghoste)*Np2d*Neq
+     END IF
+     n = Np2D*Neq
+     DO i = 1,N2D
+        IF (Mesh%ghostelems(i).eq.1) CYCLE
+        IF (MPIvar%ntor.gt.1 .and. itor==1) CYCLE
+        ct = ct+1
+        indgp = dd  +(i- 1)*Np2D*Neq +(/(j,j=0,Np2D*Neq-1)/)
+        indlp = ddl +(ct-1)*Np2D*Neq +(/(j,j=0,Np2D*Neq-1)/)
+        call psb_geins(n,rows(indlp),sol%u_tilde(indgp),matPSBLAS%x,matPSBLAS%desc_a,info)
+!        sol%u_tilde(indgp) = (1.-numer%dumpnr)*sol%u_tilde(indgp) + numer%dumpnr*aux_sol(indlp)
+     END DO
+     ct = 0
+     dd = dd + (N2D*Np2D)*Neq
+     ddl= ddl+ ((N2D-Nghoste)*Np2D)*Neq
+     
+     n = Neq*Nfl
+     DO i=1,Mesh%Nfaces
+        IF (Mesh%ghostfaces(i).eq.1) CYCLE
+        ct = ct+1
+        indgt = dd + (i -1)*Nfl*Neq + (/(j,j=0,Neq*Nfl-1)/)
+        indlt = ddl+ (ct-1)*Nfl*Neq + (/(j,j=0,Neq*Nfl-1)/)
+        call psb_geins(n,rows(indlt),sol%u_tilde(indgt),matPSBLAS%x,matPSBLAS%desc_a,info)
+!        sol%u_tilde(indgt) = (1.-numer%dumpnr)*sol%u_tilde(indgt) + numer%dumpnr*aux_sol(indlt)
+     END DO
+  END DO
+  IF (MPIvar%ntor.gt.1 .and. MPIvar%itor.ne.MPIvar%ntor) THEN
+     ct = 0
+     dd = 1+ntorass*( N2D*Np2D + (Nfaces-Nfdir)*Nfl)*Neq
+     ddl= 1+ntorass*((N2D-Nghoste)*Np2D+(Nfaces-Nfdir-Nghostf)*Nfl)*Neq
+     ddl = ddl-(N2D-Nghoste)*Np2d*Neq
+     n = Np2D*Neq
+     DO i = 1,N2D
+        IF (Mesh%ghostelems(i).eq.1) CYCLE
+        ct = ct+1
+        indgp = dd  +(i- 1)*Np2D*Neq +(/(j,j=0,Np2D*Neq-1)/)
+        indlp = ddl +(ct-1)*Np2D*Neq +(/(j,j=0,Np2D*Neq-1)/)
+        call psb_geins(n,rows(indlp),sol%u_tilde(indgp),matPSBLAS%x,matPSBLAS%desc_a,info)
+!        sol%u_tilde(indgp) = (1.-numer%dumpnr)*sol%u_tilde(indgp) + numer%dumpnr*aux_sol(indlp)
+     END DO
+  END IF
+  
+#else
+  ! ********* Parallel 2D ***********
+  ct = 0
+  Neq = phys%Neq
+  Nfp = Mesh%Nnodesperface
+  n = Neq*Nfp
+  DO i=1,Mesh%Nfaces
+     IF (Mesh%ghostfaces(i).eq.1) CYCLE
+     ct = ct+1
+     indg = (i-1) *Neq*Nfp+(/(j, j=1, Neq*Nfp)/)
+     indl = (ct-1)*Neq*Nfp+(/(j, j=1, Neq*Nfp)/)
+     call psb_geins(n,rows(indl),sol%u_tilde(indg),matPSBLAS%x,matPSBLAS%desc_a,info)
+!     sol%u_tilde(indg) = (1.-numer%dumpnr)*sol%u_tilde(indg) + numer%dumpnr*aux_sol(indl)
+  END DO
+#endif  
+
+END SUBROUTINE getFirstGuessInParallel
+#endif
+
+
+
+
+
+
+
 END MODULE solve_psblas
