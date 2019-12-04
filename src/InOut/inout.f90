@@ -638,6 +638,13 @@ subroutine HDF5_load_solution(fname)
 !*************************************
 !              2D case
 !*************************************
+						   IF (MPIvar%glob_size.GT.1) THEN
+						      write(nid,*) MPIvar%glob_id+1
+						      write(npr,*) MPIvar%glob_size
+						      fname_complete = trim(adjustl(fname))//'_'//trim(adjustl(nid))//'_'//trim(adjustl(npr))//'.h5'
+						   ELSE
+						      fname_complete = trim(adjustl(fname))//'.h5'
+						   END IF  
          CALL HDF5_open(fname_complete,file_id,IERR)
          CALL HDF5_array1D_reading(file_id,sol%u,'u')
          CALL HDF5_array1D_reading(file_id,sol%u_tilde,'u_tilde')
