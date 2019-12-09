@@ -12,7 +12,7 @@ elemType = 0;    % element type -  0: quads, 1: tria
 nonst  = 0;   % alignement with the magnetic field - 0: aligned; 1: non aligned (apply a random displacement to nodes)
 delta = 0.0;   % in case on non-alignement: magnitude of the  displacement
 ne1 = 3;      % number of layers in the closed-line zone
-ne2 = 3;    % number of layers in the open-line zone (SOL)
+ne2 = 6;    % number of layers in the open-line zone (SOL)
 elong = 3;   % elongation of the elements in the poloidal direction
 
 % Refinement around the limiter
@@ -43,7 +43,7 @@ end
 NNodesLin = elemInfo.nOfNodes;
 refEl = createReferenceElement(elemType,elemInfo.nOfNodes);
 elemInfo.faceNodes1d =  [1 2];
-path2save = '/home/giorgio/Dropbox/Fortran/MHDG/test/test_Temperature/Circ/';
+path2save = './';
 
 if elemType==0
     if nonst
