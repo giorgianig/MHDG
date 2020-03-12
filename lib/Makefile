@@ -244,18 +244,18 @@ initialization.F : $(SDIR)/HDG/initialization.f90
 initialization.o : initialization.F globals.o physics.o
 	$(FC) -c $(FCFLAGS) $(INC)  $< -o $@
 	
-hdg_PrecalculatedMatrices.F : $(SDIR)/HDG/hdg_PrecalculatedMatrices.f90
+hdg_PrecalculatedFirstEquation.F : $(SDIR)/HDG/hdg_PrecalculatedFirstEquation.f90
 	$(CMP) -s $< $@ || $(CP) -f $< $@
 
-hdg_PrecalculatedMatrices.o : hdg_PrecalculatedMatrices.F globals.o analytical.o LinearAlgebra.o PrintUtils.o
-	$(FC) -c $(FCFLAGS) $(INC)  $< -o $@
-	
-hdg_ConvectionMatrices.F : $(SDIR)/HDG/hdg_ConvectionMatrices.f90
-	$(CMP) -s $< $@ || $(CP) -f $< $@
-
-hdg_ConvectionMatrices.o : hdg_ConvectionMatrices.F globals.o analytical.o LinearAlgebra.o PrintUtils.o physics.o
+hdg_PrecalculatedFirstEquation.o : hdg_PrecalculatedFirstEquation.F globals.o analytical.o LinearAlgebra.o PrintUtils.o
 	$(FC) -c $(FCFLAGS) $(INC)  $< -o $@	
-		
+
+hdg_ComputeJacobian.F : $(SDIR)/HDG/hdg_ComputeJacobian.f90
+	$(CMP) -s $< $@ || $(CP) -f $< $@
+
+hdg_ComputeJacobian.o : hdg_ComputeJacobian.F globals.o analytical.o LinearAlgebra.o PrintUtils.o physics.o
+	$(FC) -c $(FCFLAGS) $(INC)  $< -o $@	
+
 hdg_Mapping.F : $(SDIR)/HDG/hdg_Mapping.f90
 	$(CMP) -s $< $@ || $(CP) -f $< $@
 
@@ -267,7 +267,7 @@ hdg_BC.F : $(SDIR)/HDG/hdg_BC.f90 globals.o analytical.o LinearAlgebra.o PrintUt
 
 hdg_BC.o : hdg_BC.F
 	$(FC) -c $(FCFLAGS) $(INC)  $< -o $@	
-	
+
 hdg_Assembly.F : $(SDIR)/HDG/hdg_Assembly.f90 globals.o analytical.o LinearAlgebra.o PrintUtils.o Debug.o
 	$(CMP) -s $< $@ || $(CP) -f $< $@
 
@@ -280,24 +280,6 @@ hdg_LimitingTechniques.F : $(SDIR)/HDG/hdg_LimitingTechniques.f90 globals.o  Pri
 hdg_LimitingTechniques.o : hdg_LimitingTechniques.F
 	$(FC) -c $(FCFLAGS) $(INC)  $< -o $@	
 	
-hdg_ParallDiffusionMatrices.F : $(SDIR)/HDG/hdg_ParallDiffusionMatrices.f90 globals.o  PrintUtils.o Debug.o
-	$(CMP) -s $< $@ || $(CP) -f $< $@
-
-hdg_ParallDiffusionMatrices.o : hdg_ParallDiffusionMatrices.F
-	$(FC) -c $(FCFLAGS) $(INC)  $< -o $@	
-	
-hdg_MagneticDependingMatrices.F : $(SDIR)/HDG/hdg_MagneticDependingMatrices.f90 globals.o  PrintUtils.o Debug.o
-	$(CMP) -s $< $@ || $(CP) -f $< $@
-
-hdg_MagneticDependingMatrices.o : hdg_MagneticDependingMatrices.F
-	$(FC) -c $(FCFLAGS) $(INC)  $< -o $@	
-	
-compute_solution.F : $(SDIR)/HDG/compute_solution.f90
-	$(CMP) -s $< $@ || $(CP) -f $< $@
-
-compute_solution.o : compute_solution.F globals.o analytical.o LinearAlgebra.o PrintUtils.o solve_pastix.o
-	$(FC) -c $(FCFLAGS) $(INC)  $< -o $@	
-
 solve_global_system.F : $(SDIR)/HDG/solve_global_system.f90
 	$(CMP) -s $< $@ || $(CP) -f $< $@
 
@@ -329,10 +311,11 @@ Convergence.o : Convergence.F inout.o reference_element.o MPI_OMP.o PrintUtils.o
 	$(FC) -c $(FCFLAGS) $(INC)  $< -o $@
 
 
-MHDG-$(MDL)-$(MODE)-$(DIM) : MPI_OMP.o matrices_types.o interpolation.o PrintUtils.o prec_const.o types.o globals.o Debug.o LinearAlgebra.o physics.o read_input.o HDF5_io.o inout.o reference_element.o preprocess.o analytical.o initialization.o hdg_PrecalculatedMatrices.o hdg_ConvectionMatrices.o $(ADDMOD) hdg_Mapping.o hdg_BC.o hdg_Assembly.o solve_global_system.o compute_element_solution.o MHDG.o
-	$(FC) $(FCFLAGS)   MPI_OMP.o matrices_types.o interpolation.o PrintUtils.o prec_const.o types.o globals.o Debug.o LinearAlgebra.o physics.o read_input.o HDF5_io.o inout.o reference_element.o preprocess.o analytical.o initialization.o hdg_PrecalculatedMatrices.o hdg_ConvectionMatrices.o Postprocess.o $(ADDMOD) hdg_Mapping.o hdg_BC.o hdg_Assembly.o  solve_global_system.o compute_element_solution.o MHDG.o -o MHDG-$(MDL)-$(MODE)-$(DIM) $(LIB)
+MHDG-$(MDL)-$(MODE)-$(DIM) : MPI_OMP.o matrices_types.o interpolation.o PrintUtils.o prec_const.o types.o globals.o Debug.o LinearAlgebra.o physics.o read_input.o HDF5_io.o inout.o reference_element.o preprocess.o analytical.o initialization.o hdg_PrecalculatedFirstEquation.o hdg_ComputeJacobian.o  $(ADDMOD) hdg_Mapping.o hdg_BC.o hdg_Assembly.o solve_global_system.o compute_element_solution.o MHDG.o
+	$(FC) $(FCFLAGS)   MPI_OMP.o matrices_types.o interpolation.o PrintUtils.o prec_const.o types.o globals.o Debug.o LinearAlgebra.o physics.o read_input.o HDF5_io.o inout.o reference_element.o preprocess.o analytical.o initialization.o hdg_PrecalculatedFirstEquation.o hdg_ComputeJacobian.o  Postprocess.o $(ADDMOD) hdg_Mapping.o hdg_BC.o hdg_Assembly.o  solve_global_system.o compute_element_solution.o MHDG.o -o MHDG-$(MDL)-$(MODE)-$(DIM) $(LIB)
 	/bin/cp -f MHDG-$(MDL)-$(MODE)-$(DIM) ../test/
 	/bin/cp -f MHDG-$(MDL)-$(MODE)-$(DIM) ../test_anal/
-Convergence-$(MDL)-$(DIM) : MPI_OMP.o interpolation.o matrices_types.o PrintUtils.o prec_const.o types.o globals.o Debug.o LinearAlgebra.o physics.o  read_input.o HDF5_io.o inout.o reference_element.o preprocess.o analytical.o initialization.o hdg_PrecalculatedMatrices.o hdg_ConvectionMatrices.o hdg_Mapping.o hdg_BC.o hdg_Assembly.o solve_global_system.o compute_element_solution.o $(ADDMOD) Convergence.o 	
-	$(FC) $(FCFLAGS) $(OBJS) MPI_OMP.o matrices_types.o interpolation.o PrintUtils.o prec_const.o types.o globals.o Debug.o LinearAlgebra.o physics.o read_input.o HDF5_io.o inout.o reference_element.o preprocess.o analytical.o initialization.o hdg_PrecalculatedMatrices.o hdg_ConvectionMatrices.o hdg_Mapping.o hdg_BC.o hdg_Assembly.o solve_global_system.o compute_element_solution.o Postprocess.o $(ADDMOD) Convergence.o -o Convergence-$(MDL)-$(MODE)-$(DIM) $(LIB)
+	/bin/cp -f MHDG-$(MDL)-$(MODE)-$(DIM) ../test_psblas/	
+Convergence-$(MDL)-$(DIM) : MPI_OMP.o interpolation.o matrices_types.o PrintUtils.o prec_const.o types.o globals.o Debug.o LinearAlgebra.o physics.o  read_input.o HDF5_io.o inout.o reference_element.o preprocess.o analytical.o initialization.o hdg_PrecalculatedFirstEquation.o hdg_ComputeJacobian.o hdg_Mapping.o hdg_BC.o hdg_Assembly.o solve_global_system.o compute_element_solution.o $(ADDMOD) Convergence.o 	
+	$(FC) $(FCFLAGS) $(OBJS) MPI_OMP.o matrices_types.o interpolation.o PrintUtils.o prec_const.o types.o globals.o Debug.o LinearAlgebra.o physics.o read_input.o HDF5_io.o inout.o reference_element.o preprocess.o analytical.o initialization.o hdg_PrecalculatedFirstEquation.o hdg_ComputeJacobian.o hdg_Mapping.o hdg_BC.o hdg_Assembly.o solve_global_system.o compute_element_solution.o Postprocess.o $(ADDMOD) Convergence.o -o Convergence-$(MDL)-$(MODE)-$(DIM) $(LIB)
 	/bin/cp -f Convergence-$(MDL)-$(MODE)-$(DIM) ../test/
