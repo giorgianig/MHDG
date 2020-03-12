@@ -1,11 +1,14 @@
-# MHDG code, version 1
+# MHDG code, version 2.0
 Transport code for plasma simulations based on a high-order HDG (hybrid discontinuous Galerkin) scheme.
 
 # Models available
+0- Laplace model: simple solver for anisotropic diffusion equation, 1 equation.
 
 1- Isothemal model: model with 2 equations, unknowns density and parallel velocity.
 
 2- Non-isothermal model: model with 4 equations, unknowns density, parallel velocity, ion temperature, electron temperature.
+
+3- Isothermal + vorticity: model with 4 equations, unknowns density, parallel velocity, vorticity, electric potential (work in progress)
 
 # Dimensions
 
@@ -15,6 +18,6 @@ Transport code for plasma simulations based on a high-order HDG (hybrid disconti
 
 # Parallelization
 
-Parallelization is based on a hybrid OpenMP/MPI paradigm. 
+Parallelization is based on a hybrid OpenMP/MPI paradigm. Domain decomposition in the plane + toroidal divisions
 
 
