@@ -202,9 +202,108 @@ USE printUtils
     A(2,2) =  auxe*U(4)/U(1)
     A(2,4) =  auxe*U(2)/U(1)
     END SUBROUTINE jacobianMatricesBohm
-																
+								
+								
+								
+								
+		!*****************************************
+		! Set the perpendicular diffusion
+		!****************************************     
+		 SUBROUTINE setLocalDiff(xy,d_iso,d_ani)
+		 real*8, intent(in)  :: xy(:,:)
+		 real*8, intent(out) :: d_iso(:,:,:),d_ani(:,:,:)
+		 real*8              :: iperdiff(size(xy,1))
+		 ! d_iso(Neq,Neq,Ngauss),d_ani(Neq,Neq,Ngauss)
+		 ! first index corresponds to the equation
+		 ! second index corresponds to the unknown
+		 ! third index correspond to the gauss point
+		 ! example d_iso(2,3,ig) is the diffusion in the non-diagonal 
+		 ! diffusion term in the second equation/third variable
+		 ! d_iso>0,d_ani=0 is an isotropic diffusion
+		 ! d_iso>0,d_ani=d_iso is a perpendicular diffusion 
+		 ! d_iso=0,d_ani<0 is a (positive) parallel diffusion
+		 		 
+   d_iso = 0.
+   d_ani = 0.
+   !*****************************
+   ! Diagonal terms
+   !*****************************   
+		 d_iso(1,1,:) = phys%diff_n
+		 d_iso(2,2,:) = phys%diff_u
+   d_iso(3,3,:) = phys%diff_e
+   d_iso(4,4,:) = phys%diff_ee
+
+		 d_ani(1,1,:) = phys%diff_n
+		 d_ani(2,2,:) = phys%diff_u		 
+   d_ani(3,3,:) = phys%diff_e
+   d_ani(4,4,:) = phys%diff_ee
+		 
+   !*****************************		 
+		 ! Non diagonal terms
+   !*****************************
+   ! No non-diagonal terms defined for this model 
+   		 
+		 
+		 if (switch%difcor.gt.0) then
+		    call computeIperDiffusion(xy,iperdiff) 
+		    d_iso(1,1,:) = d_iso(1,1,:)*iperdiff
+		    d_iso(2,2,:) = d_iso(2,2,:)*iperdiff
+      d_iso(3,3,:) = d_iso(3,3,:)*iperdiff
+      d_iso(4,4,:) = d_iso(4,4,:)*iperdiff
+		 endif
+		 		 
+		 END SUBROUTINE setLocalDiff																
 																		  
-         																		  
+
+		 
+		
+		
+		
+    	!*******************************************
+					! Compute local diffusion in points
+					!*******************************************
+					SUBROUTINE computeIperDiffusion(X,ipdiff)
+					real*8,intent(IN)  :: X(:,:)
+					real*8,intent(OUT) :: ipdiff(:)
+					real*8             :: xcorn,ycorn
+					real*8             :: rad(size(X,1))
+					real*8             :: h
+					real*8,parameter   :: tol=1.e-6
+					integer            :: i
+					
+					
+					
+					SELECT CASE(switch%difcor)
+					CASE(1)
+					   ! Circular case with infinitely small limiter
+					   xcorn =  geom%R0
+        ycorn = -0.75
+					CASE(2)
+					   ! Circular case with infinitely small limiter
+					   xcorn =  geom%R0
+        ycorn = -0.287
+					CASE(3)					
+					   ! West
+        xcorn =  2.7977
+        ycorn = -0.5128
+					CASE DEFAULT
+					   WRITE(6,*) "Case not valid"
+					   STOP
+					END SELECT
+				 
+								!!**********************************************************
+								!! Gaussian around the corner
+								!!********************************************************** 
+								h = 10e-3
+							 rad = sqrt( (X(:,1)*phys%lscale-xcorn)**2 + (X(:,2)*phys%lscale-ycorn)**2)
+							 ipdiff = 1+numer%dc_coe*exp( -(2*rad/h)**2)
+    
+					END	SUBROUTINE computeIperDiffusion
+					
+					
+					
+					
+					         																		  
 		!*****************************************
 		! Curvature term matrix
 		!****************************************     
@@ -395,9 +494,9 @@ USE printUtils
 
 
  !***********************************************************************
- !
+ ! 
  !    COMPUTATION OF THE STABILIZATION PARAMETER
- !
+ ! 
  !***********************************************************************
 								
 								!*******************************************
@@ -407,35 +506,41 @@ USE printUtils
 								 real*8, intent(in)  :: up(:),uc(:),b(:),n(:),xy(:)
          real, intent(in) :: isext
 								 integer,intent(in)  :: ifa,iel
-								 real*8, intent(out) :: tau(:)								     
+								 real*8, intent(out) :: tau(:,:)
+								 real*8              :: tau_aux(4)								     
          real*8 :: xc,yc,rad,h,aux,bn,bnorm
+         real*8 :: U1,U2,U3,U4
+         U1 = uc(1)
+         U2 = uc(2)
+         U3 = uc(3)
+         U4 = uc(4)
          
          
-         
+         tau = 0.
          bn = dot_product(b,n)
          bnorm = norm2(b)         
 									           
           if (numer%stab==2) then
              if (abs(isext-1.).lt.1e-12) then
              ! exterior faces
-                tau = abs((4*uc(2)*bn)/uc(1))
+                tau_aux = abs((4*uc(2)*bn)/uc(1))
              else
-                tau = max(abs(5./3.*up(2)*bn),abs(0.3*bn*(3*uc(1)+sqrt(abs(10*uc(3)*uc(1)+10*uc(4)*uc(1)-5*uc(2)**2)))/uc(1)))
+                tau_aux = max(abs(5./3.*up(2)*bn),abs(0.3*bn*(3*uc(1)+sqrt(abs(10*uc(3)*uc(1)+10*uc(4)*uc(1)-5*uc(2)**2)))/uc(1)))
              endif
 #ifdef TOR3D             
              if (abs(n(3))>0.1) then
              ! Poloidal face
-                tau(1) = tau(1) + phys%diff_n*refElTor%Ndeg/(numer%tmax*xy(1)/numer%ntor)/phys%lscale
-                tau(2) = tau(2) + phys%diff_u*refElTor%Ndeg/(numer%tmax*xy(1)/numer%ntor)/phys%lscale
-                tau(3) = tau(3) + (phys%diff_e + abs(bn)*phys%diff_pari*up(7)**2.5*bnorm/uc(1))*refElTor%Ndeg/(numer%tmax*xy(1)/numer%ntor)/phys%lscale
-                tau(4) = tau(4) + (phys%diff_ee + abs(bn)*phys%diff_pare*up(8)**2.5*bnorm/uc(1))*refElTor%Ndeg/(numer%tmax*xy(1)/numer%ntor)/phys%lscale               
+                tau_aux(1) = tau_aux(1) + phys%diff_n*refElTor%Ndeg/(numer%tmax*xy(1)/numer%ntor)/phys%lscale
+                tau_aux(2) = tau_aux(2) + phys%diff_u*refElTor%Ndeg/(numer%tmax*xy(1)/numer%ntor)/phys%lscale
+                tau_aux(3) = tau_aux(3) + (phys%diff_e + abs(bn)*phys%diff_pari*up(7)**2.5*bnorm/uc(1))*refElTor%Ndeg/(numer%tmax*xy(1)/numer%ntor)/phys%lscale
+                tau_aux(4) = tau_aux(4) + (phys%diff_ee + abs(bn)*phys%diff_pare*up(8)**2.5*bnorm/uc(1))*refElTor%Ndeg/(numer%tmax*xy(1)/numer%ntor)/phys%lscale               
              else
 #endif             
              ! Toroidal face
-                tau(1) = tau(1) + phys%diff_n*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
-                tau(2) = tau(2) + phys%diff_u*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
-                tau(3) = tau(3) + (phys%diff_e + abs(bn)*phys%diff_pari*up(7)**2.5*bnorm/uc(1))*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
-                tau(4) = tau(4) + (phys%diff_ee + abs(bn)*phys%diff_pare*up(8)**2.5*bnorm/uc(1))*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale               
+                tau_aux(1) = tau_aux(1) + phys%diff_n*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
+                tau_aux(2) = tau_aux(2) + phys%diff_u*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
+                tau_aux(3) = tau_aux(3) + (phys%diff_e + abs(bn)*phys%diff_pari*up(7)**2.5*bnorm/uc(1))*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
+                tau_aux(4) = tau_aux(4) + (phys%diff_ee + abs(bn)*phys%diff_pare*up(8)**2.5*bnorm/uc(1))*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale               
 #ifdef TOR3D                
              endif
 #endif                   
@@ -443,23 +548,43 @@ USE printUtils
           elseif(numer%stab==3) then
              if (abs(isext-1.).lt.1e-12) then
              ! exterior faces
-                tau = abs((4*uc(2)*bn)/uc(1))
+                tau_aux = max( abs((5*U2 - 2*U2*phys%Gmbohme)/(3*U1)), abs((5*U2 - 2*U2*phys%Gmbohm)/(3*U1)) )
              else
-                tau = max(abs(5./3.*up(2)*bn),abs(0.3*bn*(3*uc(1)+sqrt(abs(10*uc(3)*uc(1)+10*uc(4)*uc(1)-5*uc(2)**2)))/uc(1)))
+                tau_aux = max(  abs( (3*U2*bn + 5**(0.5)*bn*(- U2**2 + 2*U1*U3 + 2*U1*U4)**(0.5))/(3*U1) ),&
+                           &abs( (3*U2*bn - 5**(0.5)*bn*(- U2**2 + 2*U1*U3 + 2*U1*U4)**(0.5))/(3*U1) ),&
+                           &abs( (U2*bn)/U1 ),&
+                           &abs((5*U2*bn)/(3*U1))  )
              endif
-             tau(1) = tau(1) + phys%diff_n
-             tau(2) = tau(2) + phys%diff_u
-             tau(3) = tau(3) + phys%diff_e + phys%diff_pari*up(7)**2.5*bnorm/uc(1)
-             tau(4) = tau(4) + phys%diff_ee + phys%diff_pare*up(8)**2.5*bnorm/uc(1)                     
+#ifdef TOR3D             
+             if (abs(n(3))>0.1) then
+             ! Poloidal face
+                tau_aux(1) = tau_aux(1) + phys%diff_n*refElTor%Ndeg/(numer%tmax*xy(1)/numer%ntor)/phys%lscale
+                tau_aux(2) = tau_aux(2) + phys%diff_u*refElTor%Ndeg/(numer%tmax*xy(1)/numer%ntor)/phys%lscale
+                tau_aux(3) = tau_aux(3) + (phys%diff_e + abs(bn)*phys%diff_pari*up(7)**2.5*bnorm/uc(1))*refElTor%Ndeg/(numer%tmax*xy(1)/numer%ntor)/phys%lscale
+                tau_aux(4) = tau_aux(4) + (phys%diff_ee + abs(bn)*phys%diff_pare*up(8)**2.5*bnorm/uc(1))*refElTor%Ndeg/(numer%tmax*xy(1)/numer%ntor)/phys%lscale               
+             else
+#endif             
+             ! Toroidal face
+                tau_aux(1) = tau_aux(1) + phys%diff_n*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
+                tau_aux(2) = tau_aux(2) + phys%diff_u*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
+                tau_aux(3) = tau_aux(3) + (phys%diff_e + abs(bn)*phys%diff_pari*up(7)**2.5*bnorm/uc(1))*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
+                tau_aux(4) = tau_aux(4) + (phys%diff_ee + abs(bn)*phys%diff_pare*up(8)**2.5*bnorm/uc(1))*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale               
+#ifdef TOR3D                
+             endif
+#endif                   
+                         
 
           elseif(numer%stab==4) then
-             tau = max(abs(5./3.*up(2)*bn),abs(0.3*bn*(3*uc(1)+sqrt(abs(10*uc(3)*uc(1)+10*uc(4)*uc(1)-5*uc(2)**2)))/uc(1)), &
+             tau_aux = max(abs(5./3.*up(2)*bn),abs(0.3*bn*(3*uc(1)+sqrt(abs(10*uc(3)*uc(1)+10*uc(4)*uc(1)-5*uc(2)**2)))/uc(1)), &
              phys%lscale/geom%R0*abs(bn)*phys%diff_pari*up(7)**2.5,phys%lscale/geom%R0*abs(bn)*phys%diff_pare*up(8)**2.5 )                
           else
              write(6,*) "Wrong stabilization type: ", numer%stab
              stop
           endif
-
+          tau(1,1) = tau_aux(1)
+          tau(2,2) = tau_aux(2)
+          tau(3,3) = tau_aux(3)
+          tau(4,4) = tau_aux(4)
         END SUBROUTINE computeTauGaussPoints
         
         !!
@@ -486,6 +611,7 @@ USE printUtils
         real*8 :: x,y,r,h,coef,r0,rc
         
         
+        tau = 0.
         bn = dot_product(b,n)
         bnorm = norm2(b) 
                  

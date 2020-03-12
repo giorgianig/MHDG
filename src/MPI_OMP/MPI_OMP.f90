@@ -53,6 +53,12 @@ subroutine init_MPI_OMP()
 !#endif
    call MPI_init_thread(MPI_THREAD_required,MPI_THREAD_provided,IERR)
    call MPI_Comm_size(MPI_COMM_WORLD,MPIvar%glob_size,IERR)
+#ifndef PARALL
+   if (MPIvar%glob_size>1) then
+      write(6,*) 'Error: using serial version in a parallel environment'
+      stop
+   endif
+#endif   
    call MPI_Comm_rank(MPI_COMM_WORLD,MPIvar%glob_id,IERR)
    if ((MPI_THREAD_provided.NE.MPI_THREAD_required).AND.(MPIvar%glob_id.EQ.0)) then
       print*,'Problem with initialization of multi-threaded MPI.'

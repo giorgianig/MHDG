@@ -16,44 +16,25 @@ USE in_out
   
   SUBROUTINE print_matrices_tex()
    
-  write(6,*) "Saving elemental matrices"  
-     call saveArray(elMat%M, 'M')
-     call saveArray(elMat%Cv,'Cv')
-     call saveArray(elMat%H, 'H')
-     IF (Mesh%ndir.gt.0) THEN
-        call saveMatrix(elMat%Hdir, 'Hdir')
-        call saveMatrix(elMat%Edir,'Edir')
+  write(6,*) "Saving elemental matrices"
+     call saveArray(elMat%iAqq,'iAqq')
+     call saveArray(elMat%Aqu,'Aqu')  
+     call saveArray(elMat%Aql,'Aql')  
+     call saveArray(elMat%Auq,'Auq')  
+     call saveArray(elMat%Auu,'Auu')
+     call saveArray(elMat%Aul,'Aul')    
+     call saveArray(elMat%Alq,'Alq')  
+     call saveArray(elMat%Alu,'Alu')
+     call saveArray(elMat%All,'All')
+     IF (Mesh%ndir.gt.0) THEN 
+        call saveMatrix(elMat%Aql_dir,'Aql_dir')
+        call saveMatrix(elMat%Aul_dir,'Aul_dir')
      END IF
-     call saveArray(elMat%D, 'D')
-     call saveArray(elMat%E,'E')     
-     call saveMatrix(elMat%S,'S')
+
      call saveArray(elMat%UU,'UU')
      call saveMatrix(elMat%U0,'U0')
-     call saveArray(elMat%Hf,'Hf')
-     call saveArray(elMat%Df,'Df')
-     call saveArray(elMat%Ef,'Ef')
-     call saveMatrix(elMat%fH,'fH')  
-     call saveArray(elMat%B, 'B')
-     call saveArray(elMat%C, 'C')
-     IF (Mesh%ndir.gt.0) THEN     
-        call saveMatrix(elMat%Cdir, 'Cdir')
-     END IF
-     call saveArray(elMat%P, 'P')
-     call saveArray(elMat%G, 'G')
-     call saveArray(elMat%iL, 'iL')
-     call saveArray(elMat%Lf, 'Lf')
-     call saveArray(elMat%Qf, 'Qf')
      call saveArray(elMat%LL,'LL')
      call saveMatrix(elMat%L0,'L0')     
-#ifdef TEMPERATURE
-     call saveArray(elMat%TQ, 'TQ')
-     call saveArray(elMat%TQhf, 'TQhf')
-     call saveMatrix(elMat%Tfhf, 'Tfhf')
-     call saveMatrix(elMat%Tf, 'Tf')
-     IF (Mesh%ndir.gt.0) THEN
-        call saveMatrix(elMat%Thdir, 'Thdir')
-     END IF
-#endif  
   END SUBROUTINE print_matrices_tex
   
   
@@ -62,92 +43,74 @@ USE in_out
   SUBROUTINE print_matrices_hdf5()
    
   write(6,*) "Saving elemental matrices in hdf5"  
-     call HDF5_save_array(elMat%M, 'M')
-     call HDF5_save_array(elMat%Cv,'Cv')
-     call HDF5_save_array(elMat%H, 'H')
-     IF (Mesh%ndir.gt.0) THEN
-        call HDF5_save_matrix(elMat%Hdir, 'Hdir')
-        call HDF5_save_matrix(elMat%Edir,'Edir')
-     END IF
-     call HDF5_save_array(elMat%D, 'D')
-     call HDF5_save_array(elMat%E,'E')     
+     call HDF5_save_array(elMat%iAqq,'iAqq')
+     call HDF5_save_array(elMat%Aqu,'Aqu')  
+     call HDF5_save_array(elMat%Aql,'Aql')  
+     call HDF5_save_array(elMat%Auq,'Auq')  
+     call HDF5_save_array(elMat%Auu,'Auu')
+     call HDF5_save_array(elMat%Aul,'Aul')    
+     call HDF5_save_array(elMat%Alq,'Alq')  
+     call HDF5_save_array(elMat%Alu,'Alu')
+     call HDF5_save_array(elMat%All,'All')
      call HDF5_save_matrix(elMat%S,'S')
+     call HDF5_save_matrix(elMat%fh,'fh')
+     IF (Mesh%ndir.gt.0) THEN 
+        call HDF5_save_matrix(elMat%Aql_dir,'Aql_dir')
+        call HDF5_save_matrix(elMat%Aul_dir,'Aul_dir')
+     END IF
      call HDF5_save_array(elMat%UU,'UU')
      call HDF5_save_matrix(elMat%U0,'U0')
-     call HDF5_save_array(elMat%Hf,'Hf')
-     call HDF5_save_array(elMat%Df,'Df')
-     call HDF5_save_array(elMat%Ef,'Ef')
-     call HDF5_save_matrix(elMat%fH,'fH')  
-     call HDF5_save_array(elMat%B, 'B')
-     call HDF5_save_array(elMat%C, 'C')
-     IF (Mesh%ndir.gt.0) THEN     
-        call HDF5_save_matrix(elMat%Cdir, 'Cdir')
-     END IF
-     call HDF5_save_array(elMat%P, 'P')
-     call HDF5_save_array(elMat%G, 'G')
-     call HDF5_save_array(elMat%iL, 'iL')
-     call HDF5_save_array(elMat%Lf, 'Lf')
-     call HDF5_save_array(elMat%Qf, 'Qf')
      call HDF5_save_array(elMat%LL,'LL')
-     call HDF5_save_matrix(elMat%L0,'L0')     
-#ifdef TEMPERATURE
-     call HDF5_save_array(elMat%TQ, 'TQ')
-     call HDF5_save_array(elMat%TQhf, 'TQhf')
-     call HDF5_save_matrix(elMat%Tfhf, 'Tfhf')
-     call HDF5_save_matrix(elMat%Tf, 'Tf')
-     IF (Mesh%ndir.gt.0) THEN
-        call HDF5_save_matrix(elMat%Thdir, 'Thdir')
-     END IF
-#endif  
+     call HDF5_save_matrix(elMat%L0,'L0')    
   END SUBROUTINE print_matrices_hdf5
     
    
    
    
    
-  SUBROUTINE print_matrices_hdf5_parall()
-  USE MPI_OMP
-  CHARACTER(LEN = 60)  :: num
-     
-  write(6,*) "Saving elemental matrices in hdf5"  
-     call HDF5_save_array(elMat%M, 'M' )
-     call HDF5_save_array(elMat%Cv,'Cv')
-     call HDF5_save_array(elMat%H, 'H')
-     IF (Mesh%ndir.gt.0) THEN
-        call HDF5_save_matrix(elMat%Hdir, 'Hdir')
-        call HDF5_save_matrix(elMat%Edir,'Edir')
-     END IF
-     call HDF5_save_array(elMat%D, 'D')
-     call HDF5_save_array(elMat%E,'E')     
-     call HDF5_save_matrix(elMat%S,'S')
-     call HDF5_save_array(elMat%UU,'UU')
-     call HDF5_save_matrix(elMat%U0,'U0')
-     call HDF5_save_array(elMat%Hf,'Hf')
-     call HDF5_save_array(elMat%Df,'Df')
-     call HDF5_save_array(elMat%Ef,'Ef')
-     call HDF5_save_matrix(elMat%fH,'fH')  
-     call HDF5_save_array(elMat%B, 'B')
-     call HDF5_save_array(elMat%C, 'C')
-     IF (Mesh%ndir.gt.0) THEN     
-        call HDF5_save_matrix(elMat%Cdir, 'Cdir')
-     END IF
-     call HDF5_save_array(elMat%P, 'P')
-     call HDF5_save_array(elMat%G, 'G')
-     call HDF5_save_array(elMat%iL, 'iL')
-     call HDF5_save_array(elMat%Lf, 'Lf')
-     call HDF5_save_array(elMat%Qf, 'Qf')
-     call HDF5_save_array(elMat%LL,'LL')
-     call HDF5_save_matrix(elMat%L0,'L0')     
-#ifdef TEMPERATURE
-     call HDF5_save_array(elMat%TQ, 'TQ')
-     call HDF5_save_array(elMat%TQhf, 'TQhf')
-     call HDF5_save_matrix(elMat%Tfhf, 'Tfhf')
-     call HDF5_save_matrix(elMat%Tf, 'Tf')
-     IF (Mesh%ndir.gt.0) THEN
-        call HDF5_save_matrix(elMat%Thdir, 'Thdir')
-     END IF
-#endif  
-  END SUBROUTINE print_matrices_hdf5_parall
+!  SUBROUTINE print_matrices_hdf5_parall()
+!  USE MPI_OMP
+!  CHARACTER(LEN = 60)  :: num
+!     
+!  write(6,*) "Saving elemental matrices in hdf5"  
+!     call HDF5_save_array(elMat%M, 'M' )
+!     call HDF5_save_array(elMat%Cv,'Cv')
+!     call HDF5_save_array(elMat%H, 'H')
+!     IF (Mesh%ndir.gt.0) THEN
+!        call HDF5_save_matrix(elMat%Hdir, 'Hdir')
+!        call HDF5_save_matrix(elMat%Edir,'Edir')
+!     END IF
+!     call HDF5_save_array(elMat%D, 'D')
+!     call HDF5_save_array(elMat%E,'E')     
+!     call HDF5_save_matrix(elMat%S,'S')
+!     call HDF5_save_array(elMat%UU,'UU')
+!     call HDF5_save_matrix(elMat%U0,'U0')
+!     call HDF5_save_array(elMat%Hf,'Hf')
+!     call HDF5_save_array(elMat%Df,'Df')
+!     call HDF5_save_array(elMat%Ef,'Ef')
+!     call HDF5_save_matrix(elMat%fH,'fH')  
+!     call HDF5_save_array(elMat%B, 'B')
+!     call HDF5_save_array(elMat%C, 'C')
+!     IF (Mesh%ndir.gt.0) THEN     
+!        call HDF5_save_matrix(elMat%Cdir, 'Cdir')
+!     END IF
+!     call HDF5_save_array(elMat%P, 'P')
+!     call HDF5_save_array(elMat%G, 'G')
+!     call HDF5_save_array(elMat%iL, 'iL')
+!     call HDF5_save_array(elMat%Lf, 'Lf')
+!     call HDF5_save_array(elMat%Qf, 'Qf')
+!     call HDF5_save_array(elMat%LL,'LL')
+!     call HDF5_save_matrix(elMat%L0,'L0')     
+!#ifdef TEMPERATURE
+!     call HDF5_save_array(elMat%TQ, 'TQ')
+!     call HDF5_save_array(elMat%TQhf, 'TQhf')
+!     call HDF5_save_matrix(elMat%Tfhf, 'Tfhf')
+!     call HDF5_save_matrix(elMat%Tf, 'Tf')
+!     IF (Mesh%ndir.gt.0) THEN
+!        call HDF5_save_matrix(elMat%Thdir, 'Thdir')
+!     END IF
+!#endif  
+!  END SUBROUTINE print_matrices_hdf5_parall
   
   
   

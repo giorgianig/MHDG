@@ -208,6 +208,8 @@ MODULE types
       real*8         :: diff_pare    ! Parallel diffusion for the electron temperature 
       real*8         :: tie          ! Temperature exchange coefficient between ions and electrons
       real*8         :: Gmbohme      ! gamma for Bohm boundary condition on electron energy: 
+      ! Coefficients for the vorticity equations
+      real*8         :: diff_vort
    END TYPE Physics_type
     
     
@@ -394,6 +396,18 @@ MODULE types
    ! used during the computation
    !**********************************************************
    TYPE :: elmat_type
+     real*8,allocatable :: iAqq(:,:,:)
+     real*8,allocatable :: Aqu(:,:,:)
+     real*8,allocatable :: Aql(:,:,:)
+     real*8,allocatable :: Auq(:,:,:)
+     real*8,allocatable :: Auu(:,:,:)
+     real*8,allocatable :: Aul(:,:,:)
+     real*8,allocatable :: Alq(:,:,:)
+     real*8,allocatable :: Alu(:,:,:)
+     real*8,allocatable :: All(:,:,:)
+     real*8,allocatable :: Aql_dir(:,:)
+     real*8,allocatable :: Aul_dir(:,:)     
+
      real*8,allocatable :: M(:,:,:)
      real*8,allocatable :: Cv(:,:,:)
      real*8,allocatable :: H(:,:,:)

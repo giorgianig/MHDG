@@ -62,6 +62,7 @@ MODULE analytical
                ! Cartesian case, circular field centered in [xm, ym] in the poloidal plane, Bt = 1
 															up(ind,1) = 2+sin(a* xx)*sin(a* yy)
 															up(ind,2) = cos(a* xx)*cos(a* yy)
+															up(ind,3) = up(ind,1)
 											CASE(2)
 											! Axisimmetric case with div(b)~=0
 														IF (.not.switch%axisym) THEN
@@ -70,12 +71,15 @@ MODULE analytical
 														END IF 
 															up(ind,1) = 2+sin(a* xx)*sin(a* yy)
 															up(ind,2) = cos(a* xx)*cos(a* yy)
+															up(ind,3) = up(ind,1)
 											CASE(50:64)
 														 up(ind,1) = 1.
 														 up(ind,2) = 0.
+														 up(ind,3) = up(ind,1)
 											CASE(65)
 														 up(ind,1) = 1.
 														 up(ind,2) = 0.
+														 up(ind,3) = up(ind,1)
 														 r = 	sqrt ( (xx*phys%lscale-geom%R0)**2+(yy*phys%lscale-0.75)**2 )
 											    IF (r.le. 0.05) THEN
 											       up(ind,2) = 1.
@@ -137,7 +141,9 @@ MODULE analytical
 
 														 upy(ind,1) =  a*sin(a*xx)*cos(a*yy)
 														 upy(ind,2) = -a*cos(a*xx)*sin(a*yy)
-												
+
+               upx(ind,3) = upx(ind,1)
+               upy(ind,3) = upy(ind,1)												
 													CASE(2)
 													! Axisimmetric case with div(b)~=0, n = 2+sin(wx*x )*sin(wy*y),  u = cos(wx*x)*cos(wy*y), Ei = 20+cos(wx*x)*sin(wy*y), Ee = 10-sin(wx*x)*cos(wy*y)
 																IF (.not.switch%axisym) THEN
@@ -149,6 +155,9 @@ MODULE analytical
 
 														 upy(ind,1) =  a*sin(a*xx)*cos(a*yy)
 														 upy(ind,2) = -a*cos(a*xx)*sin(a*yy)
+														 
+               upx(ind,3) = upx(ind,1)
+               upy(ind,3) = upy(ind,1)															 
 													CASE(3)
 													! Axisimmetric case with div(b)~=0, n = 2+sin(wx*x )*sin(wy*y),  u = cos(wx*x)*cos(wy*y), Ei = 20+cos(wx*x)*sin(wy*y), Ee = 10-sin(wx*x)*cos(wy*y)
 																IF (.not.switch%axisym) THEN
@@ -157,6 +166,7 @@ MODULE analytical
 																END IF 														 
 															upt(ind,1) = +a*cos(a* tt)
 															upt(ind,2) = -a*sin(a* tt)
+															upt(ind,3) = upt(ind,1)
 													CASE(5)
 														   ! Do nothing
 													CASE(6)
@@ -178,7 +188,9 @@ MODULE analytical
 				ux(:,2) = ( upx(:,1)*up(:,2)+up(:,1)*upx(:,2) )
 				uy(:,2) = ( upy(:,1)*up(:,2)+up(:,1)*upy(:,2) )
 				ut(:,2) = ( upt(:,1)*up(:,2)+up(:,1)*upt(:,2) )				
-
+				ux(:,3) = upx(:,3)
+				uy(:,3) = upy(:,3) 
+				ut(:,3) = upt(:,3)				
   END SUBROUTINE analytical_gradient
   
 		!*****************************************
@@ -244,6 +256,7 @@ MODULE analytical
 														            f(ind,1) = (2*D*a**2*sin(a*xx)*sin(a*yy)-2*a*xm*cos(a*xx)*sin(a*yy)*((xm-xx)**2+(ym-yy)**2+1)**(0.5)+2*a*xx*cos(a*xx)*sin(a*yy)*((xm-xx)**2+(ym-yy)**2+1)**(0.5)+2*a*ym*cos(a*yy)*sin(a*xx)*((xm-xx)**2+(ym-yy)**2+1)**(0.5)-2*a*yy*cos(a*yy)*sin(a*xx)*((xm-xx)**2+(ym-yy)**2+1)**(0.5)+D*a**2*xm**2*sin(a*xx)*sin(a*yy)+D*a**2*xx**2*sin(a*xx)*sin(a*yy)+D*a**2*ym**2*sin(a*xx)*sin(a*yy)+D*a**2*yy**2*sin(a*xx)*sin(a*yy)+D*a*xm*cos(a*xx)*sin(a*yy)-D*a*xx*cos(a*xx)*sin(a*yy)+D*a*ym*cos(a*yy)*sin(a*xx)-D*a*yy*cos(a*yy)*sin(a*xx)+a*xm*cos(a*xx)*cos(a*yy)**2*sin(a*xx)*((xm-xx)**2+(ym-yy)**2+1)**(0.5)-a*xx*cos(a*xx)*cos(a*yy)**2*sin(a*xx)*((xm-xx)**2+(ym-yy)**2+1)**(0.5)-a*ym*cos(a*xx)**2*cos(a*yy)*sin(a*yy)*((xm-xx)**2+(ym-yy)**2+1)**(0.5)+a*yy*cos(a*xx)**2*cos(a*yy)*sin(a*yy)*((xm-xx)**2+(ym-yy)**2+1)**(0.5)-a*xm*cos(a*xx)*sin(a*xx)*sin(a*yy)**2*((xm-xx)**2+(ym-yy)**2+1)**(0.5)+a*xx*cos(a*xx)*sin(a*xx)*sin(a*yy)**2*((xm-xx)**2+(ym-yy)**2+1)**(0.5)+a*ym*cos(a*yy)*sin(a*xx)**2*sin(a*yy)*((xm-xx)**2+(ym-yy)**2+1)**(0.5)-a*yy*cos(a*yy)*sin(a*xx)**2*sin(a*yy)*((xm-xx)**2+(ym-yy)**2+1)**(0.5)-2*D*a**2*xm*ym*cos(a*xx)*cos(a*yy)+2*D*a**2*xx*ym*cos(a*xx)*cos(a*yy)+2*D*a**2*xm*yy*cos(a*xx)*cos(a*yy)-2*D*a**2*xx*yy*cos(a*xx)*cos(a*yy)-2*D*a**2*xm*xx*sin(a*xx)*sin(a*yy)-2*D*a**2*ym*yy*sin(a*xx)*sin(a*yy))/((xm-xx)**2+(ym-yy)**2+1);
             f(ind,2) = ((a*mu*xx*sin(2*a*yy))/2-(a*mu*xm*sin(2*a*yy))/2-(a*mu*ym*sin(2*a*xx))/2+(a*mu*yy*sin(2*a*xx))/2-2*a**2*mu*xm*ym+2*a**2*mu*xx*ym+2*a**2*mu*xm*yy-2*a**2*mu*xx*yy+4*a**2*mu*cos(a*xx)*cos(a*yy)+4*a**2*mu*xm*ym*cos(a*xx)**2-4*a**2*mu*xx*ym*cos(a*xx)**2-4*a**2*mu*xm*yy*cos(a*xx)**2+4*a**2*mu*xx*yy*cos(a*xx)**2+4*a**2*mu*xm*ym*cos(a*yy)**2-4*a**2*mu*xx*ym*cos(a*yy)**2-4*a**2*mu*xm*yy*cos(a*yy)**2+4*a**2*mu*xx*yy*cos(a*yy)**2+2*a**2*mu*xm**2*cos(a*xx)*cos(a*yy)+2*a**2*mu*xx**2*cos(a*xx)*cos(a*yy)+2*a**2*mu*ym**2*cos(a*xx)*cos(a*yy)+2*a**2*mu*yy**2*cos(a*xx)*cos(a*yy)-2*a*mu*xm*cos(a*yy)*sin(a*xx)+2*a*mu*xx*cos(a*yy)*sin(a*xx)-2*a*mu*ym*cos(a*xx)*sin(a*yy)+2*a*mu*yy*cos(a*xx)*sin(a*yy)+8*a**2*mu*cos(a*xx)*cos(a*yy)*sin(a*xx)*sin(a*yy)-2*a*xm*cos(a*xx)**2*cos(a*yy)*sin(a*xx)*(xm**2-2*ym*yy-2*xm*xx+xx**2+ym**2+yy**2+1)**(0.5)+2*a*xx*cos(a*xx)**2*cos(a*yy)*sin(a*xx)*(xm**2-2*ym*yy-2*xm*xx+xx**2+ym**2+yy**2+1)**(0.5)+4*a*ym*cos(a*xx)*cos(a*yy)**2*sin(a*xx)*(xm**2-2*ym*yy-2*xm*xx+xx**2+ym**2+yy**2+1)**(0.5)-4*a*xm*cos(a*xx)**2*cos(a*yy)*sin(a*yy)*(xm**2-2*ym*yy-2*xm*xx+xx**2+ym**2+yy**2+1)**(0.5)+4*a*xx*cos(a*xx)**2*cos(a*yy)*sin(a*yy)*(xm**2-2*ym*yy-2*xm*xx+xx**2+ym**2+yy**2+1)**(0.5)-4*a*yy*cos(a*xx)*cos(a*yy)**2*sin(a*xx)*(xm**2-2*ym*yy-2*xm*xx+xx**2+ym**2+yy**2+1)**(0.5)+2*a*ym*cos(a*xx)*cos(a*yy)**2*sin(a*yy)*(xm**2-2*ym*yy-2*xm*xx+xx**2+ym**2+yy**2+1)**(0.5)-2*a*yy*cos(a*xx)*cos(a*yy)**2*sin(a*yy)*(xm**2-2*ym*yy-2*xm*xx+xx**2+ym**2+yy**2+1)**(0.5)-8*a**2*mu*xm*ym*cos(a*xx)**2*cos(a*yy)**2+8*a**2*mu*xx*ym*cos(a*xx)**2*cos(a*yy)**2+8*a**2*mu*xm*yy*cos(a*xx)**2*cos(a*yy)**2-8*a**2*mu*xx*yy*cos(a*xx)**2*cos(a*yy)**2+3*a*xm*cos(a*xx)**2*cos(a*yy)**3*sin(a*xx)*(xm**2-2*ym*yy-2*xm*xx+xx**2+ym**2+yy**2+1)**(0.5)-3*a*xx*cos(a*xx)**2*cos(a*yy)**3*sin(a*xx)*(xm**2-2*ym*yy-2*xm*xx+xx**2+ym**2+yy**2+1)**(0.5)-3*a*ym*cos(a*xx)**3*cos(a*yy)**2*sin(a*yy)*(xm**2-2*ym*yy-2*xm*xx+xx**2+ym**2+yy**2+1)**(0.5)+3*a*yy*cos(a*xx)**3*cos(a*yy)**2*sin(a*yy)*(xm**2-2*ym*yy-2*xm*xx+xx**2+ym**2+yy**2+1)**(0.5)+a*k*xm*cos(a*yy)*sin(a*xx)*(xm**2-2*ym*yy-2*xm*xx+xx**2+ym**2+yy**2+1)**(0.5)-a*k*xx*cos(a*yy)*sin(a*xx)*(xm**2-2*ym*yy-2*xm*xx+xx**2+ym**2+yy**2+1)**(0.5)-a*k*ym*cos(a*xx)*sin(a*yy)*(xm**2-2*ym*yy-2*xm*xx+xx**2+ym**2+yy**2+1)**(0.5)+a*k*yy*cos(a*xx)*sin(a*yy)*(xm**2-2*ym*yy-2*xm*xx+xx**2+ym**2+yy**2+1)**(0.5)-4*a**2*mu*xm*xx*cos(a*xx)*cos(a*yy)-4*a**2*mu*ym*yy*cos(a*xx)*cos(a*yy)-4*a**2*mu*xm*ym*sin(a*xx)*sin(a*yy)+4*a**2*mu*xx*ym*sin(a*xx)*sin(a*yy)+4*a**2*mu*xm*yy*sin(a*xx)*sin(a*yy)-4*a**2*mu*xx*yy*sin(a*xx)*sin(a*yy)+2*a*mu*ym*cos(a*xx)*cos(a*yy)**2*sin(a*xx)+2*a*mu*xm*cos(a*xx)**2*cos(a*yy)*sin(a*yy)-2*a*mu*xx*cos(a*xx)**2*cos(a*yy)*sin(a*yy)-2*a*mu*yy*cos(a*xx)*cos(a*yy)**2*sin(a*xx)+4*a**2*mu*xm**2*cos(a*xx)*cos(a*yy)*sin(a*xx)*sin(a*yy)+4*a**2*mu*xx**2*cos(a*xx)*cos(a*yy)*sin(a*xx)*sin(a*yy)+4*a**2*mu*ym**2*cos(a*xx)*cos(a*yy)*sin(a*xx)*sin(a*yy)+4*a**2*mu*yy**2*cos(a*xx)*cos(a*yy)*sin(a*xx)*sin(a*yy)-8*a**2*mu*xm*xx*cos(a*xx)*cos(a*yy)*sin(a*xx)*sin(a*yy)-8*a**2*mu*ym*yy*cos(a*xx)*cos(a*yy)*sin(a*xx)*sin(a*yy))/(xm**2-2*ym*yy-2*xm*xx+xx**2+ym**2+yy**2+1);
 
+                f(ind,3) = f(ind,1)
 !														f(ind,1) = (2*D*a**2*t2-2*a*xm*t3*((xm-xx)**2+(ym-yy)**2+1)**(0.5)+2*a*xx*t3*((xm-xx)**2+(ym-yy)**2+1)**(0.5)+2*a*ym*t4*((xm-xx)**2+(ym-yy)**2+1)**(0.5)-2*a*yy*t4*((xm-xx)**2+(ym-yy)**2+1)**(0.5)+D*a**2*xm**2*t2+D*a**2*xx**2*t2+D*a**2*ym**2*t2+D*a**2*yy**2*t2+D*a*xm*t3-D*a*xx*t3+D*a*ym*t4-D*a*yy*t4+a*xm*t1**2*sin(a*xx)*((xm-xx)**2+(ym-yy)**2+1)**(0.5)-a*xx*t1**2*sin(a*xx)*((xm-xx)**2+(ym-yy)**2+1)**(0.5)-a*ym*cos(a*xx)**2*t5*((xm-xx)**2+(ym-yy)**2+1)**(0.5)+a*yy*cos(a*xx)**2*t5*((xm-xx)**2+(ym-yy)**2+1)**(0.5)-a*xm*cos(a*xx)*t2**2*((xm-xx)**2+(ym-yy)**2+1)**(0.5)+a*xx*cos(a*xx)*t2**2*((xm-xx)**2+(ym-yy)**2+1)**(0.5)+a*ym*t4**2*sin(a*yy)*((xm-xx)**2+(ym-yy)**2+1)**(0.5)-a*yy*t4**2*sin(a*yy)*((xm-xx)**2+(ym-yy)**2+1)**(0.5)-2*D*a**2*xm*ym*t1+2*D*a**2*xx*ym*t1+2*D*a**2*xm*yy*t1-2*D*a**2*xx*yy*t1-2*D*a**2*xm*xx*t2-2*D*a**2*ym*yy*t2)/((xm-xx)**2+(ym-yy)**2+1)
 !														f(ind,2) = ((a*mu*xx*sin(2*a*yy))/2-(a*mu*xm*sin(2*a*yy))/2-(a*mu*ym*sin(2*a*xx))/2+(a*mu*yy*sin(2*a*xx))/2-2*a**2*mu*xm*ym+2*a**2*mu*xx*ym+2*a**2*mu*xm*yy-2*a**2*mu*xx*yy+4*a**2*mu*t1+4*a**2*mu*xm*ym*cos(a*xx)**2-4*a**2*mu*xx*ym*cos(a*xx)**2-4*a**2*mu*xm*yy*cos(a*xx)**2+4*a**2*mu*xx*yy*cos(a*xx)**2+4*a**2*mu*xm*ym*cos(a*yy)**2-4*a**2*mu*xx*ym*cos(a*yy)**2-4*a**2*mu*xm*yy*cos(a*yy)**2+4*a**2*mu*xx*yy*cos(a*yy)**2+2*a**2*mu*xm**2*t1+2*a**2*mu*xx**2*t1+2*a**2*mu*ym**2*t1+2*a**2*mu*yy**2*t1-2*a*mu*xm*t4+2*a*mu*xx*t4-2*a*mu*ym*t3+2*a*mu*yy*t3+8*a**2*mu*t1*t2-2*a*xm*cos(a*xx)**2*t4*ta**(0.5)+2*a*xx*cos(a*xx)**2*t4*ta**(0.5)+4*a*ym*t1**2*sin(a*xx)*ta**(0.5)-4*a*xm*cos(a*xx)**2*t5*ta**(0.5)+4*a*xx*cos(a*xx)**2*t5*ta**(0.5)-4*a*yy*t1**2*sin(a*xx)*ta**(0.5)+2*a*ym*t1**2*sin(a*yy)*ta**(0.5)-2*a*yy*t1**2*sin(a*yy)*ta**(0.5)-8*a**2*mu*xm*ym*t8+8*a**2*mu*xx*ym*t8+8*a**2*mu*xm*yy*t8-8*a**2*mu*xx*yy*t8+3*a*xm*cos(a*xx)**2*cos(a*yy)**3*sin(a*xx)*ta**(0.5)-3*a*xx*cos(a*xx)**2*cos(a*yy)**3*sin(a*xx)*ta**(0.5)-3*a*ym*cos(a*xx)**3*cos(a*yy)**2*sin(a*yy)*ta**(0.5)+3*a*yy*cos(a*xx)**3*cos(a*yy)**2*sin(a*yy)*ta**(0.5)+a*k*xm*t4*ta**(0.5)-a*k*xx*t4*ta**(0.5)-a*k*ym*t3*ta**(0.5)+a*k*yy*t3*ta**(0.5)-4*a**2*mu*xm*xx*t1-4*a**2*mu*ym*yy*t1-4*a**2*mu*xm*ym*t2+4*a**2*mu*xx*ym*t2+4*a**2*mu*xm*yy*t2-4*a**2*mu*xx*yy*t2+2*a*mu*ym*t1**2*sin(a*xx)+2*a*mu*xm*cos(a*xx)**2*t5-2*a*mu*xx*cos(a*xx)**2*t5-2*a*mu*yy*t1**2*sin(a*xx)+4*a**2*mu*xm**2*t1*t2+4*a**2*mu*xx**2*t1*t2+4*a**2*mu*ym**2*t1*t2+4*a**2*mu*yy**2*t1*t2-8*a**2*mu*xm*xx*t1*t2-8*a**2*mu*ym*yy*t1*t2)/ta
 										 CASE(2)
@@ -489,7 +502,7 @@ MODULE analytical
           &ym*yy*1.6D+1+a*cy*mu*sy*xm*xx*yy**2*cos(a*xx)**2*6.0D0-a*cy*mu*sy*&
           &xm*xx*ym*yy*cos(a*xx)**2*1.2D+1))/xx
           
-          
+          f(ind,3) = f(ind,1)
           
 											CASE(50:)
 													!Do nothing
@@ -529,6 +542,7 @@ MODULE analytical
 				  ! Case 9 of the Matlab version: for convergence purpose
 								  up(:,1) = 2+sin(a*x)*sin(a*y)
 								  up(:,2) = cos(a*x)*cos(a*y)
+								  up(:,3) = up(:,1)
 						CASE(2)
 						! Axisimmetric case with div(b)~=0
 						   IF (.not.switch%axisym) THEN
@@ -537,12 +551,15 @@ MODULE analytical
 						   END IF 
 								  up(:,1) = 2+sin(a*x)*sin(a*y)
 								  up(:,2) = cos(a*x)*cos(a*y)
+								  up(:,3) = up(:,1)
 				  CASE(50:64)
 				      up(:,1) = 1.
 				      up(:,2) = 0.
+				      up(:,3) = up(:,1)
 				  CASE(65)
 				      up(:,1) = 1.
 				      up(:,2) = 0.
+				      up(:,3) = up(:,1)
 				      r = 	sqrt ( (x*phys%lscale-geom%R0)**2+(y*phys%lscale-0.75)**2 )
 				      DO i=1,size(x)
 				         IF (r(i).le. 0.05) THEN
@@ -585,6 +602,8 @@ MODULE analytical
         upy(:,1) =  a*sin(a*x)*cos(a*y)
         upy(:,2) = -a*cos(a*x)*sin(a*y)
 								  
+								upx(:,3) = upx(:,1)
+								upy(:,3) = upx(:,1)  
 						CASE(2)
 						! Axisimmetric case with div(b)~=0, n = 2+sin(wx*x )*sin(wy*y),  u = cos(wx*x)*cos(wy*y), Ei = 20+cos(wx*x)*sin(wy*y), Ee = 10-sin(wx*x)*cos(wy*y)
 						   IF (.not.switch%axisym) THEN
@@ -596,6 +615,9 @@ MODULE analytical
 
         upy(:,1) =  a*sin(a*x)*cos(a*y)
         upy(:,2) = -a*cos(a*x)*sin(a*y)
+        
+								upx(:,3) = upx(:,1)
+								upy(:,3) = upx(:,1)        
       CASE(5)
           ! Do nothing
       CASE(6)
@@ -611,7 +633,8 @@ MODULE analytical
 				uy(:,1) = upy(:,1)
 				ux(:,2) = ( upx(:,1)*up(:,2)+up(:,1)*upx(:,2) )
 				uy(:,2) = ( upy(:,1)*up(:,2)+up(:,1)*upy(:,2) )
-
+				ux(:,3) = upx(:,3)
+				uy(:,3) = upy(:,3)
   END SUBROUTINE analytical_gradient
   
   
@@ -642,6 +665,7 @@ MODULE analytical
 				  k = phys%a
                f(:,1) = cos(a * x)**2 * a  * sin(b * y) * cos(b * y) * (y-yc) * (y**2-0.2e1 * y * yc+yc**2+x**2-0.2e1 * x * xc+xc**2)**(-0.1e1 / 0.2e1) / 0.10e2-(0.2e1+sin(a * x) * sin(b * y)) * sin(a * x) * a  * cos(b * y) * (y-yc) * (y**2-0.2e1 * y * yc+yc**2+x**2-0.2e1 * x * xc+xc**2)**(-0.1e1 / 0.2e1) / 0.10e2-(0.2e1+sin(a * x) * sin(b * y)) * cos(a * x) * cos(b * y) * (y-yc) * (y**2-0.2e1 * y * yc+yc**2+x**2-0.2e1 * x * xc+xc**2)**(-0.3e1 / 0.2e1) * (0.2e1 * x-0.2e1 * xc) / 0.20e2+sin(a * x) * cos(b * y)**2 * b * cos(a * x) * (-x+xc) * (y**2-0.2e1 * y * yc+yc**2+x**2-0.2e1 * x * xc+xc**2)**(-0.1e1 / 0.2e1) / 0.10e2-(0.2e1+sin(a * x) * sin(b * y)) * cos(a * x) * sin(b * y) * b * (-x+xc) * (y**2-0.2e1 * y * yc+yc**2+x**2-0.2e1 * x * xc+xc**2)**(-0.1e1 / 0.2e1) / 0.10e2-(0.2e1+sin(a * x) * sin(b * y)) * cos(a * x) * cos(b * y) * (-x+xc) * (y**2-0.2e1 * y * yc+yc**2+x**2-0.2e1 * x * xc+xc**2)**(-0.3e1 / 0.2e1) * (0.2e1 * y-0.2e1 * yc) / 0.20e2-D * (-sin(a * x) * a**2 * sin(b * y)+(y-yc) * (y**2-0.2e1 * y * yc+yc**2+x**2-0.2e1 * x * xc+xc**2)**(-0.3e1 / 0.2e1) * ((y-yc) * (y**2-0.2e1 * y * yc+yc**2+x**2-0.2e1 * x * xc+xc**2)**(-0.1e1 / 0.2e1) * cos(a * x) * a  * sin(b * y) / 0.10e2+(-x+xc) * (y**2-0.2e1 * y * yc+yc**2+x**2-0.2e1 * x * xc+xc**2)**(-0.1e1 / 0.2e1) * sin(a * x) * cos(b * y) * b / 0.10e2) * (0.2e1 * x-0.2e1 * xc) / 0.20e2-(y-yc) * (y**2-0.2e1 * y * yc+yc**2+x**2-0.2e1 * x * xc+xc**2)**(-0.1e1 / 0.2e1) * (-(y-yc) * (y**2-0.2e1 * y * yc+yc**2+x**2-0.2e1 * x * xc+xc**2)**(-0.3e1 / 0.2e1) * cos(a * x) * a  * sin(b * y) * (0.2e1 * x-0.2e1 * xc) / 0.20e2-(y-yc) * (y**2-0.2e1 * y * yc+yc**2+x**2-0.2e1 * x * xc+xc**2)**(-0.1e1 / 0.2e1) * sin(a * x) * a**2 * sin(b * y) / 0.10e2-(y**2-0.2e1 * y * yc+yc**2+x**2-0.2e1 * x * xc+xc**2)**(-0.1e1 / 0.2e1) * sin(a * x) * cos(b * y) * b / 0.10e2-(-x+xc) * (y**2-0.2e1 * y * yc+yc**2+x**2-0.2e1 * x * xc+xc**2)**(-0.3e1 / 0.2e1) * sin(a * x) * cos(b * y) * b * (0.2e1 * x-0.2e1 * xc) / 0.20e2+(-x+xc) * (y**2-0.2e1 * y * yc+yc**2+x**2-0.2e1 * x * xc+xc**2)**(-0.1e1 / 0.2e1) * cos(a * x) * a  * cos(b * y) * b / 0.10e2) / 0.10e2-sin(a * x) * sin(b * y) * b**2+(-x+xc) * (y**2-0.2e1 * y * yc+yc**2+x**2-0.2e1 * x * xc+xc**2)**(-0.3e1 / 0.2e1) * ((y-yc) * (y**2-0.2e1 * y * yc+yc**2+x**2-0.2e1 * x * xc+xc**2)**(-0.1e1 / 0.2e1) * cos(a * x) * a  * sin(b * y) / 0.10e2+(-x+xc) * (y**2-0.2e1 * y * yc+yc**2+x**2-0.2e1 * x * xc+xc**2)**(-0.1e1 / 0.2e1) * sin(a * x) * cos(b * y) * b / 0.10e2) * (0.2e1 * y-0.2e1 * yc) / 0.20e2-(-x+xc) * (y**2-0.2e1 * y * yc+yc**2+x**2-0.2e1 * x * xc+xc**2)**(-0.1e1 / 0.2e1) * ((y**2-0.2e1 * y * yc+yc**2+x**2-0.2e1 * x * xc+xc**2)**(-0.1e1 / 0.2e1) * cos(a * x) * a  * sin(b * y) / 0.10e2-(y-yc) * (y**2-0.2e1 * y * yc+yc**2+x**2-0.2e1 * x * xc+xc**2)**(-0.3e1 / 0.2e1) * cos(a * x) * a  * sin(b * y) * (0.2e1 * y-0.2e1 * yc) / 0.20e2+(y-yc) * (y**2-0.2e1 * y * yc+yc**2+x**2-0.2e1 * x * xc+xc**2)**(-0.1e1 / 0.2e1) * cos(a * x) * a  * cos(b * y) * b / 0.10e2-(-x+xc) * (y**2-0.2e1 * y * yc+yc**2+x**2-0.2e1 * x * xc+xc**2)**(-0.3e1 / 0.2e1) * sin(a * x) * cos(b * y) * b * (0.2e1 * y-0.2e1 * yc) / 0.20e2-(-x+xc) * (y**2-0.2e1 * y * yc+yc**2+x**2-0.2e1 * x * xc+xc**2)**(-0.1e1 / 0.2e1) * sin(a * x) * sin(b * y) * b**2 / 0.10e2) / 0.10e2)
             f(:,2) = cos(a * x)**3 * a  * sin(b * y) * cos(b * y)**2 * (y-yc) * (y**2-0.2e1 * y * yc+yc**2+x**2-0.2e1 * x * xc+xc**2)**(-0.1e1 / 0.2e1) / 0.10e2-(0.2e1+sin(a * x) * sin(b * y)) * cos(a * x) * cos(b * y)**2 * (y-yc) * (y**2-0.2e1 * y * yc+yc**2+x**2-0.2e1 * x * xc+xc**2)**(-0.1e1 / 0.2e1) * sin(a * x) * a  / 0.5e1-(0.2e1+sin(a * x) * sin(b * y)) * cos(a * x)**2 * cos(b * y)**2 * (y-yc) * (y**2-0.2e1 * y * yc+yc**2+x**2-0.2e1 * x * xc+xc**2)**(-0.3e1 / 0.2e1) * (0.2e1 * x-0.2e1 * xc) / 0.20e2+sin(a * x) * cos(b * y)**3 * b * cos(a * x)**2 * (-x+xc) * (y**2-0.2e1 * y * yc+yc**2+x**2-0.2e1 * x * xc+xc**2)**(-0.1e1 / 0.2e1) / 0.10e2-(0.2e1+sin(a * x) * sin(b * y)) * cos(a * x)**2 * cos(b * y) * (-x+xc) * (y**2-0.2e1 * y * yc+yc**2+x**2-0.2e1 * x * xc+xc**2)**(-0.1e1 / 0.2e1) * sin(b * y) * b / 0.5e1-(0.2e1+sin(a * x) * sin(b * y)) * cos(a * x)**2 * cos(b * y)**2 * (-x+xc) * (y**2-0.2e1 * y * yc+yc**2+x**2-0.2e1 * x * xc+xc**2)**(-0.3e1 / 0.2e1) * (0.2e1 * y-0.2e1 * yc) / 0.20e2+k * (y-yc) * (y**2-0.2e1 * y * yc+yc**2+x**2-0.2e1 * x * xc+xc**2)**(-0.1e1 / 0.2e1) * cos(a * x) * a  * sin(b * y) / 0.10e2+k * (-x+xc) * (y**2-0.2e1 * y * yc+yc**2+x**2-0.2e1 * x * xc+xc**2)**(-0.1e1 / 0.2e1) * sin(a * x) * cos(b * y) * b / 0.10e2-mu * (-0.3e1 * cos(a * x) * a**2 * sin(b * y) * cos(b * y) * sin(a * x)-(0.2e1+sin(a * x) * sin(b * y)) * cos(a * x) * a**2 * cos(b * y)+(y-yc) * (y**2-0.2e1 * y * yc+yc**2+x**2-0.2e1 * x * xc+xc**2)**(-0.3e1 / 0.2e1) * ((y-yc) * (y**2-0.2e1 * y * yc+yc**2+x**2-0.2e1 * x * xc+xc**2)**(-0.1e1 / 0.2e1) * (cos(a * x)**2 * a  * sin(b * y) * cos(b * y)-(0.2e1+sin(a * x) * sin(b * y)) * sin(a * x) * a  * cos(b * y)) / 0.10e2+(-x+xc) * (y**2-0.2e1 * y * yc+yc**2+x**2-0.2e1 * x * xc+xc**2)**(-0.1e1 / 0.2e1) * (sin(a * x) * cos(b * y)**2 * b * cos(a * x)-(0.2e1+sin(a * x) * sin(b * y)) * cos(a * x) * sin(b * y) * b) / 0.10e2) * (0.2e1 * x-0.2e1 * xc) / 0.20e2-(y-yc) * (y**2-0.2e1 * y * yc+yc**2+x**2-0.2e1 * x * xc+xc**2)**(-0.1e1 / 0.2e1) * (-(y-yc) * (y**2-0.2e1 * y * yc+yc**2+x**2-0.2e1 * x * xc+xc**2)**(-0.3e1 / 0.2e1) * (cos(a * x)**2 * a  * sin(b * y) * cos(b * y)-(0.2e1+sin(a * x) * sin(b * y)) * sin(a * x) * a  * cos(b * y)) * (0.2e1 * x-0.2e1 * xc) / 0.20e2+(y-yc) * (y**2-0.2e1 * y * yc+yc**2+x**2-0.2e1 * x * xc+xc**2)**(-0.1e1 / 0.2e1) * (-0.3e1 * cos(a * x) * a**2 * sin(b * y) * cos(b * y) * sin(a * x)-(0.2e1+sin(a * x) * sin(b * y)) * cos(a * x) * a**2 * cos(b * y)) / 0.10e2-(y**2-0.2e1 * y * yc+yc**2+x**2-0.2e1 * x * xc+xc**2)**(-0.1e1 / 0.2e1) * (sin(a * x) * cos(b * y)**2 * b * cos(a * x)-(0.2e1+sin(a * x) * sin(b * y)) * cos(a * x) * sin(b * y) * b) / 0.10e2-(-x+xc) * (y**2-0.2e1 * y * yc+yc**2+x**2-0.2e1 * x * xc+xc**2)**(-0.3e1 / 0.2e1) * (sin(a * x) * cos(b * y)**2 * b * cos(a * x)-(0.2e1+sin(a * x) * sin(b * y)) * cos(a * x) * sin(b * y) * b) * (0.2e1 * x-0.2e1 * xc) / 0.20e2+(-x+xc) * (y**2-0.2e1 * y * yc+yc**2+x**2-0.2e1 * x * xc+xc**2)**(-0.1e1 / 0.2e1) * (cos(a * x)**2 * a  * cos(b * y)**2 * b-sin(a * x)**2 * cos(b * y)**2 * b * a -cos(a * x)**2 * a  * sin(b * y)**2 * b+(0.2e1+sin(a * x) * sin(b * y)) * sin(a * x) * a  * sin(b * y) * b) / 0.10e2) / 0.10e2-0.3e1 * sin(a * x) * cos(b * y) * b**2 * cos(a * x) * sin(b * y)-(0.2e1+sin(a * x) * sin(b * y)) * cos(a * x) * cos(b * y) * b**2+(-x+xc) * (y**2-0.2e1 * y * yc+yc**2+x**2-0.2e1 * x * xc+xc**2)**(-0.3e1 / 0.2e1) * ((y-yc) * (y**2-0.2e1 * y * yc+yc**2+x**2-0.2e1 * x * xc+xc**2)**(-0.1e1 / 0.2e1) * (cos(a * x)**2 * a  * sin(b * y) * cos(b * y)-(0.2e1+sin(a * x) * sin(b * y)) * sin(a * x) * a  * cos(b * y)) / 0.10e2+(-x+xc) * (y**2-0.2e1 * y * yc+yc**2+x**2-0.2e1 * x * xc+xc**2)**(-0.1e1 / 0.2e1) * (sin(a * x) * cos(b * y)**2 * b * cos(a * x)-(0.2e1+sin(a * x) * sin(b * y)) * cos(a * x) * sin(b * y) * b) / 0.10e2) * (0.2e1 * y-0.2e1 * yc) / 0.20e2-(-x+xc) * (y**2-0.2e1 * y * yc+yc**2+x**2-0.2e1 * x * xc+xc**2)**(-0.1e1 / 0.2e1) * ((y**2-0.2e1 * y * yc+yc**2+x**2-0.2e1 * x * xc+xc**2)**(-0.1e1 / 0.2e1) * (cos(a * x)**2 * a  * sin(b * y) * cos(b * y)-(0.2e1+sin(a * x) * sin(b * y)) * sin(a * x) * a  * cos(b * y)) / 0.10e2-(y-yc) * (y**2-0.2e1 * y * yc+yc**2+x**2-0.2e1 * x * xc+xc**2)**(-0.3e1 / 0.2e1) * (cos(a * x)**2 * a  * sin(b * y) * cos(b * y)-(0.2e1+sin(a * x) * sin(b * y)) * sin(a * x) * a  * cos(b * y)) * (0.2e1 * y-0.2e1 * yc) / 0.20e2+(y-yc) * (y**2-0.2e1 * y * yc+yc**2+x**2-0.2e1 * x * xc+xc**2)**(-0.1e1 / 0.2e1) * (cos(a * x)**2 * a  * cos(b * y)**2 * b-sin(a * x)**2 * cos(b * y)**2 * b * a -cos(a * x)**2 * a  * sin(b * y)**2 * b+(0.2e1+sin(a * x) * sin(b * y)) * sin(a * x) * a  * sin(b * y) * b) / 0.10e2-(-x+xc) * (y**2-0.2e1 * y * yc+yc**2+x**2-0.2e1 * x * xc+xc**2)**(-0.3e1 / 0.2e1) * (sin(a * x) * cos(b * y)**2 * b * cos(a * x)-(0.2e1+sin(a * x) * sin(b * y)) * cos(a * x) * sin(b * y) * b) * (0.2e1 * y-0.2e1 * yc) / 0.20e2+(-x+xc) * (y**2-0.2e1 * y * yc+yc**2+x**2-0.2e1 * x * xc+xc**2)**(-0.1e1 / 0.2e1) * (-0.3e1 * sin(a * x) * cos(b * y) * b**2 * cos(a * x) * sin(b * y)-(0.2e1+sin(a * x) * sin(b * y)) * cos(a * x) * cos(b * y) * b**2) / 0.10e2) / 0.10e2)
+            f(:,3) = f(:,1)
       CASE(2)
 						! Axisimmetric case with div(b)~=0
 						   IF (.not.switch%axisym) THEN
@@ -656,7 +680,8 @@ MODULE analytical
 									mu = phys%diff_u
 									k = phys%a
 									f(:,1) = 0.
-									f(:,2) = 0.						         
+									f(:,2) = 0.				
+									f(:,3) = f(:,1)		         
 				  CASE(50:)
 				    !Do nothing
 				  CASE DEFAULT

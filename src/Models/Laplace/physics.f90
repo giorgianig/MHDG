@@ -21,21 +21,19 @@ USE globals
   SUBROUTINE initPhys()
   
    ! number of equation of the problem
-   phys%Neq = 2
+   phys%Neq = 1
    
    ! number of physical variables
-   phys%npv = 2
+   phys%npv = 1
    
    ALLOCATE(phys%phyVarNam(phys%npv))
    ALLOCATE(phys%conVarNam(phys%Neq))
    
    ! Set the name of the physical variables
-   phys%phyVarNam(1) = "rho"
-   phys%phyVarNam(2) = "Mach"
+   phys%phyVarNam(1) = "u"
    
    ! Set the name of the conservative variables
-   phys%conVarNam(1) = "rho"
-   phys%conVarNam(2) = "Gamma"
+   phys%conVarNam(1) = "u"
     
   END SUBROUTINE
 
@@ -51,7 +49,6 @@ USE globals
   real*8, dimension(:,:),intent(out) :: ua
   
   ua(:,1) = up(:,1)
-  ua(:,2) = up(:,1)*up(:,2)
   END SUBROUTINE phys2cons
   
   
@@ -66,7 +63,6 @@ USE globals
   real*8, dimension(:,:),intent(out) :: up
   
   up(:,1) = ua(:,1)
-  up(:,2) = ua(:,2)/ua(:,1)/sqrt(phys%a)
   
   END SUBROUTINE cons2phys
   
@@ -96,9 +92,6 @@ USE globals
 		 real*8, intent(out) :: A(:,:)
 
 			A = 0.d0
-			A(1,2) = 1.
-			A(2,1) = (-1*U(2)**2/U(1)**2+phys%a)
-			A(2,2) = 2*U(2)/U(1)
 
 
 		 END SUBROUTINE jacobianMatrices 
@@ -111,9 +104,6 @@ USE globals
 		 real*8, intent(out) :: An(:,:)
 
 			An = 0.d0
-			An(1,2) = bn
-			An(2,1) = (-1*U(2)**2/U(1)**2+phys%a)*bn
-			An(2,2) = 2*U(2)/U(1)*bn
 
 		 END SUBROUTINE jacobianMatricesFace 
 		 
@@ -143,10 +133,8 @@ USE globals
    ! Diagonal terms
    !*****************************   
 		 d_iso(1,1,:) = phys%diff_n
-		 d_iso(2,2,:) = phys%diff_u
 
-		 d_ani(1,1,:) = phys%diff_n
-		 d_ani(2,2,:) = phys%diff_u		 
+		 d_ani(1,1,:) = 0.!phys%diff_n
 		 
    !*****************************		 
 		 ! Non diagonal terms
@@ -157,7 +145,6 @@ USE globals
 		 if (switch%difcor.gt.0) then
 		    call computeIperDiffusion(xy,iperdiff) 
 		    d_iso(1,1,:) = d_iso(1,1,:)*iperdiff
-		    d_iso(2,2,:) = d_iso(2,2,:)*iperdiff
 		 endif
 		 
 		 
@@ -222,32 +209,25 @@ USE globals
      real, intent(in) :: isext
 				 integer,intent(in)  :: ifa,iel
 				 real*8, intent(out) :: tau(:,:)								     
-				 real*8              :: tau_aux(2)
+				 real*8              :: tau_aux
      real*8 :: xc,yc,rad,h,aux,bn,bnorm
      
      bn = dot_product(b,n)
      bnorm = norm2(b)
 					           
       if (numer%stab==2) then
-         tau_aux = abs( uc(2)*bn/uc(1) )
-         tau_aux(1) = tau_aux(1) + phys%diff_n*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
-         tau_aux(2) = tau_aux(2) + phys%diff_u*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
+         tau_aux = phys%diff_n*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
          
       elseif(numer%stab==3) then
-         tau_aux = max( abs((uc(2)+sqrt(phys%a))*bn/uc(1) ),abs((uc(2)-sqrt(phys%a))*bn/uc(1) ) )
-         tau_aux(1) = tau_aux(1) + phys%diff_n*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
-         tau_aux(2) = tau_aux(2) + phys%diff_u*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale             
+         tau_aux = phys%diff_n*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
 
       elseif(numer%stab==4) then
-         tau_aux = abs((uc(2)*bn)/uc(1))
-         tau_aux(1) = tau_aux(1) + phys%diff_n
-         tau_aux(2) = tau_aux(2) + phys%diff_u         
+         tau_aux = phys%diff_n
       else
          write(6,*) "Wrong stabilization type: ", numer%stab
          stop
       endif
-      tau(1,1) = tau_aux(1)
-      tau(2,2) = tau_aux(2)
+      tau(1,1) = tau_aux
     END SUBROUTINE computeTauGaussPoints
         
         
@@ -272,9 +252,6 @@ USE globals
    y = xy(2)
    
      U1 = uc(1)
-     U2 = uc(2)
-     U3 = uc(3)
-     U4 = uc(4)
    
      bn = dot_product(b,n)
      bnorm = norm2(b)   
@@ -284,9 +261,6 @@ USE globals
    ! 
    !************************************
      tau(1,1) = abs((uc(2)*bn)/uc(1)) 
-     tau(2,2) = abs((uc(2)*bn)/uc(1)) 
-     tau(3,3) = abs((uc(2)*bn)/uc(1)) 
-     tau(4,4) = abs((uc(2)*bn)/uc(1)) 
      
    !************************************
    ! 
@@ -294,7 +268,6 @@ USE globals
    ! 
    !************************************
    tau(1,1) = tau(1,1) + phys%diff_n
-   tau(2,2) = tau(2,2) + phys%diff_u
    END SUBROUTINE computeTauGaussPoints_matrix        
         
         		  

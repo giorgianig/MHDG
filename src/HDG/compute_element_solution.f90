@@ -25,9 +25,7 @@ SUBROUTINE compute_element_solution
   integer               :: itor,iel,iel3d,ifa,i
   integer               :: Ndim,Neq,N2D,Np2D,Np,Nfl,Ntorloc,Np1Dpol,Np1Dtor,Nf,Nfdir
   integer               :: ind_ue(refElTor%Nnodes3D*phys%neq),ind_uf(refElTor%Nft*phys%neq)
-#ifdef TEMPERATURE
   integer*4             :: ind_ug(refElTor%Nnodes3D*phys%Neq*3)
-#endif     
   integer               :: dd,delta(refElPol%Nfaces+2)
   integer               :: ind_dim(refElPol%Nfaces+2),ind_sta(refElPol%Nfaces+2),aux
   integer*4             :: Fe(refElPol%Nfaces)
@@ -93,13 +91,11 @@ SUBROUTINE compute_element_solution
         ! elemental solutions
         sol%u(ind_ue) = matmul(elMat%UU(:,:,iel3d),sol%u_tilde(ind_uf)) + elMat%U0(:,iel3d)
 
-#ifdef TEMPERATURE
         ! Index for the element gradient
         ind_ug = (iel3d-1)*neq*Np*Ndim + (/(i,i=1,Neq*Np*Ndim)/)
 
         ! elemental solutions
         sol%q(ind_ug) = matmul(elMat%LL(:,:,iel),sol%u_tilde(ind_uf)) + elMat%L0(:,iel)
-#endif   
       END DO
    END DO
 !$OMP END DO
@@ -113,9 +109,7 @@ SUBROUTINE compute_element_solution
   integer*4             :: i,j,iel,N2d,Np,Nfp,Neq,Nf,Ndim,ierr,Nfdir
   integer*4             :: ind_ue(Mesh%Nnodesperelem*phys%Neq)
   integer*4             :: ind_uf(refElPol%Nfacenodes*phys%Neq*refElPol%Nfaces)  
-#ifdef TEMPERATURE
   integer*4             :: ind_ug(Mesh%Nnodesperelem*phys%Neq*Mesh%Ndim)
-#endif     
   integer*4             :: Fe(refElPol%Nfaces)
   
    Ndim        = 2
@@ -136,13 +130,11 @@ SUBROUTINE compute_element_solution
      ! elemental solutions
      sol%u(ind_ue) = matmul(elMat%UU(:,:,iel),sol%u_tilde(ind_uf)) + elMat%U0(:,iel)
 
-#ifdef TEMPERATURE
      ! Index for the element gradient
      ind_ug = (iel-1)*neq*Np*Ndim + (/(i,i=1,Neq*Np*Ndim)/)
 
      ! elemental solutions
      sol%q(ind_ug) = matmul(elMat%LL(:,:,iel),sol%u_tilde(ind_uf)) + elMat%L0(:,iel)
-#endif     
    END DO   
    
 #endif

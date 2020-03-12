@@ -815,7 +815,7 @@ MODULE HDG_LimitingTechniques
 								!! Gaussian around the corner
 								!!********************************************************** 
 								ALLOCATE(rad(Mesh%Nnodesperelem))
-								h = 2.5e-3
+								h = 10e-3
 								DO i=1,size(xycorn,2)    
 										 rad = sqrt( (Xe(:,1)*phys%lscale-xycorn(1,i))**2 + (Xe(:,2)*phys%lscale-xycorn(2,i))**2)
 										 res = res+numer%dc_coe*phys%diff_n*exp( -(2*rad/h)**2)
@@ -1507,39 +1507,102 @@ MODULE HDG_LimitingTechniques
 !                        APPLY THRESHOLD
 ! 
 !****************************************************************************************
-				SUBROUTINE HDG_applyThreshold()
+				SUBROUTINE HDG_applyThreshold(mkelms)
 				USE physics, ONLY: cons2phys
-				integer :: i, nu,nu_tilde,limtq,neq,neq_phy
-				real,allocatable :: u(:,:),u_tilde(:,:)
+		  USE reference_element, ONLY: vandermonde_2d,vandermonde_qua
+  logical,intent(inout) :: mkelms(:)
+  integer*4             :: Neq,Nel,Np,Nfp,iel,ifa,i,nu,nu_tilde,Fa,Nelth
+  integer*4             :: ind(refElPol%Nnodes2D),faceNodes(Mesh%Nnodesperface),ind_uf(Mesh%Nnodesperface)
+  real*8,allocatable    :: u(:,:),u_tilde(:,:)
+  real*8                :: ug(refElPol%NGauss2D),uf(refElPol%Nnodes2D),um(refElPol%Nnodes2D),uav
+  real*8                :: Vand(refElPol%Nnodes2D,refElPol%Nnodes2D),invVand(refElPol%Nnodes2D,refElPol%Nnodes2D)	  
+#ifdef TEMPERATURE
+  real*8 :: uav_ti,uav_te
+#endif  
+
+				integer :: limtq,neq_phy
     real :: tval
 				
 				IF (switch%thresh.eq.0) RETURN
+!				IF (MPIvar%glob_id.eq.0) THEN
+!				   WRITE(6,*) "Applying threshold"
+!				END IF
     
-				neq = phys%Neq
+				neq     = phys%Neq
 				neq_phy = phys%Npv
+			 Nel     = Mesh%Nelems
+			 Np      = refElPol%Nnodes2D
+    Nfp     = Mesh%Nnodesperface
+		  nu      = size(sol%u)/neq
+		  nu_tilde = size(sol%u_tilde)/neq
     
+    !****************************************************
 				! Limiting technique: 
 				! 1 - based on conservative variables
 				! 2 - based on physical variables
-				limtq = 2
-				IF (limtq==2) THEN
-       nu = size(sol%u)/neq
-       nu_tilde = size(sol%u_tilde)/neq
-       ALLOCATE(u(nu,neq))
-       ALLOCATE(u_tilde(nu_tilde,neq))
-       u = transpose(reshape(sol%u,(/neq,nu/)))
-       u_tilde = transpose(reshape(sol%u_tilde,(/neq,nu_tilde/)))
-				END IF
-				
-				IF (MPIvar%glob_id.eq.0) THEN
-				   WRITE(6,*) "Applying threshold"
-				END IF
+    ! 3 - like filtering
+    !****************************************************
+
+
+				limtq = 3
+
+    IF (limtq==1) THEN
+    !***************************************************
+    !         Using limiting on conservative values
+    ! 
+    !***************************************************   
     
+    
+     !*************************************************
+     ! Checking the trace solution for too small values
+     !************************************************* 
+					DO i = 1,size(sol%u_tilde),phys%Neq
+					   IF (sol%u_tilde(i).lt.numer%thr) THEN
+						  sol%u_tilde(i)=numer%thr
+					   END IF
+#ifdef TEMPERATURE
+					   IF (sol%u_tilde(i+2).lt.numer%thr) THEN
+						  sol%u_tilde(i+2)=numer%thr				      
+					   END IF
+					   IF (sol%u_tilde(i+3).lt.numer%thr) THEN
+						  sol%u_tilde(i+3)=numer%thr				      				      
+					   END IF
+#endif				      
+					END DO
+     !***************************************************
+     ! Checking the element solution for too small values
+     !***************************************************					
+					DO i = 1,size(sol%u),phys%Neq
+					   IF (sol%u(i).lt.numer%thr) THEN
+						  sol%u(i)=numer%thr
+					   END IF
+#ifdef TEMPERATURE
+					   IF (sol%u(i+2).lt.numer%thr) THEN
+						  sol%u(i+2)=numer%thr				      
+					   END IF
+					   IF (sol%u(i+3).lt.numer%thr) THEN
+						  sol%u(i+3)=numer%thr				      				      
+					   END IF
+#endif						      
+					END DO	
+
+
+
+				
+
+    
+				ELSE IF (limtq==2) THEN
     !***************************************************
     !         Using limiting on physical values
     ! 
     !***************************************************
-				IF (limtq==2) THEN
+
+     ALLOCATE(u(nu,neq))
+     ALLOCATE(u_tilde(nu_tilde,neq))
+     u = transpose(reshape(sol%u,(/neq,nu/)))
+     u_tilde = transpose(reshape(sol%u_tilde,(/neq,nu_tilde/)))
+
+
      !*************************************************
      ! Checking the trace solution for too small values
      !*************************************************
@@ -1580,10 +1643,8 @@ MODULE HDG_LimitingTechniques
         ! Check if ions temperature is below tolerance in the N-Gamma-Ti-Te model
         tval = 2./(3.*phys%Mref)*(u(i,3)-0.5*u(i,2)**2/u(i,1))/u(i,1)
 					   IF (tval .lt. numer%thrpre) THEN				
-!write(6,*) "tval: ", tval
            u(i,3)=1.5*phys%Mref*numer%thrpre*u(i,1) + 0.5*u(i,2)**2/u(i,1)  
 
-!write(6,*) "new value: ",2./(3.*phys%Mref)*(u(i,3)-0.5*u(i,2)**2/u(i,1))           
 					   END IF	
 					   ! Check if electrons temperature is below tolerance in the N-Gamma-Ti-Te model
         tval = 2./(3.*phys%Mref)*u(i,4)/u(i,1)
@@ -1593,52 +1654,86 @@ MODULE HDG_LimitingTechniques
 #endif					   
 					END DO					
 				
-				ELSE
+    sol%u = reshape(transpose(u),(/neq*nu/))
+    sol%u_tilde = reshape(transpose(u_tilde),(/neq*nu_tilde/))
+		  DEALLOCATE(u,u_tilde)
+
+
+				ELSE IF (limtq==3) THEN
     !***************************************************
-    !         Using limiting on conservative values
-    !
-    !***************************************************   
-    
-    
-     !*************************************************
-     ! Checking the trace solution for too small values
-     !************************************************* 
-					DO i = 1,size(sol%u_tilde),phys%Neq
-					   IF (sol%u_tilde(i).lt.numer%thr) THEN
-						  sol%u_tilde(i)=numer%thr
-					   END IF
+    !         Using filtering style limiting
+    ! 
+    !***************************************************
+  
+				 ALLOCATE(u(nu,neq))
+				 ALLOCATE(u_tilde(nu_tilde,neq))
+				 u = transpose(reshape(sol%u,(/neq,nu/)))
+				 u_tilde = transpose(reshape(sol%u_tilde,(/neq,nu_tilde/)))
+     
+     Nelth = 0
+					!*****************
+					! Loop in elements
+					!*****************  
+					DO iel = 1,Nel
+							 ind = (iel-1)*Np+ (/(i,i=1,Np)/)
+				    ug = matmul(refElPol%N2D,u(ind,1))
+				    
+				    IF (minval(u(ind,1)).gt.numer%thr .and. minval(ug).gt.numer%thr .and. .not.mkelms(iel)) CYCLE      
+!				     IF (minval(u(ind,1)).gt.numer%thr .and. minval(ug).gt.numer%thr ) CYCLE        
+				    mkelms(iel) = .true.
+				    
+        Nelth = Nelth+1
+				    ! I set the solution to the max between the 
+				    ! local average and the threshold
+ 
+        uav = sum(u(ind,1))/Np
 #ifdef TEMPERATURE
-					   IF (sol%u_tilde(i+2).lt.numer%thr) THEN
-						  sol%u_tilde(i+2)=numer%thr				      
-					   END IF
-					   IF (sol%u_tilde(i+3).lt.numer%thr) THEN
-						  sol%u_tilde(i+3)=numer%thr				      				      
-					   END IF
-#endif				      
+        uav_ti = sum(u(ind,3))/Np
+        uav_te = sum(u(ind,4))/Np
+#endif        
+				    uf = 0.
+				    u(ind,1) = max(numer%thr,uav)
+#ifdef TEMPERATURE				    
+				    u(ind,2) = sum(u(ind,2))/Np
+#else
+        u(ind,2) = 0.
+#endif				 
+
+
+   
+#ifdef TEMPERATURE
+        u(ind,3) = max(1.5*phys%Mref*numer%thrpre*numer%thr,uav_ti)
+        u(ind,4) = max(1.5*phys%Mref*numer%thrpre*numer%thr,uav_te)
+#endif				    				    
+				    ! Set the face values to the new values
+				    DO ifa=1,refElPol%Nfaces
+				       faceNodes = refElPol%Face_nodes(ifa,:)
+				       Fa = Mesh%F(iel,ifa)
+											ind_uf = (Fa-1)*Nfp + (/(i,i=1,Nfp)/)			
+											u_tilde(ind_uf,:) = u(ind(faceNodes),:)
+				    END DO
 					END DO
-     !***************************************************
-     ! Checking the element solution for too small values
-     !***************************************************					
-					DO i = 1,size(sol%u),phys%Neq
-					   IF (sol%u(i).lt.numer%thr) THEN
-						  sol%u(i)=numer%thr
-					   END IF
-#ifdef TEMPERATURE
-					   IF (sol%u(i+2).lt.numer%thr) THEN
-						  sol%u(i+2)=numer%thr				      
-					   END IF
-					   IF (sol%u(i+3).lt.numer%thr) THEN
-						  sol%u(i+3)=numer%thr				      				      
-					   END IF
-#endif						      
-					END DO			
+					
+					! Store filtered solution and deallcate
+				 sol%u = reshape(transpose(u),(/neq*nu/))
+				 sol%u_tilde = reshape(transpose(u_tilde),(/neq*nu_tilde/))
+				 DEALLOCATE(u,u_tilde)
+
+
+				IF (MPIvar%glob_id.eq.0) THEN
+				   WRITE(6,*) "Applied threshold to ", Nelth, ' elements'
+				END IF
+
+
+
+
+
+
+
+		
 				END IF	
 				
-				IF (limtq==2) THEN
-       sol%u = reshape(transpose(u),(/neq*nu/))
-       sol%u_tilde = reshape(transpose(u_tilde),(/neq*nu_tilde/))
-					  DEALLOCATE(u,u_tilde)
-    END IF
+
 				END SUBROUTINE HDG_applyThreshold		
 
 

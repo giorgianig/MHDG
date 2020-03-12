@@ -23,15 +23,20 @@ PROGRAM MHDG
  integer             :: Nfl,Np1dPol,Np1dTor,Ng1dPol,Ng1dTor,Nthreads
  integer             :: it,ir,ifa,nts,nu,nut,nb_args,IERR,k,i,j,g
  integer,allocatable :: faceNodes1d(:)
+ logical,allocatable :: mkelms(:)
  real*8              :: dt, errNR, errTime
  real*8              :: time_start, time_finish, tps, tpe
  real*8, allocatable :: uiter(:),u0(:),um2(:),L2err(:)
  character(LEN = 1024) :: mesh_name,namemat,save_name
  integer             :: cks,clock_rate,cke,clock_start,clock_end
- real*8              :: cputpre,cputmap,cputass,cputbcd,cputsol,cputcon,cputpdf,cputglb,cputtot
- real*8              :: runtpre,runtmap,runtass,runtbcd,runtsol,runtcon,runtpdf,runtglb,runttot
+ real*8              :: cputpre,cputmap,cputass,cputbcd,cputsol,cputjac,cputglb,cputtot
+ real*8              :: runtpre,runtmap,runtass,runtbcd,runtsol,runtjac,runtglb,runttot
  integer             ::  OMP_GET_MAX_THREADS
-
+ 
+ 
+  INTEGER :: code, pr, aux
+      INTEGER, PARAMETER :: etiquette=1000
+      INTEGER, DIMENSION(MPI_STATUS_SIZE) :: statut
 write(6,* ) "STARTING"
  
   ! Check the number of input arguments
@@ -69,6 +74,7 @@ write(6,* ) "STARTING"
  ! Read input file param.txt
  CALL read_input()
 
+
  ! Set parallelization division in toroidal and poloidal plane
 #ifdef TOR3D
 #ifdef PARALL
@@ -92,21 +98,15 @@ write(6,* ) "STARTING"
 #endif
 #endif
 
-!call MPI_BARRIER(MPI_COMM_WORLD,ierr)
-!write(6,*) "Process: ", MPIvar%glob_id,"MPIvar%ntor",MPIvar%ntor
-!write(6,*) "Process: ", MPIvar%glob_id,"MPIvar%npol",MPIvar%npol 
-!write(6,*) "Process: ", MPIvar%glob_id,"MPIvar%itor",MPIvar%itor 
-!write(6,*) "Process: ", MPIvar%glob_id,"MPIvar%ipol",MPIvar%ipol 
-!call MPI_BARRIER(MPI_COMM_WORLD,ierr)
-!stop
- 
- 
- 
  ! Load the mesh file
  CALL load_mesh(mesh_name)
 
  ! Linear solver: set the start to true
  matK%start = .true.
+ 
+ ! Initialize marked elements for thresholds
+ allocate(mkelms(Mesh%Nelems))
+ mkelms = .false.
 
 #ifndef MOVINGEQUILIBRIUM
  IF ( (switch%testcase .ge. 50) .and. (switch%testcase .le. 59) ) THEN
@@ -182,8 +182,7 @@ write(6,* ) "STARTING"
  cputass = 0.
  cputbcd = 0.
  cputsol = 0.
- cputcon = 0.
- cputpdf = 0.
+ cputjac = 0.
  cputglb = 0.
  cputtot = 0.
 
@@ -192,8 +191,7 @@ write(6,* ) "STARTING"
  runtass = 0.
  runtbcd = 0.
  runtsol = 0.
- runtcon = 0.
- runtpdf = 0. 
+ runtjac = 0.
  runtglb = 0.
  runttot = 0. 
   
@@ -244,38 +242,14 @@ write(6,* ) "STARTING"
 		call cpu_time(tps)					
 		call system_clock(cks,clock_rate)
 	end if
- CALL hdg_precalculatedMatrices()
+ CALL HDG_precalculatedfirstequation()
+! CALL HDG_precalculatedfirstequation()
 	if (utils%timing) then
 	 call cpu_time(tpe)
 	 call system_clock(cke,clock_rate)
 	 runtpre = (cke-cks)/real(clock_rate)
 	 cputpre = tpe-tps	 
-!  write(6,*) "Precalculated matrices cpu-time: ", tpe-tps
-!  write(6,*) "Precalculated matrices run-time: ", (cke-cks)/real(clock_rate)
 	end if
-
- ! Add diffusion in corners
- if (switch%difcor.gt.0) then
-!				if (utils%timing) then
-!					call cpu_time(tps)					
-!					call system_clock(cks,clock_rate)
-!				end if
-				CALL HDG_AddDiffusionCorner()! TODO : program for the 3D
-!				if (utils%timing) then
-!					call cpu_time(tpe)
-!					call system_clock(cke,clock_rate)
-!					write(6,*) "Add diffusion in corners cpu-time: ", tpe-tps
-!					write(6,*) "Add diffusion in corners run-time: ", (cke-cks)/real(clock_rate)
-!				end if  
-	end if
-	 ! Initialize limiting of rho
-	 if (switch%limrho.gt.0) then
-	    CALL initializeLimiting() ! TODO : program for the 3D
-	 endif
-	 ! Initialize shock capturing
-	 if (switch%shockcp.gt.0) then
-	    CALL initializeShockCapturing() ! TODO : program for the 3D
-	 endif	 
 
  ! Initialize the solution
   IF (nb_args.eq.2) THEN
@@ -284,7 +258,6 @@ write(6,* ) "STARTING"
   ELSE
 					  CALL init_sol()
   END IF
-
 
  ! Save solution
  CALL setSolName(save_name,mesh_name,0,.false.,.false.) 
@@ -330,41 +303,8 @@ write(6,* ) "STARTING"
 				   WRITE(6,*) "Time variable magnetic field only available for West case"
 				   STOP
 				END IF   
-
-				! Compute the elemental matrices that depends on the magnetic field
-!				if (utils%timing) then
-!					call cpu_time(tps)					
-!					call system_clock(cks,clock_rate)
-!				end if
-				CALL hdg_MagneticDependingMatrices() ! TODO : program for the 3D
-!				if (utils%timing) then
-!				 call cpu_time(tpe)
-!				 call system_clock(cke,clock_rate)
-!     write(6,*) "Magnetic matrices cpu-time: ", tpe-tps
-!     write(6,*) "Magnetic matrices run-time: ", (cke-cks)/real(clock_rate)
-!				end if						 
 #endif
 
-				! Limiting of rho
-				if (switch%limrho.gt.0) then
-!							if (utils%timing) then
-!								call cpu_time(tps)					
-!								call system_clock(cks,clock_rate)
-!							end if
-							CALL HDG_LimitingRho() ! TODO : program for the 3D
-!							if (utils%timing) then
-!								call cpu_time(tpe)
-!								call system_clock(cke,clock_rate)
-!								write(6,*) "Limiting rho cpu-time: ", tpe-tps
-!								write(6,*) "Limiting rho run-time: ", (cke-cks)/real(clock_rate)
-!							end if  
-				end if  		
-
-			
-				
-!											    CALL setSolName(save_name,mesh_name,0,.false.) 
-!															CALL HDF5_save_solution(save_name)
-																			
 									!*******************************************************
 									!             Newton-Raphson iterations
 									!*******************************************************
@@ -375,21 +315,6 @@ write(6,* ) "STARTING"
                 WRITE(6,*) "***** NR iteration: ", ir, "*****"
 									    ENDIF
 									    
-													! Shock capturing
-													if (switch%shockcp.gt.0) then
-!																if (utils%timing) then
-!																	call cpu_time(tps)					
-!																	call system_clock(cks,clock_rate)
-!																end if
-																CALL HDG_ShockCapturing() ! TODO : program for the 3D
-!																if (utils%timing) then
-!																	call cpu_time(tpe)
-!																	call system_clock(cke,clock_rate)
-!																	write(6,*) "Shock capturing cpu-time: ", tpe-tps
-!																	write(6,*) "Shock capturing run-time: ", (cke-cks)/real(clock_rate)
-!																end if  
-													end if	
-													    
    									! **** Compute the elemental matrices that depends on the N-R iteration ****
    									!***************************************************************************
    									! Convection matrices
@@ -397,55 +322,21 @@ write(6,* ) "STARTING"
     									call cpu_time(tps)					
     									call system_clock(cks,clock_rate)
    									end if
-   									CALL hdg_ConvectionMatrices()
+   									
+   									
+   									
+   									CALL HDG_computeJacobian()
+
+    									
+   									
+   									
    									if (utils%timing) then
    									 call cpu_time(tpe)
    									 call system_clock(cke,clock_rate)
-             runtcon = runtcon+(cke-cks)/real(clock_rate)
-             cputcon = cputcon+tpe-tps   									 
-!             write(6,*) "Convection cpu-time: ", tpe-tps
-!             write(6,*) "Convection run-time: ", (cke-cks)/real(clock_rate)
+             runtjac = runtjac+(cke-cks)/real(clock_rate)
+             cputjac = cputjac+tpe-tps   									 
    									end if	   		
    									
-            
-            
-            
-!if (ir==2) then
-!call saveArray(elMat%Cv,'Cv')
-!call saveArray(elMat%H,'H')
-!call saveArray(elMat%Hf,'Hf')
-!call saveArray(elMat%D,'D')
-!call saveArray(elMat%E,'E')
-!call saveArray(elMat%Ef,'Ef')
-!call saveArray(elMat%Df,'Df')
-!write(6,*) "Done saving"
-!stop
-!endif             
-
-   									
-!   									call saveMatrix(elMat%D(:,:,1),'D')
-!   									call saveMatrix(elMat%E(:,:,1),'E')
-!   									call saveMatrix(elMat%Df(:,:,1),'Df')
-!   									call saveMatrix(elMat%Ef(:,:,1),'Ef')
-!   									stop
- 
-#ifdef TEMPERATURE
-   									! Parallel diffusion matrices
-   									if (utils%timing) then
-    									call cpu_time(tps)					
-    									call system_clock(cks,clock_rate)
-   									end if
-   									CALL HDG_paralldiffmatrices()
-   									if (utils%timing) then
-   									 call cpu_time(tpe)
-   									 call system_clock(cke,clock_rate)
-!             write(6,*) "Parallel diffusion cpu-time: ", tpe-tps
-!             write(6,*) "Parallel diffusion run-time: ", (cke-cks)/real(clock_rate)
-             runtpdf = runtpdf+(cke-cks)/real(clock_rate)
-             cputpdf = cputpdf+tpe-tps  
-   									end if	   									
-#endif
- 
    									! Set boundary conditions
    									if (utils%timing) then
     									call cpu_time(tps)					
@@ -457,10 +348,7 @@ write(6,* ) "STARTING"
    									 call system_clock(cke,clock_rate)
              runtbcd = runtbcd+(cke-cks)/real(clock_rate)
              cputbcd = cputbcd+tpe-tps     									 
-!             write(6,*) "Boundary conditions cpu-time: ", tpe-tps
-!             write(6,*) "Boundary conditions run-time: ", (cke-cks)/real(clock_rate)
    									end if	 
-   									  									  
    									  									  
    									  									   									
    									! Compute elemental mapping
@@ -474,31 +362,7 @@ write(6,* ) "STARTING"
    									 call system_clock(cke,clock_rate)   									 
              runtmap = runtmap+(cke-cks)/real(clock_rate)
              cputmap = cputmap+tpe-tps   									 
-!             write(6,*) "Mapping cpu-time: ", tpe-tps
-!             write(6,*) "Mapping run-time: ", (cke-cks)/real(clock_rate)
    									end if   									
-
-
-
-!WRITE(6,*) "LL: "
-!CALL findNaNArr(elMat%LL)
-!WRITE(6,*) "L0: "
-!CALL findNaNMat(elMat%L0)
-!WRITE(6,*) "UU: "
-!CALL findNaNArr(elMat%UU)
-!WRITE(6,*) "U0: "
-!CALL findNaNMat(elMat%U0)
-
-!call saveMatrix(elMat%Df(:,:,5637),'Df')
-!call saveMatrix(elMat%Hf(:,:,5637),'Hf')
-!call saveMatrix(elMat%Ef(:,:,5637),'Ef')
-!call saveMatrix(elMat%Lf(:,:,5637),'Lf')
-!call saveMatrix(elMat%Qf(:,:,5637),'Qf')
-!call saveMatrix(elMat%TQhf(:,:,5637),'TQhf')
-!stop
-
-!call print_matrices_tex()
-!stop
 
    									! Assembly the global matrix
    									if (utils%timing) then
@@ -509,51 +373,49 @@ write(6,* ) "STARTING"
    									if (utils%timing) then
    									 call cpu_time(tpe)
    									 call system_clock(cke,clock_rate)   									 
-!		           write(6,*) "Assembly cpu-time: ", tpe-tps
-!		           write(6,*) "Assembly run-time: ", (cke-cks)/real(clock_rate)
               runtass = runtass+(cke-cks)/real(clock_rate)
               cputass = cputass+tpe-tps
    									end if  
         
-        
-            
+!if (ir==2) then        
+!#ifdef PARALL            
 !call print_matrices_hdf5()
+!call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+!#else
+!call print_matrices_hdf5()
+!#endif
 !call HDF5_save_CSR_matrix('matK')
 !call HDF5_save_vector(rhs%vals,'rhs')
 !stop        
-        
-!            call HDF5_save_matrix('HDG_mat')
-!            stop
-
-!if (ir==2) then
-!write(namemat,'(A,I0,A,I0)') "MatK_", MPIvar%glob_id,"_",MPIvar%glob_size            
-!call save_CSR_matrix_txt(matK,trim(adjustl(namemat)) )
-!write(namemat,'(A,I0,A,I0)') "rhs_", MPIvar%glob_id,"_",MPIvar%glob_size 
-!call save_CSR_vector_txt(rhs,trim(adjustl(namemat)))
-!call MPI_BARRIER(MPI_COMM_WORLD, ierr)
-!stop
-!end if
-
-
-!write(namemat,'(A,I0,A,I0)') "utilde_", MPIvar%glob_id,"_",MPIvar%glob_size
-!call saveVector(sol%u_tilde,trim(adjustl(namemat)))
-!call MPI_BARRIER(MPI_COMM_WORLD, ierr)
-!stop
-
-!if (ir==2) then
-
+!endif
 
 
 !#ifdef PARALL
-!call HDF5_save_CSR_matrix('MatK' )
-!call HDF5_save_CSR_vector('rhs')
+!if (MPIvar%ntor>1) then
+!call HDF5_save_CSR_matrix('MatK_par_ptor' )
+!call HDF5_save_CSR_vector('rhs_par_ptor')
 !call MPI_BARRIER(MPI_COMM_WORLD, ierr)
 !stop
+!else
+!call HDF5_save_CSR_matrix('MatK_par' )
+!call HDF5_save_CSR_vector('rhs_par')
+!call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+!stop
+!end if
 !#else
 !call HDF5_save_CSR_matrix('MatK_seq' )
 !call HDF5_save_CSR_vector('rhs_seq')
 !stop
 !#endif
+
+
+
+
+
+
+
+
+
 
 !#ifdef TOR3D
 !call save_CSR_matrix_txt(matK, 'MatK_3D' )
@@ -569,36 +431,6 @@ write(6,* ) "STARTING"
 
 
 
-!endif
-
-!call saveArray(elMat%Lf,'Lf')
-!call saveArray(elMat%TQhf, 'TQhf')
-!stop
-
-!write(6,*) "exting"
-!call print_matrices_tex()
-!call save_CSR_matrix_txt(matK,'MatK')
-!call saveVector(rhs%vals,'f')
-!stop
-
-
-								! Solve linear system, compute face and element solution
-!   									if (utils%timing) then
-!    									call cpu_time(tps)					
-!    									call system_clock(cks,clock_rate)
-!   									end if
-!   									CALL compute_solution()
-!   									if (utils%timing) then
-!   									 call cpu_time(tpe)
-!   									 call system_clock(cke,clock_rate)   									 
-!!		           write(6,*) "Linear system solve cpu-time: ", tpe-tps
-!!		           write(6,*) "Linear system solve run-time: ", (cke-cks)/real(clock_rate)
-!              runtsol = runtsol+(cke-cks)/real(clock_rate)
-!              cputsol = cputsol+tpe-tps
-!   									end if  	
-   									
-   									
-
             ! Solve linear system
    									if (utils%timing) then
     									call cpu_time(tps)					
@@ -608,8 +440,6 @@ write(6,* ) "STARTING"
    									if (utils%timing) then
    									 call cpu_time(tpe)
    									 call system_clock(cke,clock_rate)   									 
-!		           write(6,*) "Linear system solve cpu-time: ", tpe-tps
-!		           write(6,*) "Linear system solve run-time: ", (cke-cks)/real(clock_rate)
               runtsol = runtsol+(cke-cks)/real(clock_rate)
               cputsol = cputsol+tpe-tps
    									end if  
@@ -626,35 +456,10 @@ write(6,* ) "STARTING"
    									if (utils%timing) then
    									 call cpu_time(tpe)
    									 call system_clock(cke,clock_rate)   									 
-!		           write(6,*) "Linear system solve cpu-time: ", tpe-tps
-!		           write(6,*) "Linear system solve run-time: ", (cke-cks)/real(clock_rate)
               runtglb = runtglb+(cke-cks)/real(clock_rate)
               cputglb = cputglb+tpe-tps
    									end if  
 
-  									
-!write(namemat,'(A,I0,A,I0)') "utilde_", MPIvar%glob_id,"_",MPIvar%glob_size
-!call saveVector(sol%u_tilde,trim(adjustl(namemat)))
-!call MPI_BARRIER(MPI_COMM_WORLD, ierr)
-!stop   									
-
-!write(namemat,'(A,I0,A,I0)') "u_", MPIvar%glob_id,"_",MPIvar%glob_size
-!call saveVector(sol%u,trim(adjustl(namemat)))
-!call MPI_BARRIER(MPI_COMM_WORLD, ierr)
-!stop  
-
-
-!call HDF5_save_vector(sol%u_tilde,'utilde')
-!stop     									
-								
-!if (ir==15) then   									
-!call print_matrices_singleElem_tex(1902)
-!call saveVector(sol%q,'q')
-!call saveVector(sol%u,'solu')
-!call saveVector(sol%u_tilde,'solutilde')
-!call saveVector(u0,'u0')
-!stop
-!endif
    									
 												! Check for NaN (doesn't work with optimization flags)
 												DO i=1,nu
@@ -664,8 +469,12 @@ write(6,* ) "STARTING"
 															END IF
 												END DO
   				   									
+  				   									
+  				   									
+  				   									
+!CALL displayResults()  				   									
 												! Apply threshold 
-												CALL HDG_applyThreshold()	
+												CALL HDG_applyThreshold(mkelms)	
 !call saveVector(sol%u,'solu_afterThresh')
 !call saveVector(sol%u_tilde,'solutilde_afterThresh')												
 												! Apply threshold 
@@ -758,9 +567,6 @@ write(6,* ) "STARTING"
 																		WRITE(6,*) "Reducing diffusion: ",phys%diff_n*switch%diffred
 																		WRITE(6,*) "************************************************"
 															END IF
-															elMat%Lf = elMat%Lf*switch%diffred
-												   elMat%Qf = elMat%Qf*switch%diffred
-												   elMat%P  = elMat%P*switch%diffred
 												   phys%diff_n = phys%diff_n*switch%diffred
 															phys%diff_u = phys%diff_u*switch%diffred
 #ifdef TEMPERATURE															
@@ -806,8 +612,8 @@ write(6,* ) "STARTING"
  
  IF (MPIvar%glob_id.eq.0) THEN
 	if (utils%timing) then
- cputtot = cputpre+cputcon+cputpdf+cputbcd+cputmap+cputass+cputglb+cputsol
- runttot = runtpre+runtcon+runtpdf+runtbcd+runtmap+runtass+runtglb+runtsol
+ cputtot = cputpre+cputjac+cputbcd+cputmap+cputass+cputglb+cputsol
+ runttot = runtpre+runtjac+runtbcd+runtmap+runtass+runtglb+runtsol
 #ifdef PARALL
  cputtot = cputtot + MPIvar%ctime1
  runttot = runttot + MPIvar%rtime1
@@ -819,10 +625,7 @@ write(6,* ) "STARTING"
  WRITE(6, '(" *", 36X, "CODE TIMING ( Nthreads = ",i2,")", 26X, " *")' ) Nthreads
  WRITE(6, '(" *", 28X, "Cpu-time  (% tot)",6X,    "Run-time  (% tot)   Speedup/Nthreads ", 2X, " *")' )
  WRITE(6, '(" *", 2X,  "Precal. matr     : ", ES16.3," ("F4.1 "%)",1X,ES14.3," ("F4.1 "%)",8X,  F4.1 , 10X, " *")') cputpre,cputpre/cputtot*100,runtpre,runtpre/runttot*100,cputpre/runtpre/Nthreads
- WRITE(6, '(" *", 2X,  "Convection       : ", ES16.3," ("F4.1 "%)",1X,ES14.3," ("F4.1 "%)",8X,F4.1 , 10X, " *")')   cputcon,cputcon/cputtot*100,runtcon,runtcon/runttot*100,cputcon/runtcon/Nthreads
-#ifdef TEMPERATURE
- WRITE(6, '(" *", 2X,  "Parall. diff.    : ", ES16.3," ("F4.1 "%)",1X,ES14.3," ("F4.1 "%)",8X,F4.1 , 10X, " *")')   cputpdf,cputpdf/cputtot*100,runtpdf,runtpdf/runttot*100,cputpdf/runtpdf/Nthreads
-#endif
+ WRITE(6, '(" *", 2X,  "Jacobian         : ", ES16.3," ("F4.1 "%)",1X,ES14.3," ("F4.1 "%)",8X,F4.1 , 10X, " *")')   cputjac,cputjac/cputtot*100,runtjac,runtjac/runttot*100,cputjac/runtjac/Nthreads
  WRITE(6, '(" *", 2X,  "Mapping          : ", ES16.3," ("F4.1 "%)",1X,ES14.3," ("F4.1 "%)",8X,F4.1 , 10X, " *")')   cputmap,cputmap/cputtot*100,runtmap,runtmap/runttot*100,cputmap/runtmap/Nthreads
  WRITE(6, '(" *", 2X,  "Boundary cond.   : ", ES16.3," ("F4.1 "%)",1X,ES14.3," ("F4.1 "%)",8X,F4.1 , 10X, " *")')   cputbcd,cputbcd/cputtot*100,runtbcd,runtbcd/runttot*100,cputbcd/runtbcd/Nthreads 
  WRITE(6, '(" *", 2X,  "Assembly         : ", ES16.3," ("F4.1 "%)",1X,ES14.3," ("F4.1 "%)",8X,F4.1 , 10X, " *")')   cputass,cputass/cputtot*100,runtass,runtass/runttot*100,cputass/runtass/Nthreads
@@ -883,6 +686,7 @@ endif
  END IF
  
  DEALLOCATE(uiter,u0)
+ deallocate(mkelms)
  IF (time%tis.eq.2) THEN
     DEALLOCATE(um2)
  END IF
@@ -912,10 +716,10 @@ endif
     real*8,allocatable   :: uphy(:,:)
     real*8               :: Vmax(phys%npv),Vmin(phys%npv)
     
-						 ALLOCATE(uphy(Mesh%Nnodesperelem*Mesh%Nelems,phys%npv))
+						 ALLOCATE(uphy(nu/phys%Neq,phys%npv))
 						 
 						 ! Compute physical variables
-							CALL cons2phys(transpose(reshape(sol%u,(/ phys%Neq,Mesh%Nnodesperelem*Mesh%Nelems /))),uphy) 
+							CALL cons2phys(transpose(reshape(sol%u,(/ phys%Neq,nu/phys%Neq /))),uphy) 
 		     DO ieq = 1, phys%npv
 		        Vmax(ieq) = Maxval(uphy(:,ieq))
 		        Vmin(ieq) = Minval(uphy(:,ieq))

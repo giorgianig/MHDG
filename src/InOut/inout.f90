@@ -352,9 +352,7 @@ subroutine HDF5_save_solution(fname)
 !      call HDF5_array1D_saving(file_id,sol%tres(1:sol%Nt),sol%Nt,'tres')
 !      call HDF5_array1D_saving(file_id,sol%time(1:sol%Nt),sol%Nt,'time')
 !      call HDF5_integer_saving(file_id,sol%Nt,'Nt')
-#ifdef TEMPERATURE      
       call HDF5_array1D_saving(file_id,sol%q,size(sol%q),'q')
-#endif      
       IF (switch%shockcp .eq.3) THEN
          call HDF5_array2D_saving(file_id,Mesh%scdiff_nodes,size(Mesh%scdiff_nodes,1),size(Mesh%scdiff_nodes,2),'scdiff_nodes')
       END IF
@@ -434,9 +432,7 @@ subroutine HDF5_load_solution(fname)
   
   		  ALLOCATE(sol%u(sizeu))
 		    ALLOCATE(sol%u_tilde(sizeutilde))
-#ifdef TEMPERATURE  		    
       ALLOCATE(sol%q(sizeu*Ndim))		    
-#endif
       		    
       
 #ifdef TOR3D     
@@ -482,9 +478,7 @@ subroutine HDF5_load_solution(fname)
 !         time%t = sol%time(sol%Nt)
 !         deallocate(oldtres,oldtime)
 !      endif
-#ifdef TEMPERATURE      
          CALL HDF5_array1D_reading(file_id,sol%q,'q')
-#endif       
          CALL HDF5_close(file_id)
       ELSEIF (fname(1:5)=='Sol2D') THEN
 ! Initialization with a 2D solution      
@@ -509,11 +503,6 @@ subroutine HDF5_load_solution(fname)
          ALLOCATE(induf3D(Nfl*Neq)) 
          ALLOCATE(indul(Np2D*Neq))
          ALLOCATE(indutl(refElPol%Nnodes1D*Neq))        
-        
-
-
-
-#ifdef TEMPERATURE  		    
          ALLOCATE(q_aux(Neq*N2d*Np*(Ndim-1)))		  
          ALLOCATE(q2D(Np2D*Neq*(Ndim-1))) 
          ALLOCATE(q2D_add(Np2D,Ndim*Neq))  
@@ -523,7 +512,6 @@ subroutine HDF5_load_solution(fname)
          ALLOCATE(ind_q_add(Neq*(Ndim-1)))
          q2D_add = 0.
          ind_q_add = colint(tensorsumint( (/(j,j=1,(ndim-1))/),ndim*(/(i,i=0,(Neq-1))/) ))
-#endif
 
 
 
@@ -531,9 +519,7 @@ subroutine HDF5_load_solution(fname)
          CALL HDF5_open(fname_complete,file_id,IERR)
          CALL HDF5_array1D_reading(file_id,u_aux,'u')
          CALL HDF5_array1D_reading(file_id,u_tilde_aux,'u_tilde')
-#ifdef TEMPERATURE      
          CALL HDF5_array1D_reading(file_id,q_aux,'q')
-#endif          
          CALL HDF5_close(file_id)         
          
          
@@ -547,28 +533,22 @@ subroutine HDF5_load_solution(fname)
          DO iel = 1,N2D
             indu2D = (iel-1)*Np2d*Neq + (/(i,i=1,Np2d*Neq)/)
             u2D    = u_aux(indu2D)
-#ifdef TEMPERATURE
             indq2D = (iel-1)*Np2d*Neq*(Ndim-1) + (/(i,i=1,Np2d*Neq*(Ndim-1))/)
             q2D    = q_aux(indq2D)
             q2d_add(:,ind_q_add) = transpose(reshape(q2D,[ (Ndim-1)*Neq,Np2d ] ))
             
-#endif            
             DO itor = 1, ntorloc
                iel3   = (itor-1)*N2d+iel
                indu3D = (iel3-1)*Np*Neq + (/(i,i=1,Np*Neq)/)
-#ifdef TEMPERATURE            
                indq3D = (iel3-1)*Np*Neq*Ndim + (/(i,i=1,Np*Neq*Ndim)/)
-#endif            
                dd = (itor-1)*(N2D*Np2D+(Mesh%Nfaces-Mesh%Ndir)*Nfl)*Neq+(iel-1)*Np2D*Neq
                indufp = dd+(/(i,i=1,Np2D*Neq)/)
                sol%u_tilde(indufp) = u2d
                DO it = 1,Np1d
                   indul = (it-1)*Np2D*Neq + (/(i,i=1,Np2D*Neq)/)
                   sol%u(indu3D(indul)) = u2D
-#ifdef TEMPERATURE   
                   indql = (it-1)*Np2D*Neq*Ndim + (/(i,i=1,Np2D*Neq*Ndim)/)
                   sol%q(indq3D(indql)) =  reshape(transpose(q2d_add), (/Np2d*Neq*Ndim/) )          
-#endif               
                END DO
             END DO
          END DO
@@ -612,10 +592,8 @@ subroutine HDF5_load_solution(fname)
          DO iel = 1,N2D
             indu2D = (iel-1)*Np2d*Neq + (/(i,i=1,Np2d*Neq)/)
             u2D    = u_aux(indu2D)
-#ifdef TEMPERATURE
             indq2D = (iel-1)*Np2d*Neq*Ndim + (/(i,i=1,Np2d*Neq*Ndim)/)
             q2D    = q_aux(indq2D)
-#endif            
             DO itor = 1, ntorloc
                dd = ntorloc*(N2D*Np2D+(Mesh%Nfaces-Mesh%Ndir)*Nfl)*Neq+(iel-1)*Np2D*Neq
                indufp = dd+(/(i,i=1,Np2D*Neq)/)
@@ -628,9 +606,7 @@ subroutine HDF5_load_solution(fname)
           WRITE(6,*) "Done!"
 
          DEALLOCATE(u_aux,u_tilde_aux,u2D,ut2D,indu2D,indu3D,indufp,induf2D,induf3D,indul,indutl)      
-#ifdef TEMPERATURE
          DEALLOCATE(q_aux,q2D,q2D_add,indq2D,indq3D,indql,ind_q_add)
-#endif
       END IF
 
 
@@ -648,9 +624,7 @@ subroutine HDF5_load_solution(fname)
          CALL HDF5_open(fname_complete,file_id,IERR)
          CALL HDF5_array1D_reading(file_id,sol%u,'u')
          CALL HDF5_array1D_reading(file_id,sol%u_tilde,'u_tilde')
-#ifdef TEMPERATURE      
          CALL HDF5_array1D_reading(file_id,sol%q,'q')
-#endif
          CALL HDF5_close(file_id)
 #endif         
 

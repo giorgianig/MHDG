@@ -27,7 +27,7 @@ MODULE analytical
   SUBROUTINE analytical_solution(x,y,t,u)
   real*8, dimension(:), intent(IN)        :: x,y,t
   real*8, dimension(:,:), intent(OUT)     :: u
-  real*8, dimension(size(u,1),size(u,2))  :: up
+  real*8, dimension(size(u,1),phys%npv)  :: up
   integer:: i,j,ind,N1D,N2D
   real*8 :: a,b,r,xx,yy,tt,xmax,xmin,ymax,ymin,xm,ym
   real*8 :: aux
@@ -1256,7 +1256,7 @@ MODULE analytical
   SUBROUTINE analytical_solution(x,y,u)
   real*8, dimension(:), intent(IN)        :: x,y
   real*8, dimension(:,:), intent(OUT)     :: u
-  real*8, dimension(size(u,1),size(u,2))  :: up
+  real*8, dimension(size(u,1),phys%npv)  :: up
   integer:: i
   real*8 :: a,r(size(x)),th(size(x))
   

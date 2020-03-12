@@ -90,6 +90,8 @@ MODULE analytical
 				CALL phys2cons(up,u)
   END SUBROUTINE analytical_solution
 
+
+
 		!*****************************************
 		! Analytical gradient  
 		!**************************************** 
@@ -134,9 +136,13 @@ MODULE analytical
 													! Circular field centered in [xc, yc], n = 2+sin(wx*x )*sin(wy*y),  u = cos(wx*x)*cos(wy*y), Ei = 20+cos(wx*x)*sin(wy*y), Ee = 10-sin(wx*x)*cos(wy*y)
 														 upx(ind,1) =  a*cos(a*xx)*sin(a*yy)
 														 upx(ind,2) = -a*sin(a*xx)*cos(a*yy)
+														 upx(ind,3) = -a*sin(a*xx)*sin(a*yy)
+														 upx(ind,4) = -a*cos(a*xx)*cos(a*yy)
 
 														 upy(ind,1) =  a*sin(a*xx)*cos(a*yy)
 														 upy(ind,2) = -a*cos(a*xx)*sin(a*yy)
+														 upy(ind,3) =  a*cos(a*xx)*cos(a*yy)
+														 upy(ind,4) =  a*sin(a*xx)*sin(a*yy)
 												
 													CASE(2)
 													! Axisimmetric case with div(b)~=0, n = 2+sin(wx*x )*sin(wy*y),  u = cos(wx*x)*cos(wy*y), Ei = 20+cos(wx*x)*sin(wy*y), Ee = 10-sin(wx*x)*cos(wy*y)
@@ -146,9 +152,13 @@ MODULE analytical
 																END IF 
 														 upx(ind,1) =  a*cos(a*xx)*sin(a*yy)
 														 upx(ind,2) = -a*sin(a*xx)*cos(a*yy)
+														 upx(ind,3) = -a*sin(a*xx)*sin(a*yy)
+														 upx(ind,4) = -a*cos(a*xx)*cos(a*yy)
 
 														 upy(ind,1) =  a*sin(a*xx)*cos(a*yy)
 														 upy(ind,2) = -a*cos(a*xx)*sin(a*yy)
+														 upy(ind,3) =  a*cos(a*xx)*cos(a*yy)
+														 upy(ind,4) =  a*sin(a*xx)*sin(a*yy)
 													CASE(3)
 													! Axisimmetric case with div(b)~=0, n = 2+sin(wx*x )*sin(wy*y),  u = cos(wx*x)*cos(wy*y), Ei = 20+cos(wx*x)*sin(wy*y), Ee = 10-sin(wx*x)*cos(wy*y)
 																IF (.not.switch%axisym) THEN
@@ -157,6 +167,8 @@ MODULE analytical
 																END IF 														 
 															upt(ind,1) = +a*cos(a* tt)
 															upt(ind,2) = -a*sin(a* tt)
+															upt(ind,3) = -a*sin(a*tt)
+															upt(ind,4) = -a*cos(a*tt)														 
 													CASE(5)
 														   ! Do nothing
 													CASE(6)
@@ -178,8 +190,16 @@ MODULE analytical
 				ux(:,2) = ( upx(:,1)*up(:,2)+up(:,1)*upx(:,2) )
 				uy(:,2) = ( upy(:,1)*up(:,2)+up(:,1)*upy(:,2) )
 				ut(:,2) = ( upt(:,1)*up(:,2)+up(:,1)*upt(:,2) )				
+				ux(:,3) = ( upx(:,1)*up(:,3)+up(:,1)*upx(:,3) )
+				uy(:,3) = ( upy(:,1)*up(:,3)+up(:,1)*upy(:,3) )
+				ut(:,3) = ( upt(:,1)*up(:,3)+up(:,1)*upt(:,3) )				
+				ux(:,4) = ( upx(:,1)*up(:,4)+up(:,1)*upx(:,4) )
+				uy(:,4) = ( upy(:,1)*up(:,4)+up(:,1)*upy(:,4) )
+				ut(:,4) = ( upt(:,1)*up(:,4)+up(:,1)*upt(:,4) )				
 
   END SUBROUTINE analytical_gradient
+  
+  
   
 		!*****************************************
 		! Body forces
@@ -557,6 +577,9 @@ MODULE analytical
 				CALL phys2cons(up,u)
   END SUBROUTINE analytical_solution
 
+
+
+
 		!*****************************************
 		! Analytical gradient  
 		!**************************************** 
@@ -581,9 +604,13 @@ MODULE analytical
 				  ! Circular field centered in [xc, yc], n = 2+sin(wx*x )*sin(wy*y),  u = cos(wx*x)*cos(wy*y), Ei = 20+cos(wx*x)*sin(wy*y), Ee = 10-sin(wx*x)*cos(wy*y)
         upx(:,1) =  a*cos(a*x)*sin(a*y)
         upx(:,2) = -a*sin(a*x)*cos(a*y)
+        upx(:,3) = -a*sin(a*x)*sin(a*y)
+        upx(:,4) = -a*cos(a*x)*cos(a*y)
 
         upy(:,1) =  a*sin(a*x)*cos(a*y)
         upy(:,2) = -a*cos(a*x)*sin(a*y)
+        upy(:,3) =  a*cos(a*x)*cos(a*y)
+        upy(:,4) =  a*sin(a*x)*sin(a*y)
 								  
 						CASE(2)
 						! Axisimmetric case with div(b)~=0, n = 2+sin(wx*x )*sin(wy*y),  u = cos(wx*x)*cos(wy*y), Ei = 20+cos(wx*x)*sin(wy*y), Ee = 10-sin(wx*x)*cos(wy*y)
@@ -593,9 +620,13 @@ MODULE analytical
 						   END IF 
         upx(:,1) =  a*cos(a*x)*sin(a*y)
         upx(:,2) = -a*sin(a*x)*cos(a*y)
+        upx(:,3) = -a*sin(a*x)*sin(a*y)
+        upx(:,4) = -a*cos(a*x)*cos(a*y)
 
         upy(:,1) =  a*sin(a*x)*cos(a*y)
         upy(:,2) = -a*cos(a*x)*sin(a*y)
+        upy(:,3) =  a*cos(a*x)*cos(a*y)
+        upy(:,4) =  a*sin(a*x)*sin(a*y)
       CASE(5)
           ! Do nothing
       CASE(6)
@@ -611,11 +642,17 @@ MODULE analytical
 				uy(:,1) = upy(:,1)
 				ux(:,2) = ( upx(:,1)*up(:,2)+up(:,1)*upx(:,2) )
 				uy(:,2) = ( upy(:,1)*up(:,2)+up(:,1)*upy(:,2) )
+				ux(:,3) = ( upx(:,1)*up(:,3)+up(:,1)*upx(:,3) )
+				uy(:,3) = ( upy(:,1)*up(:,3)+up(:,1)*upy(:,3) )
+				ux(:,4) = ( upx(:,1)*up(:,4)+up(:,1)*upx(:,4) )
+				uy(:,4) = ( upy(:,1)*up(:,4)+up(:,1)*upy(:,4) )
 
   END SUBROUTINE analytical_gradient
   
   
-  
+
+
+
 
 		!*****************************************
 		! Body forces

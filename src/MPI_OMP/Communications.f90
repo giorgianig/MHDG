@@ -50,13 +50,12 @@ MODULE Communications
  DO i = 1,Mesh%nghostfaces
    proext(Mesh%ghostpro(i)) = proext(Mesh%ghostpro(i)) + 1
  END DO
- 
  DO i = 1,npro
     rbuf = 0
     CALL MPI_Scatter(proext,1,MPI_INTEGER,rbuf,1,MPI_INTEGER,i-1,MPI_COMM_WORLD,code)
     proint(i) = rbuf 
  END DO
- 
+
  ! Number of faces to send
  nf2sd = 0
  DO i=1,npro
@@ -138,7 +137,7 @@ MODULE Communications
  IF (Mesh%nghostelems .gt. 0) THEN  
     ALLOCATE(Mesh%pe2rv(Mesh%nghostelems))
     ALLOCATE(Mesh%el2rv(Mesh%nghostelems))
-    Mesh%pe2rv = Mesh%ghelspro
+     Mesh%pe2rv = Mesh%ghelspro
     Mesh%el2rv = 0
     ct = 1
     DO i=1,Mesh%Nelems
@@ -314,6 +313,7 @@ SUBROUTINE exchangeSol()
  END DO
  DEALLOCATE(buffrv,buffsd,req,stat)
 
+
  !*************************************************
  !  Communication for toroidal faces
  !************************************************* 
@@ -359,7 +359,7 @@ SUBROUTINE exchangeSol()
  END DO
  DEALLOCATE(buffrv,buffsd,req,stat)
 							 
-							 
+
  !************************************************************************************************
  ! 
  !       COMMUNICATIONS FOR TOROIDAL DISTRIBUTION OF THE MESH

@@ -90,90 +90,41 @@ MODULE initialization
     Nfg         = refElPol%Nfacenodes*Nf 
 #endif 
 
-      
-				 
-				 
-					! Allocate matrices
-					ALLOCATE(elmat%M(Neq*Np,Neq*Np,Nel))
-					ALLOCATE(elmat%Cv(Neq*Np,Neq*Np,Nel))
-					ALLOCATE(elmat%H(Neq*Np,Neq*Nfg,Nel))					
-					ALLOCATE(elmat%D(Neq*Np,Neq*Np,Nel))
-					ALLOCATE(elmat%E(Neq*Np,Neq*Nfg,Nel))					
-					ALLOCATE(elmat%S(Neq*Np,Nel))
-					ALLOCATE(elmat%Df(Neq*Nfg,Neq*Np,Nel))
-					ALLOCATE(elmat%Ef(Neq*Nfg,Neq*Nfg,Nel))
-					ALLOCATE(elmat%Hf(Neq*Nfg,Neq*Nfg,Nel))
-					ALLOCATE(elmat%fH(Neq*Nfg,Nel))
+					ALLOCATE(elmat%iAqq(Neq*Ndim*Np,Neq*Ndim*Np,Nel))      
+					ALLOCATE(elmat%Aqu(Neq*Ndim*Np,Neq*Np,Nel))  	
+					ALLOCATE(elmat%Aql(Neq*Ndim*Np,Neq*Nfg,Nel))  				 
+					ALLOCATE(elmat%Auq(Neq*Np,Ndim*Neq*Np,Nel))  					 
+					ALLOCATE(elmat%Auu(Neq*Np,Neq*Np,Nel))  
+					ALLOCATE(elmat%Aul(Neq*Np,Neq*Nfg,Nel))  
+					ALLOCATE(elmat%Alq(Neq*Nfg,Neq*Ndim*Np,Nel))  
+					ALLOCATE(elmat%Alu(Neq*Nfg,Neq*Np,Nel))
+					ALLOCATE(elmat%All(Neq*Nfg,Neq*Nfg,Nel))
+     ALLOCATE(elmat%Aql_dir(Neq*Np*Ndim,Nel)) 
+     ALLOCATE(elmat%Aul_dir(Neq*Np,Nel))
+     ALLOCATE(elmat%S(Neq*Np,Nel))
+     ALLOCATE(elmat%fH(Neq*Nfg,Nel))
+
+     elmat%iAqq = 0.
+					elmat%Aqu = 0.
+					elmat%Aql = 0.
+					elmat%Auq = 0.
+					elmat%Auu = 0.
+					elmat%Aul = 0.
+					elmat%Alq = 0.
+					elmat%Alu = 0.
+					elmat%All = 0.
+					elmat%Aql_dir = 0.
+					elmat%Aul_dir = 0.
+					elmat%S = 0.
+					elmat%fh = 0.
 					ALLOCATE(elmat%UU(Neq*Np,Neq*Nfg,Nel))
 					ALLOCATE(elmat%U0(Neq*Np,Nel))					
-					IF (Mesh%ndir.gt.0) THEN
-								ALLOCATE(elmat%Edir(Neq*Np,Nel))
-								ALLOCATE(elmat%Hdir(Neq*Np,Nel))
-					END IF
-     
-					ALLOCATE(elMat%B(Neq*Ndim*Np,Neq*Np,Nel))
-					ALLOCATE(elMat%C(Neq*Ndim*Np,Neq*Nfg,Nel))
-					ALLOCATE(elMat%iL(Neq*Ndim*Np,Neq*Ndim*Np,Nel))
-					ALLOCATE(elMat%P(Neq*Np,Ndim*Neq*Np,Nel))
-					ALLOCATE(elMat%G(Neq*Np,Neq*Np,Nel))
-					ALLOCATE(elMat%Lf(Neq*Nfg,Neq*Ndim*Np,Nel))
-					ALLOCATE(elMat%Qf(Neq*Nfg,Neq*Ndim*Np,Nel))
 					ALLOCATE(elmat%LL(Neq*Np*Ndim,Neq*Nfg,Nel))
 					ALLOCATE(elmat%L0(Neq*Np*Ndim,Nel))		
-					IF (Mesh%ndir.gt.0) THEN
-					   ALLOCATE(elMat%Cdir(Neq*Ndim*Np,Nel))
-					END IF			
-
-#ifdef TEMPERATURE
-					ALLOCATE(elMat%TQhf(Neq*Nfg,Neq*Ndim*Np,Nel))
-					ALLOCATE(elMat%TQ(Neq*Np,Neq*Np*Ndim,Nel))
-					ALLOCATE(elMat%Tfhf(Neq*Nfg,Nel))
-					ALLOCATE(elMat%Tf(Neq*Np,Nel))
-					IF (Mesh%ndir.gt.0) THEN
-					   ALLOCATE(elMat%Thdir(Neq*Np,Nel))
-					END IF						
-#endif					
-					! Initialize matrices
-					elmat%M = 0.d0
-					elmat%Cv= 0.d0
-					elmat%H = 0.d0
-					elmat%D = 0.d0
-					elmat%E = 0.d0
-					elmat%S = 0.d0
-					elmat%Df = 0.d0
-					elmat%Ef = 0.d0
-					elmat%Hf = 0.d0
-					elmat%fH = 0.d0
 					elmat%UU = 0.d0
 					elmat%U0 = 0.d0
-					IF (Mesh%ndir.gt.0) THEN
-								elmat%Edir = 0.d0
-								elmat%Hdir = 0.d0
-					END IF	
-     
-     elMat%B  = 0.
-     elMat%C  = 0.     
-     elMat%iL = 0.
-     elMat%P  = 0.
-     elMat%G  = 0. 
-     elMat%Lf = 0.
-     elMat%Qf = 0.
 					elmat%LL = 0.d0
 					elmat%L0 = 0.d0
-					IF (Mesh%ndir.gt.0) THEN					
-					     elMat%Cdir  = 0.   
-					END IF  
-
-      
-#ifdef TEMPERATURE
-     elMat%TQhf  = 0.
-     elMat%TQ    = 0.
-     elMat%Tf    = 0.
-     elMat%Tfhf  = 0.
-					IF (Mesh%ndir.gt.0) THEN					
-					     elMat%Thdir  = 0.
-					END IF   
-#endif										  
    END SUBROUTINE init_elmat
 
 
@@ -225,9 +176,7 @@ MODULE initialization
 		  ! Allocation of the solution vector
 		  ALLOCATE(sol%u(sizeu))
 		  ALLOCATE(sol%u_tilde(sizeutilde))
-#ifdef TEMPERATURE
     ALLOCATE(sol%q(sizeu*Ndim))
-#endif		  
 		  ! Initialize the solution
 		  IF (MPIvar%glob_id.eq.0) THEN
 		  IF (utils%printint>0) THEN
@@ -278,17 +227,14 @@ MODULE initialization
 #ifdef TOR3D
       real*8              :: htor,tel(refElTor%Nnodes1d)
 #endif        			
-#ifdef TEMPERATURE
       real*8, allocatable :: qx(:,:),qy(:,:),auxq(:,:)
       real*8              :: uex(Np,Neq),uey(Np,Neq)
 #ifdef TOR3D
       real*8, allocatable :: qt(:,:)
       real*8              :: uet(Np,Neq)
 #endif      
-#endif						
 						ALLOCATE(u(Nel*Np,phys%Neq))
 						u = 0.
-#ifdef TEMPERATURE
 						ALLOCATE(qx(Nel*Np,phys%Neq))
 						ALLOCATE(qy(Nel*Np,phys%Neq))				
 						ALLOCATE(auxq(Nel*Np*phys%Neq,Ndim))
@@ -297,7 +243,6 @@ MODULE initialization
       ALLOCATE(qt(Nel*Np,phys%Neq))
       qt = 0.
 #endif						
-#endif
 
 #ifdef TOR3D   
 
@@ -325,12 +270,10 @@ MODULE initialization
 					       ind = (iel3-1)*Np + (/ (i, i=1,Np) /)
 					       Xe = Mesh%X(Mesh%T(iel,:),:)
 					       CALL analytical_solution(Xe(:,1),Xe(:,2),tel,ue)
-#ifdef TEMPERATURE					       
             CALL analytical_gradient(Xe(:,1),Xe(:,2),tel,ue,uex,uey,uet)
             qx(ind,:) = uex
             qy(ind,:) = uey
             qt(ind,:) = uet
-#endif            
 					       u(ind,:) = ue   
 						   END DO
 						END DO      
@@ -343,11 +286,9 @@ MODULE initialization
 						 ind = (iel-1)*Np + (/ (i, i=1,Np) /)
 						 Xe = Mesh%X(Mesh%T(iel,:),:)
 						 CALL analytical_solution(Xe(:,1),Xe(:,2),ue)
-#ifdef TEMPERATURE
        CALL analytical_gradient(Xe(:,1),Xe(:,2),ue,uex,uey)
        qx(ind,:) = uex
        qy(ind,:) = uey
-#endif						 
 						 u(ind,:) = ue   
 						END DO
 #endif
@@ -357,7 +298,6 @@ MODULE initialization
       !          common
       !**************************************** 
 						sol%u = reshape(transpose(u), (/Nel*Np*phys%Neq/) )
-#ifdef TEMPERATURE 
 
       auxq(:,1) = reshape(transpose(qx), (/Nel*Np*phys%Neq/) )
       auxq(:,2) = reshape(transpose(qy), (/Nel*Np*phys%Neq/) )
@@ -369,7 +309,6 @@ MODULE initialization
 #ifdef TOR3D
       DEALLOCATE(qt)
 #endif      
-#endif						
 						DEALLOCATE(u)
 						END SUBROUTINE init_sol_analytic
 						

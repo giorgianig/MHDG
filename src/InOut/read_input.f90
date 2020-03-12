@@ -122,6 +122,7 @@ SUBROUTINE READ_input()
    phys%diff_pare   = diff_pare
    phys%diff_ee     = diff_ee
    phys%tie         = tie
+   phys%diff_vort   = diff_n ! TODO- change this
    utils%PRINTint   = printint
    utils%timing     = timing
    utils%freqdisp   = freqdisp

@@ -21,10 +21,10 @@ USE globals
   SUBROUTINE initPhys()
   
    ! number of equation of the problem
-   phys%Neq = 2
+   phys%Neq = 3
    
    ! number of physical variables
-   phys%npv = 2
+   phys%npv = 3
    
    ALLOCATE(phys%phyVarNam(phys%npv))
    ALLOCATE(phys%conVarNam(phys%Neq))
@@ -32,10 +32,12 @@ USE globals
    ! Set the name of the physical variables
    phys%phyVarNam(1) = "rho"
    phys%phyVarNam(2) = "Mach"
+   phys%phyVarNam(3) = "u"
    
    ! Set the name of the conservative variables
    phys%conVarNam(1) = "rho"
    phys%conVarNam(2) = "Gamma"
+   phys%conVarNam(3) = "u"
     
   END SUBROUTINE
 
@@ -52,6 +54,7 @@ USE globals
   
   ua(:,1) = up(:,1)
   ua(:,2) = up(:,1)*up(:,2)
+  ua(:,3) = up(:,3)
   END SUBROUTINE phys2cons
   
   
@@ -67,6 +70,7 @@ USE globals
   
   up(:,1) = ua(:,1)
   up(:,2) = ua(:,2)/ua(:,1)/sqrt(phys%a)
+  up(:,3) = ua(:,3)
   
   END SUBROUTINE cons2phys
   
@@ -144,9 +148,11 @@ USE globals
    !*****************************   
 		 d_iso(1,1,:) = phys%diff_n
 		 d_iso(2,2,:) = phys%diff_u
+		 d_iso(3,3,:) = phys%diff_n
 
 		 d_ani(1,1,:) = phys%diff_n
 		 d_ani(2,2,:) = phys%diff_u		 
+		 d_ani(3,3,:) = phys%diff_n
 		 
    !*****************************		 
 		 ! Non diagonal terms
@@ -158,6 +164,7 @@ USE globals
 		    call computeIperDiffusion(xy,iperdiff) 
 		    d_iso(1,1,:) = d_iso(1,1,:)*iperdiff
 		    d_iso(2,2,:) = d_iso(2,2,:)*iperdiff
+		    d_iso(3,3,:) = d_iso(3,3,:)*iperdiff
 		 endif
 		 
 		 
@@ -222,7 +229,7 @@ USE globals
      real, intent(in) :: isext
 				 integer,intent(in)  :: ifa,iel
 				 real*8, intent(out) :: tau(:,:)								     
-				 real*8              :: tau_aux(2)
+				 real*8              :: tau_aux(phys%Neq)
      real*8 :: xc,yc,rad,h,aux,bn,bnorm
      
      bn = dot_product(b,n)
@@ -232,22 +239,26 @@ USE globals
          tau_aux = abs( uc(2)*bn/uc(1) )
          tau_aux(1) = tau_aux(1) + phys%diff_n*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
          tau_aux(2) = tau_aux(2) + phys%diff_u*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
+         tau_aux(3) = tau_aux(3) + phys%diff_n*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
          
       elseif(numer%stab==3) then
          tau_aux = max( abs((uc(2)+sqrt(phys%a))*bn/uc(1) ),abs((uc(2)-sqrt(phys%a))*bn/uc(1) ) )
          tau_aux(1) = tau_aux(1) + phys%diff_n*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
          tau_aux(2) = tau_aux(2) + phys%diff_u*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale             
+         tau_aux(3) = tau_aux(3) + phys%diff_n*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale 
 
       elseif(numer%stab==4) then
          tau_aux = abs((uc(2)*bn)/uc(1))
          tau_aux(1) = tau_aux(1) + phys%diff_n
          tau_aux(2) = tau_aux(2) + phys%diff_u         
+         tau_aux(3) = tau_aux(3) + phys%diff_n  
       else
          write(6,*) "Wrong stabilization type: ", numer%stab
          stop
       endif
       tau(1,1) = tau_aux(1)
       tau(2,2) = tau_aux(2)
+      tau(3,3) = tau_aux(3)
     END SUBROUTINE computeTauGaussPoints
         
         

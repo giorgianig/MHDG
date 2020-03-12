@@ -190,12 +190,39 @@ DEALLOCATE(aux_sol )
 #else  
   ! ********* Sequential 2D and 3D ***********
   IF (lssolver%sollib .eq. 1) THEN
-     sol%u_tilde = (1.-numer%dumpnr)*sol%u_tilde + numer%dumpnr*matPASTIX%rhs
-  ELSE
-     sol%u_tilde = (1.-numer%dumpnr)*sol%u_tilde + numer%dumpnr*matPSBLAS%x%get_vect()
+#ifdef WITH_PASTIX   
+     sol%u_tilde(1:matK%n) = (1.-numer%dumpnr)*sol%u_tilde(1:matK%n) + numer%dumpnr*matPASTIX%rhs
+#else
+     WRITE(6,*) "Trying to use PASTIX but compiled without option -DWITH_PASTIX"
+     STOP
+#endif					
+  ELSE IF (lssolver%sollib .eq. 2) THEN
+#ifdef WITH_PSBLAS       
+     sol%u_tilde(1:matK%n) = (1.-numer%dumpnr)*sol%u_tilde(1:matK%n) + numer%dumpnr*matPSBLAS%x%get_vect()
+#else
+     WRITE(6,*) "Trying to use PSBLAS but compiled without option -DWITH_PSBLAS"
+     STOP
+#endif	     
  END IF 
 #endif
  
+
+
+!#ifdef PARALL
+!if (MPIvar%ntor>1) then
+!call HDF5_save_vector(sol%u_tilde,'u_tilde_par_ptor')
+!call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+!stop
+!else
+!call HDF5_save_vector(sol%u_tilde,'u_tilde_par')
+!call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+!stop
+!end if
+!#else
+!call HDF5_save_vector(sol%u_tilde,'u_tilde_seq')
+!stop
+!#endif
+
  
   !******************************** 
   ! Check accuracy of the solution
@@ -250,6 +277,27 @@ DEALLOCATE(aux_sol )
   MPIvar%rtime1 = MPIvar%rtime1+(cke-cks)/real(clock_rate)
   MPIvar%ctime1 = MPIvar%ctime1+tpe-tps   
 #endif  
+
+
+
+
+!#ifdef PARALL
+!if (MPIvar%ntor>1) then
+!call HDF5_save_vector(sol%u_tilde,'u_tilde_par_ptor')
+!call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+!stop
+!else
+!call HDF5_save_vector(sol%u_tilde,'u_tilde_par')
+!call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+!stop
+!end if
+!#else
+!call HDF5_save_vector(sol%u_tilde,'u_tilde_seq')
+!stop
+!#endif
+
+
+
   
    CONTAINS
  subroutine displayMatrixInfo

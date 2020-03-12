@@ -141,7 +141,6 @@ SUBROUTINE HDG_assembly()
   loc2glob =>MatK%loc2glob
   rhsvec   =>rhs%vals
 
-  
   ALLOCATE(Kel(Nfp*Neq,Nfp*Neq))
   ALLOCATE(fel(Nfp*Neq))
   ALLOCATE(indpos(2*blkp+Nf*blkt))
@@ -170,6 +169,12 @@ SUBROUTINE HDG_assembly()
 				 
 				    CALL computeElementalMatrix()
 				    
+!#ifdef PARALL
+!    call print_elmat_tex_par(Kel,fel,iel3)
+!#else
+!    call print_elmat_tex(Kel,fel,iel3)
+!#endif
+
 #ifdef PARALL
         delta = 1+(itor-1)*( (Nel-Nghoste)*blkp+(Nfaces-Ndirf-Nghostf)*blkt)+&
         &(/ (Easind(iel)-1)*blkp,(Nel-Nghoste)*blkp+(Fasind(Fe)-1)*blkt,(Nel-Nghoste)*blkp+(Nfaces-Ndirf-Nghostf)*blkt+(Easind(iel)-1)*blkp /)        
@@ -546,41 +551,63 @@ SUBROUTINE HDG_assembly()
      ! Generate the elemental matrix
      !**************************************************  
 					SUBROUTINE computeElementalMatrix()
-					Df => elMat%Df(:,:,iel3)
-     UU => elMat%UU(:,:,iel3)    
-     Hf => elMat%Hf(:,:,iel3)
-     Ef => elMat%Ef(:,:,iel3)
-     U0 => elMat%U0(:,iel3)      
-     ALLOCATE(Lf(Neq*Nfp,Neq*Ndim*Np))
-     ALLOCATE(fh(Neq*Nfp))
-     LL => elMat%LL(:,:,iel3)
-     Lf = elMat%Lf(:,:,iel3)
-     fh = elMat%fh(:,iel3)
-#ifdef TEMPERATURE
-     Lf = Lf+elMat%TQhf(:,:,iel3)
-     fh = fh-elMat%Tfhf(:,iel3)
-#endif     
-     Qf => elMat%Qf(:,:,iel3)
+     real*8,pointer                 :: A_lq(:,:),A_lu(:,:),A_ll(:,:)
+     real*8,pointer                 :: LL(:,:),L0(:),UU(:,:),U0(:),f(:)
+     LL => elMat%LL(:,:,iel3)  
      L0 => elMat%L0(:,iel3)
-     IF (switch%shockcp.gt.0) THEN
-			     IF (Mesh%flag_elems_sc(iel3).ne.0) THEN
-			        Lf = Lf+elMat%Lf_sc(:,:,Mesh%flag_elems_sc(iel3))
-			     END IF     
-     END IF          
-     ! Faces numbering and Dirichlet booleans
-     Fe = Mesh%F(iel,:)  
-     Fd = Mesh%Fdir(iel,:)
-          
+     UU => elMat%UU(:,:,iel3)
+     U0 => elMat%U0(:,iel3)                 					
+
+					A_lq => elMat%Alq(:,:,iel3)
+					A_lu => elMat%Alu(:,:,iel3)
+					A_ll => elMat%All(:,:,iel3)
+					f    => elMat%fh(:,iel3)
+
      ! Elemental matrix and elemental RHS
-     Kel =  matmul(Df,UU) + Hf-Ef
-     fel = -matmul(Df,U0) + fh
-     Kel = Kel - matmul((Lf-Qf),LL)
-     fel = fel + matmul((Lf-Qf),L0)
+     Kel =  matmul(A_lq,LL) + matmul(A_lu,UU) + A_ll
+     fel = -(matmul(A_lu,U0) + matmul(A_lq,L0) ) + f
      
-     DEALLOCATE(Lf,fh)
-     NULLIFY(LL,Qf,L0)
-     NULLIFY(Df,UU,Hf,Ef,U0)  
+!call HDF5_save_vector(fel,"f1")            
+!stop
+     NULLIFY(LL,L0,UU,U0)
+     NULLIFY(A_lq,A_lu,A_ll)  
 					END SUBROUTINE computeElementalMatrix
+!					SUBROUTINE computeElementalMatrix()
+!					Df => elMat%Df(:,:,iel3)
+!     UU => elMat%UU(:,:,iel3)    
+!     Hf => elMat%Hf(:,:,iel3)
+!     Ef => elMat%Ef(:,:,iel3)
+!     U0 => elMat%U0(:,iel3)      
+!     ALLOCATE(Lf(Neq*Nfp,Neq*Ndim*Np))
+!     ALLOCATE(fh(Neq*Nfp))
+!     LL => elMat%LL(:,:,iel3)
+!     Lf = elMat%Lf(:,:,iel3)
+!     fh = elMat%fh(:,iel3)
+!#ifdef TEMPERATURE
+!     Lf = Lf+elMat%TQhf(:,:,iel3)
+!     fh = fh-elMat%Tfhf(:,iel3)
+!#endif     
+!     Qf => elMat%Qf(:,:,iel3)
+!     L0 => elMat%L0(:,iel3)
+!     IF (switch%shockcp.gt.0) THEN
+!			     IF (Mesh%flag_elems_sc(iel3).ne.0) THEN
+!			        Lf = Lf+elMat%Lf_sc(:,:,Mesh%flag_elems_sc(iel3))
+!			     END IF     
+!     END IF          
+!     ! Faces numbering and Dirichlet booleans
+!     Fe = Mesh%F(iel,:)  
+!     Fd = Mesh%Fdir(iel,:)
+!          
+!     ! Elemental matrix and elemental RHS
+!     Kel =  matmul(Df,UU) + Hf-Ef
+!     fel = -matmul(Df,U0) + fh
+!     Kel = Kel - matmul((Lf-Qf),LL)
+!     fel = fel + matmul((Lf-Qf),L0)
+!     
+!     DEALLOCATE(Lf,fh)
+!     NULLIFY(LL,Qf,L0)
+!     NULLIFY(Df,UU,Hf,Ef,U0)  
+!					END SUBROUTINE computeElementalMatrix
 					
 					
 					
@@ -1161,6 +1188,7 @@ SUBROUTINE HDG_assembly()
   ! Compute the dimension and the number of nonzero of the global matrix
   blk = Nfp*Neq
   nn  = blk*Nfunk   ! K = nn x nn
+  
 #ifdef PARALL											
 		nn  = nn -blk*Mesh%nghostfaces
 		Fasind = 0
@@ -1325,7 +1353,7 @@ SUBROUTINE HDG_assembly()
      !**************************************************
      ! Generate the elemental matrix
      !**************************************************  
-					SUBROUTINE computeElementalMatrix()
+					SUBROUTINE computeElementalMatrix_old()
 					Df => elMat%Df(:,:,iel)
      UU => elMat%UU(:,:,iel)    
      Hf => elMat%Hf(:,:,iel)
@@ -1369,8 +1397,30 @@ SUBROUTINE HDG_assembly()
      DEALLOCATE(Lf,fh)
      NULLIFY(LL,Qf,L0)
      NULLIFY(Df,UU,Hf,Ef,U0)  
-					END SUBROUTINE computeElementalMatrix
+					END SUBROUTINE computeElementalMatrix_old
 					
+					SUBROUTINE computeElementalMatrix()
+     real*8,pointer                 :: A_lq(:,:),A_lu(:,:),A_ll(:,:)
+     real*8,pointer                 :: LL(:,:),L0(:),UU(:,:),U0(:),f(:)
+     LL => elMat%LL(:,:,iel)  
+     L0 => elMat%L0(:,iel)
+     UU => elMat%UU(:,:,iel)
+     U0 => elMat%U0(:,iel)                 					
+
+					A_lq => elMat%Alq(:,:,iel)
+					A_lu => elMat%Alu(:,:,iel)
+					A_ll => elMat%All(:,:,iel)
+					f    => elMat%fh(:,iel)
+
+     ! Elemental matrix and elemental RHS
+     Kel =  matmul(A_lq,LL) + matmul(A_lu,UU) + A_ll
+     fel = -(matmul(A_lu,U0) + matmul(A_lq,L0) ) + f
+     
+!call HDF5_save_vector(fel,"f1")            
+!stop
+     NULLIFY(LL,L0,UU,U0)
+     NULLIFY(A_lq,A_lu,A_ll)  
+					END SUBROUTINE computeElementalMatrix
 					
 					
      

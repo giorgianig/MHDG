@@ -21,10 +21,10 @@ USE globals
   SUBROUTINE initPhys()
   
    ! number of equation of the problem
-   phys%Neq = 2
+   phys%Neq = 4
    
    ! number of physical variables
-   phys%npv = 2
+   phys%npv = 4
    
    ALLOCATE(phys%phyVarNam(phys%npv))
    ALLOCATE(phys%conVarNam(phys%Neq))
@@ -32,11 +32,14 @@ USE globals
    ! Set the name of the physical variables
    phys%phyVarNam(1) = "rho"
    phys%phyVarNam(2) = "Mach"
+   phys%phyVarNam(3) = "Vorticity"
+   phys%phyVarNam(4) = "Electric potential"
    
    ! Set the name of the conservative variables
    phys%conVarNam(1) = "rho"
    phys%conVarNam(2) = "Gamma"
-    
+   phys%conVarNam(3) = "Vorticity"
+   phys%conVarNam(4) = "Electric potential"
   END SUBROUTINE
 
 
@@ -52,6 +55,8 @@ USE globals
   
   ua(:,1) = up(:,1)
   ua(:,2) = up(:,1)*up(:,2)
+  ua(:,3) = up(:,3)
+  ua(:,4) = up(:,4)
   END SUBROUTINE phys2cons
   
   
@@ -67,7 +72,8 @@ USE globals
   
   up(:,1) = ua(:,1)
   up(:,2) = ua(:,2)/ua(:,1)/sqrt(phys%a)
-  
+  up(:,3) = ua(:,3)
+  up(:,4) = ua(:,4)
   END SUBROUTINE cons2phys
   
   
@@ -99,6 +105,9 @@ USE globals
 			A(1,2) = 1.
 			A(2,1) = (-1*U(2)**2/U(1)**2+phys%a)
 			A(2,2) = 2*U(2)/U(1)
+   A(3,1) = -U(3)*U(2)/U(1)**2
+   A(3,2) = U(2)/U(1)
+   A(3,3) = U(2)/U(1)
 
 
 		 END SUBROUTINE jacobianMatrices 
@@ -114,7 +123,9 @@ USE globals
 			An(1,2) = bn
 			An(2,1) = (-1*U(2)**2/U(1)**2+phys%a)*bn
 			An(2,2) = 2*U(2)/U(1)*bn
-
+   An(3,1) = -U(3)*U(2)/U(1)**2*bn
+   An(3,2) = U(2)/U(1)*bn
+   An(3,3) = U(2)/U(1)*bn
 		 END SUBROUTINE jacobianMatricesFace 
 		 
 		 
@@ -126,6 +137,7 @@ USE globals
 		 real*8, intent(in)  :: xy(:,:)
 		 real*8, intent(out) :: d_iso(:,:,:),d_ani(:,:,:)
 		 real*8              :: iperdiff(size(xy,1))
+   real*8              :: Bmod(size(xy,1))
 		 
 		 ! d_iso(Neq,Neq,Ngauss),d_ani(Neq,Neq,Ngauss)
 		 ! first index corresponds to the equation
@@ -136,30 +148,61 @@ USE globals
 		 ! d_iso>0,d_ani=0 is an isotropic diffusion
 		 ! d_iso>0,d_ani=d_iso is a perpendicular diffusion 
 		 ! d_iso=0,d_ani<0 is a (positive) parallel diffusion
-		 		 
-		 d_iso = 0.
+		 
+#ifdef TOR3D
+   ! Not coded yet
+#else
+   call defineMagneticField(xy(:,1),xy(:,2),Bmod=Bmod)
+#endif
+   d_iso = 0.
    d_ani = 0.
    !*****************************
    ! Diagonal terms
    !*****************************   
 		 d_iso(1,1,:) = phys%diff_n
 		 d_iso(2,2,:) = phys%diff_u
+   d_iso(3,3,:) = phys%diff_vort 
+   d_iso(4,4,:) = 1./Bmod**2
 
 		 d_ani(1,1,:) = phys%diff_n
 		 d_ani(2,2,:) = phys%diff_u		 
+   d_ani(3,3,:) = phys%diff_n ! TODO: perp. diffusion for vorticity?
+   d_ani(4,4,:) = 1./Bmod**2
 		 
    !*****************************		 
 		 ! Non diagonal terms
    !*****************************
-   ! No non-diagonal terms defined for this model
-   
-   
+!   ! term +\Div(1/eta \Grad_par \phi) in the vorticity equation
+!		 d_iso(3,4,:) = 0.
+!		 d_ani(3,4,:) = phys%diff_ee ! Negative parallel diffusion
+!   ! term -\Div(1/n\Grad_par \n) in the vorticity equation		 
+!		 d_iso(3,1,:) = 0.
+!		 d_ani(3,1,:) = -1.*phys%diff_ee	   
+!   ! term -\Div(1/B^2\Grad_perp n) in the potential equation		 
+!		 d_iso(4,1,:) = 1./Bmod**2 
+!		 d_ani(4,1,:) = 0.
+ 
+   		 
+   ! term +\Div(1/eta \Grad_par \phi) in the vorticity equation
+!		 d_iso(3,4,:) = 0.
+!		 d_ani(3,4,:) = phys%diff_ee ! Negative parallel diffusion
+!   ! term -\Div(1/n\Grad_par \n) in the vorticity equation		 
+!		 d_iso(3,1,:) = 0.
+!		 d_ani(3,1,:) = -1.*phys%diff_ee	   
+   ! term -\Div(1/B^2\Grad_perp n) in the potential equation		 
+!		 d_iso(4,1,:) = 1./Bmod**2 
+!		 d_ani(4,1,:) = 0.
+		 
+		 
+		 
+		 		 
 		 if (switch%difcor.gt.0) then
 		    call computeIperDiffusion(xy,iperdiff) 
 		    d_iso(1,1,:) = d_iso(1,1,:)*iperdiff
 		    d_iso(2,2,:) = d_iso(2,2,:)*iperdiff
+      d_iso(3,3,:) = d_iso(3,3,:)*iperdiff
+      d_iso(4,4,:) = d_iso(4,4,:)*iperdiff
 		 endif
-		 
 		 
 		 
 		 END SUBROUTINE setLocalDiff
@@ -214,41 +257,61 @@ USE globals
 		 
 		 		  
 							
-				!*******************************************
-				! Compute the stabilization tensor tau
-				!*******************************************																	
-				SUBROUTINE computeTauGaussPoints(up,uc,b,n,iel,ifa,isext,xy,tau)	
-				 real*8, intent(in)  :: up(:),uc(:),b(:),n(:),xy(:)
-     real, intent(in) :: isext
-				 integer,intent(in)  :: ifa,iel
-				 real*8, intent(out) :: tau(:,:)								     
-				 real*8              :: tau_aux(2)
-     real*8 :: xc,yc,rad,h,aux,bn,bnorm
-     
-     bn = dot_product(b,n)
-     bnorm = norm2(b)
-					           
-      if (numer%stab==2) then
-         tau_aux = abs( uc(2)*bn/uc(1) )
-         tau_aux(1) = tau_aux(1) + phys%diff_n*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
-         tau_aux(2) = tau_aux(2) + phys%diff_u*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
+ !***********************************************************************
+ ! 
+ !    COMPUTATION OF THE STABILIZATION PARAMETER
+ ! 
+ !***********************************************************************
+								
+								!*******************************************
+								! Compute the stabilization tensor tau
+								!*******************************************																	
+								SUBROUTINE computeTauGaussPoints(up,uc,b,n,iel,ifa,isext,xy,tau)	! TODO: Correct stabilization
+								 real*8, intent(in)  :: up(:),uc(:),b(:),n(:),xy(:)
+         real, intent(in) :: isext
+								 integer,intent(in)  :: ifa,iel
+								 real*8, intent(out) :: tau(:,:)
+								 real*8              :: tau_aux(4)								     
+         real*8 :: xc,yc,rad,h,aux,bn,bnorm
+         real*8 :: U1,U2,U3,U4
+         U1 = uc(1)
+         U2 = uc(2)
+         U3 = uc(3)
+         U4 = uc(4)
          
-      elseif(numer%stab==3) then
-         tau_aux = max( abs((uc(2)+sqrt(phys%a))*bn/uc(1) ),abs((uc(2)-sqrt(phys%a))*bn/uc(1) ) )
-         tau_aux(1) = tau_aux(1) + phys%diff_n*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
-         tau_aux(2) = tau_aux(2) + phys%diff_u*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale             
-
-      elseif(numer%stab==4) then
-         tau_aux = abs((uc(2)*bn)/uc(1))
-         tau_aux(1) = tau_aux(1) + phys%diff_n
-         tau_aux(2) = tau_aux(2) + phys%diff_u         
-      else
-         write(6,*) "Wrong stabilization type: ", numer%stab
-         stop
-      endif
-      tau(1,1) = tau_aux(1)
-      tau(2,2) = tau_aux(2)
-    END SUBROUTINE computeTauGaussPoints
+         
+         tau = 0.
+         bn = dot_product(b,n)
+         bnorm = norm2(b)         
+									           
+          if (numer%stab==2 .or. numer%stab==3) then
+             tau_aux = abs( uc(2)*bn/uc(1) )
+#ifdef TOR3D             
+             if (abs(n(3))>0.1) then
+             ! Poloidal face
+                tau_aux(1) = tau_aux(1) + phys%diff_n*refElTor%Ndeg/(numer%tmax*xy(1)/numer%ntor)/phys%lscale
+                tau_aux(2) = tau_aux(2) + phys%diff_u*refElTor%Ndeg/(numer%tmax*xy(1)/numer%ntor)/phys%lscale
+                tau_aux(3) = tau_aux(3) + phys%diff_n*refElTor%Ndeg/(numer%tmax*xy(1)/numer%ntor)/phys%lscale
+                tau_aux(4) = tau_aux(4) + phys%diff_n*refElTor%Ndeg/(numer%tmax*xy(1)/numer%ntor)/phys%lscale             
+             else
+#endif             
+             ! Toroidal face
+                tau_aux(1) = tau_aux(1) + phys%diff_n*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
+                tau_aux(2) = tau_aux(2) + phys%diff_u*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
+                tau_aux(3) = tau_aux(3) + phys%diff_n*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
+                tau_aux(4) = tau_aux(4) + phys%diff_n*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale             
+#ifdef TOR3D                
+             endif
+#endif                                  
+          else
+             write(6,*) "Wrong stabilization type: ", numer%stab
+             stop
+          endif
+          tau(1,1) = tau_aux(1)
+          tau(2,2) = tau_aux(2)
+          tau(3,3) = tau_aux(3)
+          tau(4,4) = tau_aux(4)
+        END SUBROUTINE computeTauGaussPoints
         
         
    SUBROUTINE computeTauGaussPoints_matrix(up,uc,b,n,xy,isext,iel,tau)
@@ -331,10 +394,9 @@ USE globals
 		! 
 		!***********************************************************************
 #ifdef TOR3D
-  SUBROUTINE defineMagneticField(x,y,t,b,divb,drift)
+  SUBROUTINE defineMagneticField(x,y,t,b,divb,drift,Bmod)
   real*8, intent(in)      :: x(:),y(:),t(:)
-  real*8, intent(out)     :: b(:,:)
-  real*8, intent(out),optional     ::divb(:),drift(:,:)
+  real*8, intent(out),optional     ::b(:,:),divb(:),drift(:,:),Bmod(:)
   real*8                  :: xc,yc,R0,q,r
   real*8                  :: xmax,xmin,ymax,ymin,xm,ym,p,divbp
   real*8                  :: xx,yy,tt,Bp,Bt,Br,Bz,BB,dmax,B0,xr,yr
@@ -353,13 +415,19 @@ USE globals
   xc = -0.5
   yc = -0.5
   ! Initialization
-  b     = 0.
-  divbp = 0.
+  if (present(b)) then
+     b = 0.
+  endif
   if (present(divb)) then
      divb  = 0.
+  endif
+  if (present(divb)) then
      drift = 0.
   endif
-
+  if (present(Bmod)) then
+     Bmod  = 0.
+  endif
+  divbp = 0.
 			DO i=1,N2d
 						 DO j=1,N1d
 						     xx = x(i)
@@ -428,60 +496,81 @@ USE globals
 											
 											Bp = sqrt(Br**2+Bz**2)
 						     BB = sqrt(Bp**2+Bt**2)
-						     b(ind,1) = Br/BB
-						     b(ind,2) = Bz/BB
-						     b(ind,3) = Bt/BB
+           if (present(b)) then
+												  b(ind,1) = Br/BB
+												  b(ind,2) = Bz/BB
+												  b(ind,3) = Bt/BB
+           endif           
 						     if (present(divb)) then
 						        divb(ind) = divbp
 						     endif       
+           if (present(Bmod)) then
+              Bmod(ind) = BB
+           endif 
 						 END DO
 			END DO				
   END SUBROUTINE defineMagneticField
 #else		
-  SUBROUTINE defineMagneticField(x,y,b,divb,drift)
+  SUBROUTINE defineMagneticField(x,y,b,divb,drift,Bmod)
   real*8, intent(in)      :: x(:),y(:)
-  real*8, intent(out)     :: b(:,:)
-  real*8, intent(out),optional     ::divb(:),drift(:,:)
-  real*8                  :: xc,yc,R0,q,r(size(x))
+  real*8, intent(out),optional     :: b(:,:),divb(:),drift(:,:),Bmod(:)
+  real*8                  :: xc,yc,R0,q,r(size(x)),B0
   
   ! Initialization
-  b     = 0.
+  if (present(b)) then
+     b     = 0.
+  endif
   if (present(divb)) then  
     divb  = 0.
     drift = 0.
+  endif
+  if (present(Bmod)) then
+     Bmod  = 0.
   endif
 				SELECT CASE(switch%testcase)
 				  CASE(1)
 				  ! Circular field centered in [xc, yc], n = 2+sin(wx*x )*sin(wy*y),  u = cos(wx*x)*cos(wy*y)
 				  ! Case 9 of the Matlab version: for convergence purpose
 				        xc = 0.
-				        yc = 0.          
-            b(:,1) = 0.1*(y-yc)/sqrt(y**2-2*y*yc+yc**2+x**2-2*x*xc+xc**2)
-            b(:,2) = 0.1*(-x+xc)/sqrt(y**2-2*y*yc+yc**2+x**2-2*x*xc+xc**2)
+				        yc = 0.  
+            if (present(b)) then   
+						         b(:,1) = 0.1*(y-yc)/sqrt(y**2-2*y*yc+yc**2+x**2-2*x*xc+xc**2)
+						         b(:,2) = 0.1*(-x+xc)/sqrt(y**2-2*y*yc+yc**2+x**2-2*x*xc+xc**2)
+            endif
             if (present(divb)) then
                divb(:) = 0.
             endif
+								    if (present(Bmod)) then
+								       Bmod(:) = 1.
+								    endif
       CASE(2)
       ! Axisymmetric case with div(b)~=0 
 				        xc = 0.
 				        yc = 0.   
-            b(:,1) = 1./30.*(x-y**2+2)
-            b(:,2) = 1./30.*(x*y+y)
+            if (present(b)) then
+						         b(:,1) = 1./30.*(x-y**2+2)
+						         b(:,2) = 1./30.*(x*y+y)
+            endif
             if (present(divb)) then
                divb(:) = 1./30.+((1./30.)*x-(1./30.)*y**2+1./15.)/x+1./30.*(x+1) 				              
             endif
+								    if (present(Bmod)) then
+								       Bmod(:) = 1.
+								    endif
       CASE(50:59)
          write(6,*) "Error in defineMagneticField: you should not be here!"
          STOP         
 				  CASE(60:69)
         
         ! Circular case with limiter
+        B0 = 1.
         R0 = geom%R0        
         q  = geom%q
         r  = phys%lscale*sqrt((x-R0/phys%lscale)**2+y**2)
-        b(:,1) = -phys%lscale*y/sqrt(R0**2*q**2+(1-q**2)*r**2)
-        b(:,2) = phys%lscale*(x-R0/phys%lscale)/sqrt(R0**2*q**2+(1-q**2)*r**2)
-        
+        if (present(b)) then
+           b(:,1) = -phys%lscale*y/sqrt(R0**2*q**2+(1-q**2)*r**2)
+           b(:,2) = phys%lscale*(x-R0/phys%lscale)/sqrt(R0**2*q**2+(1-q**2)*r**2)
+        endif        
         if (present(divb)) then
            IF (switch%axisym) THEN
                divb(:) = -y/x/sqrt(R0**2*q**2+(1-q**2)*r**2)*phys%lscale
@@ -491,10 +580,13 @@ USE globals
            END IF
         endif
         
-        if (present(divb)) then
+        if (present(drift)) then
            IF (switch%driftvel) THEN
               drift(:,2) =  -1./R0*phys%lscale
            END IF
+        endif
+        if (present(Bmod)) then
+           Bmod(:) = B0/R0*phys%lscale
         endif
 				  CASE DEFAULT
 				      WRITE(6,*) "Error! Test case not valid"
