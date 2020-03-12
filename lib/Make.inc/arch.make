@@ -34,8 +34,8 @@ MDL_NGAMMA=NGamma
 MDL_NGAMMATITE=NGammaTiTe
 
 # Model chosen
-MDL=$(MDL_NGAMMA)
-#MDL=$(MDL_NGAMMATITE)
+#MDL=$(MDL_NGAMMA)
+MDL=$(MDL_NGAMMATITE)
 
 # Moving equilibrium
 MVEQ_TRUE = true
@@ -48,7 +48,7 @@ MVEQ = $(MVEQ_FALS)
 #-------------------------------------------------------------------------------
 DIM_3D=3D
 DIM_2D=2D
-DIM=$(DIM_2D)
+DIM=$(DIM_3D)
 
 #-------------------------------------------------------------------------------
 # Libraries for linear system solver
@@ -66,12 +66,26 @@ PSBLMG=$(LIB_YES)
 
 # MACROS FOR MODEL CHOICE
 ifeq ($(MDL),$(MDL_NGAMMA))
+ MACROS+= -DNGAMMA
  RMDL=NGamma
  ADDMOD+=hdg_LimitingTechniques.o
 else ifeq ($(MDL),$(MDL_NGAMMATITE))
  RMDL=NGammaTiTe
+ MACROS+= -DNGAMMA 
  MACROS+= -DTEMPERATURE
- ADDMOD+=hdg_LimitingTechniques.o hdg_ParallDiffusionMatrices.o
+ ADDMOD+=hdg_LimitingTechniques.o
+else ifeq ($(MDL),$(MDL_NGAMMAVORT))
+ RMDL=NGammaVort
+ MACROS+= -DNGAMMA 
+ MACROS+= -DVORTICITY
+ ADDMOD+=hdg_LimitingTechniques.o
+else ifeq ($(MDL),$(MDL_LAPLACE))
+ RMDL=Laplace
+ ADDMOD+=hdg_LimitingTechniques.o
+else ifeq ($(MDL),$(MDL_NGAMMALAPLACE))
+ RMDL=NGammaLaplace
+ MACROS+= -DNGAMMA
+ ADDMOD+=hdg_LimitingTechniques.o 
 else
  abort Unsupported MDL==$(MDL)
  exit
