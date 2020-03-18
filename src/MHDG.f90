@@ -21,12 +21,12 @@ PROGRAM MHDG
 
  integer             :: Neq,Np,Nel,Ndim,Nfp,Nf,ntorloc
  integer             :: Nfl,Np1dPol,Np1dTor,Ng1dPol,Ng1dTor,Nthreads
- integer             :: it,ir,ifa,nts,nu,nut,nb_args,IERR,k,i,j,g
+ integer             :: it,ir,ifa,nts,nu,nut,nb_args,IERR,k,i,j,g,is
  integer,allocatable :: faceNodes1d(:)
  logical,allocatable :: mkelms(:)
  real*8              :: dt, errNR, errTime
  real*8              :: time_start, time_finish, tps, tpe
- real*8, allocatable :: uiter(:),u0(:),um2(:),L2err(:)
+ real*8, allocatable :: uiter(:),L2err(:)
  character(LEN = 1024) :: mesh_name,namemat,save_name
  integer             :: cks,clock_rate,cke,clock_start,clock_end
  real*8              :: cputpre,cputmap,cputass,cputbcd,cputsol,cputjac,cputglb,cputtot
@@ -265,13 +265,9 @@ write(6,* ) "STARTING"
 
  ! Allocate and initialize uiter and u0
  ALLOCATE(uiter(nu))
- ALLOCATE(u0(nu))  
- if (time%tis==2) then
-    ALLOCATE(um2(nu))
- else
-    ALLOCATE(um2(1:2)) ! to avoid errors in debug mode..
- endif
- u0 = sol%u
+ ALLOCATE(sol%u0(nu,time%tis))  
+ sol%u0 = 0.
+ sol%u0(:,1) = sol%u
  uiter = 0.
  
  !*******************************************************
@@ -308,7 +304,7 @@ write(6,* ) "STARTING"
 									!*******************************************************
 									!             Newton-Raphson iterations
 									!*******************************************************
-									uiter = u0
+									uiter = sol%u0(:,1)
 									DO ir = 1,numer%nrp ! ************ NEWTON-RAPHSON LOOP *********************
          
              IF (MPIvar%glob_id.eq.0) THEN
@@ -356,7 +352,7 @@ write(6,* ) "STARTING"
     									call cpu_time(tps)					
     									call system_clock(cks,clock_rate)
    									end if
-   									CAlL hdg_Mapping(u0,um2)
+   									CAlL hdg_Mapping()
    									if (utils%timing) then
    									 call cpu_time(tpe)
    									 call system_clock(cke,clock_rate)   									 
@@ -521,7 +517,7 @@ write(6,* ) "STARTING"
 
 									
 	 				! Check convergence in time advancing and update
-  				errTime = computeResidual(sol%u,u0,time%dt)
+  				errTime = computeResidual(sol%u,sol%u0(:,1),time%dt)
   				sol%tres(sol%Nt+1) = errTime
   				sol%time(sol%Nt+1) = time%t
   				sol%Nt       = sol%Nt + 1
@@ -573,7 +569,21 @@ write(6,* ) "STARTING"
                phys%diff_e = phys%diff_e*switch%diffred						
                phys%diff_ee = phys%diff_ee*switch%diffred
 #endif
-															u0 = sol%u
+															!**********************************
+															!           UPDATE SOLUTION
+															!**********************************
+															! Update u0
+															IF ( time%tis.gt.1 .and. it.lt.time%tis ) THEN 
+																			DO is = it,1,-1
+																						 sol%u0(:,is+1) = sol%u0(:,is)
+																			END DO
+															ELSEIF (time%tis>1) THEN
+																			DO is = time%tis,2,-1
+																						 sol%u0(:,is) = sol%u0(:,is-1)
+																			END DO
+															END IF
+															sol%u0(:,1) = sol%u
+
 															time%it = 0
 															! compute dt
 												ELSE
@@ -589,10 +599,21 @@ write(6,* ) "STARTING"
 												WRITE(6,*) 'Problem in the time advancing scheme'
 												STOP
 									ELSE
-									   IF (time%tis.eq.2) THEN
-              um2 = u0
-            END IF
-												u0 = sol%u
+												!**********************************
+												!           UPDATE SOLUTION
+												!**********************************
+												! Update u0
+												IF ( time%tis.gt.1 .and. it.lt.time%tis ) THEN 
+																DO is = it,1,-1
+																				sol%u0(:,is+1) = sol%u0(:,is)
+																END DO
+												ELSEIF (time%tis>1) THEN
+																DO is = time%tis,2,-1
+																				sol%u0(:,is) = sol%u0(:,is-1)
+																END DO
+												END IF
+												sol%u0(:,1) = sol%u
+
 												! compute dt
 !												CALL compute_dt(errTime)
 									END IF			  
@@ -685,12 +706,10 @@ endif
     DEALLOCATE(L2err)
  END IF
  
- DEALLOCATE(uiter,u0)
+ DEALLOCATE(uiter)
  deallocate(mkelms)
- IF (time%tis.eq.2) THEN
-    DEALLOCATE(um2)
- END IF
- 
+ DEALLOCATE(sol%u0)
+
  IF (lssolver%sollib .eq. 1) THEN
 #ifdef WITH_PASTIX 
     CALL terminate_mat_PASTIX()

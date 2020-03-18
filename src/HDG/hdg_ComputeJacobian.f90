@@ -27,7 +27,7 @@ SUBROUTINE HDG_computeJacobian()
   integer*4             :: Ndim,Neq,N2D,Npel,Npfl,Nfre,Ng1d,Ng2d
   integer*4             :: iel,ifa,iface,i,j,els(2),fas(2)
   integer*4             :: sizeu,sizel
-  real*8,allocatable    :: ures(:,:),lres(:,:)
+  real*8,allocatable    :: ures(:,:),lres(:,:),u0res(:,:,:)
   real*8                :: Xel(Mesh%Nnodesperelem,2),Xfl(refElPol%Nfacenodes,2)
   real*8,allocatable    :: tau_save(:,:)
   real*8,allocatable    :: xy_g_save(:,:)  
@@ -44,7 +44,7 @@ SUBROUTINE HDG_computeJacobian()
   integer               :: dd
   integer               :: ind_dim(refElPol%Nfaces+2),ind_sta(refElPol%Nfaces+2),aux
   real*8                :: tdiv(numer%ntor+1),tel(refElTor%Nnodes1d),tg(1),htor
-  real*8                :: ue(refElTor%Nnodes3D,phys%Neq)
+  real*8                :: ue(refElTor%Nnodes3D,phys%Neq),u0e(refElTor%Nnodes3D,phys%Neq,time%tis)
   real*8                :: ufp(Mesh%Nnodesperelem,phys%Neq),uft(refElTor%Nfl,phys%Neq)
   real*8                :: uefp(Mesh%Nnodesperelem,phys%Neq,2),ueft(refElTor%Nfl,phys%Neq,2)
   real*8                :: qe(refElTor%Nnodes3D,phys%Neq*3)
@@ -56,7 +56,7 @@ SUBROUTINE HDG_computeJacobian()
   integer*4             :: inde(Mesh%Nnodesperelem)
   integer*4             :: indf(refElPol%Nfacenodes)
   integer*4             :: ind_loc(refElPol%Nfaces,refElPol%Nfacenodes*phys%Neq),perm(refElPol%Nfacenodes*phys%Neq)
-  real*8                :: ue(Mesh%Nnodesperelem,phys%Neq)
+  real*8                :: ue(Mesh%Nnodesperelem,phys%Neq),u0e(Mesh%Nnodesperelem,phys%Neq,time%tis)
   real*8                :: uf(refElPol%Nfacenodes,phys%Neq),uef(refElPol%Nfacenodes,phys%Neq,2)
   integer               :: indtausave(refElPol%Nfaces*refElPol%Ngauss1d)
   real*8                :: tau_save_el(refElPol%Nfaces*refElPol%Ngauss1d,phys%neq),xy_g_save_el(refElPol%Nfaces*refElPol%Ngauss1d,2)
@@ -176,8 +176,12 @@ SUBROUTINE HDG_computeJacobian()
   sizel = size(sol%u_tilde)
   allocate(ures(sizeu/Neq,Neq))
   allocate(lres(sizel/Neq,Neq))
+  allocate(u0res(sizeu/Neq,Neq,time%tis))
   ures = transpose(reshape(sol%u,[Neq,sizeu/Neq]))
   lres = transpose(reshape(sol%u_tilde,[Neq,sizel/Neq]))
+  do i=1,time%tis
+     u0res(:,:,i) =  transpose(reshape(sol%u0(:,i),[Neq,sizeu/Neq]))
+  end do
   allocate(qres(sizeu/Neq,Neq*Ndim))
   qres = transpose(reshape(sol%q,[Neq*Ndim,sizeu/Neq]))
 
@@ -229,9 +233,10 @@ SUBROUTINE HDG_computeJacobian()
     
      qe = qres(inde,:)
      ue = ures(inde,:)
+     u0e = u0res(inde,:,:)
 
      ! Compute the matrices for the element
-     CALL elemental_matrices_volume(iel3,Xel,tel,qe,ue)
+     CALL elemental_matrices_volume(iel3,Xel,tel,qe,ue,u0e)
   END DO
   END DO
 !$OMP END DO
@@ -425,7 +430,7 @@ SUBROUTINE HDG_computeJacobian()
 !$OMP END DO
 !$OMP END PARALLEL
 
-  deallocate(ures,lres)
+  deallocate(ures,lres,u0res)
   deallocate(qres)
 
  CONTAINS
@@ -437,11 +442,12 @@ SUBROUTINE HDG_computeJacobian()
 !***************************************************
 ! Volume computation in 3D
 !***************************************************
-					SUBROUTINE elemental_matrices_volume(iel,Xel,tel,qe,ue)
+					SUBROUTINE elemental_matrices_volume(iel,Xel,tel,qe,ue,u0e)
        integer,intent(IN)			     :: iel 
 					  real*8,intent(IN)         :: Xel(:,:),tel(:)
 					  real*8,intent(IN)         :: qe(:,:)
        real*8,intent(IN)         :: ue(:,:)
+       real*8,intent(IN)         :: u0e(:,:,:)
 							integer*4                 :: g,NGaussPol,NGaussTor,igtor,igpol,i,j,k,iord
 							real*8                    :: dvolu,dvolu1d,htor
        real*8                    :: J11(Ng2d),J12(Ng2d)
@@ -451,7 +457,7 @@ SUBROUTINE HDG_computeJacobian()
        real*8                    :: iJ21(Ng2d),iJ22(Ng2d)
        real*8                    :: fluxg(Ng2d)
 							real*8                    :: xy(Ng2d,2),teg(Ng1dtor)
-       real*8                    :: ueg(Ngvo,neq),upg(Ngvo,phys%npv)
+       real*8                    :: ueg(Ngvo,neq),upg(Ngvo,phys%npv),ueg(Ngvo,neq,time%tis)
        real*8                    :: qeg(Ngvo,neq*Ndim)
        real*8                      :: force(Ngvo,Neq)
 							integer*4,dimension(Npel)   :: ind_ass,ind_asg,ind_asq
@@ -499,6 +505,11 @@ SUBROUTINE HDG_computeJacobian()
 							ueg = matmul(refElTor%N3D,ue)
 							qeg = matmul(refElTor%N3D,qe) 
 							
+       ! Solution at previous time steps, at Gauss points
+       do i=1,time%tis
+          u0eg(:,:,i) = matmul(refElTor%N3D,u0e(:,:,i))
+       end do
+
 			    ! Physical variables at Gauss points
 			    CALL cons2phys(ueg,upg)
        
@@ -662,7 +673,7 @@ SUBROUTINE HDG_computeJacobian()
 #endif 
 
           CALL assemblyVolumeContribution(iel,ind_ass,ind_asg,ind_asq,b(g,:),divbg,driftg,force(g,:),&
-          &ktis,diff_iso_vol(:,:,g),diff_ani_vol(:,:,g),Ni,NNi,Nxg,Nyg,NNxy,NxNy,NNbb,upg(g,:),ueg(g,:),qeg(g,:))
+          &ktis,diff_iso_vol(:,:,g),diff_ani_vol(:,:,g),Ni,NNi,Nxg,Nyg,NNxy,NxNy,NNbb,upg(g,:),ueg(g,:),qeg(g,:),u0eg(g,:,:))
 							   END DO ! END loop in volume Gauss points
 							END DO
 							
@@ -1206,9 +1217,10 @@ SUBROUTINE HDG_computeJacobian()
     
      qe = qres(inde,:)
      ue = ures(inde,:)
+     u0e = u0res(inde,:,:)
 
      ! Compute the matrices for the element
-     CALL elemental_matrices_volume(iel,Xel,qe,ue)
+     CALL elemental_matrices_volume(iel,Xel,qe,ue,u0e)
   END DO
 !$OMP END DO
 !$OMP END PARALLEL 
@@ -1319,7 +1331,7 @@ SUBROUTINE HDG_computeJacobian()
 !$OMP END DO
 !$OMP END PARALLEL 
 
-  deallocate(ures,lres)
+  deallocate(ures,lres,u0res)
 #ifdef TEMPERATURE
   deallocate(qres)
 #endif
@@ -1342,14 +1354,14 @@ SUBROUTINE HDG_computeJacobian()
 !***************************************************
 ! Volume computation in 2D 
 !***************************************************
-					SUBROUTINE elemental_matrices_volume(iel,Xel,qe,ue)
+					SUBROUTINE elemental_matrices_volume(iel,Xel,qe,ue,u0e)
        integer,intent(IN)			     :: iel 
 					  real*8,intent(IN)         :: Xel(:,:)
 					  real*8,intent(IN)         :: qe(:,:)
-       real*8,intent(IN)         :: ue(:,:)
+       real*8,intent(IN)         :: ue(:,:),u0e(:,:,:)
 							integer*4                 :: g,NGauss,i,j,k
 							real*8                    :: dvolu
-							real*8                    :: xy(Ng2d,ndim),ueg(Ng2d,neq)
+							real*8                    :: xy(Ng2d,ndim),ueg(Ng2d,neq),u0eg(Ng2d,neq,time%tis)
        real*8                    :: force(Ng2d,Neq)
        real*8                    :: qeg(Ng2d,neq*Ndim)
        real*8                     :: J11(Ng2d),J12(Ng2d)
@@ -1390,7 +1402,12 @@ SUBROUTINE HDG_computeJacobian()
 							! Solution at Gauss points
 							ueg = matmul(refElPol%N2D,ue)
 							qeg = matmul(refElPol%N2D,qe) 
-							
+
+       ! Solution at previous time steps, at Gauss points
+       do i=1,time%tis
+          u0eg(:,:,i) = matmul(refElPol%N2D,u0e(:,:,i))
+       end do
+
 			    ! Physical variables at Gauss points
 			    CALL cons2phys(ueg,upg)
        
@@ -1522,8 +1539,9 @@ SUBROUTINE HDG_computeJacobian()
 									 driftg(2) = -phys%dfcoef*Bt_g(g)*Bmod_x/Bmod_g(g)**3 ! I multiply for the temperature later             
 #endif 
 
+
           CALL assemblyVolumeContribution(iel,ind_ass,ind_asg,ind_asq,b(g,:),divbg,driftg,force(g,:),&
-          &ktis,diff_iso_vol(:,:,g),diff_ani_vol(:,:,g),Ni,NNi,Nxg,Nyg,NNxy,NxNy,NNbb,upg(g,:),ueg(g,:),qeg(g,:))
+          &ktis,diff_iso_vol(:,:,g),diff_ani_vol(:,:,g),Ni,NNi,Nxg,Nyg,NNxy,NxNy,NNbb,upg(g,:),ueg(g,:),qeg(g,:),u0eg(g,:,:))
 							END DO ! END loop in volume Gauss points
 					END SUBROUTINE elemental_matrices_volume
 
@@ -1961,12 +1979,12 @@ SUBROUTINE HDG_computeJacobian()
 !         ASSEMBLY VOLUME CONTRIBUTION
 ! 
 !********************************************************************		
-				   SUBROUTINE assemblyVolumeContribution(iel,ind_ass,ind_asg,ind_asq,b,divb,drift,f,ktis,diffiso,diffani,Ni,NNi,Nxg,Nyg,NNxy,NxNy,NNbb,upe,ue,qe) 
+				   SUBROUTINE assemblyVolumeContribution(iel,ind_ass,ind_asg,ind_asq,b,divb,drift,f,ktis,diffiso,diffani,Ni,NNi,Nxg,Nyg,NNxy,NxNy,NNbb,upe,ue,qe,u0e) 
 				   integer*4,intent(IN)      :: iel,ind_ass(:),ind_asg(:),ind_asq(:)    
        real*8,intent(IN)         :: b(:),divb,drift(:),f(:),ktis(:)
        real*8,intent(IN)         :: diffiso(:,:),diffani(:,:)
        real*8,intent(IN)         :: Ni(:),NNi(:,:),Nxg(:),Nyg(:),NNxy(:,:),NxNy(:,:,:),NNbb(:)
-       real*8,intent(IN)         :: upe(:),ue(:)
+       real*8,intent(IN)         :: upe(:),ue(:),u0e(:,:)
        real*8,intent(IN)         :: qe(:)			
        integer*4                 :: i,j,k,iord,ii
        integer*4,dimension(Npel) :: ind_i,ind_j,ind_k
@@ -1985,7 +2003,8 @@ SUBROUTINE HDG_computeJacobian()
 
          ! Compute Q^T^(k-1)
          Qpr = reshape(qe,(/Ndim,Neq/))
-         
+  
+
 #ifdef TEMPERATURE
          ! Jacobian for the curvature term
          CALL GimpMatrix(ue,divb,GG)
@@ -2149,7 +2168,7 @@ SUBROUTINE HDG_computeJacobian()
           IF (.not.switch%steady) THEN
              DO iord =1,time%tis
                 ! Time derivative contribution
-                elMat%S(:,iel) = elMat%S(:,iel)+ktis(iord+1)*col(tensorProduct(ue,Ni))/time%dt
+                elMat%S(:,iel) = elMat%S(:,iel)+ktis(iord+1)*col(tensorProduct(u0e(:,iord),Ni))/time%dt
              END DO
           END IF
           ! Linear body force contribution

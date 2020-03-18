@@ -386,6 +386,7 @@ MODULE types
       real*8, pointer :: u(:)       => null()  ! Elemental solution
       real*8, pointer :: u_tilde(:) => null()  ! Face solution
       real*8, pointer :: q(:)       => null()  ! Elemental solution for the gradient
+      real*8, allocatable :: u0(:,:)           ! Elemental solution at previous time steps
       real*8, allocatable :: tres(:)           ! Time residual
       real*8, allocatable :: time(:)           ! Time evolution
       integer             :: Nt                ! Number of time-steps
