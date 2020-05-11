@@ -1,4 +1,4 @@
-# MHDG code, version 2.0
+# MHDG code, version 3.0
 Transport code for plasma simulations based on a high-order HDG (hybrid discontinuous Galerkin) scheme.
 
 # Models available
