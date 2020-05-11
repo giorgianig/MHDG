@@ -8,7 +8,7 @@
 !*****************************************
 MODULE analytical
    USE prec_const
-   USE globals, ONLY: switch
+   USE globals,ONLY: switch
    USE physics
    USE PrintUtils
    IMPLICIT NONE
@@ -18,26 +18,26 @@ CONTAINS
 #ifdef TOR3D
 
 !***********************************************************************
-!
+! 
 !                            VERSION 3D TOROIDAL
-!
+! 
 !***********************************************************************
 
    !*****************************************
    ! Analytical solution
    !****************************************
-   SUBROUTINE analytical_solution(x, y, t, u)
-      real*8, dimension(:), intent(IN)        :: x, y, t
-      real*8, dimension(:, :), intent(OUT)     :: u
-      real*8, dimension(size(u, 1), size(u, 2))  :: up
-      integer:: i, j, ind, N2D, N1D
-      real*8 :: a, b, r, xx, yy, tt, xmax, xmin, ymax, ymin, xm, ym
+   SUBROUTINE analytical_solution(x,y,t,u)
+      real*8,dimension(:),intent(IN)        :: x,y,t
+      real*8,dimension(:,:),intent(OUT)     :: u
+      real*8,dimension(size(u,1),size(u,2))  :: up
+      integer:: i,j,ind,N2D,N1D
+      real*8 :: a,b,r,xx,yy,tt,xmax,xmin,ymax,ymin,xm,ym
       real*8 :: aux
 
       u = 0.
       a = 2*pi
-      N2D = size(x, 1)
-      N1D = size(t, 1)
+      N2D = size(x,1)
+      N1D = size(t,1)
 
       xmax = Mesh%xmax
       xmin = Mesh%xmin
@@ -46,8 +46,8 @@ CONTAINS
       xm = 0.5*(xmax + xmin)
       ym = 0.5*(ymax + ymin)
 
-      DO i = 1, N2d
-         DO j = 1, N1d  ! TODO: check if I need to invert i and j
+      DO i = 1,N2d
+         DO j = 1,N1d  ! TODO: check if I need to invert i and j
             xx = x(i)
             yy = y(i)
             tt = t(j)
@@ -56,14 +56,14 @@ CONTAINS
             SELECT CASE (switch%testcase)
             CASE (1)
                IF (switch%axisym) THEN
-                  WRITE (6, *) "This is NOT an axisymmetric test case!"
+                  WRITE (6,*) "This is NOT an axisymmetric test case!"
                   stop
                END IF
-               ! Cartesian case, circular field centered in [xm, ym] in the poloidal plane, Bt = 1
-               up(ind, 1) = 2 + sin(a*xx)*sin(a*yy)
-               up(ind, 2) = cos(a*xx)*cos(a*yy)
-               up(ind, 3) = cos(a*xx)*sin(a*yy)
-               up(ind, 4) = sin(a*xx)*cos(a*yy)
+               ! Cartesian case,circular field centered in [xm,ym] in the poloidal plane,Bt = 1
+               up(ind,1) = 2 + sin(a*xx)*sin(a*yy)
+               up(ind,2) = cos(a*xx)*cos(a*yy)
+               up(ind,3) = cos(a*xx)*sin(a*yy)
+               up(ind,4) = sin(a*xx)*cos(a*yy)
 !                                                                                        CASE(2)
 !                                                                                        ! Axisimmetric case with div(b)~=0
 !                                                                                                                IF (.not.switch%axisym) THEN
@@ -73,42 +73,42 @@ CONTAINS
 !                                                                                                                        up(ind,1) = 2+sin(a* xx)*sin(a* yy)
 !                                                                                                                        up(ind,2) = cos(a* xx)*cos(a* yy)
             CASE (50:64)
-               up(ind, 1) = 1.
-               up(ind, 2) = 0.
-               up(ind, 3) = 1.
-               up(ind, 4) = 0.
+               up(ind,1) = 1.
+               up(ind,2) = 0.
+               up(ind,3) = 1.
+               up(ind,4) = 0.
             CASE (65)
-               up(ind, 1) = 1.
-               up(ind, 2) = 0.
+               up(ind,1) = 1.
+               up(ind,2) = 0.
                r = sqrt((xx*phys%lscale - geom%R0)**2 + (yy*phys%lscale - 0.75)**2)
                IF (r .le. 0.05) THEN
-                  up(ind, 2) = 1.
+                  up(ind,2) = 1.
                END IF
             CASE DEFAULT
-               WRITE (6, *) "Error! Test case not valid"
+               WRITE (6,*) "Error! Test case not valid"
                STOP
             END SELECT
          END DO
       END DO
       ! Convert physical variables to conservative variables
-      CALL phys2cons(up, u)
+      CALL phys2cons(up,u)
    END SUBROUTINE analytical_solution
 
    !*****************************************
    ! Analytical gradient
    !****************************************
-   SUBROUTINE analytical_gradient(x, y, t, u, ux, uy, ut)
-      real*8, dimension(:), intent(IN)        :: x, y, t
-      real*8, dimension(:, :), intent(IN)      :: u
-      real*8, dimension(:, :), intent(OUT)     :: ux, uy, ut
-      real*8, dimension(size(u, 1), size(u, 2))  :: upx, upy, upt
-      real*8, dimension(size(u, 1), phys%npv)   :: up
-      integer:: i, j, ind, N1D, N2D
-      real*8 :: a, b, r, xx, yy, tt, xmax, xmin, ymax, ymin, xm, ym
+   SUBROUTINE analytical_gradient(x,y,t,u,ux,uy,ut)
+      real*8,dimension(:),intent(IN)        :: x,y,t
+      real*8,dimension(:,:),intent(IN)      :: u
+      real*8,dimension(:,:),intent(OUT)     :: ux,uy,ut
+      real*8,dimension(size(u,1),size(u,2))  :: upx,upy,upt
+      real*8,dimension(size(u,1),phys%npv)   :: up
+      integer:: i,j,ind,N1D,N2D
+      real*8 :: a,b,r,xx,yy,tt,xmax,xmin,ymax,ymin,xm,ym
       real*8 :: aux
 
-      N2D = size(x, 1)
-      N1D = size(t, 1)
+      N2D = size(x,1)
+      N1D = size(t,1)
 
       xmax = Mesh%xmax
       xmin = Mesh%xmin
@@ -119,11 +119,11 @@ CONTAINS
       upx = 0.
       upy = 0.
       upt = 0.
-      CALL cons2phys(u, up)
+      CALL cons2phys(u,up)
       a = 2*pi
 
-      DO i = 1, N2d
-         DO j = 1, N1d
+      DO i = 1,N2d
+         DO j = 1,N1d
             xx = x(i)
             yy = y(i)
             tt = t(j)
@@ -132,45 +132,45 @@ CONTAINS
             SELECT CASE (switch%testcase)
             CASE (1)
                IF (switch%axisym) THEN
-                  WRITE (6, *) "This is NOT an axisymmetric test case!"
+                  WRITE (6,*) "This is NOT an axisymmetric test case!"
                   stop
                END IF
-               ! Circular field centered in [xc, yc], n = 2+sin(wx*x )*sin(wy*y),  u = cos(wx*x)*cos(wy*y), Ei = 20+cos(wx*x)*sin(wy*y), Ee = 10-sin(wx*x)*cos(wy*y)
-               upx(ind, 1) = a*cos(a*xx)*sin(a*yy)
-               upx(ind, 2) = -a*sin(a*xx)*cos(a*yy)
-               upx(ind, 3) = -a*sin(a*xx)*sin(a*yy)
-               upx(ind, 4) = a*cos(a*xx)*cos(a*yy)
+               ! Circular field centered in [xc,yc],n = 2+sin(wx*x )*sin(wy*y), u = cos(wx*x)*cos(wy*y),Ei = 20+cos(wx*x)*sin(wy*y),Ee = 10-sin(wx*x)*cos(wy*y)
+               upx(ind,1) = a*cos(a*xx)*sin(a*yy)
+               upx(ind,2) = -a*sin(a*xx)*cos(a*yy)
+               upx(ind,3) = -a*sin(a*xx)*sin(a*yy)
+               upx(ind,4) = a*cos(a*xx)*cos(a*yy)
 
-               upy(ind, 1) = a*sin(a*xx)*cos(a*yy)
-               upy(ind, 2) = -a*cos(a*xx)*sin(a*yy)
-               upy(ind, 3) = a*cos(a*xx)*cos(a*yy)
-               upy(ind, 4) = -a*sin(a*xx)*sin(a*yy)
+               upy(ind,1) = a*sin(a*xx)*cos(a*yy)
+               upy(ind,2) = -a*cos(a*xx)*sin(a*yy)
+               upy(ind,3) = a*cos(a*xx)*cos(a*yy)
+               upy(ind,4) = -a*sin(a*xx)*sin(a*yy)
 
             CASE (2)
-               ! Axisimmetric case with div(b)~=0, n = 2+sin(wx*x )*sin(wy*y),  u = cos(wx*x)*cos(wy*y), Ei = 20+cos(wx*x)*sin(wy*y), Ee = 10-sin(wx*x)*cos(wy*y)
+               ! Axisimmetric case with div(b)~=0,n = 2+sin(wx*x )*sin(wy*y), u = cos(wx*x)*cos(wy*y),Ei = 20+cos(wx*x)*sin(wy*y),Ee = 10-sin(wx*x)*cos(wy*y)
                IF (.not. switch%axisym) THEN
-                  WRITE (6, *) "This is an axisymmetric test case!"
+                  WRITE (6,*) "This is an axisymmetric test case!"
                   stop
                END IF
-               upx(ind, 1) = a*cos(a*xx)*sin(a*yy)
-               upx(ind, 2) = -a*sin(a*xx)*cos(a*yy)
-               upx(ind, 3) = -a*sin(a*xx)*sin(a*yy)
-               upx(ind, 4) = -a*cos(a*xx)*cos(a*yy)
+               upx(ind,1) = a*cos(a*xx)*sin(a*yy)
+               upx(ind,2) = -a*sin(a*xx)*cos(a*yy)
+               upx(ind,3) = -a*sin(a*xx)*sin(a*yy)
+               upx(ind,4) = -a*cos(a*xx)*cos(a*yy)
 
-               upy(ind, 1) = a*sin(a*xx)*cos(a*yy)
-               upy(ind, 2) = -a*cos(a*xx)*sin(a*yy)
-               upy(ind, 3) = a*cos(a*xx)*cos(a*yy)
-               upy(ind, 4) = a*sin(a*xx)*sin(a*yy)
+               upy(ind,1) = a*sin(a*xx)*cos(a*yy)
+               upy(ind,2) = -a*cos(a*xx)*sin(a*yy)
+               upy(ind,3) = a*cos(a*xx)*cos(a*yy)
+               upy(ind,4) = a*sin(a*xx)*sin(a*yy)
             CASE (3)
-               ! Axisimmetric case with div(b)~=0, n = 2+sin(wx*x )*sin(wy*y),  u = cos(wx*x)*cos(wy*y), Ei = 20+cos(wx*x)*sin(wy*y), Ee = 10-sin(wx*x)*cos(wy*y)
+               ! Axisimmetric case with div(b)~=0,n = 2+sin(wx*x )*sin(wy*y), u = cos(wx*x)*cos(wy*y),Ei = 20+cos(wx*x)*sin(wy*y),Ee = 10-sin(wx*x)*cos(wy*y)
                IF (.not. switch%axisym) THEN
-                  WRITE (6, *) "This is an axisymmetric test case!"
+                  WRITE (6,*) "This is an axisymmetric test case!"
                   stop
                END IF
-               upt(ind, 1) = +a*cos(a*tt)
-               upt(ind, 2) = -a*sin(a*tt)
-               upt(ind, 3) = -a*sin(a*tt)
-               upt(ind, 4) = -a*cos(a*tt)
+               upt(ind,1) = +a*cos(a*tt)
+               upt(ind,2) = -a*sin(a*tt)
+               upt(ind,3) = -a*sin(a*tt)
+               upt(ind,4) = -a*cos(a*tt)
             CASE (5)
                ! Do nothing
             CASE (6)
@@ -178,44 +178,44 @@ CONTAINS
             CASE (50:)
                ! Do nothing
             CASE DEFAULT
-               WRITE (6, *) "Error! Test case not valid"
+               WRITE (6,*) "Error! Test case not valid"
                STOP
             END SELECT
          END DO
       END DO
 
       ! Convert physical variables to conservative variables
-      ux(:, 1) = upx(:, 1)
-      uy(:, 1) = upy(:, 1)
-      ut(:, 1) = upt(:, 1)
-      ux(:, 2) = (upx(:, 1)*up(:, 2) + up(:, 1)*upx(:, 2))
-      uy(:, 2) = (upy(:, 1)*up(:, 2) + up(:, 1)*upy(:, 2))
-      ut(:, 2) = (upt(:, 1)*up(:, 2) + up(:, 1)*upt(:, 2))
-      ux(:, 3) = upx(:, 3)
-      uy(:, 3) = upy(:, 3)
-      ut(:, 3) = upt(:, 3)
-      ux(:, 4) = upx(:, 4)
-      uy(:, 4) = upy(:, 4)
-      ut(:, 4) = upt(:, 4)
+      ux(:,1) = upx(:,1)
+      uy(:,1) = upy(:,1)
+      ut(:,1) = upt(:,1)
+      ux(:,2) = (upx(:,1)*up(:,2) + up(:,1)*upx(:,2))
+      uy(:,2) = (upy(:,1)*up(:,2) + up(:,1)*upy(:,2))
+      ut(:,2) = (upt(:,1)*up(:,2) + up(:,1)*upt(:,2))
+      ux(:,3) = upx(:,3)
+      uy(:,3) = upy(:,3)
+      ut(:,3) = upt(:,3)
+      ux(:,4) = upx(:,4)
+      uy(:,4) = upy(:,4)
+      ut(:,4) = upt(:,4)
 
    END SUBROUTINE analytical_gradient
 
    !*****************************************
    ! Body forces
    !****************************************
-   SUBROUTINE body_force(x, y, t, f)
-      real*8, dimension(:), intent(IN) :: x, y, t
-      real*8, dimension(:, :), intent(OUT) :: f
-      real*8  :: xc, yc, D, mu, k
-      integer:: i, j, N2D, N1D, ind
-      real*8 :: a, b, xx, yy, tt, xmax, xmin, ymax, ymin, xm, ym
-      real*8  :: t1, t2, t3, t4, t5, t6, t7, t8, t9, ta, tb, cx2, cy2
-      real*8  :: Dw, DparPhi, DPhi, DnDivn, DparN
-      real*8 :: r, r2, cx, cy, sx, sy, driftexb
+   SUBROUTINE body_force(x,y,t,f)
+      real*8,dimension(:),intent(IN) :: x,y,t
+      real*8,dimension(:,:),intent(OUT) :: f
+      real*8  :: xc,yc,D,mu,k
+      integer:: i,j,N2D,N1D,ind
+      real*8 :: a,b,xx,yy,tt,xmax,xmin,ymax,ymin,xm,ym
+      real*8  :: t1,t2,t3,t4,t5,t6,t7,t8,t9,ta,tb,cx2,cy2
+      real*8  :: Dw,DparPhi,DPhi,DnDivn,DparN
+      real*8 :: r,r2,cx,cy,sx,sy,driftexb
 
       a = 2*pi
-      N2D = size(x, 1)
-      N1D = size(t, 1)
+      N2D = size(x,1)
+      N1D = size(t,1)
 
       xmax = Mesh%xmax
       xmin = Mesh%xmin
@@ -225,17 +225,17 @@ CONTAINS
       ym = 0.5*(ymax + ymin)
 
       f = 0.
-      DO i = 1, N2d
-         DO j = 1, N1d
+      DO i = 1,N2d
+         DO j = 1,N1d
             xx = x(i)
             yy = y(i)
             tt = t(j)
             ind = (j - 1)*N2d+i
             SELECT CASE (switch%testcase)
             CASE (1)
-               ! Circular field centered in [xc, yc], n = 2+sin(2*pi*x)*sin(2*pi*y),  u = cos(2*pi*x)*cos(2*pi*y)
+               ! Circular field centered in [xc,yc],n = 2+sin(2*pi*x)*sin(2*pi*y), u = cos(2*pi*x)*cos(2*pi*y)
                IF (switch%axisym) THEN
-                  WRITE (6, *) "This is NOT an axisymmetric test case!"
+                  WRITE (6,*) "This is NOT an axisymmetric test case!"
                   stop
                END IF
                a = 2*pi
@@ -271,7 +271,7 @@ CONTAINS
             CASE (2)
                ! Axisimmetric case with div(b)~=0
                IF (.not. switch%axisym) THEN
-                  WRITE (6, *) "This is an axisymmetric test case!"
+                  WRITE (6,*) "This is an axisymmetric test case!"
                   stop
                END IF
                a = 2*pi
@@ -296,7 +296,7 @@ CONTAINS
                t5 = ((xm**2 - 2*ym*yy - 2*xm*xx + 2*xx**2 + ym**2 + yy**2)/xx**2)**(0.5)
                t6 = ((xm**2 - 2*ym*yy - 2*xm*xx + 2*xx**2 + ym**2 + yy**2)/xx**2)**(1.5)
 
-               f(ind, 1) = (1.0D0/(xm*xx*(-2.0D0) - ym*yy*2.0D0 + xm**2 + xx**2*2.0D0 + ym**2 + yy&
+               f(ind,1) = (1.0D0/(xm*xx*(-2.0D0) - ym*yy*2.0D0 + xm**2 + xx**2*2.0D0 + ym**2 + yy&
          &**2)**2*(-D*a*t3*xm**4 - D*a*t3*xx**4*6.0D0 + a*t3*xx**5*(1.0D0/xx**2*&
          &(xm - xx)**2 + 1.0D0/xx**2*(ym - yy)**2 + 1.0D0)**(3.0D0/2.0D0)*2.0D0 - t1*x&
          &x*ym**3*sqrt(1.0D0/xx**2*(xm - xx)**2 + 1.0D0/xx**2*(ym - yy)**2 + 1.0D0)*&
@@ -363,7 +363,7 @@ CONTAINS
          &.0D0)**(3.0D0/2.0D0) + a*cx2*cy*sy*xx**4*yy*(1.0D0/xx**2*(xm - xx)**2 +&
          &1.0D0/xx**2*(ym - yy)**2 + 1.0D0)**(3.0D0/2.0D0)))/xx
 
-               f(ind, 2) = (1.0D0/(xm*xx*(-2.0D0) - ym*yy*2.0D0 + xm**2 + xx**2*2.0D0 + ym**2 + yy&
+               f(ind,2) = (1.0D0/(xm*xx*(-2.0D0) - ym*yy*2.0D0 + xm**2 + xx**2*2.0D0 + ym**2 + yy&
          &**2)**2*(a**2*mu*xx**2*ym**3*2.0D0 - a**2*mu*xx**2*yy**3*2.0D0 + a*mu*&
          &t4*xm**4*2.0D0 + a*mu*t4*xx**4*1.2D+1 - a*t4*t6*xx**5*1.0D+1 + (a*mu*xm*&
          &*4*sin(a*yy*2.0D0))/2.0D0 + a*mu*xx**4*sin(a*yy*2.0D0)*3.0D0 + a**2*mu&
@@ -506,7 +506,7 @@ CONTAINS
             CASE (50:)
                !Do nothing
             CASE DEFAULT
-               WRITE (6, *) "Error! Test case not valid"
+               WRITE (6,*) "Error! Test case not valid"
                STOP
 
             END SELECT
@@ -522,27 +522,27 @@ CONTAINS
    !*****************************************
    ! Analytical solution
    !****************************************
-   SUBROUTINE analytical_solution(x, y, u)
-      real*8, dimension(:), intent(IN)        :: x, y
-      real*8, dimension(:, :), intent(OUT)     :: u
-      real*8, dimension(size(u, 1), size(u, 2))  :: up
+   SUBROUTINE analytical_solution(x,y,u)
+      real*8,dimension(:),intent(IN)        :: x,y
+      real*8,dimension(:,:),intent(OUT)     :: u
+      real*8,dimension(size(u,1),size(u,2))  :: up
       integer:: i
-      real*8 :: a, r(size(x))
+      real*8 :: a,r(size(x))
 
       up = 0.
       a = 2*pi
       SELECT CASE (switch%testcase)
       CASE (1)
          IF (switch%axisym) THEN
-            WRITE (6, *) "This is NOT an axisymmetric test case!"
+            WRITE (6,*) "This is NOT an axisymmetric test case!"
             stop
          END IF
-         ! Circular field centered in [xc, yc], n = 2+sin(a*x)*sin(a*y),  u = cos(a*x)*cos(a*y)
+         ! Circular field centered in [xc,yc],n = 2+sin(a*x)*sin(a*y), u = cos(a*x)*cos(a*y)
          ! Case 9 of the Matlab version: for convergence purpose
-         up(:, 1) = 2 + sin(a*x)*sin(a*y)
-         up(:, 2) = cos(a*x)*cos(a*y)
-         up(:, 3) = cos(a*x)*sin(a*y)
-         up(:, 4) = sin(a*x)*cos(a*y)
+         up(:,1) = 2 + sin(a*x)*sin(a*y)
+         up(:,2) = cos(a*x)*cos(a*y)
+         up(:,3) = cos(a*x)*sin(a*y)
+         up(:,4) = sin(a*x)*cos(a*y)
 !                                                CASE(2)
 !                                                ! Axisimmetric case with div(b)~=0
 !                                                   IF (.not.switch%axisym) THEN
@@ -552,72 +552,72 @@ CONTAINS
 !                                                                  up(:,1) = 2+sin(a*x)*sin(a*y)
 !                                                                  up(:,2) = cos(a*x)*cos(a*y)
       CASE (50:64)
-         up(:, 1) = 1.
-         up(:, 2) = 0.
+         up(:,1) = 1.
+         up(:,2) = 0.
       CASE (65)
-         up(:, 1) = 1.
-         up(:, 2) = 0.
+         up(:,1) = 1.
+         up(:,2) = 0.
          r = sqrt((x*phys%lscale - geom%R0)**2 + (y*phys%lscale - 0.75)**2)
-         DO i = 1, size(x)
+         DO i = 1,size(x)
             IF (r(i) .le. 0.05) THEN
-               up(i, 2) = 1.
+               up(i,2) = 1.
             END IF
          END DO
       CASE DEFAULT
-         WRITE (6, *) "Error! Test case not valid"
+         WRITE (6,*) "Error! Test case not valid"
          STOP
       END SELECT
       ! Convert physical variables to conservative variables
-      CALL phys2cons(up, u)
+      CALL phys2cons(up,u)
    END SUBROUTINE analytical_solution
 
    !*****************************************
    ! Analytical gradient
    !****************************************
-   SUBROUTINE analytical_gradient(x, y, u, ux, uy)
-      real*8, dimension(:), intent(IN)        :: x, y
-      real*8, dimension(:, :), intent(IN)      :: u
-      real*8, dimension(:, :), intent(OUT)     :: ux, uy
-      real*8, dimension(size(u, 1), size(u, 2))  :: upx, upy
-      real*8, dimension(size(u, 1), phys%npv)  :: up
+   SUBROUTINE analytical_gradient(x,y,u,ux,uy)
+      real*8,dimension(:),intent(IN)        :: x,y
+      real*8,dimension(:,:),intent(IN)      :: u
+      real*8,dimension(:,:),intent(OUT)     :: ux,uy
+      real*8,dimension(size(u,1),size(u,2))  :: upx,upy
+      real*8,dimension(size(u,1),phys%npv)  :: up
       real*8 :: a
 
       upx = 0.
       upy = 0.
-      CALL cons2phys(u, up)
+      CALL cons2phys(u,up)
       a = 2*pi
       SELECT CASE (switch%testcase)
       CASE (1)
          IF (switch%axisym) THEN
-            WRITE (6, *) "This is NOT an axisymmetric test case!"
+            WRITE (6,*) "This is NOT an axisymmetric test case!"
             stop
          END IF
-         ! Circular field centered in [xc, yc], n = 2+sin(wx*x )*sin(wy*y),  u = cos(wx*x)*cos(wy*y), Ei = 20+cos(wx*x)*sin(wy*y), Ee = 10-sin(wx*x)*cos(wy*y)
-         upx(:, 1) = a*cos(a*x)*sin(a*y)
-         upx(:, 2) = -a*sin(a*x)*cos(a*y)
-         upx(:, 3) = -a*sin(a*x)*sin(a*y)
-         upx(:, 4) = a*cos(a*x)*cos(a*y)
+         ! Circular field centered in [xc,yc],n = 2+sin(wx*x )*sin(wy*y), u = cos(wx*x)*cos(wy*y),Ei = 20+cos(wx*x)*sin(wy*y),Ee = 10-sin(wx*x)*cos(wy*y)
+         upx(:,1) = a*cos(a*x)*sin(a*y)
+         upx(:,2) = -a*sin(a*x)*cos(a*y)
+         upx(:,3) = -a*sin(a*x)*sin(a*y)
+         upx(:,4) = a*cos(a*x)*cos(a*y)
 
-         upy(:, 1) = a*sin(a*x)*cos(a*y)
-         upy(:, 2) = -a*cos(a*x)*sin(a*y)
-         upy(:, 3) = a*cos(a*x)*cos(a*y)
-         upy(:, 4) = -a*sin(a*x)*sin(a*y)
+         upy(:,1) = a*sin(a*x)*cos(a*y)
+         upy(:,2) = -a*cos(a*x)*sin(a*y)
+         upy(:,3) = a*cos(a*x)*cos(a*y)
+         upy(:,4) = -a*sin(a*x)*sin(a*y)
 
       CASE (2)
-         ! Axisimmetric case with div(b)~=0, n = 2+sin(wx*x )*sin(wy*y),  u = cos(wx*x)*cos(wy*y), Ei = 20+cos(wx*x)*sin(wy*y), Ee = 10-sin(wx*x)*cos(wy*y)
+         ! Axisimmetric case with div(b)~=0,n = 2+sin(wx*x )*sin(wy*y), u = cos(wx*x)*cos(wy*y),Ei = 20+cos(wx*x)*sin(wy*y),Ee = 10-sin(wx*x)*cos(wy*y)
          IF (.not. switch%axisym) THEN
-            WRITE (6, *) "This is an axisymmetric test case!"
+            WRITE (6,*) "This is an axisymmetric test case!"
             stop
          END IF
-         upx(:, 1) = a*cos(a*x)*sin(a*y)
-         upx(:, 2) = -a*sin(a*x)*cos(a*y)
-         upx(:, 3) = -a*sin(a*x)*sin(a*y)
-         upx(:, 4) = -a*cos(a*x)*cos(a*y)
+         upx(:,1) = a*cos(a*x)*sin(a*y)
+         upx(:,2) = -a*sin(a*x)*cos(a*y)
+         upx(:,3) = -a*sin(a*x)*sin(a*y)
+         upx(:,4) = -a*cos(a*x)*cos(a*y)
 
-         upy(:, 1) = a*sin(a*x)*cos(a*y)
-         upy(:, 2) = -a*cos(a*x)*sin(a*y)
-         upy(:, 3) = a*cos(a*x)*cos(a*y)
-         upy(:, 4) = a*sin(a*x)*sin(a*y)
+         upy(:,1) = a*sin(a*x)*cos(a*y)
+         upy(:,2) = -a*cos(a*x)*sin(a*y)
+         upy(:,3) = a*cos(a*x)*cos(a*y)
+         upy(:,4) = a*sin(a*x)*sin(a*y)
       CASE (5)
          ! Do nothing
       CASE (6)
@@ -625,31 +625,31 @@ CONTAINS
       CASE (50:)
          ! Do nothing
       CASE DEFAULT
-         WRITE (6, *) "Error! Test case not valid"
+         WRITE (6,*) "Error! Test case not valid"
          STOP
       END SELECT
       ! Convert physical variables to conservative variables
-      ux(:, 1) = upx(:, 1)
-      uy(:, 1) = upy(:, 1)
-      ux(:, 2) = (upx(:, 1)*up(:, 2) + up(:, 1)*upx(:, 2))
-      uy(:, 2) = (upy(:, 1)*up(:, 2) + up(:, 1)*upy(:, 2))
-      ux(:, 3) = upx(:, 3)
-      uy(:, 3) = upy(:, 3)
-      ux(:, 4) = upx(:, 4)
-      uy(:, 4) = upy(:, 4)
+      ux(:,1) = upx(:,1)
+      uy(:,1) = upy(:,1)
+      ux(:,2) = (upx(:,1)*up(:,2) + up(:,1)*upx(:,2))
+      uy(:,2) = (upy(:,1)*up(:,2) + up(:,1)*upy(:,2))
+      ux(:,3) = upx(:,3)
+      uy(:,3) = upy(:,3)
+      ux(:,4) = upx(:,4)
+      uy(:,4) = upy(:,4)
 
    END SUBROUTINE analytical_gradient
 
    !*****************************************
    ! Body forces
    !****************************************
-   SUBROUTINE body_force(x, y, f)
-      real*8, dimension(:), intent(IN) :: x, y
-      real*8, dimension(:, :), intent(OUT) :: f
-      integer                            :: i, n
-      real*8  :: a, b, xc, yc, D, mu, k
-      real*8  :: Dw, DparPhi, DPhi, DnDivn, DparN
-      real*8 :: r(size(x)), r2(size(x)), cx(size(x)), cy(size(x)), sx(size(x)), sy(size(x)), driftexb
+   SUBROUTINE body_force(x,y,f)
+      real*8,dimension(:),intent(IN) :: x,y
+      real*8,dimension(:,:),intent(OUT) :: f
+      integer                            :: i,n
+      real*8  :: a,b,xc,yc,D,mu,k
+      real*8  :: Dw,DparPhi,DPhi,DnDivn,DparN
+      real*8 :: r(size(x)),r2(size(x)),cx(size(x)),cy(size(x)),sx(size(x)),sy(size(x)),driftexb
       Dw = phys%diff_vort
       DPhi = phys%diff_pot
       DparPhi = phys%diff_pari
@@ -667,7 +667,7 @@ CONTAINS
       f = 0.
       SELECT CASE (switch%testcase)
       CASE (1)
-         ! Circular field centered in [xc, yc], n = 2+sin(2*pi*x)*sin(2*pi*y),  u = cos(2*pi*x)*cos(2*pi*y)
+         ! Circular field centered in [xc,yc],n = 2+sin(2*pi*x)*sin(2*pi*y), u = cos(2*pi*x)*cos(2*pi*y)
          ! Case 9 of the Matlab version: for convergence purpose
          a = 2*pi
          b = 2*pi
@@ -700,7 +700,7 @@ CONTAINS
       CASE (2)
          ! Axisimmetric case with div(b)~=0
          IF (.not. switch%axisym) THEN
-            WRITE (6, *) "This is an axisymmetric test case!"
+            WRITE (6,*) "This is an axisymmetric test case!"
             stop
          END IF
          a = 2*pi
@@ -710,12 +710,12 @@ CONTAINS
          D = phys%diff_n
          mu = phys%diff_u
          k = phys%a
-         f(:, 1) = 0.
-         f(:, 2) = 0.
+         f(:,1) = 0.
+         f(:,2) = 0.
       CASE (50:)
          !Do nothing
       CASE DEFAULT
-         WRITE (6, *) "Error! Test case not valid"
+         WRITE (6,*) "Error! Test case not valid"
          STOP
 
       END SELECT

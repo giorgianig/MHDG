@@ -62,65 +62,65 @@ CONTAINS
    ! Convert physical variable to conservative
    ! variables
    !*******************************************
-   SUBROUTINE phys2cons(up, ua)
-      real*8, dimension(:, :), intent(in)  :: up
-      real*8, dimension(:, :), intent(out) :: ua
+   SUBROUTINE phys2cons(up,ua)
+      real*8,dimension(:,:),intent(in)  :: up
+      real*8,dimension(:,:),intent(out) :: ua
 
-      ua(:, 1) = up(:, 1)
-      ua(:, 2) = up(:, 1)*up(:, 2)
-      ua(:, 3) = up(:, 3)
-      ua(:, 4) = up(:, 4)
+      ua(:,1) = up(:,1)
+      ua(:,2) = up(:,1)*up(:,2)
+      ua(:,3) = up(:,3)
+      ua(:,4) = up(:,4)
    END SUBROUTINE phys2cons
 
    !*******************************************
    ! Convert conservative variable to physical
    ! variables
    !*******************************************
-   SUBROUTINE cons2phys(ua, up)
-      real*8, dimension(:, :), intent(in)  :: ua
-      real*8, dimension(:, :), intent(out) :: up
+   SUBROUTINE cons2phys(ua,up)
+      real*8,dimension(:,:),intent(in)  :: ua
+      real*8,dimension(:,:),intent(out) :: up
 
-      up(:, 1) = ua(:, 1)
-      up(:, 2) = ua(:, 2)/ua(:, 1)/sqrt(phys%a)
-      up(:, 3) = ua(:, 3)
-      up(:, 4) = ua(:, 4)
+      up(:,1) = ua(:,1)
+      up(:,2) = ua(:,2)/ua(:,1)/sqrt(phys%a)
+      up(:,3) = ua(:,3)
+      up(:,4) = ua(:,4)
    END SUBROUTINE cons2phys
 
-   SUBROUTINE jacobianMatrices(U, A)
-      real*8, intent(in)  :: U(:)
-      real*8, intent(out) :: A(:, :)
+   SUBROUTINE jacobianMatrices(U,A)
+      real*8,intent(in)  :: U(:)
+      real*8,intent(out) :: A(:,:)
 
       A = 0.d0
-      A(1, 2) = 1.
-      A(2, 1) = (-1*U(2)**2/U(1)**2 + phys%a)
-      A(2, 2) = 2*U(2)/U(1)
+      A(1,2) = 1.
+      A(2,1) = (-1*U(2)**2/U(1)**2 + phys%a)
+      A(2,2) = 2*U(2)/U(1)
       IF (switch%convvort) THEN
-         A(3, 1) = -U(3)*U(2)/U(1)**2
-         A(3, 2) = U(3)/U(1)
-         A(3, 3) = U(2)/U(1)
+         A(3,1) = -U(3)*U(2)/U(1)**2
+         A(3,2) = U(3)/U(1)
+         A(3,3) = U(2)/U(1)
       END IF
    END SUBROUTINE jacobianMatrices
 
    !*****************************************
    ! Jacobian matrix for face computations
    !****************************************
-   SUBROUTINE jacobianMatricesFace(U, bn, An)
-      real*8, intent(in)  :: U(:), bn
-      real*8, intent(out) :: An(:, :)
+   SUBROUTINE jacobianMatricesFace(U,bn,An)
+      real*8,intent(in)  :: U(:),bn
+      real*8,intent(out) :: An(:,:)
 
       An = 0.
-      CALL jacobianMatrices(U, An)
+      CALL jacobianMatrices(U,An)
       An = bn*An
    END SUBROUTINE jacobianMatricesFace
 
    !*****************************************
    ! Set the perpendicular diffusion
    !****************************************
-   SUBROUTINE setLocalDiff(xy, d_iso, d_ani, Bmod)
-      real*8, intent(in)  :: xy(:, :)
-      real*8, intent(out) :: d_iso(:, :, :), d_ani(:, :, :)
+   SUBROUTINE setLocalDiff(xy,d_iso,d_ani,Bmod)
+      real*8,intent(in)  :: xy(:,:)
+      real*8,intent(out) :: d_iso(:,:,:),d_ani(:,:,:)
       real*8              :: Bmod(:)
-      real*8              :: iperdiff(size(xy, 1))
+      real*8              :: iperdiff(size(xy,1))
       real*8              :: coeff(size(Bmod))
 
       ! d_iso(Neq,Neq,Ngauss),d_ani(Neq,Neq,Ngauss)
@@ -139,50 +139,50 @@ CONTAINS
       !*****************************
       ! Diagonal terms
       !*****************************
-      d_iso(1, 1, :) = phys%diff_n
-      d_iso(2, 2, :) = phys%diff_u
-      d_iso(3, 3, :) = phys%diff_vort
-      d_iso(4, 4, :) = coeff
+      d_iso(1,1,:) = phys%diff_n
+      d_iso(2,2,:) = phys%diff_u
+      d_iso(3,3,:) = phys%diff_vort
+      d_iso(4,4,:) = coeff
 
-      d_ani(1, 1, :) = phys%diff_n
-      d_ani(2, 2, :) = phys%diff_u
-      d_ani(3, 3, :) = phys%diff_vort
-      d_ani(4, 4, :) = coeff
+      d_ani(1,1,:) = phys%diff_n
+      d_ani(2,2,:) = phys%diff_u
+      d_ani(3,3,:) = phys%diff_vort
+      d_ani(4,4,:) = coeff
 
       !*****************************
       ! Non diagonal terms
       !*****************************
 !   !! term +\Div(1/eta \Grad_par \phi) in the vorticity equation
-      d_iso(3, 4, :) = 0.
-      d_ani(3, 4, :) = 1./phys%etapar*phys%c1 ! Negative parallel diffusion
+      d_iso(3,4,:) = 0.
+      d_ani(3,4,:) = 1./phys%etapar*phys%c1 ! Negative parallel diffusion
 !   !! term -\Div(1/n\Grad_par \n) in the vorticity equation
-      d_iso(3, 1, :) = 0.
-      d_ani(3, 1, :) = -1./phys%etapar*phys%c2
+      d_iso(3,1,:) = 0.
+      d_ani(3,1,:) = -1./phys%etapar*phys%c2
 !   !! term -\Div(1/B^2\Grad_perp n) in the potential equation
-      d_iso(4, 1, :) = coeff*phys%Mref
-      d_ani(4, 1, :) = coeff*phys%Mref
+      d_iso(4,1,:) = coeff*phys%Mref
+      d_ani(4,1,:) = coeff*phys%Mref
 
-!write(6,*) "diff_pot: ", 1./Bmod**2*phys%Mref*0.0232
+!write(6,*) "diff_pot: ",1./Bmod**2*phys%Mref*0.0232
 
       if (switch%testcase < 50) then
-         d_iso(4, 4, :) = phys%diff_pot
-         d_ani(4, 4, :) = phys%diff_pot
-         d_iso(3, 4, :) = 0.
-         d_ani(3, 4, :) = phys%diff_pari ! Negative parallel diffusion
+         d_iso(4,4,:) = phys%diff_pot
+         d_ani(4,4,:) = phys%diff_pot
+         d_iso(3,4,:) = 0.
+         d_ani(3,4,:) = phys%diff_pari ! Negative parallel diffusion
                                                 !! term -\Div(1/n\Grad_par \n) in the vorticity equation
-         d_iso(3, 1, :) = 0.
-         d_ani(3, 1, :) = -phys%diff_pare
+         d_iso(3,1,:) = 0.
+         d_ani(3,1,:) = -phys%diff_pare
                                                 !! term -\Div(1/n 1/B^2\Grad_perp n) in the potential equation
-         d_iso(4, 1, :) = phys%diff_ee
-         d_ani(4, 1, :) = phys%diff_ee
+         d_iso(4,1,:) = phys%diff_ee
+         d_ani(4,1,:) = phys%diff_ee
       endif
 
       if (switch%difcor .gt. 0) then
-         call computeIperDiffusion(xy, iperdiff)
-         d_iso(1, 1, :) = d_iso(1, 1, :)*iperdiff
-         d_iso(2, 2, :) = d_iso(2, 2, :)*iperdiff
-         d_iso(3, 3, :) = d_iso(3, 3, :)*iperdiff
-         d_iso(4, 4, :) = d_iso(4, 4, :)*iperdiff
+         call computeIperDiffusion(xy,iperdiff)
+         d_iso(1,1,:) = d_iso(1,1,:)*iperdiff
+         d_iso(2,2,:) = d_iso(2,2,:)*iperdiff
+         d_iso(3,3,:) = d_iso(3,3,:)*iperdiff
+         d_iso(4,4,:) = d_iso(4,4,:)*iperdiff
       endif
 
    END SUBROUTINE setLocalDiff
@@ -190,13 +190,13 @@ CONTAINS
    !*******************************************
    ! Compute local diffusion in points
    !*******************************************
-   SUBROUTINE computeIperDiffusion(X, ipdiff)
-      real*8, intent(IN)  :: X(:, :)
-      real*8, intent(OUT) :: ipdiff(:)
-      real*8             :: xcorn, ycorn
-      real*8             :: rad(size(X, 1))
+   SUBROUTINE computeIperDiffusion(X,ipdiff)
+      real*8,intent(IN)  :: X(:,:)
+      real*8,intent(OUT) :: ipdiff(:)
+      real*8             :: xcorn,ycorn
+      real*8             :: rad(size(X,1))
       real*8             :: h
-      real*8, parameter   :: tol = 1.e-6
+      real*8,parameter   :: tol = 1.e-6
       integer            :: i
 
       SELECT CASE (switch%difcor)
@@ -213,7 +213,7 @@ CONTAINS
          xcorn = 2.7977
          ycorn = -0.5128
       CASE DEFAULT
-         WRITE (6, *) "Case not valid"
+         WRITE (6,*) "Case not valid"
          STOP
       END SELECT
 
@@ -221,7 +221,7 @@ CONTAINS
                                                                 !! Gaussian around the corner
                                                                 !!**********************************************************
       h = 10e-3
-      rad = sqrt((X(:, 1)*phys%lscale - xcorn)**2 + (X(:, 2)*phys%lscale - ycorn)**2)
+      rad = sqrt((X(:,1)*phys%lscale - xcorn)**2 + (X(:,2)*phys%lscale - ycorn)**2)
       ipdiff = 1 + numer%dc_coe*exp(-(2*rad/h)**2)
 
    END SUBROUTINE computeIperDiffusion
@@ -235,14 +235,14 @@ CONTAINS
    !*******************************************
    ! Compute the stabilization tensor tau
    !*******************************************
-   SUBROUTINE computeTauGaussPoints(up, uc, b, n, iel, ifa, isext, xy, tau)
-      real*8, intent(in)  :: up(:), uc(:), b(:), n(:), xy(:)
-      real, intent(in) :: isext
-      integer, intent(in)  :: ifa, iel
-      real*8, intent(out) :: tau(:, :)
+   SUBROUTINE computeTauGaussPoints(up,uc,b,n,iel,ifa,isext,xy,tau)
+      real*8,intent(in)  :: up(:),uc(:),b(:),n(:),xy(:)
+      real,intent(in) :: isext
+      integer,intent(in)  :: ifa,iel
+      real*8,intent(out) :: tau(:,:)
       real*8              :: tau_aux(4)
-      real*8 :: xc, yc, rad, h, aux, bn, bnorm
-      real*8 :: U1, U2, U3, U4
+      real*8 :: xc,yc,rad,h,aux,bn,bnorm
+      real*8 :: U1,U2,U3,U4
       integer :: ndim
       U1 = uc(1)
       U2 = uc(2)
@@ -251,7 +251,7 @@ CONTAINS
 
       tau = 0.
       ndim = size(n)
-      bn = dot_product(b(1:ndim), n)
+      bn = dot_product(b(1:ndim),n)
       bnorm = norm2(b(1:ndim))
 
       if (numer%stab == 2 .or. numer%stab == 3) then
@@ -282,31 +282,31 @@ CONTAINS
          endif
 #endif
       else
-         write (6, *) "Wrong stabilization type: ", numer%stab
+         write (6,*) "Wrong stabilization type: ",numer%stab
          stop
       endif
-      tau(1, 1) = tau_aux(1)
-      tau(2, 2) = tau_aux(2)
-      tau(3, 3) = tau_aux(3)
-      tau(4, 4) = tau_aux(4)
+      tau(1,1) = tau_aux(1)
+      tau(2,2) = tau_aux(2)
+      tau(3,3) = tau_aux(3)
+      tau(4,4) = tau_aux(4)
    END SUBROUTINE computeTauGaussPoints
 
-   SUBROUTINE computeTauGaussPoints_matrix(up, uc, b, n, xy, isext, iel, tau)
-      real*8, intent(in)  :: up(:), uc(:), b(:), n(:), xy(:), isext
-      real*8, intent(out) :: tau(:, :)
-      integer, intent(in) :: iel
-      real*8              :: bn, bnorm
-      real*8, parameter :: eps = 1e-12
-      real*8 :: U1, U2, U3, U4
-      real*8 :: t2, t3, t4, t5, t6, t7, t8, t9
-      real*8 :: t10, t11, t12, t13, t14, t15, t16, t17, t18, t19
-      real*8 :: t20, t21, t22, t23, t24, t25, t26, t27, t28, t29
-      real*8 :: t30, t31, t32, t33, t34, t35, t36, t37, t38, t39
-      real*8 :: t40, t41, t42, t43, t44, t45, t46, t47, t48, t49
-      real*8 :: t50, t51, t52, t53, t54, t55, t56, t57, t58, t59
-      real*8 :: t60, t61, t62, t63, t64, t65, t66, t67, t68, t69
-      real*8 :: t70, t71, t72, t73, t74, t75, t76, t77, t78, t79, t80
-      real*8 :: x, y, r, h, coef, r0, rc
+   SUBROUTINE computeTauGaussPoints_matrix(up,uc,b,n,xy,isext,iel,tau)
+      real*8,intent(in)  :: up(:),uc(:),b(:),n(:),xy(:),isext
+      real*8,intent(out) :: tau(:,:)
+      integer,intent(in) :: iel
+      real*8              :: bn,bnorm
+      real*8,parameter :: eps = 1e-12
+      real*8 :: U1,U2,U3,U4
+      real*8 :: t2,t3,t4,t5,t6,t7,t8,t9
+      real*8 :: t10,t11,t12,t13,t14,t15,t16,t17,t18,t19
+      real*8 :: t20,t21,t22,t23,t24,t25,t26,t27,t28,t29
+      real*8 :: t30,t31,t32,t33,t34,t35,t36,t37,t38,t39
+      real*8 :: t40,t41,t42,t43,t44,t45,t46,t47,t48,t49
+      real*8 :: t50,t51,t52,t53,t54,t55,t56,t57,t58,t59
+      real*8 :: t60,t61,t62,t63,t64,t65,t66,t67,t68,t69
+      real*8 :: t70,t71,t72,t73,t74,t75,t76,t77,t78,t79,t80
+      real*8 :: x,y,r,h,coef,r0,rc
 
       x = xy(1)
       y = xy(2)
@@ -316,25 +316,25 @@ CONTAINS
       U3 = uc(3)
       U4 = uc(4)
 
-      bn = dot_product(b, n)
+      bn = dot_product(b,n)
       bnorm = norm2(b)
       !************************************
       !
       ! *****     CONVECTIVE PART  ********
       !
       !************************************
-      tau(1, 1) = abs((uc(2)*bn)/uc(1))
-      tau(2, 2) = abs((uc(2)*bn)/uc(1))
-      tau(3, 3) = abs((uc(2)*bn)/uc(1))
-      tau(4, 4) = abs((uc(2)*bn)/uc(1))
+      tau(1,1) = abs((uc(2)*bn)/uc(1))
+      tau(2,2) = abs((uc(2)*bn)/uc(1))
+      tau(3,3) = abs((uc(2)*bn)/uc(1))
+      tau(4,4) = abs((uc(2)*bn)/uc(1))
 
       !************************************
       !
       ! *****     DIFFUSIVE PART  ********
       !
       !************************************
-      tau(1, 1) = tau(1, 1) + phys%diff_n
-      tau(2, 2) = tau(2, 2) + phys%diff_u
+      tau(1,1) = tau(1,1) + phys%diff_n
+      tau(2,2) = tau(2,2) + phys%diff_u
    END SUBROUTINE computeTauGaussPoints_matrix
 
    !*****************************************
@@ -342,8 +342,8 @@ CONTAINS
    !****************************************
 !                 SUBROUTINE jacobianMatricesBound(u,v,nx,ny,Anp,Anm)
 !                 USE LinearAlgebra
-!                 real*8, intent(in)  :: u,v,nx,ny
-!                 real*8, intent(out) :: Anp(1:3,1:3),Anm(1:3,1:3)
+!                 real*8,intent(in)  :: u,v,nx,ny
+!                 real*8,intent(out) :: Anp(1:3,1:3),Anm(1:3,1:3)
 !   real*8              :: An(1:3,1:3),Vm(3,3),Dm(3,3),invVm(3,3)
 !
 !                        An = 0.d0
@@ -370,8 +370,8 @@ CONTAINS
 !                !***********************************************************************
 !#ifdef TOR3D
 !  SUBROUTINE defineMagneticField(x,y,t,b,divb,drift,Bmod)
-!  real*8, intent(in)      :: x(:),y(:),t(:)
-!  real*8, intent(out),optional     ::b(:,:),divb(:),drift(:,:),Bmod(:)
+!  real*8,intent(in)      :: x(:),y(:),t(:)
+!  real*8,intent(out),optional     ::b(:,:),divb(:),drift(:,:),Bmod(:)
 !  real*8                  :: xc,yc,R0,q,r
 !  real*8                  :: xmax,xmin,ymax,ymin,xm,ym,p,divbp
 !  real*8                  :: xx,yy,tt,Bp,Bt,Br,Bz,BB,dmax,B0,xr,yr
@@ -416,7 +416,7 @@ CONTAINS
 !                                                                                                                                WRITE(6,*) "This is NOT an axisymmetric test case!"
 !                                                                                                                                stop
 !                                                                                                 END IF
-!                                                                                                        ! Cartesian case, circular field centered in [xm, ym] in the poloidal plane, Bt = 1
+!                                                                                                        ! Cartesian case,circular field centered in [xm,ym] in the poloidal plane,Bt = 1
 !                           Br = (yy-yc)
 !                           Bz = (-xx+xc)
 !                           Bt = 1.
@@ -426,7 +426,7 @@ CONTAINS
 !                                                                                                                                WRITE(6,*) "This is an axisymmetric test case!"
 !                                                                                                                                stop
 !                                                                                                 END IF
-!                                                                                                        ! Axysimmetric case, circular field centered in [xm, ym] in the poloidal plane, Bt = 1
+!                                                                                                        ! Axysimmetric case,circular field centered in [xm,ym] in the poloidal plane,Bt = 1
 !                           Br = (yy-ym)/xx
 !                           Bz = (-xx+xm)/xx
 !                           Bt = 1.
@@ -487,8 +487,8 @@ CONTAINS
 !  END SUBROUTINE defineMagneticField
 !#else
 !  SUBROUTINE defineMagneticField(x,y,b,divb,drift,Bmod)
-!  real*8, intent(in)      :: x(:),y(:)
-!  real*8, intent(out),optional     :: b(:,:),divb(:),drift(:,:),Bmod(:)
+!  real*8,intent(in)      :: x(:),y(:)
+!  real*8,intent(out),optional     :: b(:,:),divb(:),drift(:,:),Bmod(:)
 !  real*8                  :: xc,yc,R0,q,r(size(x)),B0
 !  real*8                  :: Br(size(x)),Bz(size(x)),Bt(size(x)),BB(size(x))
 !
@@ -508,7 +508,7 @@ CONTAINS
 !  BB = 0.
 !                                SELECT CASE(switch%testcase)
 !                                  CASE(1)
-!                                  ! Circular field centered in [xc, yc], n = 2+sin(wx*x )*sin(wy*y),  u = cos(wx*x)*cos(wy*y)
+!                                  ! Circular field centered in [xc,yc],n = 2+sin(wx*x )*sin(wy*y), u = cos(wx*x)*cos(wy*y)
 !                                        xc = 0.
 !                                        yc = 0.
 !                                 Br = (y-yc)
@@ -665,12 +665,12 @@ CONTAINS
 !                                                DO i = 1,Mesh%Nnodes
 !                                                                        x = Mesh%X(i,1)
 !                                                                        y = Mesh%X(i,2)
-!                                                                        phys%b(i,1) = interpolate( ip, yvec,jp, xvec, bx, y,x, 1e-12)
-!                                                                        phys%b(i,2) = interpolate( ip, yvec,jp, xvec, by, y,x, 1e-12)
-!                                                                        phys%divb(i) = interpolate( ip, yvec,jp, xvec, divb, y,x, 1e-12)
-!                                                                        phys%drift(i,1) = interpolate( ip, yvec,jp, xvec,driftx, y,x, 1e-12)
-!                                                                        phys%drift(i,2) = interpolate( ip, yvec,jp, xvec,drifty, y,x, 1e-12)
-!                                                                        phys%flux2D(i) = interpolate( ip, yvec,jp, xvec,flux2D, y,x, 1e-12)
+!                                                                        phys%b(i,1) = interpolate( ip,yvec,jp,xvec,bx,y,x,1e-12)
+!                                                                        phys%b(i,2) = interpolate( ip,yvec,jp,xvec,by,y,x,1e-12)
+!                                                                        phys%divb(i) = interpolate( ip,yvec,jp,xvec,divb,y,x,1e-12)
+!                                                                        phys%drift(i,1) = interpolate( ip,yvec,jp,xvec,driftx,y,x,1e-12)
+!                                                                        phys%drift(i,2) = interpolate( ip,yvec,jp,xvec,drifty,y,x,1e-12)
+!                                                                        phys%flux2D(i) = interpolate( ip,yvec,jp,xvec,flux2D,y,x,1e-12)
 !                                                END DO
 !
 !                                        ! Free memory
@@ -700,19 +700,19 @@ CONTAINS
 !                                        ALLOCATE(phys%flux2d(Mesh%Nnodes))
 !
 !     ! File name
-!     write(nit, "(i10)") time%it
+!     write(nit,"(i10)") time%it
 !     nit = trim(adjustl(nit))
-!     k = INDEX(nit, " ") -1
+!     k = INDEX(nit," ") -1
 !
 !                                        IF (MPIvar%glob_size.GT.1) THEN
 !                                           write(nid,*) MPIvar%glob_id+1
 !                                           write(npr,*) MPIvar%glob_size
-!                                           fname_complete = trim(adjustl(fname))//'_'//trim(adjustl(nid))//'_'//trim(adjustl(npr))//'_'//REPEAT("0", 4 - k)//trim(ADJUSTL(nit))//'.h5'
+!                                           fname_complete = trim(adjustl(fname))//'_'//trim(adjustl(nid))//'_'//trim(adjustl(npr))//'_'//REPEAT("0",4 - k)//trim(ADJUSTL(nit))//'.h5'
 !                                        ELSE
-!                                           fname_complete = trim(adjustl(fname))//'_'//REPEAT("0", 4 - k)//trim(ADJUSTL(nit))//'.h5'
+!                                           fname_complete = trim(adjustl(fname))//'_'//REPEAT("0",4 - k)//trim(ADJUSTL(nit))//'.h5'
 !                                        END IF
 !
-!     write(6,*) 'Magnetic field loaded from file: ', trim(adjustl(fname_complete))
+!     write(6,*) 'Magnetic field loaded from file: ',trim(adjustl(fname_complete))
 !
 !                                        ! Read file
 !                                        CALL HDF5_open(fname_complete,file_id,IERR)

@@ -120,9 +120,9 @@ SUBROUTINE HDG_precalculatedfirstequation()
 !****************************
 ! Loop in poloidal faces
 !****************************
-!$OMP PARALLEL DEFAULT(SHARED) &
-!$OMP PRIVATE(iface,els,fas,itor,itorg,tel,Xfl)
-!$OMP DO SCHEDULE(STATIC)
+!!$OMP PARALLEL DEFAULT(SHARED) &
+!!$OMP PRIVATE(iface,els,fas,itor,itorg,tel,Xfl)
+!!$OMP DO SCHEDULE(STATIC)
    DO itor = 1, ntorloc
    DO iface = 1, N2D
 
@@ -142,15 +142,15 @@ SUBROUTINE HDG_precalculatedfirstequation()
 
    END DO
    END DO
-!$OMP END DO
-!$OMP END PARALLEL
+!!$OMP END DO
+!!$OMP END PARALLEL
 
 !**********************************
 ! Loop in toroidal interior faces
 !**********************************
-!$OMP PARALLEL DEFAULT(SHARED) &
-!$OMP PRIVATE(iface,els,fas,itor,itorg,tel,Xfl)
-!$OMP DO SCHEDULE(STATIC)
+!!$OMP PARALLEL DEFAULT(SHARED) &
+!!$OMP PRIVATE(iface,els,fas,itor,itorg,tel,Xfl)
+!!$OMP DO SCHEDULE(STATIC)
    DO itor = 1, ntorloc
 #ifdef PARALL
       itorg = itor + (MPIvar%itor - 1)*numer%ntor/MPIvar%ntor
@@ -173,8 +173,8 @@ SUBROUTINE HDG_precalculatedfirstequation()
 
       END DO
    END DO
-!$OMP END DO
-!$OMP END PARALLEL
+!!$OMP END DO
+!!$OMP END PARALLEL
 
 !*********************************
 ! Loop in toroidal exterior faces
