@@ -254,9 +254,9 @@ Convergence.o : Convergence.F inout.o reference_element.o MPI_OMP.o PrintUtils.o
 MHDG-$(MDL)-$(MODE)-$(DIM) : MPI_OMP.o matrices_types.o interpolation.o PrintUtils.o prec_const.o types.o globals.o adimensionalization.o Debug.o LinearAlgebra.o magnetic_field.o physics.o read_input.o HDF5_io.o inout.o reference_element.o preprocess.o analytical.o initialization.o hdg_PrecalculatedFirstEquation.o hdg_ComputeJacobian.o  $(ADDMOD) hdg_Mapping.o hdg_BC.o hdg_Assembly.o solve_global_system.o compute_element_solution.o MHDG.o
 	$(FC) $(FCFLAGS)   MPI_OMP.o matrices_types.o interpolation.o PrintUtils.o prec_const.o types.o globals.o adimensionalization.o Debug.o LinearAlgebra.o magnetic_field.o physics.o read_input.o HDF5_io.o inout.o reference_element.o preprocess.o analytical.o initialization.o hdg_PrecalculatedFirstEquation.o hdg_ComputeJacobian.o  Postprocess.o $(ADDMOD) hdg_Mapping.o hdg_BC.o hdg_Assembly.o  solve_global_system.o compute_element_solution.o MHDG.o -o MHDG-$(MDL)-$(MODE)-$(DIM) $(LIB)
 	/bin/cp -f MHDG-$(MDL)-$(MODE)-$(DIM) ../test/
-	/bin/cp -f MHDG-$(MDL)-$(MODE)-$(DIM) ../test_anal/
-	/bin/cp -f MHDG-$(MDL)-$(MODE)-$(DIM) ../test_psblas/	
+#	/bin/cp -f MHDG-$(MDL)-$(MODE)-$(DIM) ../test_anal/
+#	/bin/cp -f MHDG-$(MDL)-$(MODE)-$(DIM) ../test_psblas/	
 Convergence-$(MDL)-$(DIM) : MPI_OMP.o matrices_types.o interpolation.o PrintUtils.o prec_const.o types.o globals.o adimensionalization.o Debug.o LinearAlgebra.o magnetic_field.o physics.o read_input.o HDF5_io.o inout.o reference_element.o preprocess.o analytical.o initialization.o hdg_PrecalculatedFirstEquation.o hdg_ComputeJacobian.o  $(ADDMOD) hdg_Mapping.o hdg_BC.o hdg_Assembly.o solve_global_system.o compute_element_solution.o Convergence.o 	
 	$(FC) $(FCFLAGS) $(OBJS) MPI_OMP.o matrices_types.o interpolation.o PrintUtils.o prec_const.o types.o globals.o adimensionalization.o Debug.o LinearAlgebra.o magnetic_field.o physics.o read_input.o HDF5_io.o inout.o reference_element.o preprocess.o analytical.o initialization.o hdg_PrecalculatedFirstEquation.o hdg_ComputeJacobian.o  Postprocess.o $(ADDMOD) hdg_Mapping.o hdg_BC.o hdg_Assembly.o  solve_global_system.o compute_element_solution.o Convergence.o -o Convergence-$(MDL)-$(MODE)-$(DIM) $(LIB)
 	/bin/cp -f Convergence-$(MDL)-$(MODE)-$(DIM) ../test/
-	/bin/cp -f Convergence-$(MDL)-$(MODE)-$(DIM) ../test_anal/
+#	/bin/cp -f Convergence-$(MDL)-$(MODE)-$(DIM) ../test_anal/

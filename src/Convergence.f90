@@ -66,7 +66,7 @@ PROGRAM Convergence
       stop
    ENDIF
 #ifdef VORTICITY
-   IF (.not. phys%convvort) THEN
+   IF (.not. switch%convvort) THEN
       write (6, *) 'Consider convective term in vorticity equation for convergence check'
       stop
    ENDIF

@@ -1049,7 +1049,7 @@ CONTAINS
       Neqgrad = Neq
 #ifdef VORTICITY
       Neqgrad = 2
-      IF (phys%fixdPotLim) THEN
+      IF (switch%fixdPotLim) THEN
          Neqstab = 3
       ENDIF
       IF (.not. (ntang)) THEN
