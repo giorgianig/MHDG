@@ -325,6 +325,14 @@ CONTAINS
       IF (ASSOCIATED(phys%magnetic_flux)) THEN
          DEALLOCATE (phys%magnetic_flux)
       END IF
+
+      IF (ALLOCATED(simpar%physvar_refval)) THEN
+         DEALLOCATE (simpar%physvar_refval)
+      END IF
+      IF (ALLOCATED(simpar%consvar_refval)) THEN
+         DEALLOCATE (simpar%consvar_refval)
+      END IF
+
    END SUBROUTINE free_all
 
    SUBROUTINE free_mat
