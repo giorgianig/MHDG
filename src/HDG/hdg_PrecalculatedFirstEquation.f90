@@ -25,8 +25,8 @@ SUBROUTINE HDG_precalculatedfirstequation()
    integer*4             :: Ndim, Neq, N2D, Npel, Npfl, Ngfl, Ngvo
    integer*4             :: iel, ifa, i, j, iface
    integer*4             :: els(2), fas(2)
-   real*8                :: Xel(Mesh%Nnodesperelem, 2), Xfl(refElPol%Nfacenodes, 2)
-
+!   real*8                :: Xel(Mesh%Nnodesperelem, 2), Xfl(refElPol%Nfacenodes, 2)
+   real*8,allocatable    :: Xel(:,:),Xfl(:,:)
 #ifdef TOR3D
    integer*4             :: itor, itorg, iel3
    integer*4             :: ntorloc
@@ -85,11 +85,13 @@ SUBROUTINE HDG_precalculatedfirstequation()
    ntorloc = numer%ntor
 #endif
 
+
 !*****************
 ! Loop in elements
 !*****************
 !$OMP PARALLEL DEFAULT(SHARED) &
 !$OMP PRIVATE(iel,iel3,itor,itorg,tel,Xel)
+allocate(Xel(Mesh%Nnodesperelem,2))
 !$OMP DO SCHEDULE(STATIC)
    DO itor = 1, ntorloc
 #ifdef PARALL
@@ -99,6 +101,7 @@ SUBROUTINE HDG_precalculatedfirstequation()
       itorg = itor
 #endif
       tel = tdiv(itorg) + 0.5*(refElTor%coord1d+1)*(tdiv(itorg + 1) - tdiv(itorg))
+
 
       DO iel = 1, N2D
 
@@ -113,18 +116,22 @@ SUBROUTINE HDG_precalculatedfirstequation()
 
       END DO
    END DO
-
 !$OMP END DO
+deallocate(Xel)
 !$OMP END PARALLEL
+
+
 
 !****************************
 ! Loop in poloidal faces
-!****************************
+!***************** ***********
 !!$OMP PARALLEL DEFAULT(SHARED) &
 !!$OMP PRIVATE(iface,els,fas,itor,itorg,tel,Xfl)
+allocate(Xfl(Mesh%Nnodesperelem, 2))
 !!$OMP DO SCHEDULE(STATIC)
    DO itor = 1, ntorloc
    DO iface = 1, N2D
+
 
       els(1) = (itor - 1)*N2D+iface
       fas(1) = 1
@@ -135,21 +142,30 @@ SUBROUTINE HDG_precalculatedfirstequation()
       fas(2) = refElPol%Nfaces + 2
 
       ! Coordinates of the nodes of the face
-      Xel = Mesh%X(Mesh%T(iface, :), :)
+      Xfl = Mesh%X(Mesh%T(iface, :), :)
 
       ! Compute the matrices for the element
-      CALL elemental_matrices_pol_faces(els, fas, Xel)
+      CALL elemental_matrices_pol_faces(els, fas, Xfl)
 
    END DO
    END DO
 !!$OMP END DO
+deallocate(Xfl)
 !!$OMP END PARALLEL
+
+
+
+
+
+
+
 
 !**********************************
 ! Loop in toroidal interior faces
 !**********************************
 !!$OMP PARALLEL DEFAULT(SHARED) &
 !!$OMP PRIVATE(iface,els,fas,itor,itorg,tel,Xfl)
+allocate(Xfl(refElPol%Nfacenodes, 2))
 !!$OMP DO SCHEDULE(STATIC)
    DO itor = 1, ntorloc
 #ifdef PARALL
@@ -174,6 +190,7 @@ SUBROUTINE HDG_precalculatedfirstequation()
       END DO
    END DO
 !!$OMP END DO
+deallocate(Xfl)
 !!$OMP END PARALLEL
 
 !*********************************
@@ -181,6 +198,7 @@ SUBROUTINE HDG_precalculatedfirstequation()
 !*********************************
 !$OMP PARALLEL DEFAULT(SHARED) &
 !$OMP PRIVATE(iface,iel,iel3,ifa,itor,itorg,tel,Xfl)
+allocate(Xfl(refElPol%Nfacenodes, 2))
 !$OMP DO SCHEDULE(STATIC)
    DO itor = 1, ntorloc
 #ifdef PARALL
@@ -209,6 +227,7 @@ SUBROUTINE HDG_precalculatedfirstequation()
       END DO
    END DO
 !$OMP END DO
+deallocate(Xfl)
 !$OMP END PARALLEL
 
 
@@ -354,10 +373,10 @@ CONTAINS
       ! Loop in 2D Gauss points
       Ngauss = Ng2d
 
-      J11 = matmul(refElPol%Nxi2D, Xel(:, 1))                           ! ng x 1
-      J12 = matmul(refElPol%Nxi2D, Xel(:, 2))                           ! ng x 1
-      J21 = matmul(refElPol%Neta2D, Xel(:, 1))                          ! ng x 1
-      J22 = matmul(refElPol%Neta2D, Xel(:, 2))                          ! ng x 1
+      J11 = matmul(refElPol%Nxi2D, Xfp(:, 1))                           ! ng x 1
+      J12 = matmul(refElPol%Nxi2D, Xfp(:, 2))                           ! ng x 1
+      J21 = matmul(refElPol%Neta2D, Xfp(:, 1))                          ! ng x 1
+      J22 = matmul(refElPol%Neta2D, Xfp(:, 2))                          ! ng x 1
       detJ = J11*J22 - J21*J12                    ! determinant of the Jacobian
       iJ11 = J22/detJ
       iJ12 = -J12/detJ
