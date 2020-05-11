@@ -9,8 +9,8 @@ SDIR=$(PWD)/../src/
 COMPTYPE_OPT = opt
 COMPTYPE_DEB = deb
 COMPTYPE_PRO = pro
-#COMPTYPE = $(COMPTYPE_DEB)
-COMPTYPE = $(COMPTYPE_OPT)
+COMPTYPE = $(COMPTYPE_DEB)
+#COMPTYPE = $(COMPTYPE_OPT)
 #COMPTYPE = $(COMPTYPE_PRO)
 
 #-------------------------------------------------------------------------------
@@ -29,26 +29,22 @@ FC = mpif90
 #-------------------------------------------------------------------------------
 # Model
 #-------------------------------------------------------------------------------
-# Available models
+MDL_LAPLACE=Laplace
 MDL_NGAMMA=NGamma
 MDL_NGAMMATITE=NGammaTiTe
-
+MDL_NGAMMAVORT=NGammaVort
 # Model chosen
-#MDL=$(MDL_NGAMMA)
-MDL=$(MDL_NGAMMATITE)
-
-# Moving equilibrium
-MVEQ_TRUE = true
-MVEQ_FALS = false
-MVEQ = $(MVEQ_FALS)
-#MVEQ = $(MVEQ_TRUE)
+MDL=$(MDL_NGAMMA)
+#MDL=$(MDL_NGAMMATITE)
+#MDL=$(MDL_NGAMMAVORT)
+#MDL=$(MDL_LAPLACE)
 
 #-------------------------------------------------------------------------------
 # Dimensions 2D/3D
 #-------------------------------------------------------------------------------
 DIM_3D=3D
 DIM_2D=2D
-DIM=$(DIM_3D)
+DIM=$(DIM_2D)
 
 #-------------------------------------------------------------------------------
 # Libraries for linear system solver
@@ -88,18 +84,6 @@ else ifeq ($(MDL),$(MDL_NGAMMALAPLACE))
  ADDMOD+=hdg_LimitingTechniques.o 
 else
  abort Unsupported MDL==$(MDL)
- exit
-endif
-
-
-# MACROS FOR MOVING EQUILIBRIUM
-ifeq ($(MVEQ),$(MVEQ_FALS))
-# Do nothing
-else ifeq ($(MVEQ),$(MVEQ_TRUE))
- MACROS+= -DMOVINGEQUILIBRIUM
- ADDMOD+=hdg_MagneticDependingMatrices.o
-else
- abort Unsupported MVEQ==$(MVEQ)
  exit
 endif
 

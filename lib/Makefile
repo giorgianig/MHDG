@@ -30,83 +30,11 @@ Convergence : Convergence-$(MDL)-$(DIM)
 	@echo '===================================================='
 	@echo ' '
 	
-#geninitsol : genInitSol-$(MDL)-$(TAG_EOS)-$(MODE)
-#	@echo ' '
-#	@echo '===================================================='
-#	@echo ' Executable done : $<'
-#	@echo '===================================================='
-#	@echo ' '
-
-#save2visu: checkmodeseq save2visu-$(TAG_EOS)
-#	@echo ' '
-#	@echo '===================================================='
-#	@echo ' Executable done : save2visu-$(TAG_EOS) '
-#	@echo '===================================================='
-#	@echo ' '
-
-#domdecomp: checkmodeseq domDecomp
-#	@echo ' '
-#	@echo '===================================================='
-#	@echo ' Executable done : $@ '
-#	@echo '===================================================='
-#	@echo ' '
-
-#checkmodeseq:
-#ifneq ($(MODE),$(MODE_SEQ))
-#	@echo "Fixer MODE a MODE_SEQ dans arch.make"
-#	@exit 1
-#endif
-
-#checkmodepar:
-#ifneq ($(MODE),$(MODE_PAR))
-#	@echo "Fixer MODE a MODE_PAR dans arch.make"
-#	@exit 1
-#endif
-
-options:
-	@echo "--------------------------"
-	@echo "  Compilation options     "
-	@echo "--------------------------"
-	@echo "  >> MODEL               = $(MDL)"
-#	@echo "  >> EOS                 = $(EOS)"
-#	@echo "  >> SCOTCH/PT-SCOTCH    = $(USE_SCOTCH)"
-#	@echo "  >> PASTIX              = $(USE_PASTIX)"
-#	@echo "  >> MODULE SOLVEUR      = $(SRC_LINALG) $(SRC_ASSEMB)"
-#	@echo "  >> MODE                = $(MODE)"
-#	@echo " "
-#	@echo "  >> COMPILATEUR FORTRAN = $(FC)"
-#	@echo "  >> FCFLAGS              = $(FCFLAGS) $(INC) "
-#	@echo "  >> COMPILATEUR C       = $(CC)"
-#	@echo "  >> CFLAGS              = $(CFLAGS)"
-#	@echo "  >> CHARGEUR            = $(LD)"
-#	@echo "  >> LDFLAGS             = $(LDFLAGS)"
-#	@echo "  >> LDLIBS              = $(LDLIBS)"
-#	@echo "  >> MACROS              = $(MACROS)"
 
 clean: 
 	@echo "Cleaning *.o *.mod *.F"
 	$(RM) *.o *.mod *.kmo  *.F *.f90
 	$(RM) MHDG-* Convergence *~
-
-help:
-	@echo
-	@echo "**********************************************************************************"
-	@echo "  Voici les options du Makefile"
-	@echo "    make all                    : ---> si mode sequentiel, construit les executables domDecomp, save2visu, save2visuPar, PLATO, genInitSol"
-	@echo "    make allseq                 : ---> si mode sequentiel, construit les executables domDecomp, save2visu, save2visuPar, PLATO, genInitSol"
-	@echo "    make allpar                 : ---> si mode parallele,  construit les executables PLATO, genInitSol"
-	@echo "    make default                : ---> construit l'executable PLATO"
-	@echo "    make plato                  : ---> construit l'executable PLATO"
-	@echo "    make geninitsol             : ---> construit l'executable genInitSol"
-	@echo "    make domdecomp              : ---> construit l'executable domDecomp"
-	@echo "    make save2visu              : ---> construit l'executable save2visu"
-	@echo "    make save2visuPar           : ---> construit l'executable save2visuPar"
-	@echo "    make checkmodeseq           : ---> verifie l'option sequentiel"
-	@echo "    make checkmodepar           : ---> verifie l'option parallele"
-	@echo "    make options                : ---> affiche les options"
-	@echo "    make clean                  : ---> nettoie les fichiers intermediaires"
-	@echo "**********************************************************************************"
-	@echo
 
 
 MPI_OMP.F : $(SDIR)/MPI_OMP/MPI_OMP.f90
@@ -120,7 +48,13 @@ prec_const.F : $(SDIR)/Definitions/prec_const.f90
 
 prec_const.o : prec_const.F
 	$(FC) -c $(FCFLAGS) $(INC)  $< -o $@
-	
+
+magnetic_field.F : $(SDIR)/Models/magnetic_field.f90
+	$(CMP) -s $< $@ || $(CP) -f $< $@
+
+magnetic_field.o : magnetic_field.F
+	$(FC) -c $(FCFLAGS) $(INC)  $< -o $@
+
 HDF5_io.F : $(SDIR)/InOut/HDF5_io.f90
 	$(CMP) -s $< $@ || $(CP) -f $< $@
 
@@ -169,6 +103,12 @@ globals.F : $(SDIR)/Definitions/globals.f90
 globals.o : globals.F types.o matrices_types.o
 	$(FC) -c $(FCFLAGS) $(INC)  $< -o $@	
 
+adimensionalization.F : $(SDIR)/Models/adimensionalization.f90
+	$(CMP) -s $< $@ || $(CP) -f $< $@
+
+adimensionalization.o : adimensionalization.F globals.o types.o
+	$(FC) -c $(FCFLAGS) $(INC)  $< -o $@	
+
 LinearAlgebra.F : $(SDIR)/LinearAlgebra/LinearAlgebra.f90
 	$(CMP) -s $< $@ || $(CP) -f $< $@
 
@@ -190,7 +130,7 @@ Debug.o : Debug.F globals.o PrintUtils.o inout.o
 physics.F : $(SDIR)/Models/$(RMDL)/physics.f90
 	$(CMP) -s $< $@ || $(CP) -f $< $@
 
-physics.o : physics.F globals.o interpolation.o HDF5_io.o
+physics.o : physics.F globals.o interpolation.o HDF5_io.o magnetic_field.o
 	$(FC) -c $(FCFLAGS) $(INC)  $< -o $@
 
 ifeq ($(PASTIX),$(LIB_YES))	
@@ -311,11 +251,12 @@ Convergence.o : Convergence.F inout.o reference_element.o MPI_OMP.o PrintUtils.o
 	$(FC) -c $(FCFLAGS) $(INC)  $< -o $@
 
 
-MHDG-$(MDL)-$(MODE)-$(DIM) : MPI_OMP.o matrices_types.o interpolation.o PrintUtils.o prec_const.o types.o globals.o Debug.o LinearAlgebra.o physics.o read_input.o HDF5_io.o inout.o reference_element.o preprocess.o analytical.o initialization.o hdg_PrecalculatedFirstEquation.o hdg_ComputeJacobian.o  $(ADDMOD) hdg_Mapping.o hdg_BC.o hdg_Assembly.o solve_global_system.o compute_element_solution.o MHDG.o
-	$(FC) $(FCFLAGS)   MPI_OMP.o matrices_types.o interpolation.o PrintUtils.o prec_const.o types.o globals.o Debug.o LinearAlgebra.o physics.o read_input.o HDF5_io.o inout.o reference_element.o preprocess.o analytical.o initialization.o hdg_PrecalculatedFirstEquation.o hdg_ComputeJacobian.o  Postprocess.o $(ADDMOD) hdg_Mapping.o hdg_BC.o hdg_Assembly.o  solve_global_system.o compute_element_solution.o MHDG.o -o MHDG-$(MDL)-$(MODE)-$(DIM) $(LIB)
+MHDG-$(MDL)-$(MODE)-$(DIM) : MPI_OMP.o matrices_types.o interpolation.o PrintUtils.o prec_const.o types.o globals.o adimensionalization.o Debug.o LinearAlgebra.o magnetic_field.o physics.o read_input.o HDF5_io.o inout.o reference_element.o preprocess.o analytical.o initialization.o hdg_PrecalculatedFirstEquation.o hdg_ComputeJacobian.o  $(ADDMOD) hdg_Mapping.o hdg_BC.o hdg_Assembly.o solve_global_system.o compute_element_solution.o MHDG.o
+	$(FC) $(FCFLAGS)   MPI_OMP.o matrices_types.o interpolation.o PrintUtils.o prec_const.o types.o globals.o adimensionalization.o Debug.o LinearAlgebra.o magnetic_field.o physics.o read_input.o HDF5_io.o inout.o reference_element.o preprocess.o analytical.o initialization.o hdg_PrecalculatedFirstEquation.o hdg_ComputeJacobian.o  Postprocess.o $(ADDMOD) hdg_Mapping.o hdg_BC.o hdg_Assembly.o  solve_global_system.o compute_element_solution.o MHDG.o -o MHDG-$(MDL)-$(MODE)-$(DIM) $(LIB)
 	/bin/cp -f MHDG-$(MDL)-$(MODE)-$(DIM) ../test/
 	/bin/cp -f MHDG-$(MDL)-$(MODE)-$(DIM) ../test_anal/
 	/bin/cp -f MHDG-$(MDL)-$(MODE)-$(DIM) ../test_psblas/	
-Convergence-$(MDL)-$(DIM) : MPI_OMP.o interpolation.o matrices_types.o PrintUtils.o prec_const.o types.o globals.o Debug.o LinearAlgebra.o physics.o  read_input.o HDF5_io.o inout.o reference_element.o preprocess.o analytical.o initialization.o hdg_PrecalculatedFirstEquation.o hdg_ComputeJacobian.o hdg_Mapping.o hdg_BC.o hdg_Assembly.o solve_global_system.o compute_element_solution.o $(ADDMOD) Convergence.o 	
-	$(FC) $(FCFLAGS) $(OBJS) MPI_OMP.o matrices_types.o interpolation.o PrintUtils.o prec_const.o types.o globals.o Debug.o LinearAlgebra.o physics.o read_input.o HDF5_io.o inout.o reference_element.o preprocess.o analytical.o initialization.o hdg_PrecalculatedFirstEquation.o hdg_ComputeJacobian.o hdg_Mapping.o hdg_BC.o hdg_Assembly.o solve_global_system.o compute_element_solution.o Postprocess.o $(ADDMOD) Convergence.o -o Convergence-$(MDL)-$(MODE)-$(DIM) $(LIB)
+Convergence-$(MDL)-$(DIM) : MPI_OMP.o matrices_types.o interpolation.o PrintUtils.o prec_const.o types.o globals.o adimensionalization.o Debug.o LinearAlgebra.o magnetic_field.o physics.o read_input.o HDF5_io.o inout.o reference_element.o preprocess.o analytical.o initialization.o hdg_PrecalculatedFirstEquation.o hdg_ComputeJacobian.o  $(ADDMOD) hdg_Mapping.o hdg_BC.o hdg_Assembly.o solve_global_system.o compute_element_solution.o Convergence.o 	
+	$(FC) $(FCFLAGS) $(OBJS) MPI_OMP.o matrices_types.o interpolation.o PrintUtils.o prec_const.o types.o globals.o adimensionalization.o Debug.o LinearAlgebra.o magnetic_field.o physics.o read_input.o HDF5_io.o inout.o reference_element.o preprocess.o analytical.o initialization.o hdg_PrecalculatedFirstEquation.o hdg_ComputeJacobian.o  Postprocess.o $(ADDMOD) hdg_Mapping.o hdg_BC.o hdg_Assembly.o  solve_global_system.o compute_element_solution.o Convergence.o -o Convergence-$(MDL)-$(MODE)-$(DIM) $(LIB)
 	/bin/cp -f Convergence-$(MDL)-$(MODE)-$(DIM) ../test/
+	/bin/cp -f Convergence-$(MDL)-$(MODE)-$(DIM) ../test_anal/
