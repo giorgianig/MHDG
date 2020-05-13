@@ -46,6 +46,7 @@ CONTAINS
          CALL load_magnetic_field_grid
 
       CASE (60:69)
+
          ! Analytic definition of the magnetic field
          CALL load_magnetic_field_analytical
 
@@ -132,7 +133,6 @@ CONTAINS
                phys%B(ind, 1) = -B0*yr/(xr*q*sqrt(1 - (r/R0)**2))
                phys%B(ind, 2) = B0*(xr - R0)/(xr*q*sqrt(1 - (r/R0)**2))
                phys%B(ind, 3) = B0*R0/xr
-
             CASE DEFAULT
                WRITE (6, *) "Error! Test case not valid"
                STOP

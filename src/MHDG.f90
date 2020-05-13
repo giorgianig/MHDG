@@ -81,6 +81,7 @@ PROGRAM MHDG
    ! Load the mesh file
    CALL load_mesh(mesh_name)
 
+
    ! Linear solver: set the start to true
    matK%start = .true.
    if (lssolver%timing) then
@@ -89,6 +90,7 @@ PROGRAM MHDG
    ! Initialize marked elements for thresholds
    allocate (mkelms(Mesh%Nelems))
    mkelms = .false.
+
 
    ! Create the reference element based on the mesh type
    CALL create_reference_element(refElPol, 2)
@@ -100,14 +102,19 @@ PROGRAM MHDG
    CALL create_reference_element(refElTor, 1, numer%ptor)
    CALL create_toroidal_structures(refElTor, refElPol)
 #endif
+
+
    ! Mesh preprocess: create the mesh related structures
    ! used in the HDG scheme
    CALL mesh_preprocess()
+
 
 #ifdef TOR3D
    ! Define toroidal discretization
    CALL define_toroidal_discretization
 #endif
+
+
 
    ! Initialization of the simulation parameters !TODO check if I need to pass dt to init_sim
    CALL init_sim(nts, dt)

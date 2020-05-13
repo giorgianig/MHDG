@@ -22,7 +22,7 @@ SUBROUTINE READ_input()
    integer :: nts, tsw, freqdisp, freqsave, shockcp, limrho
    integer :: bcflags(1:10), ntor, ptor, npartor
    real*8  :: dt0, R0, diff_n, diff_u, tau(1:4), tNr, tTM, div, Tbg
-   real*8  :: tfi, a, bohmth, q, diffred, diffmin, dfcoef
+   real*8  :: tfi, a, bohmth, q, diffred, diffmin
    real*8  :: sc_coe, so_coe, df_coe, thr, thrpre, minrho, dc_coe, sc_sen
    real*8  :: epn, Mref, diff_pari, diff_e, Gmbohm, Gmbohme
    real*8  :: diff_pare, diff_ee, tie, dumpnr, tmax, tol
@@ -191,7 +191,10 @@ SUBROUTINE READ_input()
       write (6, *) "Error: wrong dumping factor for Newton-Raphson: dumpnr=", numer%dumpnr
       stop
    end if
-
+   if (switch%testcase.ge.50 .and. .not.switch%axisym) then
+      write (6, *) "Error: this should be an axisymmetric simulation"
+      stop  
+   endif
    ! Adimensionalize units and store reference values
    CALL adimensionalization()
 
@@ -243,7 +246,6 @@ SUBROUTINE READ_input()
       PRINT *, '                - perp. diffusion in the potential equation:         ', diff_pot
 #endif
       PRINT *, '                - constant for the momentum equation (isoth)        ', a
-      PRINT *, '                - constant for the drift velocity:                  ', dfcoef
       PRINT *, '        ***************** Switches ****************************'
       PRINT *, '                - stady state simulation:                           ', switch%steady
       PRINT *, '                - axisym:                                           ', switch%axisym
