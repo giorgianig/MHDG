@@ -125,10 +125,7 @@ deallocate(Xel)
 !****************************
 ! Loop in poloidal faces
 !***************** ***********
-!!$OMP PARALLEL DEFAULT(SHARED) &
-!!$OMP PRIVATE(iface,els,fas,itor,itorg,tel,Xfl)
 allocate(Xfl(Mesh%Nnodesperelem, 2))
-!!$OMP DO SCHEDULE(STATIC)
    DO itor = 1, ntorloc
    DO iface = 1, N2D
 
@@ -149,9 +146,7 @@ allocate(Xfl(Mesh%Nnodesperelem, 2))
 
    END DO
    END DO
-!!$OMP END DO
 deallocate(Xfl)
-!!$OMP END PARALLEL
 
 
 
@@ -163,10 +158,7 @@ deallocate(Xfl)
 !**********************************
 ! Loop in toroidal interior faces
 !**********************************
-!!$OMP PARALLEL DEFAULT(SHARED) &
-!!$OMP PRIVATE(iface,els,fas,itor,itorg,tel,Xfl)
 allocate(Xfl(refElPol%Nfacenodes, 2))
-!!$OMP DO SCHEDULE(STATIC)
    DO itor = 1, ntorloc
 #ifdef PARALL
       itorg = itor + (MPIvar%itor - 1)*numer%ntor/MPIvar%ntor
@@ -189,17 +181,13 @@ allocate(Xfl(refElPol%Nfacenodes, 2))
 
       END DO
    END DO
-!!$OMP END DO
 deallocate(Xfl)
-!!$OMP END PARALLEL
+
 
 !*********************************
 ! Loop in toroidal exterior faces
 !*********************************
-!$OMP PARALLEL DEFAULT(SHARED) &
-!$OMP PRIVATE(iface,iel,iel3,ifa,itor,itorg,tel,Xfl)
 allocate(Xfl(refElPol%Nfacenodes, 2))
-!$OMP DO SCHEDULE(STATIC)
    DO itor = 1, ntorloc
 #ifdef PARALL
       itorg = itor + (MPIvar%itor - 1)*numer%ntor/MPIvar%ntor
@@ -226,9 +214,7 @@ allocate(Xfl(refElPol%Nfacenodes, 2))
          CALL elemental_matrices_ext_faces(iel3, ifa + 1, Xfl, tel)
       END DO
    END DO
-!$OMP END DO
 deallocate(Xfl)
-!$OMP END PARALLEL
 
 
    if (utils%timing) then
@@ -606,9 +592,6 @@ CONTAINS
 !****************************
 ! Loop in interior faces
 !****************************
-!$OMP PARALLEL DEFAULT(SHARED) &
-!$OMP PRIVATE(iface,els,fas,Xfl)
-!$OMP DO SCHEDULE(STATIC)
    DO iface = 1, Mesh%Nintfaces
 
       els = Mesh%intfaces(iFace, (/1, 3/))
@@ -621,15 +604,10 @@ CONTAINS
       CALL elemental_matrices_int_faces(els, fas, Xfl)
 
    END DO
-!$OMP END DO
-!$OMP END PARALLEL
 
 !****************************
 ! Loop in exterior faces
 !****************************
-!$OMP PARALLEL DEFAULT(SHARED) &
-!$OMP PRIVATE(iface,iel,ifa,Xfl)
-!$OMP DO SCHEDULE(STATIC)
    DO iface = 1, Mesh%Nextfaces
 
       iel = Mesh%extfaces(iFace, 1)
@@ -642,8 +620,6 @@ CONTAINS
       ! Compute the matrices for the element
       CALL elemental_matrices_ext_faces(iel, ifa, Xfl)
    END DO
-!$OMP END DO
-!$OMP END PARALLEL
 
    IF (MPIvar%glob_id .eq. 0) THEN
       IF (utils%printint > 0) THEN

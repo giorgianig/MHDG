@@ -234,9 +234,6 @@ SUBROUTINE HDG_computeJacobian()
 !****************************
 ! Loop in poloidal faces
 !****************************
-!!$OMP PARALLEL DEFAULT(SHARED) &
-!!$OMP PRIVATE(iface,els,fas,itor,itorg,tel,i,j,Xfl,indfp,inde,indl,ufp,indbp,Bfp,qefp,uefp)
-!!$OMP DO SCHEDULE(STATIC)
    DO itor = 1,ntorloc
 #ifdef PARALL
       itorg = itor + (MPIvar%itor - 1)*numer%ntor/MPIvar%ntor
@@ -286,15 +283,10 @@ SUBROUTINE HDG_computeJacobian()
          CALL elemental_matrices_faces_pol(els,fas,iface,Xel,tg,Bfp,qefp,uefp,ufp)
       END DO
    END DO
-!!$OMP END DO
-!!$OMP END PARALLEL
 
 !************************************
 !   Loop in toroidal interior faces
 !************************************
-!!$OMP PARALLEL DEFAULT(SHARED) &
-!!$OMP PRIVATE(iface,itor,itorg,tel,els,fas,inde,indft,Xfl,i,j,dd,qeft,ueft,uft)
-!!$OMP DO SCHEDULE(STATIC)
    DO itor = 1,ntorloc
 #ifdef PARALL
       itorg = itor + (MPIvar%itor - 1)*numer%ntor/MPIvar%ntor
@@ -345,15 +337,10 @@ SUBROUTINE HDG_computeJacobian()
          END DO
       END DO
    END DO
-!!$OMP END DO
-!!$OMP END PARALLEL
 
 !*********************************
 ! Loop in toroidal exterior faces
 !*********************************
-!$OMP PARALLEL DEFAULT(SHARED) &
-!$OMP PRIVATE(iface,iel,iel3,ifa,itor,itorg,tel,Xfl,indft,indbt,Bfl,dd,inde,uft,ueft,qeft,i)
-!$OMP DO SCHEDULE(STATIC)
    DO itor = 1,ntorloc
 #ifdef PARALL
       itorg = itor + (MPIvar%itor - 1)*numer%ntor/MPIvar%ntor
@@ -409,8 +396,6 @@ SUBROUTINE HDG_computeJacobian()
 
       END DO
    END DO
-!$OMP END DO
-!$OMP END PARALLEL
 
    deallocate (ures,lres,u0res)
    deallocate (qres)
@@ -1199,9 +1184,9 @@ CONTAINS
 !************************************
 !   Loop in exterior faces in 2D
 !************************************
-!$OMP PARALLEL DEFAULT(SHARED) &
-!$OMP PRIVATE(iface,iel,ifa,isdir,inde,indf,Xfl,Bfl,i,j,qef,uef,uf,tau_save_el,xy_g_save_el,indtausave)
-!$OMP DO SCHEDULE(STATIC)
+!!$OMP PARALLEL DEFAULT(SHARED) &
+!!$OMP PRIVATE(iface,iel,ifa,isdir,inde,indf,Xfl,Bfl,i,j,qef,uef,uf,tau_save_el,xy_g_save_el,indtausave)
+!!$OMP DO SCHEDULE(STATIC)
    DO iface = 1,Mesh%Nextfaces
 
       iel = Mesh%extfaces(iface,1)
@@ -1242,8 +1227,8 @@ CONTAINS
          xy_g_save(indtausave,:) = xy_g_save_el
       endif
    END DO
-!$OMP END DO
-!$OMP END PARALLEL
+!!$OMP END DO
+!!$OMP END PARALLEL
 
    deallocate (ures,lres,u0res)
 #ifdef TEMPERATURE
