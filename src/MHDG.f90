@@ -605,7 +605,7 @@ CONTAINS
 #endif
 
       ! Diffusion
-      WRITE (Num, "(E10.3)") phys%diff_n
+      WRITE (Num, "(E10.3)") phys%diff_n*simpar%refval_diffusion
       save_name = TRIM(ADJUSTL(save_name))//"_DPe"//TRIM(ADJUSTL(Num))
 #ifdef TEMPERATURE
       WRITE (Num, "(E10.3)") phys%diff_pari
