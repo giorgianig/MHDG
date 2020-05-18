@@ -47,7 +47,7 @@
    tau(2) = 10.E-0  ! Stabilization parameter 2nd equation
    tau(3) = 10.E-0  ! Stabilization parameter 3rd equation
    tau(4) = 10.E-0  ! Stabilization parameter 4th equation         
-   nrp    = 60     ! Max number of Newton-Raphson iterations
+   nrp    = 4     ! Max number of Newton-Raphson iterations
    tNR    = 1e-4  ! Tolerance of the Newton-Raphson scheme
    tTM    = 1e-4  ! Tolerance for the steady state achievement
    div    = 1e9   ! Divergence of Newton-Raphon iteration

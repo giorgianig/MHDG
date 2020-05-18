@@ -3,7 +3,7 @@
 # Makefile
 # date: 12/02/2016
 #---------------------------------------
-include Make.inc/arch.make
+include Make.inc/arch.make_meso
 
 .PHONY : clean
 

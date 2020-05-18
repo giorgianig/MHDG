@@ -10,8 +10,8 @@ COMPTYPE_OPT = opt
 COMPTYPE_DEB = deb
 COMPTYPE_PRO = pro
 #COMPTYPE = $(COMPTYPE_DEB)
-COMPTYPE = $(COMPTYPE_OPT)
-#COMPTYPE = $(COMPTYPE_PRO)
+#COMPTYPE = $(COMPTYPE_OPT)
+COMPTYPE = $(COMPTYPE_PRO)
 
 #-------------------------------------------------------------------------------
 # Mode: serial or parallel
@@ -153,9 +153,9 @@ endif
 ifeq ($(COMPTYPE),$(COMPTYPE_DEB))
  FCFLAGS = -fpp -O0 -r8 -qopenmp -xHOST -g -traceback -check all -free
 else ifeq ($(COMPTYPE),$(COMPTYPE_PRO))
- FCFLAGS = -fpp -O0 -fpe0 -r8 -qopenmp -xHOST -g -traceback -check all -free
+ FCFLAGS = -fpp -O3  -parallel -fpe0 -r8 -qopenmp -xHOST -g  -free
 else ifeq ($(COMPTYPE),$(COMPTYPE_OPT))
- FCFLAGS = -fpp -O2 -fpe0 -qopenmp -xHOST -r8 -free
+ FCFLAGS = -fpp -O3 -parallel -fpe0 -qopenmp -xHOST -r8 -free
 endif
 
 DEF = -DTHREAD_FUNNELED
