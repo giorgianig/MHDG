@@ -36,7 +36,7 @@ CONTAINS
       phys%conVarNam(1) = "rho"
       phys%conVarNam(2) = "Gamma"
 
-      simpar%model = 'N-Gamma-Vorticity'
+      simpar%model = 'N-Gamma'
       simpar%Ndim = 2
 #ifdef TOR3D
       simpar%Ndim = 3

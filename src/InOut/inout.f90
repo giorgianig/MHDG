@@ -370,6 +370,7 @@ CONTAINS
 !**********************************************************************
       subroutine save_simulation_parameters()
          integer(HID_T) :: group_id1, group_id2, group_id3
+
 ! Create simulation parameters group
          CALL HDF5_group_create('simulation_parameters', file_id, group_id1, ierr)
 ! Save model definition
@@ -501,6 +502,10 @@ CONTAINS
          call HDF5_real_saving(group_id2, geom%R0, 'Major_radius')
          call HDF5_real_saving(group_id2, geom%q, 'Safety_factor')
          call HDF5_group_close(group_id2, ierr)
+
+
+        call HDF5_group_close(group_id1, ierr)
+
 
       end subroutine save_simulation_parameters
 
