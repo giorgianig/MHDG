@@ -567,9 +567,14 @@ CONTAINS
    ! Generate the elemental matrix
    !**************************************************
    SUBROUTINE computeElementalMatrix(iel3)
+      USE LinearAlgebra, ONLY: mymatmul
       integer :: iel3
       real*8, pointer                 :: A_lq(:, :), A_lu(:, :), A_ll(:, :)
       real*8, pointer                 :: LL(:, :), L0(:), UU(:, :), U0(:), f(:)
+
+      real*8, allocatable :: auxAlqLL(:,:),auxAluUU(:,:)
+
+
       LL => elMat%LL(:, :, iel3)
       L0 => elMat%L0(:, iel3)
       UU => elMat%UU(:, :, iel3)
@@ -581,7 +586,17 @@ CONTAINS
       f => elMat%fh(:, iel3)
 
       ! Elemental matrix and elemental RHS
-      Kel(:,:,iel3) = matmul(A_lq, LL) + matmul(A_lu, UU) + A_ll
+      
+      allocate(auxAlqLL(size(A_lq,1),size(LL,2)))
+      allocate(auxAluUU(size(A_lu,1),size(UU,2)))
+      call mymatmul(A_lq,LL,auxAlqLL)
+      call mymatmul(A_lu,UU,auxAluUU)
+      Kel(:,:,iel3) = auxAlqLL+auxAluUU+A_ll
+      deallocate(auxAlqLL,auxAluUU)
+!      Kel(:,:,iel3) = matmul(A_lq, LL) + matmul(A_lu, UU) + A_ll
+      
+          
+
 
 !write(6,*) "TEST 1"
 !write(6,*) "size(A_lq)",size(A_lq,1),size(A_lq,2)
