@@ -187,34 +187,34 @@ CONTAINS
       real*8, intent(out) :: V(:, :)
       real*8, intent(out) :: D(:, :)
       integer            :: m, lwork, i, info
-      integer, parameter  :: lwmax = 1000
-      real               :: work(lwmax)
+      Integer, Parameter :: nb = 64
+      real*8,allocatable    :: work(:)
       real*8, allocatable :: Vmat(:, :), wr(:), wi(:)
-      real*8             :: dummy(1, 1)
+      real*8             :: dummy(size(A,1), size(A,1))
 
       external dgeev
 
       m = size(A, 1)
-      lwork = -1
 
-      ! Compute the eigenvalues (stored in the diagonal of D) and eigenvectors (stored in the columns of V) of A
       allocate (wr(1:m), wi(1:m))
       allocate (Vmat(1:m, 1:m))
       D = 0.d0
       Vmat = A
-
+      
       ! Query the optimal workspace
-      call dgeev('N', 'V', m, Vmat, m, wr, wi, V, m, dummy, 1, info)
+      lwork = -1
+      call dgeev('N', 'V', m, Vmat, m, wr, wi, dummy, 1, V, m, dummy, lwork, info)
 
-      ! Solve eigenproblem.
-      lwork = min(lwmax, int(work(1)))
-      call dgeev('N', 'V', m, Vmat, m, wr, wi, V, m, dummy, 1, info)
+      ! Compute the eigenvalues and right eigenvectors of A
+      lwork = max((nb+2)*m, nint(dummy(1,1)))
+      Allocate (work(lwork))
+      call dgeev('N', 'V', m, Vmat, m, wr, wi, dummy, 1, V, m, work, lwork, info)
 
       ! Only real eigenvalues are supposed
       do i = 1, m
          D(i, i) = wr(i)
       end do
-      deallocate (wr, wi, Vmat)
+      deallocate (wr, wi, Vmat,work)
    END SUBROUTINE eig
 
 !*******************************************
