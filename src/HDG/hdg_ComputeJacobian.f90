@@ -193,17 +193,17 @@ SUBROUTINE HDG_computeJacobian()
 !************************************
 !$OMP PARALLEL DEFAULT(SHARED) &
 !$OMP PRIVATE(iel,iel3,itor,itorg,tel,Xel,i,j,inde,qe,ue,u0e,Bel,fluxel,indbe)
-!$OMP DO SCHEDULE(STATIC)
+!$OMP DO SCHEDULE(STATIC) COLLAPSE(2)
    DO itor = 1,ntorloc
-#ifdef PARALL
-      itorg = itor + (MPIvar%itor - 1)*numer%ntor/MPIvar%ntor
-      if (itorg == numer%ntor + 1) itorg = 1
-#else
-      itorg = itor
-#endif
-      tel = tdiv(itorg) + 0.5*(refElTor%coord1d+1)*(tdiv(itorg + 1) - tdiv(itorg))
-
       DO iel = 1,N2D
+       ! I made a perfectly nested loop to enable omp parallelization
+#ifdef PARALL
+        itorg = itor + (MPIvar%itor - 1)*numer%ntor/MPIvar%ntor
+        if (itorg == numer%ntor + 1) itorg = 1
+#else
+        itorg = itor
+#endif
+        tel = tdiv(itorg) + 0.5*(refElTor%coord1d+1)*(tdiv(itorg + 1) - tdiv(itorg))
 
          ! Index of 3D element
          iel3 = (itor - 1)*N2d+iel

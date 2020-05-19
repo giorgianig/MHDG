@@ -105,8 +105,14 @@ SUBROUTINE HDG_mapping()
 !*****************
 ! Loop in elements
 !*****************
-!$OMP DO SCHEDULE(STATIC)
 #ifdef TOR3D
+!$OMP DO SCHEDULE(STATIC) &
+#else
+!$OMP DO SCHEDULE(STATIC)
+#endif
+
+#ifdef TOR3D
+!$OMP COLLAPSE(2)
    DO itor = 1, ntorloc
 #endif
       DO iel = 1, N2d
