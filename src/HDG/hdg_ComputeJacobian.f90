@@ -193,7 +193,7 @@ SUBROUTINE HDG_computeJacobian()
 !!!!!$OMP PARALLEL DEFAULT(PRIVATE) 
 !$OMP PARALLEL DEFAULT(SHARED) &
 !$OMP PRIVATE(itor,iel,itorg,iel3,Xel,indbe,Bel,fluxel,inde,qe,ue,u0e,ifa,indbp,Bfp,dd,indfp,ufp,indl)& 
-!$OMP PRIVATE(uefp,qefp,iface,Xfl,indbt,Bfl,isdir,ueft,qeft,i)  
+!$OMP PRIVATE(uefp,qefp,iface,Xfl,indbt,Bfl,isdir,indft,uft,ueft,qeft,i)  
 !$OMP DO SCHEDULE(STATIC) COLLAPSE(2)
    DO itor = 1,ntorloc
       DO iel = 1,N2D
