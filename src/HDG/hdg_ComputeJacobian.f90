@@ -26,7 +26,7 @@ SUBROUTINE HDG_computeJacobian()
    integer*4             :: iel,ifa,iface,i,j,els(2),fas(2)
    integer*4             :: sizeu,sizel
    real*8,allocatable    :: ures(:,:),lres(:,:),u0res(:,:,:)
-   real*8                :: Xel(Mesh%Nnodesperelem,2),Xfl(refElPol%Nfacenodes,2)
+   real*8,allocatable    :: Xel(:,:),Xfl(:,:)
    real*8,allocatable    :: tau_save(:,:)
    real*8,allocatable    :: xy_g_save(:,:)
    logical               :: isdir
@@ -42,13 +42,13 @@ SUBROUTINE HDG_computeJacobian()
    integer               :: dd
    integer               :: ind_dim(refElPol%Nfaces + 2),ind_sta(refElPol%Nfaces + 2),aux
    real*8                :: tdiv(numer%ntor + 1),tel(refElTor%Nnodes1d),tg(1),htor
-   real*8                :: ue(refElTor%Nnodes3D,phys%Neq),u0e(refElTor%Nnodes3D,phys%Neq,time%tis)
-   real*8                :: ufp(Mesh%Nnodesperelem,phys%Neq),uft(refElTor%Nfl,phys%Neq)
-   real*8                :: uefp(Mesh%Nnodesperelem,phys%Neq),ueft(refElTor%Nfl,phys%Neq)
-   real*8                :: qe(refElTor%Nnodes3D,phys%Neq*3)
-   real*8                :: qefp(Mesh%Nnodesperelem,phys%Neq*3),qeft(refElTor%Nfl,phys%Neq*3)
+   real*8,allocatable    :: ue(:,:),u0e(:,:,:)
+   real*8,allocatable    :: ufp(:,:),uft(:,:)
+   real*8,allocatable    :: uefp(:,:),ueft(:,:)
+   real*8,allocatable    :: qe(:,:)
+   real*8,allocatable    :: qefp(:,:),qeft(:,:)
    real*8,allocatable    :: qres(:,:)
-   real*8                :: Bel(refElTor%Nnodes3d,3),fluxel(refElTor%Nnodes3d),Bfl(refElTor%Nfl,3),Bfp(Mesh%Nnodesperelem,3)
+   real*8,allocatable    :: Bel(:,:),fluxel(:),Bfl(:,:),Bfp(:,:)
    integer               :: indbe(refElTor%Nnodes3d),indbp(Mesh%Nnodesperelem),indbt(refElTor%Nfl)
 #else
    ! Definitions in 2D
@@ -190,14 +190,20 @@ SUBROUTINE HDG_computeJacobian()
 !************************************
 !   Loop in elements
 !************************************
-!!!!!$OMP PARALLEL DEFAULT(PRIVATE) 
 !$OMP PARALLEL DEFAULT(SHARED) &
 !$OMP PRIVATE(itor,iel,itorg,iel3,Xel,indbe,Bel,fluxel,inde,qe,ue,u0e,ifa,indbp,Bfp,dd,indfp,ufp,indl)& 
 !$OMP PRIVATE(uefp,qefp,iface,Xfl,indbt,Bfl,isdir,indft,uft,ueft,qeft,i)  
+allocate(Xel(Mesh%Nnodesperelem,2))
+allocate(Xfl(refElPol%Nfacenodes,2))
+allocate(Bel(refElTor%Nnodes3d,3),fluxel(refElTor%Nnodes3d),Bfl(refElTor%Nfl,3),Bfp(Mesh%Nnodesperelem,3))
+allocate(ue(refElTor%Nnodes3D,phys%Neq),u0e(refElTor%Nnodes3D,phys%Neq,time%tis))
+allocate(ufp(Mesh%Nnodesperelem,phys%Neq),uft(refElTor%Nfl,phys%Neq))
+allocate(uefp(Mesh%Nnodesperelem,phys%Neq),ueft(refElTor%Nfl,phys%Neq))
+allocate(qe(refElTor%Nnodes3D,phys%Neq*3))
+allocate(qefp(Mesh%Nnodesperelem,phys%Neq*3),qeft(refElTor%Nfl,phys%Neq*3))
 !$OMP DO SCHEDULE(STATIC) COLLAPSE(2)
    DO itor = 1,ntorloc
       DO iel = 1,N2D
-
        ! I made a perfectly nested loop to enable omp parallelization
 #ifdef PARALL
         itorg = itor + (MPIvar%itor - 1)*numer%ntor/MPIvar%ntor
@@ -315,16 +321,15 @@ SUBROUTINE HDG_computeJacobian()
 
          ! Compute the matrices for the element
          CALL elemental_matrices_faces_pol(iel3,ifa,iel,Xel,tdiv(itorg+1),Bfp,qefp,uefp,ufp)
-
       END DO
    END DO
 !$OMP END DO
+deallocate(Xel,Xfl,Bel,fluxel,Bfl,Bfp)
+deallocate(ue,u0e,ufp,uft,uefp,ueft,qe,qefp,qeft)
 !$OMP END PARALLEL
 
    deallocate (ures,lres,u0res)
    deallocate (qres)
-
-
 
    if (utils%timing) then
       call cpu_time(timing%tpe1)

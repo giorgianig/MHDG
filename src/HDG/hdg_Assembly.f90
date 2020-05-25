@@ -34,7 +34,7 @@ SUBROUTINE HDG_assembly()
    integer, pointer, dimension(:)   :: cols, rows, loc2glob
    real*8, pointer, dimension(:)    :: vals, rhsvec
    logical                        :: Fd(refElPol%Nfaces)
-   real*8, allocatable             :: Kel(:, :), fel(:)
+   real*8, allocatable             :: Kel(:, :,:), fel(:,:)
    real*8, pointer                 :: Df(:, :), Hf(:, :), Ef(:, :)
    real*8, pointer                 :: UU(:, :), U0(:)
    real*8, allocatable             :: fh(:)
@@ -133,21 +133,38 @@ SUBROUTINE HDG_assembly()
    END DO
 #endif
 
+
    ! Compute nnz and line width
    CALL computennz()
 
    ! Deallocate and reallcate pointers of  MatK struct and rhs struct initialize to 0
    CALL init_mat()
+
    cols => MatK%cols
    rows => MatK%rowptr
    vals => MatK%vals
    loc2glob => MatK%loc2glob
    rhsvec => rhs%vals
 
-   ALLOCATE (Kel(Nfp*Neq, Nfp*Neq))
-   ALLOCATE (fel(Nfp*Neq))
    ALLOCATE (indpos(2*blkp + Nf*blkt))
    ALLOCATE (indglo(2*blkp + Nf*blkt))
+
+
+   ALLOCATE (Kel(Nfp*Neq, Nfp*Neq,Nel*ntorloc))
+   ALLOCATE (fel(Nfp*Neq,Nel*ntorloc))
+   Kel = 0.
+   fel = 0.
+!$OMP PARALLEL DEFAULT(SHARED) &
+!$OMP PRIVATE(iel3)
+!$OMP DO SCHEDULE(STATIC) COLLAPSE(2)
+   DO itor=1,Ntorloc
+      DO iel=1,Nel
+         iel3 = (itor - 1)*Nel + iel
+         CALL computeElementalMatrix(iel3)
+      END DO
+   END DO
+!$OMP END DO
+!$OMP END PARALLEL
 
    ! Counter
    cont = 0
@@ -170,7 +187,7 @@ SUBROUTINE HDG_assembly()
          Fe = Mesh%F(iel, :)
          Fd = Mesh%Fdir(iel, :)
 
-         CALL computeElementalMatrix()
+!         CALL computeElementalMatrix()
 
 !#ifdef PARALL
 !    call print_elmat_tex_par(Kel,fel,iel3)
@@ -549,7 +566,8 @@ CONTAINS
    !**************************************************
    ! Generate the elemental matrix
    !**************************************************
-   SUBROUTINE computeElementalMatrix()
+   SUBROUTINE computeElementalMatrix(iel3)
+      integer :: iel3
       real*8, pointer                 :: A_lq(:, :), A_lu(:, :), A_ll(:, :)
       real*8, pointer                 :: LL(:, :), L0(:), UU(:, :), U0(:), f(:)
       LL => elMat%LL(:, :, iel3)
@@ -563,8 +581,19 @@ CONTAINS
       f => elMat%fh(:, iel3)
 
       ! Elemental matrix and elemental RHS
-      Kel = matmul(A_lq, LL) + matmul(A_lu, UU) + A_ll
-      fel = -(matmul(A_lu, U0) + matmul(A_lq, L0)) + f
+      Kel(:,:,iel3) = matmul(A_lq, LL) + matmul(A_lu, UU) + A_ll
+
+!write(6,*) "TEST 1"
+!write(6,*) "size(A_lq)",size(A_lq,1),size(A_lq,2)
+!write(6,*) "size(LL)",size(LL,1),size(LL,2)
+!write(6,*) "size(Kel)",size(Kel,1),size(Kel,2)
+!Kel =  matmul(A_lq, LL)
+!write(6,*) "TEST 2"
+!Kel = Kel + matmul(A_lu, UU)
+!write(6,*) "TEST 3"
+!Kel = Kel + A_ll
+!write(6,*) "TEST 4"
+      fel(:,iel3) = -(matmul(A_lu, U0) + matmul(A_lq, L0)) + f
 
 !call HDF5_save_vector(fel,"f1")
 !stop
@@ -1019,7 +1048,7 @@ CONTAINS
       sl = delta(ifa) - 1
       DO i = 1, blk
          rows(sl + i) = (i - 1)*linew(Fig) + shift(Fig) + 1
-         rhsvec(sl + i) = rhsvec(sl + i) + fel(i + ind_sta(ifa) - 1)
+         rhsvec(sl + i) = rhsvec(sl + i) + fel(i + ind_sta(ifa) - 1,iel3)
 #ifdef PARALL
          loc2glob(sl + i) = shiftGlob3d(ifa) - 1 + i
 #else
@@ -1037,7 +1066,7 @@ CONTAINS
                j = jj + ind_sta(ifl) - 1
                k = (i - 1)*linew(Fig) ! local shift
                cols(shift(Fig) + k + indpos(j)) = indglo(j)
-               vals(shift(Fig) + k + indpos(j)) = vals(shift(Fig) + k + indpos(j)) + Kel(i + ind_sta(ifa) - 1, j)
+               vals(shift(Fig) + k + indpos(j)) = vals(shift(Fig) + k + indpos(j)) + Kel(i + ind_sta(ifa) - 1, j,iel3)
             END DO
          END DO
       END DO
