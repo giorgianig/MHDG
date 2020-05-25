@@ -92,7 +92,7 @@ SUBROUTINE HDG_precalculatedfirstequation()
 !$OMP PARALLEL DEFAULT(SHARED) &
 !$OMP PRIVATE(iel,iel3,itor,itorg,tel,Xel)
 allocate(Xel(Mesh%Nnodesperelem,2))
-!$OMP DO SCHEDULE(STATIC)
+!$OMP DO SCHEDULE(STATIC) COLLAPSE(2)
    DO itor = 1, ntorloc
       DO iel = 1, N2D
          ! I made a perfectly nested loop for enabling omp parallelization
