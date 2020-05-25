@@ -187,14 +187,17 @@ SUBROUTINE HDG_computeJacobian()
 !                 3D routines
 ! 
 !********************************************
-
 !************************************
 !   Loop in elements
 !************************************
-!$OMP PARALLEL DEFAULT(PRIVATE) 
+!!!!!$OMP PARALLEL DEFAULT(PRIVATE) 
+!$OMP PARALLEL DEFAULT(SHARED) &
+!$OMP PRIVATE(itor,iel,itorg,iel3,Xel,indbe,Bel,fluxel,inde,qe,ue,u0e,ifa,indbp,Bfp,dd,indfp,ufp,indl)& 
+!$OMP PRIVATE(uefp,qefp,iface,Xfl,indbt,Bfl,isdir,ueft,qeft,i)  
 !$OMP DO SCHEDULE(STATIC) COLLAPSE(2)
    DO itor = 1,ntorloc
       DO iel = 1,N2D
+
        ! I made a perfectly nested loop to enable omp parallelization
 #ifdef PARALL
         itorg = itor + (MPIvar%itor - 1)*numer%ntor/MPIvar%ntor
@@ -250,7 +253,6 @@ SUBROUTINE HDG_computeJacobian()
 
          !-------------- Toroidal faces ---------------------
 						   DO ifa=1,refElPol%Nfaces
-						      IF (Mesh%Fdir(iel,ifa)) CYCLE
 						      iface = Mesh%F(iel,ifa)
 						      Xfl = Mesh%X(Mesh%T(iel,refElPol%face_nodes(ifa,:)),:)
 
@@ -273,9 +275,6 @@ SUBROUTINE HDG_computeJacobian()
 						      ueft = ures(inde(refElTor%faceNodes3(ifa,:)),:)
 						      qeft = qres(inde(refElTor%faceNodes3(ifa,:)),:)
 
-						      ! Compute the matrices for the element
-						      CALL elemental_matrices_faces_ext(iel3,ifa + 1,iel,Xfl,tel,Bfl,qeft,ueft,uft,isdir)
-
 						      if (iface.le.Mesh%Nintfaces) then
                call elemental_matrices_faces_int(iel3,ifa+1,iel,Xfl,tel,Bfl,qeft,ueft,uft)
 						      else
@@ -283,11 +282,11 @@ SUBROUTINE HDG_computeJacobian()
 						      endif
 						      ! Flip faces 
 						      IF (Mesh%flipface(iel,ifa)) then
-						         elMat%Alq(ind_loc(ifa+1,:),:,iel3) = elMat%Alq(ind_loc(ifa+1,perm),:,iel3)
-						         elMat%Alu(ind_loc(ifa+1,:),:,iel3) = elMat%Alu(ind_loc(ifa+1,perm),:,iel3)
-						         elMat%All(ind_loc(ifa+1,:),:,iel3) = elMat%All(ind_loc(ifa+1,perm),:,iel3)
-						         elMat%All(:,ind_loc(ifa+1,:),iel3) = elMat%All(:,ind_loc(ifa+1,perm),iel3)
-						         elMat%fh(ind_loc(ifa+1,:),iel3) = elMat%fh(ind_loc(ifa+1,perm),iel3)
+						         elMat%Alq(ind_loc(ifa,:),:,iel3) = elMat%Alq(ind_loc(ifa,perm),:,iel3)
+						         elMat%Alu(ind_loc(ifa,:),:,iel3) = elMat%Alu(ind_loc(ifa,perm),:,iel3)
+						         elMat%All(ind_loc(ifa,:),:,iel3) = elMat%All(ind_loc(ifa,perm),:,iel3)
+						         elMat%All(:,ind_loc(ifa,:),iel3) = elMat%All(:,ind_loc(ifa,perm),iel3)
+						         elMat%fh(ind_loc(ifa,:),iel3) = elMat%fh(ind_loc(ifa,perm),iel3)
 						      END if
 						   END DO
 
@@ -299,7 +298,13 @@ SUBROUTINE HDG_computeJacobian()
          Bfp = phys%B(indbp,:)
 
          ! Face solution
-         dd = itor*(N2D*Np2D+(Mesh%Nfaces - Nfdir)*Npfl)
+         
+         if (itor==numer%ntor) then
+            dd = 0
+         else
+            dd = itor*(N2D*Np2D+(Mesh%Nfaces - Nfdir)*Npfl)
+         endif
+         
          indfp = dd + (iel - 1)*Np2D+(/(i,i=1,Np2d)/)
          ufp = lres(indfp,:)
 
@@ -724,7 +729,7 @@ CONTAINS
          ind_fg = colint(tensorSumInt((/(i,i=1,3*Neq)/),(refElTor%faceNodes3(ifa - 1,:) - 1)*3*Neq))
 
          ! Coordinates,derivatives and trace solution at face Gauss points
-         IF (Mesh%flipFace(iel,ifa - 1)) THEN
+         IF (Mesh%flipFace(iel2,ifa - 1)) THEN
             call set_permutations(Np1Dpol,Np1Dtor,1,permsing)
             ufg = matmul(refElTor%sFTF,uf(permsing,:))
          ELSE
