@@ -2,12 +2,12 @@
    steady = .true.   ! Is it a steady state simulation?
       ! .false. = time evolving simulation
       ! .true.  = steady state simulation
-   axisym = .false. ! Is it an axisymmetric simulation?
+   axisym = .true. ! Is it an axisymmetric simulation?
       ! true = yes
       ! false = no
    driftdia = .false. ! Set to FALSE to ignore diamagnetic drifts terms
    driftexb = .false. ! Set to FALSE to ignore ExB drifts terms
-   testcase = 1       ! Determine the analytical solution and the body forces
+   testcase = 60       ! Determine the analytical solution and the body forces
    psdtime  = .false.  ! Reduce the diffusion every time we reach the steady state 
                       ! condition (only works if steady=.false.)
    diffred  = 0.630957344480193 ! Reduction factor of the diffusion for psdtime simulation
@@ -38,7 +38,7 @@
    !***** N-Gamma-Vorticity model 
    fixdPotLim = .false. ! Fix potential to the floating potential on the limiter
    dirivort   = .false. ! Dirichlet boundary condition on the vorticity in the core boundary
-   convvort   = .true.  ! Consider the convective term in the vorticity equation 
+   convvort   = .false.  ! Consider the convective term in the vorticity equation 
    
 /
 
@@ -59,7 +59,7 @@
    dc_coe = 0.1   ! Coefficient of the diffusion to add in the corners 
    thr    = 5.5e-4 ! Min value of density allowed (works only if the switch is activated) 
    thrpre = 1e-8 ! Min value of pressure allowed (works only if the switch is activated) 
-   stab   = 1     ! Stabilization type
+   stab   = 2     ! Stabilization type
    dumpnr = 1.   ! Dumping factor for Newton-Raphson (0<dumpnr<1)
    ntor   = 2     ! Number of elements in the toroidal direction
    ptor   = 1     ! Polinomial degree in the toroidal direction
@@ -84,11 +84,11 @@
 
 &PHYS_LST
    ! ****** Diffusion parameters in m^2/s
-   diff_n = 5. ! diffusion in the continuity equation
-   diff_u = 5. ! diffusion in the momentum equation
-   diff_e = 5. ! perpendicular diffusion for the energy equation
-   diff_ee = 5. ! perpendicular diffusion in the electron temperature equation (for the TiTe model)
-   diff_vort = 5. ! diffusion in the vorticity equation
+   diff_n = 2 ! diffusion in the continuity equation
+   diff_u = 2 ! diffusion in the momentum equation
+   diff_e = 2 ! perpendicular diffusion for the energy equation
+   diff_ee = 2 ! perpendicular diffusion in the electron temperature equation (for the TiTe model)
+   diff_vort = 2 ! diffusion in the vorticity equation
    ! ****** Background temperature in the isothermal model in eV (useless in the non-isothermal model)
    Tbg = 50
    ! ****** Boundary conditions: set the correspondance between boundary flag and boundary condition
