@@ -340,7 +340,8 @@ CONTAINS
 
          ! Sending
          DO i = 1, nf2sd
-CALL MPI_ISEND(buffsd(:, i), Neq*Nfl, MPI_DOUBLE_PRECISION, Mesh%pr2sd(i) - 1, etq, MPI_COMM_WORLD, req(Mesh%nghostfaces + i), code)
+         CALL MPI_ISEND(buffsd(:, i), Neq*Nfl, MPI_DOUBLE_PRECISION, Mesh%pr2sd(i) - 1, &
+                        &etq, MPI_COMM_WORLD, req(Mesh%nghostfaces + i), code)
          END DO
 
          CALL MPI_WAITALL(size(req), req, stat, code)
@@ -561,6 +562,15 @@ CALL MPI_ISEND(buffsd(:, i), Neq*Nfl, MPI_DOUBLE_PRECISION, Mesh%pr2sd(i) - 1, e
       ! Set permutations for ghostfaces that need to be flipped
       CALL set_permutations(Neq*Nfp, Neq, perm)
 
+
+
+call mpi_barrier(mpi_comm_world,ierr)
+write(6,*) "proc",mpivar%glob_id,"max(sol%u_tilde) ENTERING",maxval(sol%u_tilde)
+flush(6)
+call mpi_barrier(mpi_comm_world,ierr)
+
+
+
       ALLOCATE (req(nf2sd + Mesh%nghostfaces))
       ALLOCATE (stat(MPI_STATUS_SIZE, nf2sd + Mesh%nghostfaces))
       req = mpi_request_null
@@ -577,6 +587,13 @@ CALL MPI_ISEND(buffsd(:, i), Neq*Nfl, MPI_DOUBLE_PRECISION, Mesh%pr2sd(i) - 1, e
          buffsd(:, i) = sol%u_tilde(ind)
       END DO
 
+
+call mpi_barrier(mpi_comm_world,ierr)
+write(6,*) "proc",mpivar%glob_id,"max(sol%u_tilde) BEFORE RCV",maxval(sol%u_tilde)
+flush(6)
+call mpi_barrier(mpi_comm_world,ierr)
+
+
       ! Receiving
       DO i = 1, Mesh%nghostfaces
          CALL MPI_IRECV(buffrv(:, i), Neq*Nfp, MPI_DOUBLE_PRECISION, Mesh%pr2rv(i) - 1, etq, MPI_COMM_WORLD, req(i), code)
@@ -584,10 +601,18 @@ CALL MPI_ISEND(buffsd(:, i), Neq*Nfl, MPI_DOUBLE_PRECISION, Mesh%pr2sd(i) - 1, e
 
       ! Sending
       DO i = 1, nf2sd
-CALL MPI_ISEND(buffsd(:, i), Neq*Nfp, MPI_DOUBLE_PRECISION, Mesh%pr2sd(i) - 1, etq, MPI_COMM_WORLD, req(Mesh%nghostfaces + i), code)
+      CALL MPI_ISEND(buffsd(:, i), Neq*Nfp, MPI_DOUBLE_PRECISION, Mesh%pr2sd(i) - 1, &
+                     &etq, MPI_COMM_WORLD, req(Mesh%nghostfaces + i), code)
       END DO
 
       CALL MPI_WAITALL(size(req), req, stat, code)
+
+
+
+call mpi_barrier(mpi_comm_world,ierr)
+write(6,*) "proc",mpivar%glob_id,"max(sol%u_tilde) AFTER RCV",maxval(sol%u_tilde)
+flush(6)
+call mpi_barrier(mpi_comm_world,ierr)
 
 ! call syncroprint_matrix(buffsd)
 ! call MPI_BARRIER(MPI_COMM_WORLD, ierr)
