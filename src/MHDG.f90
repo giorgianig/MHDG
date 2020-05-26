@@ -425,7 +425,7 @@ PROGRAM MHDG
          &timing%cputsol,timing%cputsol/cputtot*100,timing%runtsol,timing%runtsol/runttot*100,timing%cputsol/timing%runtsol/Nthreads 
 #ifdef PARALL
          WRITE(6, '(" *", 2X,  "Communications   : ", ES16.3," ("F4.1 "%)",1X,ES14.3," ("F4.1 "%)",8X,F4.1 , 10X, " *")')   &
-         &timing%cpucom,timing%cpucom/cputtot*100,timing%runcom,timing%runcom/runttot*100,timing%cpucom/timing%runcom/Nthreads
+         &timing%cputcom,timing%cputcom/cputtot*100,timing%runtcom,timing%runtcom/runttot*100,timing%cputcom/timing%runtcom/Nthreads
 #endif
          WRITE(6, '(" *", 2X, "Total time       : ", ES16.3," ("F5.1 "%)",1X,ES13.3," ("F5.1 "%)",6X,F5.1 , 10X, " *")')   &
          cputtot,cputtot/cputtot*100,runttot,runttot/runttot*100,cputtot/runttot/Nthreads 
@@ -650,7 +650,7 @@ CONTAINS
          time%dt = time%dt*2.
       endif
    END SUBROUTINE compute_dt
-
+#ifdef TOR3D
    !**********************************************
    ! Definition of the toroidal discretization
    !**********************************************
@@ -691,5 +691,5 @@ CONTAINS
          Mesh%toroidal(ind) = tel
       END DO
    END SUBROUTINE define_toroidal_discretization
-
+#endif
 END

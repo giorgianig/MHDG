@@ -19,8 +19,8 @@ COMPTYPE = $(COMPTYPE_PRO)
 #-------------------------------------------------------------------------------
 MODE_SERIAL = serial
 MODE_PARALL = parall
-MODE = $(MODE_SERIAL)
-#MODE = $(MODE_PARALL)
+#MODE = $(MODE_SERIAL)
+MODE = $(MODE_PARALL)
 
 #-------------------------------------------------------------------------------
 # The compiler
@@ -51,7 +51,7 @@ MVEQ = $(MVEQ_FALS)
 #-------------------------------------------------------------------------------
 DIM_3D=3D
 DIM_2D=2D
-DIM=$(DIM_3D)
+DIM=$(DIM_2D)
 
 #-------------------------------------------------------------------------------
 # Libraries for linear system solver

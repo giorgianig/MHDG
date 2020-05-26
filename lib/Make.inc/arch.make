@@ -9,9 +9,9 @@ SDIR=$(PWD)/../src/
 COMPTYPE_OPT = opt
 COMPTYPE_DEB = deb
 COMPTYPE_PRO = pro
-COMPTYPE = $(COMPTYPE_DEB)
+#COMPTYPE = $(COMPTYPE_DEB)
 #COMPTYPE = $(COMPTYPE_OPT)
-#COMPTYPE = $(COMPTYPE_PRO)
+COMPTYPE = $(COMPTYPE_PRO)
 
 #-------------------------------------------------------------------------------
 # Mode: serial or parallel
@@ -44,7 +44,7 @@ MDL=$(MDL_NGAMMAVORT)
 #-------------------------------------------------------------------------------
 DIM_3D=3D
 DIM_2D=2D
-DIM=$(DIM_2D)
+DIM=$(DIM_3D)
 
 #-------------------------------------------------------------------------------
 # Libraries for linear system solver

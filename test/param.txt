@@ -36,7 +36,7 @@
    saveNR  = .true.   ! save each N-R iterations 
    saveTau  = .false.   ! save tau on faces
    !***** N-Gamma-Vorticity model 
-   fixdPotLim = .false. ! Fix potential to the floating potential on the limiter
+   fixdPotLim = .true. ! Fix potential to the floating potential on the limiter
    dirivort   = .false. ! Dirichlet boundary condition on the vorticity in the core boundary
    convvort   = .false.  ! Consider the convective term in the vorticity equation 
    
@@ -61,8 +61,8 @@
    thrpre = 1e-8 ! Min value of pressure allowed (works only if the switch is activated) 
    stab   = 2     ! Stabilization type
    dumpnr = 1.   ! Dumping factor for Newton-Raphson (0<dumpnr<1)
-   ntor   = 2     ! Number of elements in the toroidal direction
-   ptor   = 1     ! Polinomial degree in the toroidal direction
+   ntor   = 4     ! Number of elements in the toroidal direction
+   ptor   = 2     ! Polinomial degree in the toroidal direction
    tmax   = 6.28  ! Max extention in the toroidal direction 
    npartor= 1      ! Number of MPI partition in the toroidal direction    
 /
@@ -84,11 +84,11 @@
 
 &PHYS_LST
    ! ****** Diffusion parameters in m^2/s
-   diff_n = 2 ! diffusion in the continuity equation
-   diff_u = 2 ! diffusion in the momentum equation
-   diff_e = 2 ! perpendicular diffusion for the energy equation
-   diff_ee = 2 ! perpendicular diffusion in the electron temperature equation (for the TiTe model)
-   diff_vort = 2 ! diffusion in the vorticity equation
+   diff_n = 10 ! diffusion in the continuity equation
+   diff_u = 10 ! diffusion in the momentum equation
+   diff_e = 10 ! perpendicular diffusion for the energy equation
+   diff_ee = 10 ! perpendicular diffusion in the electron temperature equation (for the TiTe model)
+   diff_vort = 10 ! diffusion in the vorticity equation
    ! ****** Background temperature in the isothermal model in eV (useless in the non-isothermal model)
    Tbg = 50
    ! ****** Boundary conditions: set the correspondance between boundary flag and boundary condition
@@ -137,9 +137,9 @@
    itrace  = 0     ! Display convergence at each iteration
    rest    = 0     ! Restart 
    istop   = 1     ! Stopping criterion (see spec on the library manual)
-   tol     = 1e-8  ! Stopping tolerance
-   kmethd  = 'RGMRES'  ! Krylov method (CG, BICGSTAB, CGS,  BICG, BICGSTABL, RGMRES, FCG, CGR)
-   ptype   = 'JACOBI'  ! Preconditioner type (NONE, DIAG, BJAC,JACOBI, GS, FBGS, BJAC, AS, ML)
+   tol     = 1e-5  ! Stopping tolerance
+   kmethd  = 'BICGSTAB'  ! Krylov method (CG, BICGSTAB, CGS,  BICG, BICGSTABL, RGMRES, FCG, CGR)
+   ptype   = 'ML'  ! Preconditioner type (NONE, DIAG, BJAC,JACOBI, GS, FBGS, BJAC, AS, ML)
    
    ! Parameters relative to the library MLD2P4
    ! First smoother / 1-lev preconditioner
