@@ -208,6 +208,9 @@ CONTAINS
       ALLOCATE (sol%u(sizeu))
       ALLOCATE (sol%u_tilde(sizeutilde))
       ALLOCATE (sol%q(sizeu*Ndim))
+      sol%u = 0.
+      sol%u_tilde = 0.
+      sol%q = 0.
       ! Initialize the solution
       IF (MPIvar%glob_id .eq. 0) THEN
       IF (utils%printint > 0) THEN
@@ -335,7 +338,8 @@ CONTAINS
       SUBROUTINE extractFaceSolution
          integer :: neq, Ne, Nf, Nfe, unkF, Np, N2d, Np2d, Nfl, iel, iElem, ifa, iFace, i, itor, ntorloc, nut
          integer :: c, Np1Dpol, Np1Dtor, blk, Nfdir, Fig, Fe, Fi, sh
-                                                integer :: ind_ue(refElTor%Nnodes3D),ind2(refElPol%Nnodes2D),ind3(refElPol%Nnodes2D*refElTor%Nnodes1D),indl(refElPol%Nnodes1D*refElTor%Nnodes1D)
+         integer :: ind_ue(refElTor%Nnodes3D),ind2(refElPol%Nnodes2D)
+         integer :: ind3(refElPol%Nnodes2D*refElTor%Nnodes1D),indl(refElPol%Nnodes1D*refElTor%Nnodes1D)
          real*8, allocatable :: u(:, :), u_tilde(:, :)
          integer :: ierr
 

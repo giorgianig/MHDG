@@ -569,6 +569,7 @@ CONTAINS
       call mpi_allreduce(MPI_IN_PLACE, sum2, 1, mpi_double_precision, mpi_sum, MPI_COMM_WORLD, ierr)
       call mpi_allreduce(nu, nglo, 1, mpi_integer, mpi_sum, MPI_COMM_WORLD, ierr)
 #endif
+
       res = sqrt(sum2)/sqrt(dble(nglo))/coeff
    END FUNCTION computeResidual
 
