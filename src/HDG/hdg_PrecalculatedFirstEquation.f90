@@ -578,6 +578,8 @@ CONTAINS
 !*****************
 !$OMP PARALLEL DEFAULT(SHARED) &
 !$OMP PRIVATE(iel,ifa,iface,Xel,Xfl)
+allocate(Xel(Mesh%Nnodesperelem,2))
+allocate(Xfl(refElPol%Nfacenodes,2))
 !$OMP DO SCHEDULE(STATIC)
    DO iel = 1,N2D
 
@@ -601,6 +603,7 @@ CONTAINS
       
    END DO
 !$OMP END DO
+deallocate(Xel,Xfl)
 !$OMP END PARALLEL
 
    IF (MPIvar%glob_id .eq. 0) THEN

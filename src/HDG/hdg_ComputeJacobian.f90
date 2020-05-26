@@ -59,7 +59,7 @@ SUBROUTINE HDG_computeJacobian()
    real*8                :: ue(Mesh%Nnodesperelem,phys%Neq),u0e(Mesh%Nnodesperelem,phys%Neq,time%tis)
    real*8                :: uf(refElPol%Nfacenodes,phys%Neq),uef(refElPol%Nfacenodes,phys%Neq)
    integer               :: indtausave(refElPol%Nfaces*refElPol%Ngauss1d)
-  real*8                :: tau_save_el(refElPol%Nfaces*refElPol%Ngauss1d,phys%neq),xy_g_save_el(refElPol%Nfaces*refElPol%Ngauss1d,2)
+  real*8                 :: tau_save_el(refElPol%Nfaces*refElPol%Ngauss1d,phys%neq),xy_g_save_el(refElPol%Nfaces*refElPol%Ngauss1d,2)
    real*8                :: qe(Mesh%Nnodesperelem,phys%Neq*2),qef(refElPol%Nfacenodes,phys%Neq*2)
    real*8,allocatable    :: qres(:,:)
    real*8                :: Bel(refElPol%Nnodes2d,3),fluxel(refElPol%Nnodes2d),Bfl(refElPol%Nfacenodes,3)
@@ -1022,6 +1022,8 @@ CONTAINS
 !************************************
 !$OMP PARALLEL DEFAULT(SHARED) &
 !$OMP PRIVATE(iel,ifa,iface,inde,indf,Xel,Xfl,i,qe,qef,ue,uef,uf,u0e,Bel,Bfl,fluxel,isdir)
+allocate(Xel(Mesh%Nnodesperelem,2))
+allocate(Xfl(refElPol%Nfacenodes,2))
 !$OMP DO SCHEDULE(STATIC)
    DO iel = 1,N2D
 
@@ -1080,6 +1082,7 @@ CONTAINS
 
    END DO
 !$OMP END DO
+deallocate(Xel,Xfl)
 !$OMP END PARALLEL
 
 
