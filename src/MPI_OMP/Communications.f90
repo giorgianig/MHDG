@@ -236,7 +236,7 @@ CONTAINS
       integer, allocatable:: req(:), stat(:, :)
       integer            :: dd, delta
       integer            :: prtorsd, prtorrv, iel, ifa
-      integer :: Ntorloc
+      integer :: Ntorloc,auxel(refElPol%Nnodes2D*phys%neq),auxfl(phys%Neq*refElTor%Nfl)
 ! integer            :: perm(1:refElPol%Nfacenodes*phys%Neq)
 
 #ifdef PARALL
@@ -275,15 +275,17 @@ CONTAINS
       ALLOCATE (buffrv(Np2D*phys%Neq, Mesh%nghostelems))
       ALLOCATE (buffsd(Np2D*phys%Neq, ne2sd))
 
+      auxel = (/(j, j=0, Np2D*Neq - 1)/)
       DO itor = 1, ntorloc
          buffrv = 0.
          buffsd = 0.
          dd = 1 + (itor - 1)*(N2D*Np2D+(Mesh%Nfaces - Nfdir)*Nfl)*Neq
+
          ! Filling the send buffer
          DO i = 1, ne2sd
             Fi = Mesh%el2sd(i)
             delta = dd + (Fi - 1)*Np2D*Neq !<--here Fi is the poloidal element
-            indp = delta + (/(j, j=0, Np2D*Neq - 1)/)
+            indp = delta + auxel
             buffsd(:, i) = sol%u_tilde(indp)
          END DO
 
@@ -294,7 +296,8 @@ CONTAINS
 
          ! Sending
          DO i = 1, ne2sd
-       CALL MPI_ISEND(buffsd(:,i),Neq*Np2D,MPI_DOUBLE_PRECISION,Mesh%pe2sd(i)-1,etq,MPI_COMM_WORLD,req(Mesh%nghostelems+i),code)
+            CALL MPI_ISEND(buffsd(:,i),Neq*Np2D,MPI_DOUBLE_PRECISION,Mesh%pe2sd(i)-1,etq,&
+                           &MPI_COMM_WORLD,req(Mesh%nghostelems+i),code)
          END DO
 
          CALL MPI_WAITALL(size(req), req, stat, code)
@@ -303,7 +306,7 @@ CONTAINS
          DO i = 1, Mesh%nghostelems
             Fi = Mesh%el2rv(i)!<--here Fi is the poloidal element
             delta = dd + (Fi - 1)*Np2D*Neq !<--here Fi is the poloidal element
-            indp = delta + (/(j, j=0, Np2D*Neq - 1)/)
+            indp = delta + auxel
             sol%u_tilde(indp) = buffrv(:, i)
          END DO
 
@@ -321,6 +324,7 @@ CONTAINS
       ALLOCATE (buffrv(Nfl*phys%Neq, Mesh%nghostfaces))
       ALLOCATE (buffsd(Nfl*phys%Neq, nf2sd))
 
+      auxfl = (/(j, j=0, Nfl*Neq - 1)/)
       DO itor = 1, ntorloc
          buffrv = 0.
          buffsd = 0.
@@ -330,7 +334,7 @@ CONTAINS
          DO i = 1, nf2sd
             Fi = Mesh%fc2sd(i)
             delta = dd + (N2D*Np2D+(Fi - 1)*Nfl)*Neq
-            indt = delta + (/(j, j=0, Nfl*Neq - 1)/)
+            indt = delta + auxfl
             buffsd(:, i) = sol%u_tilde(indt)
          END DO
          ! Receiving
@@ -349,7 +353,7 @@ CONTAINS
          DO i = 1, Mesh%nghostfaces
             Fi = Mesh%fc2rv(i)
             delta = dd + (N2D*Np2D+(Fi - 1)*Nfl)*Neq
-            indt = delta + (/(j, j=0, Nfl*Neq - 1)/)
+            indt = delta + auxfl
             sol%u_tilde(indt) = buffrv(:, i)
          END DO
 
@@ -395,6 +399,7 @@ CONTAINS
          buffsd = 0.
 
          dd = 1
+         auxfl = (/(j, j=0, Nfl*Neq - 1)/)
          ! Filling the send buffer
          DO Fi = 1, Mesh%Nfaces
             IF (Fi .gt. Mesh%Nintfaces) THEN
@@ -403,7 +408,7 @@ CONTAINS
                IF (Mesh%Fdir(iel, ifa)) CYCLE
             END IF
             delta = dd + (N2D*Np2D+(Fi - 1)*Nfl)*Neq
-            indt = delta + (/(j, j=0, Nfl*Neq - 1)/)
+            indt = delta + auxfl
             buffsd(:, Fi) = sol%u_tilde(indt)
          END DO
 
@@ -424,7 +429,8 @@ CONTAINS
                ifa = Mesh%extfaces(Fi - Mesh%Nintfaces, 2)
                IF (Mesh%Fdir(iel, ifa)) CYCLE
             END IF
-      CALL MPI_ISEND(buffsd(:, Fi), Neq*Nfl, MPI_DOUBLE_PRECISION, prtorsd, etq, MPI_COMM_WORLD, req(Mesh%Nfaces - Nfdir + i), code)
+            CALL MPI_ISEND(buffsd(:, Fi), Neq*Nfl, MPI_DOUBLE_PRECISION, prtorsd, &
+                           &etq, MPI_COMM_WORLD, req(Mesh%Nfaces - Nfdir + i), code)
          END DO
 
          CALL MPI_WAITALL(size(req), req, stat, code)
@@ -438,7 +444,7 @@ CONTAINS
                IF (Mesh%Fdir(iel, ifa)) CYCLE
             END IF
             delta = dd + (N2D*Np2D+(Fi - 1)*Nfl)*Neq
-            indt = delta + (/(j, j=0, Nfl*Neq - 1)/)
+            indt = delta + auxfl
             sol%u_tilde(indt) = buffrv(:, Fi)
          END DO
 
@@ -458,10 +464,11 @@ CONTAINS
          buffrv = 0.
 
          ! Filling the send buffer
+         auxel =  (/(j, j=0, Np2D*Neq - 1)/)
          dd = 1 + (N2D*Np2D+(Mesh%Nfaces - Nfdir)*Nfl)*Neq
          DO Fi = 1, Mesh%Nelems
             delta = dd + (Fi - 1)*Np2D*Neq !<--here Fi is the poloidal element
-            indp = delta + (/(j, j=0, Np2D*Neq - 1)/)
+            indp = delta + auxel
             buffsd(:, Fi) = sol%u_tilde(indp)
          END DO
 
@@ -481,7 +488,7 @@ CONTAINS
          dd = 1 + ntorloc*(N2D*Np2D+(Mesh%Nfaces - Nfdir)*Nfl)*Neq
          DO Fi = 1, Mesh%Nelems
             delta = dd + (Fi - 1)*Np2D*Neq !<--here Fi is the poloidal element
-            indp = delta + (/(j, j=0, Np2D*Neq - 1)/)
+            indp = delta + auxel
             sol%u_tilde(indp) = buffrv(:, Fi)
          END DO
 
@@ -514,7 +521,7 @@ CONTAINS
          dd = 1 + (ntorloc - 1)*(N2D*Np2D+(Mesh%Nfaces - Nfdir)*Nfl)*Neq
          DO Fi = 1, Mesh%Nelems
             delta = dd + (Fi - 1)*Np2D*Neq !<--here Fi is the poloidal element
-            indp = delta + (/(j, j=0, Np2D*Neq - 1)/)
+            indp = delta + auxel
             buffsd(:, Fi) = sol%u_tilde(indp)
          END DO
 
@@ -534,7 +541,7 @@ CONTAINS
          dd = 1
          DO Fi = 1, Mesh%Nelems
             delta = dd + (Fi - 1)*Np2D*Neq !<--here Fi is the poloidal element
-            indp = delta + (/(j, j=0, Np2D*Neq - 1)/)
+            indp = delta + auxel
             sol%u_tilde(indp) = buffrv(:, Fi)
          END DO
 
@@ -553,7 +560,7 @@ CONTAINS
       real*8             :: fbufrv(Mesh%Nnodesperface*phys%Neq)
       integer            :: code, ierr
       integer, allocatable:: req(:), stat(:, :)
-      integer            :: perm(1:refElPol%Nfacenodes*phys%Neq)
+      integer            :: perm(refElPol%Nfacenodes*phys%Neq),aux(phys%Neq*Mesh%Nnodesperface)
 
       Neq = phys%Neq
       Nfp = Mesh%Nnodesperface
@@ -561,15 +568,6 @@ CONTAINS
 
       ! Set permutations for ghostfaces that need to be flipped
       CALL set_permutations(Neq*Nfp, Neq, perm)
-
-
-
-call mpi_barrier(mpi_comm_world,ierr)
-write(6,*) "proc",mpivar%glob_id,"max(sol%u_tilde) ENTERING",maxval(sol%u_tilde)
-flush(6)
-call mpi_barrier(mpi_comm_world,ierr)
-
-
 
       ALLOCATE (req(nf2sd + Mesh%nghostfaces))
       ALLOCATE (stat(MPI_STATUS_SIZE, nf2sd + Mesh%nghostfaces))
@@ -581,18 +579,12 @@ call mpi_barrier(mpi_comm_world,ierr)
       buffrv = 0.
       buffsd = 0.
       ! Filling the send buffer
+      aux =  (/(j, j=1, Neq*Nfp)/)
       DO i = 1, nf2sd
          Fi = Mesh%fc2sd(i)
-         ind = (Fi - 1)*Neq*Nfp + (/(j, j=1, Neq*Nfp)/)
+         ind = (Fi - 1)*Neq*Nfp + aux
          buffsd(:, i) = sol%u_tilde(ind)
       END DO
-
-
-call mpi_barrier(mpi_comm_world,ierr)
-write(6,*) "proc",mpivar%glob_id,"max(sol%u_tilde) BEFORE RCV",maxval(sol%u_tilde)
-flush(6)
-call mpi_barrier(mpi_comm_world,ierr)
-
 
       ! Receiving
       DO i = 1, Mesh%nghostfaces
@@ -609,10 +601,7 @@ call mpi_barrier(mpi_comm_world,ierr)
 
 
 
-call mpi_barrier(mpi_comm_world,ierr)
-write(6,*) "proc",mpivar%glob_id,"max(sol%u_tilde) AFTER RCV",maxval(sol%u_tilde)
-flush(6)
-call mpi_barrier(mpi_comm_world,ierr)
+
 
 ! call syncroprint_matrix(buffsd)
 ! call MPI_BARRIER(MPI_COMM_WORLD, ierr)
@@ -622,7 +611,7 @@ call mpi_barrier(mpi_comm_world,ierr)
       ! Storing at the right place
       DO i = 1, Mesh%nghostfaces
          Fi = Mesh%fc2rv(i)
-         ind = (Fi - 1)*Neq*Nfp + (/(j, j=1, Neq*Nfp)/)
+         ind = (Fi - 1)*Neq*Nfp + aux 
          sol%u_tilde(ind) = buffrv(:, i)
       END DO
 

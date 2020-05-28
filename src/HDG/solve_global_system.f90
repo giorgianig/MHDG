@@ -273,13 +273,6 @@ SUBROUTINE solve_global_system
    !**********************************************
 
 
-call mpi_barrier(mpi_comm_world,ierr)
-write(6,*) "proc. ",mpivar%glob_id,"max(sol%u_tilde) - before comm",maxval(sol%u_tilde)
-flush(6)
-call mpi_barrier(mpi_comm_world,ierr)
-
-
-
 #ifdef PARALL
    if (utils%timing) then
       call cpu_time(timing%tps2)
@@ -295,10 +288,6 @@ call mpi_barrier(mpi_comm_world,ierr)
    end if 
 #endif
 
-call mpi_barrier(mpi_comm_world,ierr)
-write(6,*) "proc. ",mpivar%glob_id,"max(sol%u_tilde) - after comm",maxval(sol%u_tilde)
-flush(6)
-call mpi_barrier(mpi_comm_world,ierr)
 
 !#ifdef PARALL
 !if (MPIvar%ntor>1) then

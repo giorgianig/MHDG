@@ -36,7 +36,7 @@
    saveNR  = .true.   ! save each N-R iterations 
    saveTau  = .false.   ! save tau on faces
    !***** N-Gamma-Vorticity model 
-   fixdPotLim = .true. ! Fix potential to the floating potential on the limiter
+   fixdPotLim = .false. ! Fix potential to the floating potential on the limiter
    dirivort   = .false. ! Dirichlet boundary condition on the vorticity in the core boundary
    convvort   = .false.  ! Consider the convective term in the vorticity equation 
    
@@ -47,7 +47,7 @@
    tau(2) = 10.E-0  ! Stabilization parameter 2nd equation
    tau(3) = 10.E-0  ! Stabilization parameter 3rd equation
    tau(4) = 10.E-0  ! Stabilization parameter 4th equation         
-   nrp    = 4     ! Max number of Newton-Raphson iterations
+   nrp    = 8     ! Max number of Newton-Raphson iterations
    tNR    = 1e-4  ! Tolerance of the Newton-Raphson scheme
    tTM    = 1e-4  ! Tolerance for the steady state achievement
    div    = 1e9   ! Divergence of Newton-Raphon iteration
@@ -62,7 +62,7 @@
    stab   = 2     ! Stabilization type
    dumpnr = 1.   ! Dumping factor for Newton-Raphson (0<dumpnr<1)
    ntor   = 4     ! Number of elements in the toroidal direction
-   ptor   = 2     ! Polinomial degree in the toroidal direction
+   ptor   = 4     ! Polinomial degree in the toroidal direction
    tmax   = 6.28  ! Max extention in the toroidal direction 
    npartor= 1      ! Number of MPI partition in the toroidal direction    
 /
@@ -84,11 +84,11 @@
 
 &PHYS_LST
    ! ****** Diffusion parameters in m^2/s
-   diff_n = 10 ! diffusion in the continuity equation
-   diff_u = 10 ! diffusion in the momentum equation
-   diff_e = 10 ! perpendicular diffusion for the energy equation
-   diff_ee = 10 ! perpendicular diffusion in the electron temperature equation (for the TiTe model)
-   diff_vort = 10 ! diffusion in the vorticity equation
+   diff_n = 2.5 ! diffusion in the continuity equation
+   diff_u = 2.5 ! diffusion in the momentum equation
+   diff_e = 2.5 ! perpendicular diffusion for the energy equation
+   diff_ee = 2.5 ! perpendicular diffusion in the electron temperature equation (for the TiTe model)
+   diff_vort = 2.5 ! diffusion in the vorticity equation
    ! ****** Background temperature in the isothermal model in eV (useless in the non-isothermal model)
    Tbg = 50
    ! ****** Boundary conditions: set the correspondance between boundary flag and boundary condition
@@ -131,7 +131,7 @@
    sollib  = 1  ! Solver library to be used
                                      ! 1-Pastix
                                      ! 2-PSBLAS
-                                     
+   lstiming = true                                  
    ! Parameters relative to the library PSBLAS                                  
    itmax   = 500   ! Max number of iterations
    itrace  = 0     ! Display convergence at each iteration

@@ -20,7 +20,7 @@ SUBROUTINE HDG_mapping()
    real*8, pointer        :: iAqq(:, :), Aqu(:, :), Aql(:, :)
    real*8, pointer        :: Auq(:, :), Auu(:, :), Aul(:, :)
    real*8, pointer        :: Aql_dir(:), Aul_dir(:), f(:)
-
+   INTEGER ::  OMP_GET_THREAD_NUM
    IF (MPIvar%glob_id .eq. 0) THEN
       IF (utils%printint > 1) THEN
          WRITE (6, *) '*************************************************'
@@ -89,6 +89,13 @@ SUBROUTINE HDG_mapping()
 #endif
 #endif
 
+call mpi_barrier(mpi_comm_world,ierr)
+if (mpivar%glob_id.eq.0) then
+write(6,*) "test 1"
+endif
+flush(6)
+call mpi_barrier(mpi_comm_world,ierr)
+
 !$OMP PARALLEL DEFAULT(SHARED) &
 !$OMP PRIVATE(iel,itor,iel3,LL,UU,L0,U0,Auq_iAqq,Auu,Mu,Ml,Md,f,aux,auxAqq,auxAquUU,iAqq,Aqu,Aql,Auq,Aul,Aql_dir,Aul_dir,ifa)
    ALLOCATE (LL(Neq*Np*Ndim, Neq*Nfg))
@@ -122,6 +129,16 @@ SUBROUTINE HDG_mapping()
 #else
          iel3 = iel
 #endif
+
+
+call mpi_barrier(mpi_comm_world,ierr)
+!$OMP CRITICAL
+write(6,*) "Proc",mpivar%glob_id, "thread", OMP_GET_THREAD_NUM(), "test 2"
+flush(6)
+!$OMP END CRITICAL
+call mpi_barrier(mpi_comm_world,ierr)
+
+
          iAqq => elmat%iAqq(:, :, iel3)
          Aqu => elmat%Aqu(:, :, iel3)
          Aql => elmat%Aql(:, :, iel3)
@@ -131,17 +148,123 @@ SUBROUTINE HDG_mapping()
          Aql_dir => elmat%Aql_dir(:, iel3)
          Aul_dir => elmat%Aul_dir(:, iel3)
          f => elmat%S(:, iel3)
+
+call mpi_barrier(mpi_comm_world,ierr)
+!$OMP CRITICAL
+write(6,*) "Proc",mpivar%glob_id, "thread", OMP_GET_THREAD_NUM(), "test 3"
+flush(6)
+!$OMP END CRITICAL
+call mpi_barrier(mpi_comm_world,ierr)
+
+       Auq_iAqq = 0.
+call mpi_barrier(mpi_comm_world,ierr)
+!$OMP CRITICAL
+write(6,*) "Proc",mpivar%glob_id, "thread", OMP_GET_THREAD_NUM(), "test 3-BIS"
+flush(6)
+!$OMP END CRITICAL
+call mpi_barrier(mpi_comm_world,ierr)
+
          Auq_iAqq = matmul(Auq, iAqq)
+
+
+call mpi_barrier(mpi_comm_world,ierr)
+!$OMP CRITICAL
+write(6,*) "Proc",mpivar%glob_id, "thread", OMP_GET_THREAD_NUM(), "test 4"
+flush(6)
+!$OMP END CRITICAL
+call mpi_barrier(mpi_comm_world,ierr)
+
+
+
+
          Mu = Auu - matmul(Auq_iAqq, Aqu)
+
+
+
+call mpi_barrier(mpi_comm_world,ierr)
+!$OMP CRITICAL
+write(6,*) "Proc",mpivar%glob_id, "thread", OMP_GET_THREAD_NUM(), "test 5"
+flush(6)
+!$OMP END CRITICAL
+call mpi_barrier(mpi_comm_world,ierr)
+
+
+
+
+
          Ml = Aul - matmul(Auq_iAqq, Aql)
+
+
+
+call mpi_barrier(mpi_comm_world,ierr)
+!$OMP CRITICAL
+write(6,*) "Proc",mpivar%glob_id, "thread", OMP_GET_THREAD_NUM(), "test 6"
+flush(6)
+!$OMP END CRITICAL
+call mpi_barrier(mpi_comm_world,ierr)
+
+
+
          Md = f - (Aul_dir - matmul(Auq_iAqq, Aql_dir))
+
+call mpi_barrier(mpi_comm_world,ierr)
+!$OMP CRITICAL
+write(6,*) "Proc",mpivar%glob_id, "thread", OMP_GET_THREAD_NUM(), "test 7"
+flush(6)
+!$OMP END CRITICAL
+call mpi_barrier(mpi_comm_world,ierr)
+
          call solve_linear_system(Mu, -Ml, UU)
+
+call mpi_barrier(mpi_comm_world,ierr)
+!$OMP CRITICAL
+write(6,*) "Proc",mpivar%glob_id, "thread", OMP_GET_THREAD_NUM(), "test 8"
+flush(6)
+!$OMP END CRITICAL
+call mpi_barrier(mpi_comm_world,ierr)
+
          call solve_linear_system_sing(Mu, Md, U0)
 
+call mpi_barrier(mpi_comm_world,ierr)
+!$OMP CRITICAL
+write(6,*) "Proc",mpivar%glob_id, "thread", OMP_GET_THREAD_NUM(), "test 9"
+flush(6)
+!$OMP END CRITICAL
+call mpi_barrier(mpi_comm_world,ierr)
+
+
          auxAquUU = matmul(Aqu, UU) ! Avoid stack overflow
+
+
+call mpi_barrier(mpi_comm_world,ierr)
+!$OMP CRITICAL
+write(6,*) "Proc",mpivar%glob_id, "thread", OMP_GET_THREAD_NUM(), "test 10"
+flush(6)
+!$OMP END CRITICAL
+call mpi_barrier(mpi_comm_world,ierr)
+
          auxAquUU = auxAquUU + Aql
          LL = -matmul(iAqq, auxAquUU)
+
+
+call mpi_barrier(mpi_comm_world,ierr)
+!$OMP CRITICAL
+write(6,*) "Proc",mpivar%glob_id, "thread", OMP_GET_THREAD_NUM(), "test 11"
+flush(6)
+!$OMP END CRITICAL
+call mpi_barrier(mpi_comm_world,ierr)
+
+
          L0 = -matmul(iAqq, Aql_dir + (matmul(Aqu, U0)))
+
+
+call mpi_barrier(mpi_comm_world,ierr)
+!$OMP CRITICAL
+write(6,*) "Proc",mpivar%glob_id, "thread", OMP_GET_THREAD_NUM(), "test 12"
+flush(6)
+!$OMP END CRITICAL
+call mpi_barrier(mpi_comm_world,ierr)
+
          ! Flip the faces
          DO ifa = 1, refElPol%Nfaces
             IF (Mesh%flipface(iel, ifa)) THEN

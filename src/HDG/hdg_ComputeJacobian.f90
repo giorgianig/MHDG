@@ -22,7 +22,7 @@ SUBROUTINE HDG_computeJacobian()
 !              COMPUTATION OF THE JACOBIANS
 ! 
 !***********************************************************************
-   integer*4             :: Ndim,Neq,N2D,Npel,Npfl,Nfre,Ng1d,Ng2d
+   integer*4             :: Ndim,Neq,N2D,Npel,Npfl,Nfre,Ng1d,Ng2d,ierr
    integer*4             :: iel,ifa,iface,i,j,els(2),fas(2)
    integer*4             :: sizeu,sizel
    real*8,allocatable    :: ures(:,:),lres(:,:),u0res(:,:,:)
@@ -166,7 +166,6 @@ SUBROUTINE HDG_computeJacobian()
 
    save_tau = switch%saveTau
 #endif
-
    ! reshape
    sizeu = size(sol%u)
    sizel = size(sol%u_tilde)
@@ -212,6 +211,14 @@ allocate(qefp(Mesh%Nnodesperelem,phys%Neq*3),qeft(refElTor%Nfl,phys%Neq*3))
         itorg = itor
 #endif
         tel = tdiv(itorg) + 0.5*(refElTor%coord1d+1)*(tdiv(itorg + 1) - tdiv(itorg))
+
+
+!call mpi_barrier(mpi_comm_world,ierr)
+!if (mpivar%glob_id.eq.0) then
+!write(6,*) "TEST 3"
+!endif
+!flush(6)
+!call mpi_barrier(mpi_comm_world,ierr)
 
          ! Index of 3D element
          iel3 = (itor - 1)*N2d+iel
@@ -949,7 +956,7 @@ CONTAINS
             ! Compute the stabilization term
             isext = 1.
 #ifdef PARALL
-            IF (Mesh%boundaryFlag(Mesh%F(iel,ifa - 1) - Mesh%Nintfaces) .eq. 0) THEN
+            IF (Mesh%boundaryFlag(Mesh%F(iel2,ifa - 1) - Mesh%Nintfaces) .eq. 0) THEN
                isext = 0.
             END IF
 #endif
