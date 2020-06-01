@@ -265,43 +265,43 @@ allocate(qefp(Mesh%Nnodesperelem,phys%Neq*3),qeft(refElTor%Nfl,phys%Neq*3))
          CALL elemental_matrices_faces_pol(iel3,ifa,iel,Xel,tdiv(itorg),Bfp,qefp,uefp,ufp)
 
          !-------------- Toroidal faces ---------------------
-						   DO ifa=1,refElPol%Nfaces
-						      iface = Mesh%F(iel,ifa)
-						      Xfl = Mesh%X(Mesh%T(iel,refElPol%face_nodes(ifa,:)),:)
+         DO ifa=1,refElPol%Nfaces
+            iface = Mesh%F(iel,ifa)
+            Xfl = Mesh%X(Mesh%T(iel,refElPol%face_nodes(ifa,:)),:)
 
-						      ! Magnetic field of the nodes of the face
-						      indbt = colint(tensorSumInt(Mesh%T(iel,refElPol%face_nodes(ifa,:)),(itor-1)*&
-						              &(Np1Dtor-1)*Mesh%Nnodes+Mesh%Nnodes*((/(i,i=1,Np1Dtor) /)-1)))
-						      Bfl = phys%B(indbt,:)
+            ! Magnetic field of the nodes of the face
+            indbt = colint(tensorSumInt(Mesh%T(iel,refElPol%face_nodes(ifa,:)),(itor-1)*&
+                    &(Np1Dtor-1)*Mesh%Nnodes+Mesh%Nnodes*((/(i,i=1,Np1Dtor) /)-1)))
+            Bfl = phys%B(indbt,:)
 
-						      ! Face solution
-						      isdir = Mesh%Fdir(iel,ifa)
-						      IF (isdir) THEN
-						         uft = 0.
-						      ELSE
-						         dd = (itor - 1)*(N2D*Np2D+(Mesh%Nfaces - Nfdir)*Npfl) + N2D*Np2D
-						         indft = dd + (iface - 1)*Npfl + (/(i,i=1,Npfl)/)
-						         uft = lres(indft,:)
-						      ENDIF
+            ! Face solution
+            isdir = Mesh%Fdir(iel,ifa)
+            IF (isdir) THEN
+               uft = 0.
+            ELSE
+               dd = (itor - 1)*(N2D*Np2D+(Mesh%Nfaces - Nfdir)*Npfl) + N2D*Np2D
+               indft = dd + (iface - 1)*Npfl + (/(i,i=1,Npfl)/)
+               uft = lres(indft,:)
+            ENDIF
 
-						      ! Elements solution
-						      ueft = ures(inde(refElTor%faceNodes3(ifa,:)),:)
-						      qeft = qres(inde(refElTor%faceNodes3(ifa,:)),:)
+            ! Elements solution
+            ueft = ures(inde(refElTor%faceNodes3(ifa,:)),:)
+            qeft = qres(inde(refElTor%faceNodes3(ifa,:)),:)
 
-						      if (iface.le.Mesh%Nintfaces) then
+            if (iface.le.Mesh%Nintfaces) then
                call elemental_matrices_faces_int(iel3,ifa+1,iel,Xfl,tel,Bfl,qeft,ueft,uft)
-						      else
+            else
                call elemental_matrices_faces_ext(iel3,ifa+1,iel,Xfl,tel,Bfl,qeft,ueft,uft,isdir)
-						      endif
-						      ! Flip faces 
-						      IF (Mesh%flipface(iel,ifa)) then
-						         elMat%Alq(ind_loc(ifa,:),:,iel3) = elMat%Alq(ind_loc(ifa,perm),:,iel3)
-						         elMat%Alu(ind_loc(ifa,:),:,iel3) = elMat%Alu(ind_loc(ifa,perm),:,iel3)
-						         elMat%All(ind_loc(ifa,:),:,iel3) = elMat%All(ind_loc(ifa,perm),:,iel3)
-						         elMat%All(:,ind_loc(ifa,:),iel3) = elMat%All(:,ind_loc(ifa,perm),iel3)
-						         elMat%fh(ind_loc(ifa,:),iel3) = elMat%fh(ind_loc(ifa,perm),iel3)
-						      END if
-						   END DO
+            endif
+            ! Flip faces 
+            IF (Mesh%flipface(iel,ifa)) then
+               elMat%Alq(ind_loc(ifa,:),:,iel3) = elMat%Alq(ind_loc(ifa,perm),:,iel3)
+               elMat%Alu(ind_loc(ifa,:),:,iel3) = elMat%Alu(ind_loc(ifa,perm),:,iel3)
+               elMat%All(ind_loc(ifa,:),:,iel3) = elMat%All(ind_loc(ifa,perm),:,iel3)
+               elMat%All(:,ind_loc(ifa,:),iel3) = elMat%All(:,ind_loc(ifa,perm),iel3)
+               elMat%fh(ind_loc(ifa,:),iel3) = elMat%fh(ind_loc(ifa,perm),iel3)
+            END if
+         END DO
 
          !------------- Second poloidal face-----------------
          ifa = refElPol%Nfaces + 2
@@ -554,7 +554,7 @@ CONTAINS
                driftg = phys%dfcoef*driftg/Bmod(g)
             endif
 
-            CALL assemblyVolumeContribution(Auq,Auu,rhs,iel,ind_ass,ind_asq,b(g,:),divbg,driftg,Bmod(g),force(g,:),&
+            CALL assemblyVolumeContribution(Auq,Auu,rhs,b(g,:),divbg,driftg,Bmod(g),force(g,:),&
           &ktis,diff_iso_vol(:,:,g),diff_ani_vol(:,:,g),Ni,NNi,Nxyzg,NNxy,NxyzNi,NNbb,upg(g,:),ueg(g,:),qeg(g,:),u0eg(g,:,:))
          END DO ! END loop in volume Gauss points
       END DO
@@ -1071,31 +1071,31 @@ allocate(Xfl(refElPol%Nfacenodes,2))
          ! Coordinates of the nodes of the face
          Xfl = Mesh%X(Mesh%T(iel,refElPol%face_nodes(ifa,:)),:)
 
-						   ! Magnetic field of the nodes of the face
-						   Bfl = phys%B(Mesh%T(iel,refElPol%face_nodes(ifa,:)),:)
+         ! Magnetic field of the nodes of the face
+         Bfl = phys%B(Mesh%T(iel,refElPol%face_nodes(ifa,:)),:)
 
-						   ! Face solution
-						   indf = (iface-1)*Npfl + (/(i,i=1,Npfl)/)
-						   uf = lres(indf,:)
+         ! Face solution
+         indf = (iface-1)*Npfl + (/(i,i=1,Npfl)/)
+         uf = lres(indf,:)
 
-						   ! Elements solution
-						   inde = (iel - 1)*Npel + (/(i,i=1,Npel)/)
-						   uef = ures(inde(refElPol%face_nodes(ifa,:)),:)
-						   qef = qres(inde(refElPol%face_nodes(ifa,:)),:)
+         ! Elements solution
+         inde = (iel - 1)*Npel + (/(i,i=1,Npel)/)
+         uef = ures(inde(refElPol%face_nodes(ifa,:)),:)
+         qef = qres(inde(refElPol%face_nodes(ifa,:)),:)
 
          if (iface.le.Mesh%Nintfaces) then
             CALL elemental_matrices_faces_int(iel,ifa,Xfl,Bfl,qef,uef,uf,tau_save_el,xy_g_save_el)
          else
             CALL elemental_matrices_faces_ext(iel,ifa,isdir,Xfl,Bfl,qef,uef,uf,tau_save_el,xy_g_save_el)
          endif
-						   ! Flip faces
-						   if (Mesh%flipface(iel,ifa)) then
-						      elMat%Alq(ind_loc(ifa,:),:,iel) = elMat%Alq(ind_loc(ifa,perm),:,iel)
-						      elMat%Alu(ind_loc(ifa,:),:,iel) = elMat%Alu(ind_loc(ifa,perm),:,iel)
-						      elMat%All(ind_loc(ifa,:),:,iel) = elMat%All(ind_loc(ifa,perm),:,iel)
-						      elMat%All(:,ind_loc(ifa,:),iel) = elMat%All(:,ind_loc(ifa,perm),iel)
-						      elMat%fh(ind_loc(ifa,:),iel) = elMat%fh(ind_loc(ifa,perm),iel)
-						   end if
+         ! Flip faces
+         if (Mesh%flipface(iel,ifa)) then
+            elMat%Alq(ind_loc(ifa,:),:,iel) = elMat%Alq(ind_loc(ifa,perm),:,iel)
+            elMat%Alu(ind_loc(ifa,:),:,iel) = elMat%Alu(ind_loc(ifa,perm),:,iel)
+            elMat%All(ind_loc(ifa,:),:,iel) = elMat%All(ind_loc(ifa,perm),:,iel)
+            elMat%All(:,ind_loc(ifa,:),iel) = elMat%All(:,ind_loc(ifa,perm),iel)
+            elMat%fh(ind_loc(ifa,:),iel) = elMat%fh(ind_loc(ifa,perm),iel)
+         end if
       END DO
 
 
@@ -1303,7 +1303,7 @@ CONTAINS
             driftg = phys%dfcoef*driftg/Bmod(g)
          endif
 
-         CALL assemblyVolumeContribution(Auq,Auu,rhs,iel,ind_ass,ind_asq,b(g,:),divbg,driftg,Bmod(g),force(g,:),&
+         CALL assemblyVolumeContribution(Auq,Auu,rhs,b(g,:),divbg,driftg,Bmod(g),force(g,:),&
           &ktis,diff_iso_vol(:,:,g),diff_ani_vol(:,:,g),Ni,NNi,Nxyzg,NNxy,NxyzNi,NNbb,upg(g,:),ueg(g,:),qeg(g,:),u0eg(g,:,:))
       END DO ! END loop in volume Gauss points
       call do_assembly(Auq,Auu,rhs,ind_ass,ind_asq,iel)
@@ -1348,96 +1348,96 @@ CONTAINS
       !***********************************
       NGauss = Ng1d
 
-		    ! Indices
-		    ind_fe = reshape(tensorSumInt((/(i,i=1,neq)/),neq*(refElPol%face_nodes(ifa,:) - 1)),(/neq*Npfl/))
-		    ind_ff = (ifa - 1)*neq*Npfl + (/(i,i=1,neq*Npfl)/)
-		    ind_fg = reshape(tensorSumInt((/(i,i=1,neq*ndim)/),neq*ndim*(refElPol%face_nodes(ifa,:) - 1)),(/neq*Npfl*ndim/))
+      ! Indices
+      ind_fe = reshape(tensorSumInt((/(i,i=1,neq)/),neq*(refElPol%face_nodes(ifa,:) - 1)),(/neq*Npfl/))
+      ind_ff = (ifa - 1)*neq*Npfl + (/(i,i=1,neq*Npfl)/)
+      ind_fg = reshape(tensorSumInt((/(i,i=1,neq*ndim)/),neq*ndim*(refElPol%face_nodes(ifa,:) - 1)),(/neq*Npfl*ndim/))
 
-		    !****************************************************
-		    !                      Magnetic field
-		    !****************************************************
-		    ! Magnetic field norm and direction at element nodes
-		    Bmod_nod = sqrt(Bfl(:,1)**2 + Bfl(:,2)**2 + Bfl(:,3)**2)
-		    b_nod(:,1) = Bfl(:,1)/Bmod_nod
-		    b_nod(:,2) = Bfl(:,2)/Bmod_nod
-		    b_nod(:,3) = Bfl(:,3)/Bmod_nod
+      !****************************************************
+      !                      Magnetic field
+      !****************************************************
+      ! Magnetic field norm and direction at element nodes
+      Bmod_nod = sqrt(Bfl(:,1)**2 + Bfl(:,2)**2 + Bfl(:,3)**2)
+      b_nod(:,1) = Bfl(:,1)/Bmod_nod
+      b_nod(:,2) = Bfl(:,2)/Bmod_nod
+      b_nod(:,3) = Bfl(:,3)/Bmod_nod
 
-		    ! Trace solution at face Gauss points
-		    IF (Mesh%flipFace(iel,ifa)) THEN
-		       ufg = matmul(refElPol%N1D,uf((/(i,i=Npfl,1,-1)/),:))
-		    ELSE
-		       ufg = matmul(refElPol%N1D,uf)
-		    END IF
+      ! Trace solution at face Gauss points
+      IF (Mesh%flipFace(iel,ifa)) THEN
+         ufg = matmul(refElPol%N1D,uf((/(i,i=Npfl,1,-1)/),:))
+      ELSE
+         ufg = matmul(refElPol%N1D,uf)
+      END IF
 
 
-		    ! Gauss points position and derivatives
-		    xyf = matmul(refElPol%N1D,Xfl)
-		    xyDer = matmul(refElPol%Nxi1D,Xfl)
+      ! Gauss points position and derivatives
+      xyf = matmul(refElPol%N1D,Xfl)
+      xyDer = matmul(refElPol%Nxi1D,Xfl)
 
-		    ! Magnetic field norm and direction at Gauss points
-		    Bmod = matmul(refElPol%N1D,Bmod_nod)
-		    b = matmul(refElPol%N1D,b_nod)
+      ! Magnetic field norm and direction at Gauss points
+      Bmod = matmul(refElPol%N1D,Bmod_nod)
+      b = matmul(refElPol%N1D,b_nod)
 
-		    ! Element solution at face Gauss points
-		    uefg = matmul(refElPol%N1D,uef)
-		    ! Gradient solution at face gauss points
-		    qfg = matmul(refElPol%N1D,qef)
+      ! Element solution at face Gauss points
+      uefg = matmul(refElPol%N1D,uef)
+      ! Gradient solution at face gauss points
+      qfg = matmul(refElPol%N1D,qef)
 
-		    ! Compute diffusion at faces Gauss points
-		    CALL setLocalDiff(xyf,diff_iso_fac,diff_ani_fac,Bmod)
+      ! Compute diffusion at faces Gauss points
+      CALL setLocalDiff(xyf,diff_iso_fac,diff_ani_fac,Bmod)
 
-		    ! Physical variables at face Gauss points
-		    CALL cons2phys(ufg,upgf)
+      ! Physical variables at face Gauss points
+      CALL cons2phys(ufg,upgf)
 
-		    ! Loop in 1D Gauss points
-		    DO g = 1,NGauss
+      ! Loop in 1D Gauss points
+      DO g = 1,NGauss
 
-		       ! Calculate the integration weight
-		       xyDerNorm_g = norm2(xyDer(g,:))
-		       dline = refElPol%gauss_weights1D(g)*xyDerNorm_g
-		       IF (switch%axisym) THEN
-		          dline = dline*xyf(g,1)
-		       END IF
+         ! Calculate the integration weight
+         xyDerNorm_g = norm2(xyDer(g,:))
+         dline = refElPol%gauss_weights1D(g)*xyDerNorm_g
+         IF (switch%axisym) THEN
+            dline = dline*xyf(g,1)
+         END IF
 
-		       ! Unit normal to the boundary
-		       t_g = xyDer(g,:)/xyDerNorm_g
-		       n_g = [t_g(2),-t_g(1)]
+         ! Unit normal to the boundary
+         t_g = xyDer(g,:)/xyDerNorm_g
+         n_g = [t_g(2),-t_g(1)]
 
-		       ! Shape functions products
-		       bn = dot_product(b(g,1:2),n_g)
-		       NNif = tensorProduct(refElPol%N1D(g,:),refElPol%N1D(g,:))*dline
-		       Nif = refElPol%N1D(g,:)*dline
-		       Nfbn = bn*refElPol%N1D(g,:)*dline
+         ! Shape functions products
+         bn = dot_product(b(g,1:2),n_g)
+         NNif = tensorProduct(refElPol%N1D(g,:),refElPol%N1D(g,:))*dline
+         Nif = refElPol%N1D(g,:)*dline
+         Nfbn = bn*refElPol%N1D(g,:)*dline
 
-		       ! Compute the stabilization term
-		       tau = 0.
-		       IF (numer%stab == 1) THEN
-		          ! Constant stabilization
-		          DO i = 1,Neq
-		             tau(i,i) = numer%tau(i)
-		          END DO
-		       ELSE
-		          ! Non constant stabilization
-		          ! Compute tau in the Gauss points
-		          IF (numer%stab < 5) THEN
-		             CALL computeTauGaussPoints(upgf(g,:),ufg(g,:),b(g,:),n_g,iel,ifa,0.,xyf(g,:),tau)
-		          ELSE
-		             CALL computeTauGaussPoints_matrix(upgf(g,:),ufg(g,:),b(g,:),n_g,xyf(g,:),0.,iel,tau)
-		          ENDIF
-		       END IF
+         ! Compute the stabilization term
+         tau = 0.
+         IF (numer%stab == 1) THEN
+            ! Constant stabilization
+            DO i = 1,Neq
+               tau(i,i) = numer%tau(i)
+            END DO
+         ELSE
+            ! Non constant stabilization
+            ! Compute tau in the Gauss points
+            IF (numer%stab < 5) THEN
+               CALL computeTauGaussPoints(upgf(g,:),ufg(g,:),b(g,:),n_g,iel,ifa,0.,xyf(g,:),tau)
+            ELSE
+               CALL computeTauGaussPoints_matrix(upgf(g,:),ufg(g,:),b(g,:),n_g,xyf(g,:),0.,iel,tau)
+            ENDIF
+         END IF
 
-		       ! Assembly local contributions
-		       CALL assemblyIntFacesContribution(iel,ind_asf,ind_ash,ind_ff,ind_fe,ind_fg,b(g,:),Bmod(g),&
-		                                 n_g,diff_iso_fac(:,:,g),diff_ani_fac(:,:,g),NNif,Nif,Nfbn,ufg(g,:),qfg(g,:),tau)
+         ! Assembly local contributions
+         CALL assemblyIntFacesContribution(iel,ind_asf,ind_ash,ind_ff,ind_fe,ind_fg,b(g,:),Bmod(g),&
+                                   n_g,diff_iso_fac(:,:,g),diff_ani_fac(:,:,g),NNif,Nif,Nfbn,ufg(g,:),qfg(g,:),tau)
 
-		       if (save_tau) then
-		          DO i = 1,Neq
-		             tau_save_el((ifa - 1)*Ngauss + g,i) = tau(i,i)
-		          END DO
-		          xy_g_save_el((ifa - 1)*Ngauss + g,:) = xyf(g,:)
-		       endif
+         if (save_tau) then
+            DO i = 1,Neq
+               tau_save_el((ifa - 1)*Ngauss + g,i) = tau(i,i)
+            END DO
+            xy_g_save_el((ifa - 1)*Ngauss + g,:) = xyf(g,:)
+         endif
 
-		    END DO ! Gauss points
+      END DO ! Gauss points
 
    END SUBROUTINE elemental_matrices_faces_int
 
@@ -1691,10 +1691,9 @@ CONTAINS
 !         ASSEMBLY VOLUME CONTRIBUTION
 ! 
 !********************************************************************
-   SUBROUTINE assemblyVolumeContribution(Auq,Auu,rhs,iel,ind_ass,ind_asq,b3,divb,drift,Bmod,f,&
+   SUBROUTINE assemblyVolumeContribution(Auq,Auu,rhs,b3,divb,drift,Bmod,f,&
                &ktis,diffiso,diffani,Ni,NNi,Nxyzg,NNxy,NxyzNi,NNbb,upe,ue,qe,u0e) 
       real*8,intent(inout)      :: Auq(:,:,:),Auu(:,:,:),rhs(:,:)
-      integer*4,intent(IN)      :: iel,ind_ass(:),ind_asq(:)
       real*8,intent(IN)         :: b3(:),divb,drift(:),f(:),ktis(:),Bmod
       real*8,intent(IN)         :: diffiso(:,:),diffani(:,:)
       real*8,intent(IN)         :: Ni(:),NNi(:,:),Nxyzg(:,:),NNxy(:,:),NxyzNi(:,:,:),NNbb(:)
@@ -1781,7 +1780,6 @@ CONTAINS
             ! In the vorticity model I don't assemble the mass matrix for the potential equation
             IF (i .ne. 4) THEN
 #endif
-!               elMat%Auu(ind_i,ind_i,iel) = elMat%Auu(ind_i,ind_i,iel) + ktis(1)*NNi/time%dt              
                z = i+(i-1)*Neq
                Auu(:,:,z)= Auu(:,:,z)+ ktis(1)*NNi/time%dt
 #ifdef VORTICITY
@@ -1791,7 +1789,6 @@ CONTAINS
 #ifndef TEMPERATURE
          IF (i == 2) THEN
             ! Curvature contribution (isothermal)
-!            elMat%Auu(ind_i,ind_i - 1,iel) = elMat%Auu(ind_i,ind_i - 1,iel) - phys%a*divb*NNi
             z = i+(i-2)*Neq
             Auu(:,:,z) = Auu(:,:,z) - phys%a*divb*NNi
          END IF
@@ -1799,17 +1796,14 @@ CONTAINS
             ! B x GradB drift (isothermal)
             DO k = 1,Ndim
                z = i+(i-1)*Neq
-               !elMat%Auu(ind_i,ind_i,iel) = elMat%Auu(ind_i,ind_i,iel) + transpose(NxyzNi(:,:,k))*drift(k)
                Auu(:,:,z)= Auu(:,:,z) +transpose(NxyzNi(:,:,k))*drift(k)
             END DO
          END IF
 #else
          IF (i == 2) THEN
             DO j = 1,Neq
-!               ind_j = j + ind_ass
                 z = i+(j-1)*Neq
                ! Curvature contribution (non-isothermal)
-!               elMat%Auu(ind_i,ind_j,iel) = elMat%Auu(ind_i,ind_j,iel) - GG(i,j)*NNi
                Auu(:,:,z) = Auu(:,:,z) - GG(i,j)*NNi
             END DO
          END IF
@@ -1819,7 +1813,6 @@ CONTAINS
             ! B x GradB drift (non-isothermal)
             DO k = 1,Ndim
                 z = i+(i-1)*Neq
-!               elMat%Auu(ind_i,ind_i,iel) = elMat%Auu(ind_i,ind_i,iel) + Telect*transpose(NxyzNi(:,:,k))*drift(k)
                Auu(:,:,z)= Auu(:,:,z) + Telect*transpose(NxyzNi(:,:,k))*drift(k)
             END DO
          END IF
@@ -1828,58 +1821,41 @@ CONTAINS
          IF (i == 3) THEN
             DO j = 1,4
                ind_j = j + ind_ass
-               !elMat%Auu(ind_i,ind_j,iel) = elMat%Auu(ind_i,ind_j,iel) + &
-               !&coefi*(gmi*dAlpha_dUi(j) + Alphai*(dot_product(Taui(:,j),b)))*NNxy + (dot_product(Zet(:,j),b) + ds_dU(j))*NNi
                Auu(:,:,i+(j-1)*Neq) = Auu(:,:,i+(j-1)*Neq)+coefi*(gmi*dAlpha_dUi(j) + Alphai*(dot_product(Taui(:,j),b)))*NNxy + &
                                      &(dot_product(Zet(:,j),b) + ds_dU(j))*NNi
                DO k = 1,Ndim
-!                  ind_k = k + (j - 1)*Ndim + ind_asq
                   z = i+(k-1)*Neq+(j-1)*Neq*Ndim
                   Aqq(:,:,z) = Aqq(:,:,z)+ coefi*Alphai*Vveci(j)*b(k)*NNxy
-!                  elMat%Auq(ind_i,ind_k,iel) = elMat%Auq(ind_i,ind_k,iel) + coefi*Alphai*Vveci(j)*b(k)*NNxy
                   IF (j == 4) THEN
-!                     elMat%Auq(ind_i,ind_k,iel) = elMat%Auq(ind_i,ind_k,iel) + W*NNi*b(k)
                      Aqq(:,:,z) = Aqq(:,:,z)+W*NNi*b(k)
                   END IF
                END DO
             END DO
-!            elMat%S(ind_i,iel) = elMat%S(ind_i,iel) + coefi*Alphai*(dot_product(matmul(transpose(Taui),b),ue))*NNbb + s*Ni
             rhs(:,i) = rhs(:,i) + coefi*Alphai*(dot_product(matmul(transpose(Taui),b),ue))*NNbb + s*Ni
          ELSEIF (i == 4) THEN
             DO j = 1,4
-!               ind_j = j + ind_ass
                z = i+(j-1)*Neq
-!               elMat%Auu(ind_i,ind_j,iel) = elMat%Auu(ind_i,ind_j,iel) + &
-!               &coefe*(gme*dAlpha_dUe(j) + Alphae*(dot_product(Taue(:,j),b)))*NNxy - (dot_product(Zet(:,j),b) + ds_dU(j))*NNi
                Auu(:,:,z)=Auu(:,:,z)+coefe*(gme*dAlpha_dUe(j) + Alphae*(dot_product(Taue(:,j),b)))*NNxy - (dot_product(Zet(:,j),b) + ds_dU(j))*NNi
                DO k = 1,Ndim
-!                  ind_k = k + (j - 1)*Ndim + ind_asq
-!                  elMat%Auq(ind_i,ind_k,iel) = elMat%Auq(ind_i,ind_k,iel) + coefe*Alphae*Vvece(j)*b(k)*NNxy
                   z = i+(k-1)*Neq+(j-1)*Neq*Ndim
                   Auq(:,:,z)=Auq(:,:,z)+coefe*Alphae*Vvece(j)*b(k)*NNxy
                   IF (j == 4) THEN
-!                     elMat%Auq(ind_i,ind_k,iel) = elMat%Auq(ind_i,ind_k,iel) - W*NNi*b(k)
                       Auq(:,:,z)=Auq(:,:,z)- W*NNi*b(k)
                   END IF
                END DO
             END DO
-!            elMat%S(ind_i,iel) = elMat%S(ind_i,iel) + coefe*Alphae*(dot_product(matmul(transpose(Taue),b),ue))*NNbb - s*Ni
             rhs(:,i) = rhs(:,i)+coefe*Alphae*(dot_product(matmul(transpose(Taue),b),ue))*NNbb - s*Ni
          END IF
 #endif
          ! Convection contribution
          DO j = 1,Neq
-!            ind_j = j + ind_ass
-!            elMat%Auu(ind_i,ind_j,iel) = elMat%Auu(ind_i,ind_j,iel) - A(i,j)*NNxy
              z = i+(j-1)*Neq
              Auu(:,:,z)=Auu(:,:,z)- A(i,j)*NNxy
          END DO
 
          ! Perpendicular diffusion contribution
          DO k = 1,Ndim
-!            ind_j = ind_asq + k + (i - 1)*Ndim
             ! Diagonal terms for perpendicular diffusion
-!            elMat%Auq(ind_i,ind_j,iel) = elMat%Auq(ind_i,ind_j,iel) + diffiso(i,i)*NxyzNi(:,:,k) - diffani(i,i)*NNxy*b(k)
              z = i+(k-1)*Neq+(i-1)*Neq*Ndim
              Auq(:,:,z)=Auq(:,:,z)+diffiso(i,i)*NxyzNi(:,:,k) - diffani(i,i)*NNxy*b(k)
 #ifdef VORTICITY
@@ -1888,15 +1864,11 @@ CONTAINS
                kcoeff = 1./Bmod
                call ijk_cross_product(k,alpha,beta)
                ii = 4
-!               ind_j = ind_asq + k + (ii - 1)*Ndim
-!               elMat%Auq(ind_i,ind_j,iel) = elMat%Auq(ind_i,ind_j,iel) + kcoeff*(NxyzNi(:,:,alpha)*b3(beta) - NxyzNi(:,:,beta)*b3(alpha))*ue(i)
                z = i+(k-1)*Neq+(ii-1)*Neq*Ndim
                Auq(:,:,z)=Auq(:,:,z)+kcoeff*(NxyzNi(:,:,alpha)*b3(beta) - NxyzNi(:,:,beta)*b3(alpha))*ue(i)
                call cross_product(qq(:,ii),bb,exb)
                z = i+(i-1)*Neq
                Auu(:,:,z)=Auu(:,:,z)+kcoeff*exb(k)*NxyzNi(:,:,k)
-!               elMat%Auu(ind_i,ind_i,iel) = elMat%Auu(ind_i,ind_i,iel) + kcoeff*exb(k)*NxyzNi(:,:,k)
-!               elMat%S(ind_i,iel) = elMat%S(ind_i,iel) + kcoeff*exb(k)*ue(i)*Nxyzg(:,k)
                rhs(:,i)=rhs(:,i)+kcoeff*exb(k)*ue(i)*Nxyzg(:,k)
             ENDIF
 
@@ -1908,17 +1880,12 @@ CONTAINS
                ! Non-linear correction for non-linear diffusive terms.
                ! TODO: find a smarter way to include it,avoiding if statements and model dependencies (i==3,ii==1 only holds for Isothermal+Vorticity model)
                IF ((i == 3 .or. i == 4) .and. ii == 1) then
-!                  ind_j = ind_ass + ii
                   z = i+(ii-1)*Neq
                   kcoeff = 1./ue(1)
-!                  elMat%Auu(ind_i,ind_j,iel) = elMat%Auu(ind_i,ind_j,iel) - kcoeff**2*(diffiso(i,ii)*Qpr(k,ii)*NxyzNi(:,:,k) - diffani(i,ii)*Qpr(k,ii)*b(k)*NNxy)
                   Auu(:,:,z)=Auu(:,:,z)-kcoeff**2*(diffiso(i,ii)*Qpr(k,ii)*NxyzNi(:,:,k) - diffani(i,ii)*Qpr(k,ii)*b(k)*NNxy)
-!                  elMat%S(ind_i,iel) = elMat%S(ind_i,iel) - kcoeff*(diffiso(i,ii)*Qpr(k,ii)*Nxyzg(:,k) - diffani(i,ii)*Qpr(k,ii)*b(k)*NNbb)
                   rhs(:,i)=rhs(:,i)-kcoeff*(diffiso(i,ii)*Qpr(k,ii)*Nxyzg(:,k) - diffani(i,ii)*Qpr(k,ii)*b(k)*NNbb)
                ENDIF
-!               ind_j = ind_asq + k + (ii - 1)*Ndim
                 z=i+(k-1)*Neq+(ii-1)*Ndim*Neq
-!                elMat%Auq(ind_i,ind_j,iel) = elMat%Auq(ind_i,ind_j,iel) + kcoeff*diffiso(i,ii)*NxyzNi(:,:,k) - kcoeff*diffani(i,ii)*NNxy*b(k)
                 Auq(:,:,z)=Auq(:,:,z)+kcoeff*diffiso(i,ii)*NxyzNi(:,:,k) - kcoeff*diffani(i,ii)*NNxy*b(k)
             END DO
 #endif
@@ -1928,9 +1895,7 @@ CONTAINS
          ! The vorticity is the source term in the potential equation
          IF (i == 4) THEN
              j=3
-!            ind_j = j + ind_ass
             z = i+(j-1)*Neq
-!            elMat%Auu(ind_i,ind_j,iel) = elMat%Auu(ind_i,ind_j,iel) + NNi
             Auu(:,:,z)=Auu(:,:,z) +NNi            
          ENDIF
 #endif
@@ -1943,22 +1908,21 @@ CONTAINS
 #endif
          DO iord = 1,time%tis
             ! Time derivative contribution
-!            elMat%S(:,iel) = elMat%S(:,iel) + ktis(iord + 1)*col(tensorProduct(u0e(:,iord),Ni))/time%dt
              rhs=rhs+ktis(iord + 1)*tensorProduct(Ni,u0e(:,iord))/time%dt
          END DO
       END IF
       ! Linear body force contribution
-!      elMat%S(:,iel) = elMat%S(:,iel) + col(tensorProduct(f,Ni))
       rhs=rhs+tensorProduct(Ni,f)
 
    END SUBROUTINE assemblyVolumeContribution
 
 !********************************************************************
-!
+! 
 !         ASSEMBLY INTERIOR FACES CONTRIBUTION
-!
+! 
 !********************************************************************
-       SUBROUTINE assemblyIntFacesContribution(iel,ind_asf,ind_ash,ind_ff,ind_fe,ind_fg,b3,Bmod,n,diffiso,diffani,NNif,Nif,Nfbn,uf,qf,tau,ifa)
+   SUBROUTINE assemblyIntFacesContribution(iel,ind_asf,ind_ash,ind_ff,ind_fe,&
+              &ind_fg,b3,Bmod,n,diffiso,diffani,NNif,Nif,Nfbn,uf,qf,tau,ifa)
       integer*4,intent(IN)      :: iel,ind_asf(:),ind_ash(:),ind_ff(:),ind_fe(:),ind_fg(:)
       real*8,intent(IN)         :: b3(:),n(:),Bmod
       real*8,intent(IN)         :: diffiso(:,:),diffani(:,:)
@@ -2146,11 +2110,12 @@ CONTAINS
    END SUBROUTINE assemblyIntFacesContribution
 
 !********************************************************************
-!
+! 
 !         ASSEMBLY EXTERIOR FACES CONTRIBUTION
-!
+! 
 !********************************************************************
-       SUBROUTINE assemblyExtFacesContribution(iel,isdir,ind_asf,ind_ash,ind_ff,ind_fe,ind_fg,b3,Bmod,n,diffiso,diffani,NNif,Nif,Nfbn,uf,qf,tau,ifa)
+   SUBROUTINE assemblyExtFacesContribution(iel,isdir,ind_asf,ind_ash,ind_ff,ind_fe,&
+              &ind_fg,b3,Bmod,n,diffiso,diffani,NNif,Nif,Nfbn,uf,qf,tau,ifa)
       integer*4,intent(IN)      :: iel,ind_asf(:),ind_ash(:),ind_ff(:),ind_fe(:),ind_fg(:)
       logical                   :: isdir
       real*8,intent(IN)         :: b3(:),n(:),Bmod

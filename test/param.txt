@@ -1,5 +1,5 @@
 &SWITCH_LST
-   steady = .false.   ! Is it a steady state simulation?
+   steady = .true.   ! Is it a steady state simulation?
       ! .false. = time evolving simulation
       ! .true.  = steady state simulation
    axisym = .true. ! Is it an axisymmetric simulation?

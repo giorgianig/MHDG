@@ -267,15 +267,16 @@ CONTAINS
       real*8                :: NN(Npel,Npel)
       real*8                :: NxNy_ax(Npel,Npel,Ndim)
       real*8                :: Ni(Npel),Nidvolu(Npel)
-      real*8,allocatable    :: Aqq(:,:),iAqq(:,:)
+      real*8,allocatable    :: Aqq(:,:),Aqu(:,:,:)
       integer*4             :: ind_ass(Npel),ind_asq(Npel)
 
       ind_ass = (/(i,i=0,Neq*(Npel - 1),Neq)/)
       ind_asq = (/(i,i=0,Neq*(Npel - 1)*Ndim,Neq*Ndim)/)
 
-      ALLOCATE (Aqq(Neq*Ndim*Npel,Neq*Ndim*Npel),iAqq(Neq*Ndim*Npel,Neq*Ndim*Npel))
+      allocate(Aqq(Npel,Npel))
+      allocate(Aqu(Npel,Npel,Ndim))
       Aqq = 0.
-      iAqq = 0.
+      Aqu = 0.
 
       ! toroidal element size
       htor = tel(Np1Dtor) - tel(1)
@@ -335,16 +336,12 @@ CONTAINS
             NxNy_ax(:,:,3) = TensorProduct(col(TensorProduct(N2g,N1xg)),Nidvolu)
 
             ! Local assembly
-            CALL assemblyVolumeContribution(iel,NxNy_ax,NN,Aqq,ind_ass,ind_asq)
-
+            CALL assemblyVolumeContribution(NxNy_ax,NN,Aqq,Aqu)
          END DO
       END DO
 
-      CALL invert_matrix(Aqq,iAqq)
-
-      elMat%iAqq(:,:,iel) = iAqq
-
-      DEALLOCATE (Aqq,iAqq)
+      CALL do_assembly(Aqq,Aqu,ind_ass,ind_asq,iel)
+      DEALLOCATE (Aqq,Aqu)
       NULLIFY (N1g,N2g)
 
    END SUBROUTINE elemental_matrices_volume
@@ -640,19 +637,20 @@ CONTAINS
       real*8                :: t_g(2),n_g(2)
       real*8                :: NN(Npel,Npel)
       real*8                :: NxNy_ax(Npel,Npel,Ndim)
-      real*8,allocatable    :: Aqq(:,:),iAqq(:,:)
+      real*8,allocatable    :: Aqq(:,:),Aqu(:,:,:)
       integer*4             :: ind_ass(Npel),ind_asq(Npel)
       real*8,parameter     :: tol = 1e-12
 
       ind_ass = (/(i,i=0,Neq*(Npel - 1),Neq)/)
       ind_asq = (/(i,i=0,Neq*(Npel - 1)*Ndim,Neq*Ndim)/)
 
-      ALLOCATE (Aqq(Neq*Ndim*Npel,Neq*Ndim*Npel),iAqq(Neq*Ndim*Npel,Neq*Ndim*Npel))
-      Aqq = 0.
-      iAqq = 0.
-
       ! Gauss points position
       xy = matmul(refElPol%N2D,Xel)
+
+      allocate(Aqq(Npel,Npel))
+      allocate(Aqu(Npel,Npel,Ndim))
+      Aqq = 0.
+      Aqu = 0.
 
       ! Loop in 2D Gauss points
       Ngauss = Ngvo
@@ -690,14 +688,11 @@ CONTAINS
          NxNy_ax(:,:,2) = TensorProduct(Nyg,refElPol%N2D(g,:))*dvolu
 
          ! Local assembly
-         CALL assemblyVolumeContribution(iel,NxNy_ax,NN,Aqq,ind_ass,ind_asq)
+         CALL assemblyVolumeContribution(NxNy_ax,NN,Aqq,Aqu)
       END DO
+      CALL do_assembly(Aqq,Aqu,ind_ass,ind_asq,iel)
 
-      CALL invert_matrix(Aqq,iAqq)
-
-      elMat%iAqq(:,:,iel) = iAqq
-
-      DEALLOCATE (Aqq,iAqq)
+      DEALLOCATE (Aqq,Aqu)
 
    END SUBROUTINE elemental_matrices_volume
 
@@ -806,25 +801,40 @@ CONTAINS
 
 #endif
 
-   SUBROUTINE assemblyVolumeContribution(iel,NxNy_ax,NN,Aqq,ind_ass,ind_asq)
+   SUBROUTINE assemblyVolumeContribution(NxNy_ax,NN,Aqq,Aqu)
       real*8                  :: NN(:,:)
       real*8                  :: NxNy_ax(:,:,:)
-      real*8,intent(inout)    :: Aqq(:,:)
-      integer*4,intent(in)    :: iel,ind_ass(:),ind_asq(:)
+      real*8,intent(inout)    :: Aqq(:,:),Aqu(:,:,:)
       integer*4   :: i,k,idm
       integer*4   :: ind(Npel),ind_1(Npel),ind_2(Npel)
-
-      DO k = 1,Neq
-         ind = ind_ass + k
-         DO idm = 1,Ndim
-            ind_1 = ind_asq + idm + (k - 1)*Ndim
-            ind_2 = ind_ass + k
-            Aqq(ind_1,ind_1) = Aqq(ind_1,ind_1) + NN
-            elMat%Aqu(ind_1,ind_2,iel) = elMat%Aqu(ind_1,ind_2,iel) + NxNy_ax(:,:,idm)
-         END DO
+      Aqq = Aqq + NN
+      DO k = 1,Ndim
+         Aqu(:,:,k) = Aqu(:,:,k) +  NxNy_ax(:,:,k)
       END DO
-
    END SUBROUTINE assemblyVolumeContribution
+
+		 SUBROUTINE do_assembly(Aqq,Aqu,ind_ass,ind_asq,iel)
+						real*8,intent(in)    :: Aqq(:,:),Aqu(:,:,:)
+						integer*4,intent(in) :: iel,ind_ass(:),ind_asq(:)
+						integer :: i,j,k,z
+						integer*4,dimension(Npel) :: ind_i,ind_j,ind_k
+						real*8,allocatable :: iAqq(:,:),exAqq(:,:)
+						allocate(iAqq(Neq*Ndim*Npel,Neq*Ndim*Npel))
+						allocate(exAqq(Neq*Ndim*Npel,Neq*Ndim*Npel))
+							iAqq = 0.
+							exAqq = 0.
+							DO j = 1,Neq
+								  ind_j = j + ind_ass 
+								  DO k = 1,Ndim
+								     ind_i = ind_asq + k + (j - 1)*Ndim
+								     elMat%Aqu(ind_i,ind_j,iel)=elMat%Aqu(ind_i,ind_j,iel)+Aqu(:,:,k)
+								     exAqq(ind_i,ind_i) = exAqq(ind_i,ind_i) + Aqq
+								  END DO
+							END DO
+							CALL invert_matrix(exAqq,iAqq)
+							elMat%iAqq(:,:,iel)=elMat%iAqq(:,:,iel)+iAqq
+							deallocate(iAqq,exAqq)
+		  END SUBROUTINE do_assembly 
 
    SUBROUTINE assemblyFacesContribution(iel,NiNi,n_g,ind_asf,ind_ash,ind_fG,ind_ff)
       integer*4,intent(in)   :: iel,ind_asf(:),ind_ash(:),ind_fG(:),ind_ff(:)
@@ -840,6 +850,10 @@ CONTAINS
          END DO
       END DO
    END SUBROUTINE assemblyFacesContribution
+
+
+
+
 
 END SUBROUTINE HDG_precalculatedfirstequation
 
