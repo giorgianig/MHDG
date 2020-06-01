@@ -1,5 +1,5 @@
 &SWITCH_LST
-   steady = .true.   ! Is it a steady state simulation?
+   steady = .false.   ! Is it a steady state simulation?
       ! .false. = time evolving simulation
       ! .true.  = steady state simulation
    axisym = .true. ! Is it an axisymmetric simulation?
@@ -73,7 +73,7 @@
 /
 
 &TIME_LST
-   dt0 = 1e-5 !7.2800e-3    ! Initial time step
+   dt0 = 100 !7.2800e-3    ! Initial time step
    nts = 10000   ! Max number of time iterations to do in the current session (only for transient simulations)
    tfi = 1e5   ! Final time: the simulation stops when this time is reached
    tsw = 0     ! Switch to modify the time step
