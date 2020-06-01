@@ -265,43 +265,43 @@ allocate(qefp(Mesh%Nnodesperelem,phys%Neq*3),qeft(refElTor%Nfl,phys%Neq*3))
          CALL elemental_matrices_faces_pol(iel3,ifa,iel,Xel,tdiv(itorg),Bfp,qefp,uefp,ufp)
 
          !-------------- Toroidal faces ---------------------
-						   DO ifa=1,refElPol%Nfaces
-						      iface = Mesh%F(iel,ifa)
-						      Xfl = Mesh%X(Mesh%T(iel,refElPol%face_nodes(ifa,:)),:)
+         DO ifa=1,refElPol%Nfaces
+            iface = Mesh%F(iel,ifa)
+            Xfl = Mesh%X(Mesh%T(iel,refElPol%face_nodes(ifa,:)),:)
 
-						      ! Magnetic field of the nodes of the face
-						      indbt = colint(tensorSumInt(Mesh%T(iel,refElPol%face_nodes(ifa,:)),(itor-1)*&
-						              &(Np1Dtor-1)*Mesh%Nnodes+Mesh%Nnodes*((/(i,i=1,Np1Dtor) /)-1)))
-						      Bfl = phys%B(indbt,:)
+            ! Magnetic field of the nodes of the face
+            indbt = colint(tensorSumInt(Mesh%T(iel,refElPol%face_nodes(ifa,:)),(itor-1)*&
+                    &(Np1Dtor-1)*Mesh%Nnodes+Mesh%Nnodes*((/(i,i=1,Np1Dtor) /)-1)))
+            Bfl = phys%B(indbt,:)
 
-						      ! Face solution
-						      isdir = Mesh%Fdir(iel,ifa)
-						      IF (isdir) THEN
-						         uft = 0.
-						      ELSE
-						         dd = (itor - 1)*(N2D*Np2D+(Mesh%Nfaces - Nfdir)*Npfl) + N2D*Np2D
-						         indft = dd + (iface - 1)*Npfl + (/(i,i=1,Npfl)/)
-						         uft = lres(indft,:)
-						      ENDIF
+            ! Face solution
+            isdir = Mesh%Fdir(iel,ifa)
+            IF (isdir) THEN
+               uft = 0.
+            ELSE
+               dd = (itor - 1)*(N2D*Np2D+(Mesh%Nfaces - Nfdir)*Npfl) + N2D*Np2D
+               indft = dd + (iface - 1)*Npfl + (/(i,i=1,Npfl)/)
+               uft = lres(indft,:)
+            ENDIF
 
-						      ! Elements solution
-						      ueft = ures(inde(refElTor%faceNodes3(ifa,:)),:)
-						      qeft = qres(inde(refElTor%faceNodes3(ifa,:)),:)
+            ! Elements solution
+            ueft = ures(inde(refElTor%faceNodes3(ifa,:)),:)
+            qeft = qres(inde(refElTor%faceNodes3(ifa,:)),:)
 
-						      if (iface.le.Mesh%Nintfaces) then
+            if (iface.le.Mesh%Nintfaces) then
                call elemental_matrices_faces_int(iel3,ifa+1,iel,Xfl,tel,Bfl,qeft,ueft,uft)
-						      else
+            else
                call elemental_matrices_faces_ext(iel3,ifa+1,iel,Xfl,tel,Bfl,qeft,ueft,uft,isdir)
-						      endif
-						      ! Flip faces 
-						      IF (Mesh%flipface(iel,ifa)) then
-						         elMat%Alq(ind_loc(ifa,:),:,iel3) = elMat%Alq(ind_loc(ifa,perm),:,iel3)
-						         elMat%Alu(ind_loc(ifa,:),:,iel3) = elMat%Alu(ind_loc(ifa,perm),:,iel3)
-						         elMat%All(ind_loc(ifa,:),:,iel3) = elMat%All(ind_loc(ifa,perm),:,iel3)
-						         elMat%All(:,ind_loc(ifa,:),iel3) = elMat%All(:,ind_loc(ifa,perm),iel3)
-						         elMat%fh(ind_loc(ifa,:),iel3) = elMat%fh(ind_loc(ifa,perm),iel3)
-						      END if
-						   END DO
+            endif
+            ! Flip faces 
+            IF (Mesh%flipface(iel,ifa)) then
+               elMat%Alq(ind_loc(ifa,:),:,iel3) = elMat%Alq(ind_loc(ifa,perm),:,iel3)
+               elMat%Alu(ind_loc(ifa,:),:,iel3) = elMat%Alu(ind_loc(ifa,perm),:,iel3)
+               elMat%All(ind_loc(ifa,:),:,iel3) = elMat%All(ind_loc(ifa,perm),:,iel3)
+               elMat%All(:,ind_loc(ifa,:),iel3) = elMat%All(:,ind_loc(ifa,perm),iel3)
+               elMat%fh(ind_loc(ifa,:),iel3) = elMat%fh(ind_loc(ifa,perm),iel3)
+            END if
+         END DO
 
          !------------- Second poloidal face-----------------
          ifa = refElPol%Nfaces + 2
@@ -1059,31 +1059,31 @@ allocate(Xfl(refElPol%Nfacenodes,2))
          ! Coordinates of the nodes of the face
          Xfl = Mesh%X(Mesh%T(iel,refElPol%face_nodes(ifa,:)),:)
 
-						   ! Magnetic field of the nodes of the face
-						   Bfl = phys%B(Mesh%T(iel,refElPol%face_nodes(ifa,:)),:)
+         ! Magnetic field of the nodes of the face
+         Bfl = phys%B(Mesh%T(iel,refElPol%face_nodes(ifa,:)),:)
 
-						   ! Face solution
-						   indf = (iface-1)*Npfl + (/(i,i=1,Npfl)/)
-						   uf = lres(indf,:)
+         ! Face solution
+         indf = (iface-1)*Npfl + (/(i,i=1,Npfl)/)
+         uf = lres(indf,:)
 
-						   ! Elements solution
-						   inde = (iel - 1)*Npel + (/(i,i=1,Npel)/)
-						   uef = ures(inde(refElPol%face_nodes(ifa,:)),:)
-						   qef = qres(inde(refElPol%face_nodes(ifa,:)),:)
+         ! Elements solution
+         inde = (iel - 1)*Npel + (/(i,i=1,Npel)/)
+         uef = ures(inde(refElPol%face_nodes(ifa,:)),:)
+         qef = qres(inde(refElPol%face_nodes(ifa,:)),:)
 
          if (iface.le.Mesh%Nintfaces) then
             CALL elemental_matrices_faces_int(iel,ifa,Xfl,Bfl,qef,uef,uf,tau_save_el,xy_g_save_el)
          else
             CALL elemental_matrices_faces_ext(iel,ifa,isdir,Xfl,Bfl,qef,uef,uf,tau_save_el,xy_g_save_el)
          endif
-						   ! Flip faces
-						   if (Mesh%flipface(iel,ifa)) then
-						      elMat%Alq(ind_loc(ifa,:),:,iel) = elMat%Alq(ind_loc(ifa,perm),:,iel)
-						      elMat%Alu(ind_loc(ifa,:),:,iel) = elMat%Alu(ind_loc(ifa,perm),:,iel)
-						      elMat%All(ind_loc(ifa,:),:,iel) = elMat%All(ind_loc(ifa,perm),:,iel)
-						      elMat%All(:,ind_loc(ifa,:),iel) = elMat%All(:,ind_loc(ifa,perm),iel)
-						      elMat%fh(ind_loc(ifa,:),iel) = elMat%fh(ind_loc(ifa,perm),iel)
-						   end if
+         ! Flip faces
+         if (Mesh%flipface(iel,ifa)) then
+            elMat%Alq(ind_loc(ifa,:),:,iel) = elMat%Alq(ind_loc(ifa,perm),:,iel)
+            elMat%Alu(ind_loc(ifa,:),:,iel) = elMat%Alu(ind_loc(ifa,perm),:,iel)
+            elMat%All(ind_loc(ifa,:),:,iel) = elMat%All(ind_loc(ifa,perm),:,iel)
+            elMat%All(:,ind_loc(ifa,:),iel) = elMat%All(:,ind_loc(ifa,perm),iel)
+            elMat%fh(ind_loc(ifa,:),iel) = elMat%fh(ind_loc(ifa,perm),iel)
+         end if
       END DO
 
 
@@ -1327,96 +1327,96 @@ CONTAINS
       !***********************************
       NGauss = Ng1d
 
-		    ! Indices
-		    ind_fe = reshape(tensorSumInt((/(i,i=1,neq)/),neq*(refElPol%face_nodes(ifa,:) - 1)),(/neq*Npfl/))
-		    ind_ff = (ifa - 1)*neq*Npfl + (/(i,i=1,neq*Npfl)/)
-		    ind_fg = reshape(tensorSumInt((/(i,i=1,neq*ndim)/),neq*ndim*(refElPol%face_nodes(ifa,:) - 1)),(/neq*Npfl*ndim/))
+      ! Indices
+      ind_fe = reshape(tensorSumInt((/(i,i=1,neq)/),neq*(refElPol%face_nodes(ifa,:) - 1)),(/neq*Npfl/))
+      ind_ff = (ifa - 1)*neq*Npfl + (/(i,i=1,neq*Npfl)/)
+      ind_fg = reshape(tensorSumInt((/(i,i=1,neq*ndim)/),neq*ndim*(refElPol%face_nodes(ifa,:) - 1)),(/neq*Npfl*ndim/))
 
-		    !****************************************************
-		    !                      Magnetic field
-		    !****************************************************
-		    ! Magnetic field norm and direction at element nodes
-		    Bmod_nod = sqrt(Bfl(:,1)**2 + Bfl(:,2)**2 + Bfl(:,3)**2)
-		    b_nod(:,1) = Bfl(:,1)/Bmod_nod
-		    b_nod(:,2) = Bfl(:,2)/Bmod_nod
-		    b_nod(:,3) = Bfl(:,3)/Bmod_nod
+      !****************************************************
+      !                      Magnetic field
+      !****************************************************
+      ! Magnetic field norm and direction at element nodes
+      Bmod_nod = sqrt(Bfl(:,1)**2 + Bfl(:,2)**2 + Bfl(:,3)**2)
+      b_nod(:,1) = Bfl(:,1)/Bmod_nod
+      b_nod(:,2) = Bfl(:,2)/Bmod_nod
+      b_nod(:,3) = Bfl(:,3)/Bmod_nod
 
-		    ! Trace solution at face Gauss points
-		    IF (Mesh%flipFace(iel,ifa)) THEN
-		       ufg = matmul(refElPol%N1D,uf((/(i,i=Npfl,1,-1)/),:))
-		    ELSE
-		       ufg = matmul(refElPol%N1D,uf)
-		    END IF
+      ! Trace solution at face Gauss points
+      IF (Mesh%flipFace(iel,ifa)) THEN
+         ufg = matmul(refElPol%N1D,uf((/(i,i=Npfl,1,-1)/),:))
+      ELSE
+         ufg = matmul(refElPol%N1D,uf)
+      END IF
 
 
-		    ! Gauss points position and derivatives
-		    xyf = matmul(refElPol%N1D,Xfl)
-		    xyDer = matmul(refElPol%Nxi1D,Xfl)
+      ! Gauss points position and derivatives
+      xyf = matmul(refElPol%N1D,Xfl)
+      xyDer = matmul(refElPol%Nxi1D,Xfl)
 
-		    ! Magnetic field norm and direction at Gauss points
-		    Bmod = matmul(refElPol%N1D,Bmod_nod)
-		    b = matmul(refElPol%N1D,b_nod)
+      ! Magnetic field norm and direction at Gauss points
+      Bmod = matmul(refElPol%N1D,Bmod_nod)
+      b = matmul(refElPol%N1D,b_nod)
 
-		    ! Element solution at face Gauss points
-		    uefg = matmul(refElPol%N1D,uef)
-		    ! Gradient solution at face gauss points
-		    qfg = matmul(refElPol%N1D,qef)
+      ! Element solution at face Gauss points
+      uefg = matmul(refElPol%N1D,uef)
+      ! Gradient solution at face gauss points
+      qfg = matmul(refElPol%N1D,qef)
 
-		    ! Compute diffusion at faces Gauss points
-		    CALL setLocalDiff(xyf,diff_iso_fac,diff_ani_fac,Bmod)
+      ! Compute diffusion at faces Gauss points
+      CALL setLocalDiff(xyf,diff_iso_fac,diff_ani_fac,Bmod)
 
-		    ! Physical variables at face Gauss points
-		    CALL cons2phys(ufg,upgf)
+      ! Physical variables at face Gauss points
+      CALL cons2phys(ufg,upgf)
 
-		    ! Loop in 1D Gauss points
-		    DO g = 1,NGauss
+      ! Loop in 1D Gauss points
+      DO g = 1,NGauss
 
-		       ! Calculate the integration weight
-		       xyDerNorm_g = norm2(xyDer(g,:))
-		       dline = refElPol%gauss_weights1D(g)*xyDerNorm_g
-		       IF (switch%axisym) THEN
-		          dline = dline*xyf(g,1)
-		       END IF
+         ! Calculate the integration weight
+         xyDerNorm_g = norm2(xyDer(g,:))
+         dline = refElPol%gauss_weights1D(g)*xyDerNorm_g
+         IF (switch%axisym) THEN
+            dline = dline*xyf(g,1)
+         END IF
 
-		       ! Unit normal to the boundary
-		       t_g = xyDer(g,:)/xyDerNorm_g
-		       n_g = [t_g(2),-t_g(1)]
+         ! Unit normal to the boundary
+         t_g = xyDer(g,:)/xyDerNorm_g
+         n_g = [t_g(2),-t_g(1)]
 
-		       ! Shape functions products
-		       bn = dot_product(b(g,1:2),n_g)
-		       NNif = tensorProduct(refElPol%N1D(g,:),refElPol%N1D(g,:))*dline
-		       Nif = refElPol%N1D(g,:)*dline
-		       Nfbn = bn*refElPol%N1D(g,:)*dline
+         ! Shape functions products
+         bn = dot_product(b(g,1:2),n_g)
+         NNif = tensorProduct(refElPol%N1D(g,:),refElPol%N1D(g,:))*dline
+         Nif = refElPol%N1D(g,:)*dline
+         Nfbn = bn*refElPol%N1D(g,:)*dline
 
-		       ! Compute the stabilization term
-		       tau = 0.
-		       IF (numer%stab == 1) THEN
-		          ! Constant stabilization
-		          DO i = 1,Neq
-		             tau(i,i) = numer%tau(i)
-		          END DO
-		       ELSE
-		          ! Non constant stabilization
-		          ! Compute tau in the Gauss points
-		          IF (numer%stab < 5) THEN
-		             CALL computeTauGaussPoints(upgf(g,:),ufg(g,:),b(g,:),n_g,iel,ifa,0.,xyf(g,:),tau)
-		          ELSE
-		             CALL computeTauGaussPoints_matrix(upgf(g,:),ufg(g,:),b(g,:),n_g,xyf(g,:),0.,iel,tau)
-		          ENDIF
-		       END IF
+         ! Compute the stabilization term
+         tau = 0.
+         IF (numer%stab == 1) THEN
+            ! Constant stabilization
+            DO i = 1,Neq
+               tau(i,i) = numer%tau(i)
+            END DO
+         ELSE
+            ! Non constant stabilization
+            ! Compute tau in the Gauss points
+            IF (numer%stab < 5) THEN
+               CALL computeTauGaussPoints(upgf(g,:),ufg(g,:),b(g,:),n_g,iel,ifa,0.,xyf(g,:),tau)
+            ELSE
+               CALL computeTauGaussPoints_matrix(upgf(g,:),ufg(g,:),b(g,:),n_g,xyf(g,:),0.,iel,tau)
+            ENDIF
+         END IF
 
-		       ! Assembly local contributions
-		       CALL assemblyIntFacesContribution(iel,ind_asf,ind_ash,ind_ff,ind_fe,ind_fg,b(g,:),Bmod(g),&
-		                                 n_g,diff_iso_fac(:,:,g),diff_ani_fac(:,:,g),NNif,Nif,Nfbn,ufg(g,:),qfg(g,:),tau)
+         ! Assembly local contributions
+         CALL assemblyIntFacesContribution(iel,ind_asf,ind_ash,ind_ff,ind_fe,ind_fg,b(g,:),Bmod(g),&
+                                   n_g,diff_iso_fac(:,:,g),diff_ani_fac(:,:,g),NNif,Nif,Nfbn,ufg(g,:),qfg(g,:),tau)
 
-		       if (save_tau) then
-		          DO i = 1,Neq
-		             tau_save_el((ifa - 1)*Ngauss + g,i) = tau(i,i)
-		          END DO
-		          xy_g_save_el((ifa - 1)*Ngauss + g,:) = xyf(g,:)
-		       endif
+         if (save_tau) then
+            DO i = 1,Neq
+               tau_save_el((ifa - 1)*Ngauss + g,i) = tau(i,i)
+            END DO
+            xy_g_save_el((ifa - 1)*Ngauss + g,:) = xyf(g,:)
+         endif
 
-		    END DO ! Gauss points
+      END DO ! Gauss points
 
    END SUBROUTINE elemental_matrices_faces_int
 
@@ -1670,7 +1670,8 @@ CONTAINS
 !         ASSEMBLY VOLUME CONTRIBUTION
 !
 !********************************************************************
-                                   SUBROUTINE assemblyVolumeContribution(iel,ind_ass,ind_asg,ind_asq,b3,divb,drift,Bmod,f,ktis,diffiso,diffani,Ni,NNi,Nxyzg,NNxy,NxyzNi,NNbb,upe,ue,qe,u0e) 
+   SUBROUTINE assemblyVolumeContribution(iel,ind_ass,ind_asg,ind_asq,b3,divb,drift,Bmod,f,&
+              &ktis,diffiso,diffani,Ni,NNi,Nxyzg,NNxy,NxyzNi,NNbb,upe,ue,qe,u0e) 
       integer*4,intent(IN)      :: iel,ind_ass(:),ind_asg(:),ind_asq(:)
       real*8,intent(IN)         :: b3(:),divb,drift(:),f(:),ktis(:),Bmod
       real*8,intent(IN)         :: diffiso(:,:),diffani(:,:)
@@ -1878,12 +1879,22 @@ CONTAINS
 
       ! Assembly RHS
       IF (.not. switch%steady) THEN
+!#ifdef VORTICITY
+!         u0e(4,:) = 0. ! TODO: check this
+!#endif
+!         DO iord = 1,time%tis
+!            ! Time derivative contribution
+!            elMat%S(:,iel) = elMat%S(:,iel) + ktis(iord + 1)*col(tensorProduct(u0e(:,iord),Ni))/time%dt
+!         END DO
+
+         DO i=1,Neq
+            ind_i = i+ind_ass
 #ifdef VORTICITY
-         u0e(4,:) = 0. ! TODO: check this
-#endif
-         DO iord = 1,time%tis
-            ! Time derivative contribution
-            elMat%S(:,iel) = elMat%S(:,iel) + ktis(iord + 1)*col(tensorProduct(u0e(:,iord),Ni))/time%dt
+            IF (i.eq. 4) CYCLE
+#endif       
+            DO  iord = 1,time%tis        
+               elMat%S(ind_i,iel) = elMat%S(ind_i,iel) + ktis(iord + 1)*u0e(i,iord)*Ni/time%dt
+            END DO
          END DO
       END IF
       ! Linear body force contribution
