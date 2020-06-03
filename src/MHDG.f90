@@ -323,7 +323,7 @@ PROGRAM MHDG
                ! Update the diffusion, the elemental matrices and the solution
                IF (MPIvar%glob_id .eq. 0) THEN
                   WRITE (6, *) "************************************************"
-                  WRITE (6, *) "Reducing diffusion: ", phys%diff_n*switch%diffred
+                  WRITE (6, *) "Reducing diffusion: ", phys%diff_n*switch%diffred*simpar%refval_diffusion
                   WRITE (6, *) "************************************************"
                END IF
                phys%diff_n = phys%diff_n*switch%diffred
@@ -332,6 +332,11 @@ PROGRAM MHDG
                phys%diff_e = phys%diff_e*switch%diffred
                phys%diff_ee = phys%diff_ee*switch%diffred
 #endif
+#ifdef VORTICITY
+               phys%diff_vort = phys%diff_vort*switch%diffred
+               phys%diff_pot = phys%diff_pot*switch%diffred
+#endif
+
                !**********************************
                !           UPDATE SOLUTION
                !**********************************

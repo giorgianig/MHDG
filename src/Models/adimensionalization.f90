@@ -132,6 +132,7 @@ SUBROUTINE adimensionalization()
    phys%diff_e = phys%diff_e/D0
    phys%diff_ee = phys%diff_ee/D0
    phys%diff_vort = phys%diff_vort/D0
+   phys%diff_pot = phys%diff_pot/D0
 
    ! Curvature drift coefficient
    phys%dfcoef = 2*Tev*t0/(L0**2*B0)
