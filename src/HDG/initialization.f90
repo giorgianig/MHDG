@@ -503,4 +503,48 @@ CONTAINS
 
    END SUBROUTINE init_sol
 
+   SUBROUTINE add_perturbation()
+         integer             :: itor, itorg, iel, iel3, i
+         integer             :: ind(Np)
+         real*8              :: Xe(Mesh%Nnodesperelem, Mesh%Ndim)
+         real*8              :: ue(Np,Neq)
+#ifdef TOR3D
+         real*8              :: tdiv(numer%ntor + 1)
+         real*8              :: htor, tel(refElTor%Nnodes1d)
+#endif
+         real*8 :: phi,theta,amp,nmod 
+#ifdef TOR3D
+         htor = numer%tmax/numer%ntor
+         tdiv = 0.
+         DO i = 1, numer%ntor
+            tdiv(i + 1) = i*htor
+         END DO
+
+         DO itor = 1, ntorloc
+#ifdef PARALL
+            itorg = itor + (MPIvar%itor - 1)*numer%ntor/MPIvar%ntor
+            if (itorg == numer%ntor + 1) itorg = 1
+#else
+            itorg = itor
+            tel = tdiv(itorg) + 0.5*(refElTor%coord1d+1)*(tdiv(itorg + 1) - tdiv(itorg))
+#endif
+            DO itheta =1,refElTor%Nnodes1d
+               theta = tel(itheta)
+            DO iel = 1, Mesh%Nelems
+               iel3 = (itor - 1)*N2d+iel
+               ind = (iel3 - 1)*Np + (/(i, i=1, Np)/)
+               Xe = Mesh%X(Mesh%T(iel, :), :)*simpar%refval_length
+               DO iphi = 1,refElPol%Nnodes2D
+                  phi = atan2(Xe(iphi,2),Xe(iphi,1)-geom%R0)
+                  DO ieq = 1,Neq
+                     sol%u(ind,ieq) = sol%(ind,ieq)(1+amppol*cos(mod*theta))
+                  END DO
+               END DO
+            END DO
+            END DO
+#ifdef TOR3D
+         END DO
+#endif
+   END SUBROUTINE add_perturbation
+   
 END MODULE initialization

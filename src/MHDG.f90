@@ -177,6 +177,11 @@ PROGRAM MHDG
       CALL init_sol()
    END IF
 
+   IF (switch%pertini) THEN
+      call add_perturbation()
+      write(6,*) "Adding perturbation to the initial solution"
+   ENDIF
+
    ! Save solution
    CALL setSolName(save_name, mesh_name, 0, .false., .false.)
    CALL HDF5_save_solution(save_name)
@@ -657,6 +662,8 @@ CONTAINS
          time%dt = time%dt*2.
       endif
    END SUBROUTINE compute_dt
+
+
 #ifdef TOR3D
    !**********************************************
    ! Definition of the toroidal discretization
