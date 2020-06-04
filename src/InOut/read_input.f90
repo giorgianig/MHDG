@@ -14,9 +14,9 @@ SUBROUTINE READ_input()
    USE MPI_OMP
    IMPLICIT NONE
 
-   logical :: driftdia,driftexb, axisym, restart,steady,dotiming,psdtime,decoup,ckeramp,saveNR,filter,saveTau,lstiming,fixdPotLim,dirivort,pertini      
+   logical :: driftdia,driftexb, axisym, restart,steady,dotiming,psdtime,decoup,ckeramp,saveNR,filter,saveTau,lstiming,fixdPotLim,dirivort      
    logical :: convvort
-   integer :: thresh, difcor, tis, stab
+   integer :: thresh, difcor, tis, stab,pertini
    integer :: itmax, itrace, rest, istop, sollib
    integer :: uinput, printint, testcase, nrp
    integer :: nts, tsw, freqdisp, freqsave, shockcp, limrho

@@ -177,9 +177,12 @@ PROGRAM MHDG
       CALL init_sol()
    END IF
 
-   IF (switch%pertini) THEN
+   IF (switch%pertini .eq. 1) THEN
       call add_perturbation()
       write(6,*) "Adding perturbation to the initial solution"
+   ELSE IF (switch%pertini .eq. 2) THEN
+      call add_blob()
+      write(6,*) "Adding density blob to initial solution"
    ENDIF
 
    ! Save solution

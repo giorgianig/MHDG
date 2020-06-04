@@ -39,6 +39,7 @@
    fixdPotLim = .true. ! Fix potential to the floating potential on the limiter
    dirivort   = .true. ! Dirichlet boundary condition on the vorticity in the core boundary
    convvort   = .false.  ! Consider the convective term in the vorticity equation 
+   pertini    = 1        ! Add perturbation. 0-no perturbation; 1-sinusoidal perturbation; 2-blob
    
 /
 

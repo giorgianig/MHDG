@@ -243,6 +243,9 @@ MODULE types
       logical :: fixdPotLim
       logical :: dirivort
       logical :: convvort ! consider the convective term in the vorticity equation
+      integer :: pertini  ! add perturbation in the initial solution
+                          ! 1 -add sinusoidal perturbation
+                          ! 2 -add density blob
    END TYPE Switches_type
 
    !*******************************************************
