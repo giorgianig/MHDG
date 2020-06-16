@@ -10,16 +10,21 @@ COMPTYPE_OPT = opt
 COMPTYPE_DEB = deb
 COMPTYPE_PRO = pro
 #COMPTYPE = $(COMPTYPE_DEB)
+<<<<<<< HEAD
 #COMPTYPE = $(COMPTYPE_OPT)
 COMPTYPE = $(COMPTYPE_PRO)
+=======
+COMPTYPE = $(COMPTYPE_OPT)
+#COMPTYPE = $(COMPTYPE_PRO)
+>>>>>>> bbc5a61efdcfe9d970a7e7e51bf2269689fa5c78
 
 #-------------------------------------------------------------------------------
 # Mode: serial or parallel
 #-------------------------------------------------------------------------------
 MODE_SERIAL = serial
 MODE_PARALL = parall
-MODE = $(MODE_SERIAL)
-#MODE = $(MODE_PARALL)
+#MODE = $(MODE_SERIAL)
+MODE = $(MODE_PARALL)
 
 #-------------------------------------------------------------------------------
 # The compiler
@@ -158,6 +163,10 @@ else ifeq ($(COMPTYPE),$(COMPTYPE_OPT))
  FCFLAGS = -fpp -O3 -parallel -fpe0 -qopenmp -xHOST -r8 -free
 endif
 
+<<<<<<< HEAD
+=======
+FCFLAGS += -heap-array
+>>>>>>> bbc5a61efdcfe9d970a7e7e51bf2269689fa5c78
 DEF = -DTHREAD_FUNNELED
 # Includes
 #FCFLAGS += -I/usr/include

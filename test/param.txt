@@ -1,21 +1,16 @@
 &SWITCH_LST
-   restart = .false. ! Is it a restart simulation?
-      ! .false. = new simulation
-      ! .true.  = restart simulation
    steady = .true.   ! Is it a steady state simulation?
       ! .false. = time evolving simulation
       ! .true.  = steady state simulation
    axisym = .true. ! Is it an axisymmetric simulation?
       ! true = yes
       ! false = no
-   init_cond = 0 ! a switch for what kind of initial conditions
-      ! 0 = analytical solutin 
-      ! 1 = L2 projection
-   driftvel = .false. ! Set to FALSE to ignore perpendicular drifts terms
+   driftdia = .false. ! Set to FALSE to ignore diamagnetic drifts terms
+   driftexb = .false. ! Set to FALSE to ignore ExB drifts terms
    testcase = 60       ! Determine the analytical solution and the body forces
-   psdtime  = .false.  ! Reduce the diffusion every time we reach the steady state 
+   psdtime  = .true.  ! Reduce the diffusion every time we reach the steady state 
                       ! condition (only works if steady=.false.)
-   diffred  = 0.630957344480193 ! Reduction factor of the diffusion for psdtime simulation
+   diffred  = 0.5 ! Reduction factor of the diffusion for psdtime simulation
    diffmin  = 1e-6    ! Minimum value of the diffusion for a psdtime simulation
    shockcp  = 0       ! Shock capturing option
                       ! 0 - No shock capturing
@@ -29,18 +24,23 @@
                       ! 3 - Use a constant source & diffusion in flagged elements
    difcor   = 0       ! Add diffusion in corners: the value of the integer determines 
                       ! the position of the corner
-   thresh   = 0       ! Use a threshold for limiting the min value of rho
+   thresh   = 1       ! Use a threshold for limiting the min value of rho
                       ! 0 - No threshold
                       ! 1 - Substitute rho with the threshold at nodes, don't do anything at other variables
    filter = .false.    ! Filter solution to avoid oscillation in empty zones
-   ! N-Gamma-Ti-Te model                      
+   !****** N-Gamma-Ti-Te model                      
    decoup   = .false.   ! decouple the N-Gamma system from the Ti-Te system       
                       ! true: decouple N-Gamma from Ti-Te
                       ! false: coupled system     
    ckeramp = .false.    ! check the error amplification in the linear system solution (for very ill-conditioned matrices)         
    saveNR  = .true.   ! save each N-R iterations 
    saveTau  = .false.   ! save tau on faces
- 
+   !***** N-Gamma-Vorticity model 
+   fixdPotLim = .true. ! Fix potential to the floating potential on the limiter
+   dirivortcore  = .true. ! Dirichlet boundary condition on the vorticity in the core boundary
+   dirivortlim   = .true. ! Dirichlet boundary condition on the vorticity in the limiter boundary
+   convvort   = .false.  ! Consider the convective term in the vorticity equation 
+   pertini    = 0        ! Add perturbation. 0-no perturbation; 1-sinusoidal perturbation; 2-blob
    
 /
 
@@ -52,21 +52,21 @@
    nrp    = 100     ! Max number of Newton-Raphson iterations
    tNR    = 1e-4  ! Tolerance of the Newton-Raphson scheme
    tTM    = 1e-4  ! Tolerance for the steady state achievement
-   div    = 1e5   ! Divergence of Newton-Raphon iteration
+   div    = 1e9   ! Divergence of Newton-Raphon iteration
    sc_coe = 0     ! Shock capturing coefficient 
-   minrho = 0.    ! Value of rho to start applying limiting
+   minrho = 1e-4    ! Value of rho to start applying limiting
    so_coe = 0.01  ! Coefficient of the source for limiting rho
    sc_sen = 1.4   ! Shock capturing sensibility
    df_coe = 100.  ! Coefficient of the diffusion for limiting rho
-   dc_coe = 15.   ! Coefficient of the diffusion to add in the corners 
-   thr = 1e-5 ! Min value of density allowed (works only if the switch is activated) 
+   dc_coe = 0.1   ! Coefficient of the diffusion to add in the corners 
+   thr    = 1.e-7 ! Min value of density allowed (works only if the switch is activated) 
    thrpre = 1e-8 ! Min value of pressure allowed (works only if the switch is activated) 
    stab   = 2     ! Stabilization type
-   dumpnr = 0.25   ! Dumping factor for Newton-Raphson (0<dumpnr<1)
-   ntor   = 1     ! Number of elements in the toroidal direction
-   ptor   = 1     ! Polinomial degree in the toroidal direction
+   dumpnr = 0.1   ! Dumping factor for Newton-Raphson (0<dumpnr<1)
+   ntor   = 4     ! Number of elements in the toroidal direction
+   ptor   = 4     ! Polinomial degree in the toroidal direction
    tmax   = 6.28  ! Max extention in the toroidal direction 
-   npartor=1      ! Number of MPI partition in the toroidal direction    
+   npartor= 1      ! Number of MPI partition in the toroidal direction    
 /
 
 &GEOM_LST ! Blabla
@@ -75,51 +75,57 @@
 /
 
 &TIME_LST
-   dt0 = 7.2800e-3    ! Initial time step
+   dt0 = 1e5 !7.2800e-3    ! Initial time step
    nts = 10000   ! Max number of time iterations to do in the current session (only for transient simulations)
    tfi = 1e5   ! Final time: the simulation stops when this time is reached
    tsw = 0     ! Switch to modify the time step
       ! 0 = dt is not modified
       ! 1 = ...
-   tis = 1     ! Time integration scheme
-               ! 1 - first order
-               ! 2 - second order         
+   tis = 1     ! Time integration scheme (1-7)
 /
 
 &PHYS_LST
-   lscale = 1.901E-3  ! length scale
-   diff_n = 0.38 ! diffusion in the continuity equation
-   diff_u = 0.38 ! diffusion in the momentum equation
-   a      = 25   ! proportionality constant between pressure and density for isothermal model (p = a*rho)
-   ! Set the correspondance between boundary flag and boundary condition
+   ! ****** Diffusion parameters in m^2/s
+   diff_n = 0.5 ! diffusion in the continuity equation
+   diff_u = 0.5 ! diffusion in the momentum equation
+   diff_e = 0.5 ! perpendicular diffusion for the energy equation
+   diff_ee = 0.5 ! perpendicular diffusion in the electron temperature equation (for the TiTe model)
+   diff_vort = 0.5 ! diffusion in the vorticity equation
+   ! ****** Background temperature in the isothermal model in eV (useless in the non-isothermal model)
+   Tbg = 50
+   ! ****** Boundary conditions: set the correspondance between boundary flag and boundary condition
    ! each component must be put separetly
-   bcflags(1:6) = 1 1 1 1 1 1  
-   bcflags(7)   = 50 ! Limiter
-   bcflags(8)   = 2  ! In
-   bcflags(9)   = 50 ! Out
-   bcflags(10)  = 50 ! Upper Limiter
    ! The dimension of bcflags is set to 10, means that at most 10 different kinds of boundary 
    ! condition can exist
+   bcflags(1:6) =   1 1 1 1 1 1 
+   bcflags(7)   = 50 ! Limiter
+   bcflags(8)   = 5  ! In
+   bcflags(9)   = 50 ! Out
+   bcflags(10)  = 50 ! Upper Limiter
+   ! ****** Boundary threshold for Bohm
    bohmth = 0.1     ! threshold for imposing the bohm boundary condition
-   dfcoef = 1       ! coefficient for the drift velocity
-   diff_e = 0.38 ! perpendicular diffusion for the energy equation
-   ! N-Gamma-Energy and N-Gamma-Ti-Te model 
-   epn    =  2.5     ! exponential of the parallel diffusion for the temperature
-   Mref   = 12      ! reference Mach for the N-Gamma-Energy model
-   diff_pari = 3e5 ! parallel diffusion for the temperature
-   Gmbohm = 2.5       ! gamma for Bohm boundary condition for energy equation (usually 7) and for ions energy equation (usually 2.5)
-   ! N-Gamma-Ti-Te model
-   diff_ee = 0.38 ! perpendicular diffusion in the electron temperature equation (for the TiTe model)
-   diff_pare = 1e7 ! parallel diffusion for the electron temperature
-   tie = 1e10         ! temperature interchange coefficient ions-electrons
+   ! ****** Boundary coefficients for the Bohm boundary condition of the temperature equations:
+   Gmbohm = 2.5     ! gamma for Bohm boundary condition for energy equation (usually 7) and for ions energy equation (usually 2.5)
    Gmbohme = 4.5    ! gamma for Bohm boundary condition for electron energy equation (usually 4.5)
+   ! ****** Coefficients used only for testcase < 10 (otherwise computed internally)
+   a      = 25   ! Isothermal compressibility constant (p = a*rho)
+   Mref   = 12   ! Non-isothermal compressibility constant
+   tie    = 1e30 ! temperature interchange coefficient ions-electrons
+   diff_pari = 10 ! parallel diffusion for the ions temperature
+   diff_pare = 20 ! parallel diffusion for the electron temperature
+   diff_pot = 4    ! diffusion in the potential equation (only used for analytic tests)
+   ! **** Non isothermal exponential
+   epn = 2.5     ! exponential of the parallel diffusion for the temperature
+   ! ***** Coefficients for the vorticity model
+   etapar   = 1e-5
+   Potfloat = 3.
 /
 
 &UTILS_LST
    printint = 1 ! how much info we want to print
-   timing   = true ! timing of the code
+   dotiming   = true ! timing of the code
    freqdisp = 1 ! frequency of result display
-   freqsave = 10 ! frequency of solution save
+   freqsave = 1 ! frequency of solution save
 /
 
 
@@ -127,15 +133,15 @@
    sollib  = 1  ! Solver library to be used
                                      ! 1-Pastix
                                      ! 2-PSBLAS
-                                     
+   lstiming = true                                  
    ! Parameters relative to the library PSBLAS                                  
    itmax   = 500   ! Max number of iterations
    itrace  = 0     ! Display convergence at each iteration
    rest    = 0     ! Restart 
    istop   = 1     ! Stopping criterion (see spec on the library manual)
-   tol     = 1e-8  ! Stopping tolerance
-   kmethd  = 'RGMRES'  ! Krylov method (CG, BICGSTAB, CGS,  BICG, BICGSTABL, RGMRES, FCG, CGR)
-   ptype   = 'JACOBI'  ! Preconditioner type (NONE, DIAG, BJAC,JACOBI, GS, FBGS, BJAC, AS, ML)
+   tol     = 1e-5  ! Stopping tolerance
+   kmethd  = 'BICGSTAB'  ! Krylov method (CG, BICGSTAB, CGS,  BICG, BICGSTABL, RGMRES, FCG, CGR)
+   ptype   = 'ML'  ! Preconditioner type (NONE, DIAG, BJAC,JACOBI, GS, FBGS, BJAC, AS, ML)
    
    ! Parameters relative to the library MLD2P4
    ! First smoother / 1-lev preconditioner
