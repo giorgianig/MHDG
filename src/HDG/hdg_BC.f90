@@ -748,22 +748,6 @@ CONTAINS
       CALL cons2phys(ufg,upg)
 
 ! VEDERE PERCHÈ CALCOLO DUE VOLTE LE VARIABILI FISICHE NEI PUNTI DI GAUSS!!!!!!!!!!!!!!!!!!
-      ! Compute magnetic field at Gauss points
-!#ifndef MOVINGEQUILIBRIUM
-!                            IF (switch%testcase        .ge.50 .and. switch%testcase        .le.59) THEN
-!                                b_f = matmul(refElPol%N1D,phys%b(Mesh%T(iel,nod),:))
-!                                divb_f = matmul(refElPol%N1D,phys%divb(Mesh%T(iel,nod)))
-!                                drift_f = matmul(refElPol%N1D,phys%drift(Mesh%T(iel,nod),:))
-!                            ELSE
-!                                                                                CALL defineMagneticField(xyf(:,1),xyf(:,2),b_f,divb_f,drift_f)
-!                                                        END IF
-!#else
-!                                                                                 b_nod = 0.
-!                                                                                 Bmod   = sqrt(phys%Br(Mesh%T(iel,:))**2+phys%Bz(Mesh%T(iel,:))**2+phys%Bt(Mesh%T(iel,:))**2)
-!                                                                                 b_nod(:,1) = phys%Br(Mesh%T(iel,:))/Bmod
-!                                                                                 b_nod(:,2) = phys%Bz(Mesh%T(iel,:))/Bmod
-!                                                                                 b_f = matmul(refElPol%N1D,b_nod(nod,:))
-!#endif
       ! Loop in 1D Gauss points
       DO g = 1,Ng1d
 
@@ -836,7 +820,7 @@ CONTAINS
 
          ! Assembly Bohm contribution
          CALL assembly_bohm_bc(iel,ind_asf,ind_ash,ind_ff,ind_fe,ind_fg,NiNi,Ni,qfg(g,:),&
-&ufg(g,:),b(g,1:2),n_g,tau_stab,setval,delta,diff_iso_fac(:,:,g),diff_ani_fac(:,:,g),ntang)
+              &ufg(g,:),b(g,1:2),n_g,tau_stab,setval,delta,diff_iso_fac(:,:,g),diff_ani_fac(:,:,g),ntang)
       END DO ! END loop in Gauss points
 
    END SUBROUTINE set_Bohm_bc
@@ -887,7 +871,7 @@ CONTAINS
 !            elMat%Alu(ind_ff(ind),ind_fe(ind),iel) = elMat%Alu(ind_ff(ind),ind_fe(ind),iel) + numer%tau(i)*NiNi
 !         endif
 !      END DO
-!
+! 
 !      ! Neumann part
 !                           DO k = ndir+1,Neq
 !                              DO idm = 1,Ndim
@@ -1244,7 +1228,8 @@ CONTAINS
                ! Linear part
                elMat%Alq(ind_ff(indi),ind_fG(indk),iel) = elMat%Alq(ind_ff(indi),ind_fG(indk),iel) - kcoeff*NiNi/ufg(1)
                ! Non linear correction
-         elMat%All(ind_ff(indi),ind_ff(indj),iel) = elMat%All(ind_ff(indi),ind_ff(indj),iel) + kcoeff*Qpr(idm,1)*NiNi/ufg(1)**2
+               elMat%All(ind_ff(indi),ind_ff(indj),iel) = elMat%All(ind_ff(indi),ind_ff(indj),iel) + &
+                                                          &kcoeff*Qpr(idm,1)*NiNi/ufg(1)**2
                elMat%fh(ind_ff(indi),iel) = elMat%fh(ind_ff(indi),iel) + kcoeff*Qpr(idm,1)*Ni/ufg(1)
             END DO
 
@@ -1253,7 +1238,8 @@ CONTAINS
             j = 2
             indi = ind_asf + i
             indj = ind_asf + j
-            elMat%All(ind_ff(indi),ind_ff(indj),iel) = elMat%All(ind_ff(indi),ind_ff(indj),iel) + phys%etapar/phys%c2*NiNi*phys%Mref*phys%Potfloat
+            elMat%All(ind_ff(indi),ind_ff(indj),iel) = elMat%All(ind_ff(indi),ind_ff(indj),iel) + &
+                                                       &phys%etapar/phys%c2*NiNi*phys%Mref*phys%Potfloat
 
             ! Diagonal part --> non linear part (\Gammma * \phi)
             ! \phi^(k+1)*\Gamma^k
@@ -1261,13 +1247,15 @@ CONTAINS
             j = 4
             indi = ind_asf + i
             indj = ind_asf + j
-           elMat%All(ind_ff(indi),ind_ff(indj),iel) = elMat%All(ind_ff(indi),ind_ff(indj),iel) - phys%etapar/phys%c2*NiNi*ufg(2)
+            elMat%All(ind_ff(indi),ind_ff(indj),iel) = elMat%All(ind_ff(indi),ind_ff(indj),iel) - &
+                                                       &phys%etapar/phys%c2*NiNi*ufg(2)
             ! \phi^k*\Gamma^(k+1)
             i = 4
             j = 2
             indi = ind_asf + i
             indj = ind_asf + j
-           elMat%All(ind_ff(indi),ind_ff(indj),iel) = elMat%All(ind_ff(indi),ind_ff(indj),iel) - phys%etapar/phys%c2*NiNi*ufg(4)
+           elMat%All(ind_ff(indi),ind_ff(indj),iel) = elMat%All(ind_ff(indi),ind_ff(indj),iel) - &
+                                                       &phys%etapar/phys%c2*NiNi*ufg(4)
             ! \phi^k*\Gamma^k
             elMat%fh(ind_ff(indi),iel) = elMat%fh(ind_ff(indi),iel) - phys%etapar/phys%c2*Ni*ufg(4)*ufg(2)
 

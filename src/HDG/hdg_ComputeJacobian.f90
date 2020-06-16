@@ -2212,7 +2212,8 @@ CONTAINS
                      ind_jf = ind_asf + ii
                      kmult = kcoeff**2*(diffiso(i,ii)*Qpr(k,1)*n(k)*NNif - diffani(i,ii)*Qpr(k,1)*b(k)*NNif*bn)
                      elMat%Aul(ind_fe(ind_if),ind_ff(ind_jf),iel) = elMat%Aul(ind_fe(ind_if),ind_ff(ind_jf),iel) + kmult
-                                                                      elMat%S(ind_fe(ind_if),iel)  = elMat%S(ind_fe(ind_if),iel) + kcoeff*(diffiso(i,ii)*Qpr(k,1)*n(k)*Nif - diffani(i,ii)*Qpr(k,1)*b(k)*Nfbn)
+                     elMat%S(ind_fe(ind_if),iel)  = elMat%S(ind_fe(ind_if),iel) + kcoeff*(diffiso(i,ii)*Qpr(k,1)*n(k)*Nif - &
+                                                    &diffani(i,ii)*Qpr(k,1)*b(k)*Nfbn)
                   END IF
                ENDIF
                kmult = NNif*kcoeff*(n(k)*diffiso(i,ii) - bn*b(k)*diffani(i,ii))
