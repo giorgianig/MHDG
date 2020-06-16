@@ -913,7 +913,7 @@ CONTAINS
       elMat%fh(ind_ff(ind),iel) = elMat%fh(ind_ff(ind),iel) - numer%tau(i)*kmult(ind)
 
       if (switch%dirivort) then
-         ! Dirichlet weak form for the second equation
+         ! Dirichlet weak form for the third equation
          i = 3
          ind = i + ind_asf
          elMat%All(ind_ff(ind),ind_ff(ind),iel) = elMat%All(ind_ff(ind),ind_ff(ind),iel) - numer%tau(i)*NiNi
