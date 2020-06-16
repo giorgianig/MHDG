@@ -20,7 +20,7 @@ SUBROUTINE HDG_mapping()
    real*8, pointer        :: iAqq(:, :), Aqu(:, :), Aql(:, :)
    real*8, pointer        :: Auq(:, :), Auu(:, :), Aul(:, :)
    real*8, pointer        :: Aql_dir(:), Aul_dir(:), f(:)
-
+   INTEGER ::  OMP_GET_THREAD_NUM
    IF (MPIvar%glob_id .eq. 0) THEN
       IF (utils%printint > 1) THEN
          WRITE (6, *) '*************************************************'
@@ -91,17 +91,20 @@ SUBROUTINE HDG_mapping()
 
 !$OMP PARALLEL DEFAULT(SHARED) &
 !$OMP PRIVATE(iel,itor,iel3,LL,UU,L0,U0,Auq_iAqq,Auu,Mu,Ml,Md,f,aux,auxAqq,auxAquUU,iAqq,Aqu,Aql,Auq,Aul,Aql_dir,Aul_dir,ifa)
+
    ALLOCATE (LL(Neq*Np*Ndim, Neq*Nfg))
    ALLOCATE (L0(Neq*Np*Ndim))
    ALLOCATE (UU(Neq*Np, Neq*Nfg))
    ALLOCATE (U0(Neq*Np))
    ALLOCATE (Auq_iAqq(Neq*Np, Neq*Ndim*Np))
-   ALLOCATE (Ml(Neq*Np, Neq*Nfp))
+   ALLOCATE (Ml(Neq*Np, Neq*Nfg))
    ALLOCATE (Mu(Neq*Np, Neq*Np))
    ALLOCATE (Md(Neq*Np))
    ALLOCATE (aux(Neq*Ndim*Np, Neq*Np))
    ALLOCATE (auxAqq(Neq*Ndim*Np, Neq*Ndim*Np))
    ALLOCATE (auxAquUU(Neq*Ndim*Np, Neq*Nfg))
+
+
 !*****************
 ! Loop in elements
 !*****************
@@ -131,17 +134,33 @@ SUBROUTINE HDG_mapping()
          Aql_dir => elmat%Aql_dir(:, iel3)
          Aul_dir => elmat%Aul_dir(:, iel3)
          f => elmat%S(:, iel3)
-         Auq_iAqq = matmul(Auq, iAqq)
-         Mu = Auu - matmul(Auq_iAqq, Aqu)
-         Ml = Aul - matmul(Auq_iAqq, Aql)
+
+         ! Auq_iAqq=matmul(Auq,iAqq)
+         call mymatmul(Auq,iAqq,Auq_iAqq)
+        !CALL DGEMM('N','N',Neq*Np,Neq*Ndim*Np,Neq*Ndim*Np,1.,Auq,Neq*Np,Auq,Neq*Ndim*Np,1.,Auq_iAqq,Neq*Np)
+
+         !Mu = Auu - matmul(Auq_iAqq, Aqu)
+         call mymatmul(Auq_iAqq,Aqu,Mu)
+         Mu = Auu - Mu
+
+         !Ml = Aul - matmul(Auq_iAqq, Aql)
+         call  mymatmul(Auq_iAqq,Aql,Ml)
+         Ml = Aul - Ml
+
          Md = f - (Aul_dir - matmul(Auq_iAqq, Aql_dir))
          call solve_linear_system(Mu, -Ml, UU)
          call solve_linear_system_sing(Mu, Md, U0)
 
-         auxAquUU = matmul(Aqu, UU) ! Avoid stack overflow
+         !auxAquUU = matmul(Aqu, UU) ! Avoid stack overflow
+         call mymatmul(Aqu,UU,auxAquUU) ! Avoid stack overflow
          auxAquUU = auxAquUU + Aql
-         LL = -matmul(iAqq, auxAquUU)
+
+         !LL = -matmul(iAqq, auxAquUU)
+         call mymatmul(iAqq,auxAquUU,LL)
+         LL = -LL
+
          L0 = -matmul(iAqq, Aql_dir + (matmul(Aqu, U0)))
+
          ! Flip the faces
          DO ifa = 1, refElPol%Nfaces
             IF (Mesh%flipface(iel, ifa)) THEN
@@ -156,6 +175,7 @@ SUBROUTINE HDG_mapping()
          elMat%L0(:, iel3) = L0
          elMat%U0(:, iel3) = U0
          NULLIFY (iAqq, Aqu, Aql, Auq, Aul, Aql_dir, Aul_dir, f)
+
       END DO
 #ifdef TOR3D
    END DO

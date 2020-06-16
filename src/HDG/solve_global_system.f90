@@ -53,6 +53,7 @@ SUBROUTINE solve_global_system
       rhspert = (1.+pertamp*2.*(0.5 - rhspert)) ! now it is between 1-eps and 1+eps
       rhspert = rhspert*rhs%vals
    END IF
+
    !********************************
    ! Compute the face solution
    !********************************
@@ -67,7 +68,10 @@ SUBROUTINE solve_global_system
          matK%start = .false.
       ELSE
          call build_mat_PASTIX(matPASTIX)
+#ifdef PARALL
+         ! This needs to be redone in parallel (who knows why??)
          call check_mat_PASTIX(matPASTIX)
+#endif
       END IF
       call LU_mat_pastix(matPASTIX)
       call solve_mat_PASTIX(matPASTIX)
@@ -97,6 +101,7 @@ SUBROUTINE solve_global_system
       STOP
 #endif
    ENDIF
+
 
    !********************************
    ! Store face solution
@@ -212,6 +217,7 @@ SUBROUTINE solve_global_system
    END IF
 #endif
 
+
 !#ifdef PARALL
 !if (MPIvar%ntor>1) then
 !call HDF5_save_vector(sol%u_tilde,'u_tilde_par_ptor')
@@ -268,17 +274,23 @@ SUBROUTINE solve_global_system
    !**********************************************
    ! MPI communications
    !**********************************************
+
+
 #ifdef PARALL
    if (utils%timing) then
       call cpu_time(timing%tps2)
       call system_clock(timing%cks2, timing%clock_rate2)
    end if
    CALL exchangeSol()
-   call cpu_time(timing%tpe2)
-   call system_clock(timing%cke2, timing%clock_rate2)
-   timing%runtcom = timing%runtcom + (timing%cke2 - timing%cks2)/real(timing%clock_rate2)
-   timing%cputcom = timing%cputcom + timing%tpe2 - timing%tps2
+  
+   if (utils%timing) then
+      call cpu_time(timing%tpe2)
+      call system_clock(timing%cke2, timing%clock_rate2)
+      timing%runtcom = timing%runtcom + (timing%cke2 - timing%cks2)/real(timing%clock_rate2)
+      timing%cputcom = timing%cputcom + timing%tpe2 - timing%tps2      
+   end if 
 #endif
+
 
 !#ifdef PARALL
 !if (MPIvar%ntor>1) then
@@ -295,7 +307,6 @@ SUBROUTINE solve_global_system
 !stop
 !#endif
 
-
    if (utils%timing) then
       call cpu_time(timing%tpe1)
       call system_clock(timing%cke1, timing%clock_rate1)
@@ -307,7 +318,6 @@ SUBROUTINE solve_global_system
       timing%cputglb = timing%cputglb - (timing%tpe2 - timing%tps2)
 #endif
    end if
-
 
 CONTAINS
    subroutine displayMatrixInfo

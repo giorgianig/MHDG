@@ -3,7 +3,7 @@
 # Makefile
 # date: 12/02/2016
 #---------------------------------------
-include Make.inc/arch.make_meso
+include Make.inc/arch.make_marconi
 
 .PHONY : clean
 
@@ -36,17 +36,34 @@ clean:
 	$(RM) *.o *.mod *.kmo  *.F *.f90
 	$(RM) MHDG-* Convergence *~
 
-
-MPI_OMP.F : $(SDIR)/MPI_OMP/MPI_OMP.f90
-	$(CMP) -s $< $@ || $(CP) -f $< $@
-
-MPI_OMP.o : MPI_OMP.F
-	$(FC) -c $(FCFLAGS) $(INC)  $< -o $@
-
 prec_const.F : $(SDIR)/Definitions/prec_const.f90
 	$(CMP) -s $< $@ || $(CP) -f $< $@
 
 prec_const.o : prec_const.F
+	$(FC) -c $(FCFLAGS) $(INC)  $< -o $@
+
+types.F : $(SDIR)/Definitions/types.f90
+	$(CMP) -s $< $@ || $(CP) -f $< $@
+
+types.o : types.F prec_const.o
+	$(FC) -c $(FCFLAGS) $(INC)  $< -o $@
+
+matrices_types.F : $(SDIR)/LinearAlgebra/matrices_types.f90
+	$(CMP) -s $< $@ || $(CP) -f $< $@
+
+matrices_types.o : matrices_types.F
+	$(FC) -c $(FCFLAGS) $(INC)  $< -o $@
+
+globals.F : $(SDIR)/Definitions/globals.f90
+	$(CMP) -s $< $@ || $(CP) -f $< $@
+
+globals.o : globals.F types.o matrices_types.o
+	$(FC) -c $(FCFLAGS) $(INC)  $< -o $@	
+
+MPI_OMP.F : $(SDIR)/MPI_OMP/MPI_OMP.f90
+	$(CMP) -s $< $@ || $(CP) -f $< $@
+
+MPI_OMP.o : MPI_OMP.F globals.o
 	$(FC) -c $(FCFLAGS) $(INC)  $< -o $@
 
 magnetic_field.F : $(SDIR)/Models/magnetic_field.f90
@@ -60,19 +77,13 @@ HDF5_io.F : $(SDIR)/InOut/HDF5_io.f90
 
 HDF5_io.o : HDF5_io.F prec_const.o
 	$(FC) -c $(FCFLAGS) $(INC)  $< -o $@
-	
-matrices_types.F : $(SDIR)/LinearAlgebra/matrices_types.f90
-	$(CMP) -s $< $@ || $(CP) -f $< $@
 
-matrices_types.o : matrices_types.F
-	$(FC) -c $(FCFLAGS) $(INC)  $< -o $@
-	
 matrices_tools.F : $(SDIR)/LinearAlgebra/matrices_tools.f90
 	$(CMP) -s $< $@ || $(CP) -f $< $@
 
 matrices_tools.o : matrices_tools.F matrices_types.o
 	$(FC) -c $(FCFLAGS) $(INC)  $< -o $@
-	
+
 PrintUtils.F : $(SDIR)/Utils/PrintUtils.f90
 	$(CMP) -s $< $@ || $(CP) -f $< $@
 
@@ -84,24 +95,12 @@ Communications.F : $(SDIR)/MPI_OMP/Communications.f90
 
 Communications.o : Communications.F
 	$(FC) -c $(FCFLAGS) $(INC)  $< -o $@
-		
+
 interpolation.F : $(SDIR)/LinearAlgebra/interpolation.f90
 	$(CMP) -s $< $@ || $(CP) -f $< $@
 
 interpolation.o : interpolation.F PrintUtils.o
 	$(FC) -c $(FCFLAGS) $(INC)  $< -o $@
-		
-types.F : $(SDIR)/Definitions/types.f90
-	$(CMP) -s $< $@ || $(CP) -f $< $@
-
-types.o : types.F prec_const.o
-	$(FC) -c $(FCFLAGS) $(INC)  $< -o $@
-	
-globals.F : $(SDIR)/Definitions/globals.f90
-	$(CMP) -s $< $@ || $(CP) -f $< $@
-
-globals.o : globals.F types.o matrices_types.o
-	$(FC) -c $(FCFLAGS) $(INC)  $< -o $@	
 
 adimensionalization.F : $(SDIR)/Models/adimensionalization.f90
 	$(CMP) -s $< $@ || $(CP) -f $< $@

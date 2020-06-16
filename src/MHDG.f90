@@ -177,6 +177,14 @@ PROGRAM MHDG
       CALL init_sol()
    END IF
 
+   IF (switch%pertini .eq. 1) THEN
+      call add_perturbation()
+      write(6,*) "Adding perturbation to the initial solution"
+   ELSE IF (switch%pertini .eq. 2) THEN
+      call add_blob()
+      write(6,*) "Adding density blob to initial solution"
+   ENDIF
+
    ! Save solution
    CALL setSolName(save_name, mesh_name, 0, .false., .false.)
    CALL HDF5_save_solution(save_name)
@@ -187,6 +195,7 @@ PROGRAM MHDG
    sol%u0 = 0.
    sol%u0(:, 1) = sol%u
    uiter = 0.
+
 
    !*******************************************************
    !                  TIME LOOP
@@ -199,6 +208,7 @@ PROGRAM MHDG
       time%t = time%t + time%dt
       time%it = time%it + 1
       time%ik = time%ik + 1
+      sol%Nt = sol%Nt + 1
 
       IF (MPIvar%glob_id .eq. 0) THEN
          WRITE (6, '(" *", 60("*"), "**")')
@@ -282,9 +292,9 @@ PROGRAM MHDG
 
       ! Check convergence in time advancing and update
       errlstime = computeResidual(sol%u, sol%u0(:, 1), time%dt)
-      sol%tres(sol%Nt + 1) = errlstime
-      sol%time(sol%Nt + 1) = time%t
-      sol%Nt = sol%Nt + 1
+      sol%tres(sol%Nt) = errlstime
+      sol%time(sol%Nt) = time%t
+      
 
       ! Display results
       IF (mod(time%it, utils%freqdisp) .eq. 0) THEN
@@ -322,7 +332,7 @@ PROGRAM MHDG
                ! Update the diffusion, the elemental matrices and the solution
                IF (MPIvar%glob_id .eq. 0) THEN
                   WRITE (6, *) "************************************************"
-                  WRITE (6, *) "Reducing diffusion: ", phys%diff_n*switch%diffred
+                  WRITE (6, *) "Reducing diffusion: ", phys%diff_n*switch%diffred*simpar%refval_diffusion
                   WRITE (6, *) "************************************************"
                END IF
                phys%diff_n = phys%diff_n*switch%diffred
@@ -331,6 +341,11 @@ PROGRAM MHDG
                phys%diff_e = phys%diff_e*switch%diffred
                phys%diff_ee = phys%diff_ee*switch%diffred
 #endif
+#ifdef VORTICITY
+               phys%diff_vort = phys%diff_vort*switch%diffred
+               phys%diff_pot = phys%diff_pot*switch%diffred
+#endif
+
                !**********************************
                !           UPDATE SOLUTION
                !**********************************
@@ -425,7 +440,7 @@ PROGRAM MHDG
          &timing%cputsol,timing%cputsol/cputtot*100,timing%runtsol,timing%runtsol/runttot*100,timing%cputsol/timing%runtsol/Nthreads 
 #ifdef PARALL
          WRITE(6, '(" *", 2X,  "Communications   : ", ES16.3," ("F4.1 "%)",1X,ES14.3," ("F4.1 "%)",8X,F4.1 , 10X, " *")')   &
-         &timing%cpucom,timing%cpucom/cputtot*100,timing%runcom,timing%runcom/runttot*100,timing%cpucom/timing%runcom/Nthreads
+         &timing%cputcom,timing%cputcom/cputtot*100,timing%runtcom,timing%runtcom/runttot*100,timing%cputcom/timing%runtcom/Nthreads
 #endif
          WRITE(6, '(" *", 2X, "Total time       : ", ES16.3," ("F5.1 "%)",1X,ES13.3," ("F5.1 "%)",6X,F5.1 , 10X, " *")')   &
          cputtot,cputtot/cputtot*100,runttot,runttot/runttot*100,cputtot/runttot/Nthreads 
@@ -569,6 +584,7 @@ CONTAINS
       call mpi_allreduce(MPI_IN_PLACE, sum2, 1, mpi_double_precision, mpi_sum, MPI_COMM_WORLD, ierr)
       call mpi_allreduce(nu, nglo, 1, mpi_integer, mpi_sum, MPI_COMM_WORLD, ierr)
 #endif
+
       res = sqrt(sum2)/sqrt(dble(nglo))/coeff
    END FUNCTION computeResidual
 
@@ -651,6 +667,8 @@ CONTAINS
       endif
    END SUBROUTINE compute_dt
 
+
+#ifdef TOR3D
    !**********************************************
    ! Definition of the toroidal discretization
    !**********************************************
@@ -691,5 +709,5 @@ CONTAINS
          Mesh%toroidal(ind) = tel
       END DO
    END SUBROUTINE define_toroidal_discretization
-
+#endif
 END

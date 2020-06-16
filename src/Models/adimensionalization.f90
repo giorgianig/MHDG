@@ -62,20 +62,20 @@ SUBROUTINE adimensionalization()
    simpar%refval_specpress = 1.
    simpar%refval_specenergy = 1.
    simpar%refval_specenergydens = 1.
-   simpar%refval_length_dimensions = ' '
-   simpar%refval_time_dimensions = ' '
-   simpar%refval_temperature_dimensions = ' '
-   simpar%refval_density_dimensions = ' '
-   simpar%refval_speed_dimensions = ' '
-   simpar%refval_potential_dimensions = ' '
-   simpar%refval_vorticity_dimensions = ' '
-   simpar%refval_magfield_dimensions = ' '
-   simpar%refval_current_dimensions = ' '
-   simpar%refval_diffusion_dimensions = ' '
-   simpar%refval_momentum_dimensions = ' '
-   simpar%refval_specpress_dimensions = ' '
-   simpar%refval_specenergy_dimensions = ' '
-   simpar%refval_specenergydens_dimensions = ' '
+   simpar%refval_length_dimensions = '-'
+   simpar%refval_time_dimensions = '-'
+   simpar%refval_temperature_dimensions = '-'
+   simpar%refval_density_dimensions = '-'
+   simpar%refval_speed_dimensions = '-'
+   simpar%refval_potential_dimensions = '-'
+   simpar%refval_vorticity_dimensions = '-'
+   simpar%refval_magfield_dimensions = '-'
+   simpar%refval_current_dimensions = '-'
+   simpar%refval_diffusion_dimensions = '-'
+   simpar%refval_momentum_dimensions = '-'
+   simpar%refval_specpress_dimensions = '-'
+   simpar%refval_specenergy_dimensions = '-'
+   simpar%refval_specenergydens_dimensions = '-'
 
    ! Some scaling coefficients
    phys%lscale = 1.
@@ -132,6 +132,7 @@ SUBROUTINE adimensionalization()
    phys%diff_e = phys%diff_e/D0
    phys%diff_ee = phys%diff_ee/D0
    phys%diff_vort = phys%diff_vort/D0
+   phys%diff_pot = phys%diff_pot/D0
 
    ! Curvature drift coefficient
    phys%dfcoef = 2*Tev*t0/(L0**2*B0)

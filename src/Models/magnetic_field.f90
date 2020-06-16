@@ -120,12 +120,12 @@ CONTAINS
             CASE (50:59)
                write (6, *) "Error in defineMagneticField: you should not be here!"
                STOP
-            CASE (60:69)
+            CASE (60:68)
 
                ! Circular case with limiter
                R0 = geom%R0
                q = geom%q
-               B0 = 2*0.1522 ! not influential
+               B0 = 2
                xr = xx*phys%lscale
                yr = yy*phys%lscale
 

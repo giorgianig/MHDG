@@ -33,7 +33,6 @@ CONTAINS
 ! Initialization of MPI/OMP
 !********************************************
    subroutine init_MPI_OMP()
-
       integer :: IERR, OMP_GET_MAX_THREADS, MPI_THREAD_provided, MPI_THREAD_required
 
       ! Initialization of the MPI communicator
@@ -80,6 +79,7 @@ CONTAINS
 #ifdef TOR3D
 #ifdef PARALL
    subroutine set_divisions
+      use globals
 						MPIvar%ntor = numer%npartor
 						IF (MPIvar%glob_size .lt. MPIvar%ntor) THEN
 						   WRITE (6, *) "Error: wrong number of MPI toroidal partition in input file or wrong number of MPI processes"

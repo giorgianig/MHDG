@@ -133,10 +133,11 @@ CONTAINS
       real*8, intent(out):: x(:, :)
       integer :: n, m, info
       integer :: p(1:size(b, 1))
-      real*8 :: temp(size(A, 1), size(A, 2))
+      real*8,allocatable :: temp(:,:)
 
       external DGESV
 
+      allocate(temp(size(A, 1), size(A, 2)))
       n = size(b, 1) ! size of the matrix (n x n)
       m = size(b, 2) ! number of RHS
       temp = A
@@ -149,6 +150,7 @@ CONTAINS
          WRITE (*, *) 'A is singular; the solution could not be computed.'
          STOP
       END IF
+      deallocate(temp)
    END SUBROUTINE solve_linear_system
 
 !***************************
@@ -177,6 +179,47 @@ CONTAINS
          STOP
       END IF
    END SUBROUTINE solve_linear_system_sing
+
+
+
+!***************************
+! Matrix multiplication using
+! dgemm (avoid stack overflow)
+!***************************
+   SUBROUTINE mymatmul(A,B,C)
+      real*8, intent(in) :: A(:, :)
+      real*8, intent(in) :: B(:,:)
+      real*8, intent(out):: C(:,:)
+      integer :: a1,a2,b1,b2,c1,c2 
+      external DGEMM
+
+      a1 = size(A,1)
+      a2 = size(A,2)
+      b1 = size(B,1)
+      b2 = size(B,2)
+      c1 = size(C,1)
+      c2 = size(C,2)
+
+      ! Little check
+      if (a2.ne.b1) then
+         write(6,*) "Error: number of colums of A different from number of rows of B"
+         stop
+      endif
+      if (a1.ne.c1) then
+         write(6,*) "Error: number of rows of A different from number of rows of C"
+         stop
+      endif
+      if (b2.ne.c2) then
+         write(6,*) "Error: number of colums of B different from number of columns of C"
+         stop
+      endif
+
+      CALL DGEMM('N','N',a1,b2,a2,1.,A,a1,B,a2,0.,C,a1)
+
+      
+   END SUBROUTINE mymatmul
+
+
 
 !***************************
 ! Compute eigenvalues and

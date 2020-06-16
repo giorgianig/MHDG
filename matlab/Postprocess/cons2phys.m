@@ -6,14 +6,15 @@ function up = cons2phys(uc,simulation_parameters)
 
 
 if strcmpi(simulation_parameters.model,'N-Gamma')
+    a = simulation_parameters.physics.a;
     up = zeros(size(uc,1),2);
     up(:,1) = uc(:,1);                                        % density
-    up(:,2) = uc(:,2)./uc(:,1);                               % u parallel
+    up(:,2) = uc(:,2)./uc(:,1)/sqrt(a);                       % Mach
 elseif strcmpi(simulation_parameters.model,'N-Gamma-Ti-Te')
     Mref = simulation_parameters.physics.Mref;
     up = zeros(size(uc,1),10);
     up(:,1) = uc(:,1);                                        % density
-    up(:,2) = uc(:,2)./uc(:,1);                               % u parallel
+    up(:,2) = uc(:,2)./uc(:,1)/Mref;                          % Mach
     up(:,3) = uc(:,3)./uc(:,1);                               % total energy for ions
     up(:,4) = uc(:,4)./uc(:,1);                               % total energy for electrons
     up(:,5) = (2/(3*Mref)*(uc(:,3)-0.5*uc(:,2).^2./uc(:,1))); % pressure for ions
@@ -23,9 +24,10 @@ elseif strcmpi(simulation_parameters.model,'N-Gamma-Ti-Te')
     up(:,9)   = sqrt((abs(up(:,7))+abs(up(:,8)))*Mref);       % sound speed
     up(:,10) = up(:,2)./up(:,9);                              % Mach   
 elseif strcmpi(simulation_parameters.model,'N-Gamma-Vorticity')
+    a = simulation_parameters.physics.a;
     up = zeros(size(uc,1),4);
     up(:,1) = uc(:,1);                                        % density
-    up(:,2) = uc(:,2)./uc(:,1);                               % u parallel
+    up(:,2) = uc(:,2)./uc(:,1)/sqrt(a);                       % Mach
     up(:,3) = uc(:,3) ;                                       % total energy for ions
     up(:,4) = uc(:,4);                                        % total energy for electrons    
 end
