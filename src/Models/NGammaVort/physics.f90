@@ -265,7 +265,11 @@ CONTAINS
             tau_aux(4) = tau_aux(4) + phys%diff_pot*refElTor%Ndeg/(numer%tmax*xy(1)/numer%ntor)/phys%lscale
             if (abs(isext - 1.) < 1e-8) then
                tau_aux(3) = 1
-               tau_aux(4) = phys%etapar
+               if (switch%fixdPotLim) then
+                  tau_aux(4) = 1
+               else
+                  tau_aux(4) = phys%etapar
+               endif
             endif
          else
 #endif
@@ -276,7 +280,11 @@ CONTAINS
             tau_aux(4) = tau_aux(4) + phys%diff_pot*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
             if (abs(isext - 1.) < 1e-8) then
                tau_aux(3) = 1
-               tau_aux(4) = phys%etapar
+               if (switch%fixdPotLim) then
+                  tau_aux(4) = 1
+               else
+                  tau_aux(4) = phys%etapar
+               endif               
             endif
 #ifdef TOR3D
          endif

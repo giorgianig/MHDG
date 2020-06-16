@@ -208,6 +208,7 @@ PROGRAM MHDG
       time%t = time%t + time%dt
       time%it = time%it + 1
       time%ik = time%ik + 1
+      sol%Nt = sol%Nt + 1
 
       IF (MPIvar%glob_id .eq. 0) THEN
          WRITE (6, '(" *", 60("*"), "**")')
@@ -291,9 +292,9 @@ PROGRAM MHDG
 
       ! Check convergence in time advancing and update
       errlstime = computeResidual(sol%u, sol%u0(:, 1), time%dt)
-      sol%tres(sol%Nt + 1) = errlstime
-      sol%time(sol%Nt + 1) = time%t
-      sol%Nt = sol%Nt + 1
+      sol%tres(sol%Nt) = errlstime
+      sol%time(sol%Nt) = time%t
+      
 
       ! Display results
       IF (mod(time%it, utils%freqdisp) .eq. 0) THEN
