@@ -912,8 +912,8 @@ CONTAINS
       elMat%All(ind_ff(ind),ind_ff(ind),iel) = elMat%All(ind_ff(ind),ind_ff(ind),iel) - numer%tau(i)*NiNi
       elMat%fh(ind_ff(ind),iel) = elMat%fh(ind_ff(ind),iel) - numer%tau(i)*kmult(ind)
 
-      if (switch%dirivort) then
-         ! Dirichlet weak form for the third equation
+      if (switch%dirivortcore) then
+         ! Dirichlet weak form for the vorticity equation
          i = 3
          ind = i + ind_asf
          elMat%All(ind_ff(ind),ind_ff(ind),iel) = elMat%All(ind_ff(ind),ind_ff(ind),iel) - numer%tau(i)*NiNi
@@ -1176,7 +1176,8 @@ CONTAINS
                indi = ind_asf + k
                indj = ind_ash + idm + (k - 1)*Ndim
                ! Non-tangent case
-                                                                                                      elMat%Alq(ind_ff(indi),ind_fG(indj),iel)=elMat%Alq(ind_ff(indi),ind_fG(indj),iel)-NiNi*(ng(idm)*diffiso(k,k)-bn*bg(idm)*diffani(k,k) ) 
+               elMat%Alq(ind_ff(indi),ind_fG(indj),iel)=elMat%Alq(ind_ff(indi),ind_fG(indj),iel)-&
+                                                      &NiNi*(ng(idm)*diffiso(k,k)-bn*bg(idm)*diffani(k,k) ) 
             END DO
          END DO
       ELSE
@@ -1192,13 +1193,20 @@ CONTAINS
 
 #ifdef VORTICITY
       IF (ntang) THEN
-         ! Vorticity equation
          k = 3
-         DO idm = 1,Ndim
-            indi = ind_asf + k
-            indj = ind_ash + idm + (k - 1)*Ndim
-            elMat%Alq(ind_ff(indi),ind_fG(indj),iel) = elMat%Alq(ind_ff(indi),ind_fG(indj),iel) - NiNi*ng(idm)
-         END DO
+         ! Vorticity equation         
+         if (switch%dirivortlim) then
+            ! Dirichlet weak form for the vorticity equation: set vorticity to 0!!!
+            indi = k + ind_asf
+            elMat%All(ind_ff(indi),ind_ff(indi),iel) = elMat%All(ind_ff(indi),ind_ff(indi),iel) - numer%tau(k)*NiNi
+            !elMat%fh(ind_ff(indi),iel) = elMat%fh(ind_ff(indi),iel) - numer%tau(k)*kmult(indi)
+         else
+            DO idm = 1,Ndim
+               indi = ind_asf + k
+               indj = ind_ash + idm + (k - 1)*Ndim
+               elMat%Alq(ind_ff(indi),ind_fG(indj),iel) = elMat%Alq(ind_ff(indi),ind_fG(indj),iel) - NiNi*ng(idm)
+            END DO
+         end if
       END IF
 
       ! Potential equation

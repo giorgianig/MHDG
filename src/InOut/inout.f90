@@ -342,9 +342,14 @@ CONTAINS
       call HDF5_create(fname_complete, file_id, ierr)
       call HDF5_array1D_saving(file_id, sol%u, size(sol%u), 'u')
       call HDF5_array1D_saving(file_id, sol%u_tilde, size(sol%u_tilde), 'u_tilde')
-!      call HDF5_array1D_saving(file_id,sol%tres(1:sol%Nt),sol%Nt,'tres')
-!      call HDF5_array1D_saving(file_id,sol%time(1:sol%Nt),sol%Nt,'time')
-!      call HDF5_integer_saving(file_id,sol%Nt,'Nt')
+!      call HDF5_array1D_saving(file_id,sol%tres,sol%Nt,'tres')
+!      call HDF5_array1D_saving(file_id,sol%time,sol%Nt,'time')
+      if (switch%steady .or. switch%psdtime) then
+         call HDF5_integer_saving(file_id,0,'it')
+      else     
+         call HDF5_integer_saving(file_id,time%it,'it')
+      endif
+!!!      call HDF5_integer_saving(file_id,sol%Nt,'Nt')
       call HDF5_array1D_saving(file_id, sol%q, size(sol%q), 'q')
       ! Save magnetic field
       call HDF5_array2D_saving(file_id, phys%B, size(phys%B, 1), size(phys%B, 2), 'magnetic_field')
@@ -460,7 +465,8 @@ CONTAINS
          call HDF5_logical_saving(group_id2, switch%saveNR, 'saveNR')
          call HDF5_logical_saving(group_id2, switch%saveTau, 'saveTau')
          call HDF5_logical_saving(group_id2, switch%fixdPotLim, 'fixdPotLim')
-         call HDF5_logical_saving(group_id2, switch%dirivort, 'dirivort')
+         call HDF5_logical_saving(group_id2, switch%dirivortcore, 'dirivortcore')
+         call HDF5_logical_saving(group_id2, switch%dirivortlim, 'dirivortlim')
          call HDF5_logical_saving(group_id2, switch%convvort, 'convvort')
          call HDF5_group_close(group_id2, ierr)
 
@@ -615,6 +621,7 @@ integer, allocatable :: indu2D(:), indq2D(:), indu3D(:), indq3D(:), indufp(:), i
 
          CALL HDF5_array1D_reading(file_id, sol%u, 'u')
          CALL HDF5_array1D_reading(file_id, sol%u_tilde, 'u_tilde')
+         CALL HDF5_integer_reading(file_id,time%it,'it')  
 !      if (.not.switch%steady) then
 !         CALL HDF5_integer_reading(file_id,sol%Nt,'Nt')
 !         allocate(oldtres(sol%Nt))

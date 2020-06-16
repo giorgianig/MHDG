@@ -587,25 +587,26 @@ CONTAINS
 						real*8              :: xmax,xmin,ymax,ymin,xm,ym,smod,rs,xsource,ysource
 						real*8              :: dsource(refElPol%Nnodes2D),aux(refElPol%Nnodes2D)
       real*8,allocatable  :: u(:,:)
-         
+              
 #ifdef TOR3D
       write(6,*) "Blob perturbation not implemented yet"
       stop
 #endif
+     
       allocate(u(size(sol%u)/phys%neq,phys%neq))
       u = transpose(reshape(sol%u,[phys%neq,size(sol%u)/phys%neq]))
-						xmax = maxval(Mesh%X(:,1))
-						xmin = minval(Mesh%X(:,1))
-						ymax = maxval(Mesh%X(:,2))
-						ymin = minval(Mesh%X(:,2))
+						xmax = Mesh%xmax
+						xmin = Mesh%xmin
+						ymax = Mesh%ymax
+						ymin = Mesh%ymin
 						xm = 0.5*(xmax+xmin)
 						ym = 0.5*(ymax+ymin)  
 
 						DO iel = 1,Mesh%Nelems
 									ind = (iel - 1)*refElPol%Nnodes2D + (/(i,i=1,refElPol%Nnodes2D)/)
 									Xe = Mesh%X(Mesh%T(iel,:),:)
-		       smod = 1
-		       rs = 0.02/simpar%refval_length
+		       smod = 1.
+		       rs = 0.04/simpar%refval_length
 		       xsource = xm+0.85*(xmax-xm)
 		       ysource = ym
 		       dsource   = sqrt((Xe(:,1)-xsource)**2+(Xe(:,2)-ysource)**2)
