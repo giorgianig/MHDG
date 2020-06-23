@@ -1,6 +1,6 @@
 % plot Fortran solution
 clear
-close all
+% close all
 
 %**********************************
 % Parallel/serial
@@ -36,9 +36,9 @@ path2save = '/home/giorgio/Dropbox/PostDoc_Marseille/Latex/NGammaVortPot/';
 %**********************************
 % Solution
 %**********************************
-solpath = '/home/giorgio/Dropbox/Fortran/Results/';
+solpath = '/home/giorgio/Dropbox/Fortran/Results/aux_psblas/';
 meshpath = '/home/giorgio/Dropbox/Fortran/MHDG_ref3.0/matlab/Meshes/Parallel/';
-solname = 'Sol2D_CircLimAlign_Quads_Nel98784_P1_DPe0.500E+00';
+solname = 'Sol2D_CircLimAlign_Quads_Nel2688_P3_DPe0.980E+00_0099';
 
 
 
@@ -89,7 +89,7 @@ for iproc = 1:nproc
     end
     refEl = createReferenceElement(elemType,size(Mesh.T,2));
     
-    iplot = 0;
+    iplot = 4;
     if strcmpi(solname(4:5),'2D')
         %**********************************
         % 2D plot...

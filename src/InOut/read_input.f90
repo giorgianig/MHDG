@@ -14,13 +14,13 @@ SUBROUTINE READ_input()
    USE MPI_OMP
    IMPLICIT NONE
 
-   logical :: driftdia,driftexb, axisym, restart,steady,dotiming,psdtime,decoup,ckeramp,saveNR,filter,saveTau,lstiming,fixdPotLim,dirivortcore,dirivortlim
-   logical :: convvort
+   logical :: driftdia,driftexb, axisym, restart,steady,dotiming,psdtime,decoup
+   logical :: ckeramp,saveNR,filter,saveTau,lstiming,fixdPotLim,dirivortcore,dirivortlim,convvort
    integer :: thresh, difcor, tis, stab,pertini
    integer :: itmax, itrace, rest, istop, sollib
    integer :: uinput, printint, testcase, nrp
    integer :: nts, tsw, freqdisp, freqsave, shockcp, limrho
-   integer :: bcflags(1:10), ntor, ptor, npartor
+   integer :: bcflags(1:10), ntor, ptor, npartor,bohmtypebc
    real*8  :: dt0, R0, diff_n, diff_u, tau(1:4), tNr, tTM, div, Tbg
    real*8  :: tfi, a, bohmth, q, diffred, diffmin
    real*8  :: sc_coe, so_coe, df_coe, thr, thrpre, minrho, dc_coe, sc_sen
@@ -38,7 +38,7 @@ SUBROUTINE READ_input()
    ! Defining the variables to READ from the file
    NAMELIST /SWITCH_LST/ steady, axisym, driftdia, driftexb, testcase, psdtime, diffred, diffmin, &
                        & shockcp, limrho, difcor, thresh, filter, decoup, ckeramp, saveNR, saveTau, fixdPotLim, dirivortcore,dirivortlim, convvort,pertini
-   NAMELIST /NUMER_LST/ tau,nrp,tNR,tTM,div,sc_coe,sc_sen,minrho,so_coe,df_coe,dc_coe,thr,thrpre,stab,dumpnr,ntor,ptor,tmax,npartor
+   NAMELIST /NUMER_LST/ tau,nrp,tNR,tTM,div,sc_coe,sc_sen,minrho,so_coe,df_coe,dc_coe,thr,thrpre,stab,dumpnr,ntor,ptor,tmax,npartor,bohmtypebc
    NAMELIST /GEOM_LST/ R0, q
    NAMELIST /TIME_LST/ dt0, nts, tfi, tsw, tis
    NAMELIST /PHYS_LST/ diff_n, diff_u, diff_e, diff_ee, diff_vort, Tbg, bcflags, bohmth,&
@@ -104,6 +104,7 @@ SUBROUTINE READ_input()
    numer%ptor = ptor
    numer%tmax = tmax
    numer%npartor = npartor
+   numer%bohmtypebc =bohmtypebc
    geom%R0 = R0
    geom%q = q
    time%dt0 = dt0

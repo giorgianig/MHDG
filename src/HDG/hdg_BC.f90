@@ -123,7 +123,8 @@ SUBROUTINE HDG_BC()
          !                      Magnetic field
          !****************************************************
          ! Magnetic field of the nodes of the face
-      indbt = colint(tensorSumInt(Mesh%T(iel,nod),(itor - 1)*(Np1Dtor - 1)*Mesh%Nnodes + Mesh%Nnodes*((/(i,i=1,Np1Dtor)/) - 1)))
+         indbt = colint(tensorSumInt(Mesh%T(iel,nod),(itor - 1)*(Np1Dtor - 1)*Mesh%Nnodes +&
+                &Mesh%Nnodes*((/(i,i=1,Np1Dtor)/) - 1)))
          Bfl = phys%B(indbt,:)
          ! Magnetic field norm and direction at element nodes
          Bmod_nod = sqrt(Bfl(:,1)**2 + Bfl(:,2)**2 + Bfl(:,3)**2)
@@ -411,9 +412,9 @@ CONTAINS
                delta = 1
                IF ((abs(upg(g,2))) .le. SoundSpeed) THEN
                   setval = sn*SoundSpeed
-                  !                 delta = 1
+                  delta = 1
                ELSE IF ((abs(upg(g,2))) .gt. SoundSpeed) THEN
-                  !                 delta = 0
+                  delta = 0
                   setval = upg(g,2)
                END IF
             END IF
@@ -433,12 +434,15 @@ CONTAINS
                ENDIF
                !****************** End stabilization part******************************
             ELSE
-               tau_stab = 1.
+               tau_stab=0.
+               DO i = 1,Neq
+                  tau_stab(i,i) = numer%tau(i)
+               END DO
             END IF
 
             ! Assembly Bohm contribution
             CALL assembly_bohm_bc(iel3,ind_asf,ind_ash,ind_ff,ind_fe,ind_fg,NiNi,Ni,qfg(g,:),ufg(g,:),&
-&b(g,:),n_g(g,:),tau_stab,setval,delta,diff_iso_fac(:,:,g),diff_ani_fac(:,:,g),ntang)
+                 &b(g,:),n_g(g,:),tau_stab,setval,delta,diff_iso_fac(:,:,g),diff_ani_fac(:,:,g),ntang)
          END DO
       END DO
 
@@ -716,7 +720,7 @@ CONTAINS
 !#endif
       real*8                    :: qfg(Ng1d,neq*Ndim)
       real*8                    :: bn
-      logical                   :: ntang
+!      logical                   :: ntang
       real*8,intent(out)        :: tau_save_el(:,:),xy_g_save_el(:,:)
       real                      :: tau_stab(Neq,Neq)
       real*8                    :: diff_iso_fac(phys%neq,phys%neq,Ng1d),diff_ani_fac(phys%neq,phys%neq,Ng1d)
@@ -783,19 +787,18 @@ CONTAINS
             delta = 0 ! TODO try to module delta in the WEST case
             ntang = .FALSE.
          ELSE
-            sn = sign(1.,inc)
+            sn = sign(1.,bn)
             delta = 1
             IF ((abs(upg(g,2))) .le. SoundSpeed) THEN
                setval = sn*SoundSpeed
-!                 delta = 1
+                 delta = 1
             ELSE IF ((abs(upg(g,2))) .gt. SoundSpeed) THEN
-!                 delta = 0
+                 delta = 0
                setval = upg(g,2)
             END IF
          END IF
 #endif
-         ! Impose the velocity at the sound speed in case of subsonic
-         ! velocity.
+         ! Shape functions
          NiNi = tensorProduct(refElPol%N1D(g,:),refElPol%N1D(g,:))*dline
          Ni = refElPol%N1D(g,:)*dline
          !****************** Stabilization part******************************
@@ -814,11 +817,17 @@ CONTAINS
                xy_g_save_el(g,:) = xyf(g,:)
             endif
             !****************** End stabilization part******************************
-         ELSE
-            tau_stab = 1.
+         ELSE 
+            tau_stab=0.
+            DO i = 1,Neq
+               tau_stab(i,i) = numer%tau(i)
+            END DO
          END IF
 
          ! Assembly Bohm contribution
+!         CALL assembly_bohm_bc(iel,ind_asf,ind_ash,ind_ff,ind_fe,ind_fg,NiNi,Ni,qfg(g,:),&
+!              &ufg(g,:),b(g,1:2),n_g,tau_stab,setval,delta,diff_iso_fac(:,:,g),diff_ani_fac(:,:,g))
+
          CALL assembly_bohm_bc(iel,ind_asf,ind_ash,ind_ff,ind_fe,ind_fg,NiNi,Ni,qfg(g,:),&
               &ufg(g,:),b(g,1:2),n_g,tau_stab,setval,delta,diff_iso_fac(:,:,g),diff_ani_fac(:,:,g),ntang)
       END DO ! END loop in Gauss points
@@ -1023,7 +1032,6 @@ CONTAINS
       integer          :: i,j,k,idm,Neqstab,Neqgrad
       integer*4        :: ind(Npfl),indi(Npfl),indj(Npfl),indk(Npfl)
       real*8           :: Qpr(Ndim,Neq),kcoeff
-      logical          :: fixpotonlim
 #ifdef TEMPERATURE
       real*8           :: Vveci(Neq),Alphai,taui(Ndim,Neq),dV_dUi(Neq,Neq),gmi,dAlpha_dUi(Neq)
       real*8           :: Vvece(Neq),Alphae,taue(Ndim,Neq),dV_dUe(Neq,Neq),gme,dAlpha_dUe(Neq)
@@ -1266,5 +1274,330 @@ CONTAINS
 
    END SUBROUTINE assembly_bohm_bc
 
+
+
+
+
+
+
+
+
+
+
+
+   !*********************************
+   ! Assembly Bohm
+   !*********************************
+   SUBROUTINE assembly_bohm_bc_new(iel,ind_asf,ind_ash,ind_ff,ind_fe,ind_fg,NiNi,Ni,qfg,&
+                                   &ufg,bg,ng,tau,setval,delta,diffiso,diffani,ntang)
+      integer*4        :: iel,ind_asf(:),ind_ash(:),ind_ff(:),ind_fe(:),ind_fg(:)
+      real*8           :: NiNi(:,:),Ni(:),ufg(:),bg(:),ng(:),tau(:,:),setval,delta
+      real*8           :: diffiso(:,:),diffani(:,:)
+      logical          :: ntang
+      real*8           :: qfg(:)
+      real*8           :: bn,Abohm(Neq,Neq)
+      integer          :: i,j,k,idm,Neqstab,Neqgrad
+      integer*4        :: ind(Npfl),indi(Npfl),indj(Npfl),indk(Npfl)
+      real*8           :: Qpr(Ndim,Neq),kcoeff
+#ifdef TEMPERATURE
+      real*8           :: Vveci(Neq),Alphai,taui(Ndim,Neq),dV_dUi(Neq,Neq),gmi,dAlpha_dUi(Neq)
+      real*8           :: Vvece(Neq),Alphae,taue(Ndim,Neq),dV_dUe(Neq,Neq),gme,dAlpha_dUe(Neq)
+#endif
+
+      
+      bn = dot_product(bg,ng)
+      inc = bn/norm2(bg(1:2))
+
+      ! Compute Q^T^(k-1)
+      Qpr = reshape(qfg,(/Ndim,Neq/))
+
+
+      !*****************************************************
+      ! First equation
+      !*****************************************************
+      i = 1
+      indi = i + ind_asf
+      ! Stabilization part
+      elMat%All(ind_ff(indi),ind_ff(indi),iel) = elMat%All(ind_ff(indi),ind_ff(indi),iel) - tau(i,i)*NiNi
+      elMat%Alu(ind_ff(indi),ind_fe(indi),iel) = elMat%Alu(ind_ff(indi),ind_fe(indi),iel) + tau(i,i)*NiNi
+      ! Gradient part
+      DO idm = 1,Ndim
+         indj = ind_ash + idm + (i - 1)*Ndim
+         elMat%Alq(ind_ff(indi),ind_fG(indj),iel)=elMat%Alq(ind_ff(indi),ind_fG(indj),iel)-&
+                                                &NiNi*(ng(idm)*diffiso(i,i)-bn*bg(idm)*diffani(i,i) ) 
+      END DO
+
+
+
+      !*****************************************************
+      ! Second equation
+      !*****************************************************
+      i = 2
+      indi = i + ind_asf
+      if (numer%bohmtypebc.eq.1) then
+         ! Dirichlet type always if non-tangent 
+         IF (ntang) THEN
+            ! >>>>>>>> Non tangent case (delta=1) <<<<<<<<<<
+            elMat%All(ind_ff(indi),ind_ff(indi),iel) = elMat%All(ind_ff(indi),ind_ff(indi),iel) - numer%tau(i)*NiNi
+            elMat%fh(ind_ff(indi),iel) = elMat%fh(ind_ff(indi),iel) - numer%tau(i)*Ni*setval ! TODO: verify this
+!            elMat%Alu(ind_ff(ind),ind_fe(ind - 1),iel) = elMat%Alu(ind_ff(ind),ind_fe(ind - 1),iel) + numer%tau(i)*setval*NiNi
+         ELSE
+            ! >>>>>>>> Tangent case (delta=0) <<<<<<<<<<
+            ! Stabilization part
+            elMat%All(ind_ff(indi),ind_ff(indi),iel) = elMat%All(ind_ff(indi),ind_ff(indi),iel) - tau(i,i)*NiNi
+            elMat%Alu(ind_ff(indi),ind_fe(indi),iel) = elMat%Alu(ind_ff(indi),ind_fe(indi),iel) + tau(i,i)*NiNi
+            ! Gradient part
+            DO idm = 1,Ndim
+               indj = ind_ash + idm + (i - 1)*Ndim
+               elMat%Alq(ind_ff(indi),ind_fG(indj),iel)=elMat%Alq(ind_ff(indi),ind_fG(indj),iel)-&
+                                                      &NiNi*(ng(idm)*diffiso(i,i)-bn*bg(idm)*diffani(i,i) ) 
+            END DO
+         END IF   
+      elseif (numer%bohmtypebc.eq.2) then
+         ! Dirichlet if u<=soundspeed, Neumann if u>soundspeed if non-tangent 
+         IF (ntang) THEN
+            ! >>>>>>>> Non tangent case  <<<<<<<<<<
+            if (delta==1) then
+            ! Velocity is subsonic--> Dirichlet
+            elMat%All(ind_ff(indi),ind_ff(indi),iel) = elMat%All(ind_ff(indi),ind_ff(indi),iel) - numer%tau(i)*NiNi
+            elMat%fh(ind_ff(indi),iel) = elMat%fh(ind_ff(indi),iel) - numer%tau(i)*Ni*setval ! TODO: verify this
+!            elMat%Alu(ind_ff(ind),ind_fe(ind - 1),iel) = elMat%Alu(ind_ff(ind),ind_fe(ind - 1),iel) + numer%tau(i)*setval*NiNi
+            else
+            ! Velocity is supersonic--> Neumann (delta=0)
+            ! Stabilization part
+            elMat%All(ind_ff(indi),ind_ff(indi),iel) = elMat%All(ind_ff(indi),ind_ff(indi),iel) - tau(i,i)*NiNi
+            elMat%Alu(ind_ff(indi),ind_fe(indi),iel) = elMat%Alu(ind_ff(indi),ind_fe(indi),iel) + tau(i,i)*NiNi
+            ! Gradient part
+            DO idm = 1,Ndim
+               indj = ind_ash + idm + (i - 1)*Ndim
+               elMat%Alq(ind_ff(indi),ind_fG(indj),iel)=elMat%Alq(ind_ff(indi),ind_fG(indj),iel)-&
+                                                      &NiNi*(ng(idm)*diffiso(i,i)-bn*bg(idm)*diffani(i,i) ) 
+            END DO
+         ELSE
+            ! >>>>>>>> Tangent case (delta=0) <<<<<<<<<<
+            ! Stabilization part
+            elMat%All(ind_ff(indi),ind_ff(indi),iel) = elMat%All(ind_ff(indi),ind_ff(indi),iel) - tau(i,i)*NiNi
+            elMat%Alu(ind_ff(indi),ind_fe(indi),iel) = elMat%Alu(ind_ff(indi),ind_fe(indi),iel) + tau(i,i)*NiNi
+            ! Gradient part
+            DO idm = 1,Ndim
+               indj = ind_ash + idm + (i - 1)*Ndim
+               elMat%Alq(ind_ff(indi),ind_fG(indj),iel)=elMat%Alq(ind_ff(indi),ind_fG(indj),iel)-&
+                                                      &NiNi*(ng(idm)*diffiso(i,i)-bn*bg(idm)*diffani(i,i) ) 
+            END DO
+         END IF  
+      else 
+         write(6,*) "Wrong type in Bohm bc"
+         stop
+      endif
+
+#ifdef TEMPERATURE
+      !*****************************************************
+      ! Third and fourth equation - TEMPERATURE MODEL
+      !*****************************************************
+      IF (ntang) THEN
+
+         ! Compute V(U^(k-1))
+         call computeVi(ufg,Vveci)
+         call computeVe(ufg,Vvece)
+
+         ! Compute dV_dU (k-1)
+         call compute_dV_dUi(ufg,dV_dUi)
+         call compute_dV_dUe(ufg,dV_dUe)
+
+         ! Compute Alpha(U^(k-1))
+         Alphai = computeAlphai(ufg)
+         Alphae = computeAlphae(ufg)
+
+         ! Compute dAlpha/dU^(k-1)
+         call compute_dAlpha_dUi(ufg,dAlpha_dUi)
+         call compute_dAlpha_dUe(ufg,dAlpha_dUe)
+
+         ! Jacobian matrix for convection part
+         CALL jacobianMatricesBohm(ufg,Abohm)
+
+         gmi = dot_product(matmul(Qpr,Vveci),bg)  ! scalar
+         gme = dot_product(matmul(Qpr,Vvece),bg)             ! scalar
+         Taui = matmul(Qpr,dV_dUi)                      ! 2x3
+         Taue = matmul(Qpr,dV_dUe)      ! 2x3
+
+         ! Parallel diffusion for temperature
+         DO i = 1,2
+            indi = ind_asf + i
+            IF (i == 1) THEN
+               DO j = 1,Neq
+                  indj = ind_asf + j
+               elMat%All(ind_ff(indi + 2),ind_ff(indj),iel) = elMat%All(ind_ff(indi + 2),ind_ff(indj),iel) + Abohm(i,j)*NiNi*bn
+                  elMat%All(ind_ff(indi + 2),ind_ff(indj),iel) = elMat%All(ind_ff(indi + 2),ind_ff(indj),iel) -&
+                                                           &coefi*(gmi*dAlpha_dUi(j) + Alphai*(dot_product(Taui(:,j),bg)))*NiNi*bn
+                  DO k = 1,Ndim
+                         elMat%Alq(ind_ff(indi+2),ind_fG(k+(j-1)*Ndim+ind_ash),iel) = elMat%Alq(ind_ff(indi+2),ind_fG(k+(j-1)*Ndim+ind_ash),iel) -&
+                                                                                   &coefi*Alphai*Vveci(j)*bg(k)*NiNi*bn
+                  END DO
+               END DO
+                    elMat%fh(ind_ff(indi+2),iel) = elMat%fh(ind_ff(indi+2),iel) - coefi*Alphai*( dot_product (matmul(transpose(Taui),bg),ufg)  )*Ni*bn
+            ELSE
+               DO j = 1,Neq
+                  indj = ind_asf + j
+               elMat%All(ind_ff(indi + 2),ind_ff(indj),iel) = elMat%All(ind_ff(indi + 2),ind_ff(indj),iel) + Abohm(i,j)*NiNi*bn
+                  elMat%All(ind_ff(indi + 2),ind_ff(indj),iel) = elMat%All(ind_ff(indi + 2),ind_ff(indj),iel) -&
+                                                           &coefe*(gme*dAlpha_dUe(j) + Alphae*(dot_product(Taue(:,j),bg)))*NiNi*bn
+                  DO k = 1,Ndim
+                         elMat%Alq(ind_ff(indi+2),ind_fG(k+(j-1)*Ndim+ind_ash),iel) = elMat%Alq(ind_ff(indi+2),ind_fG(k+(j-1)*Ndim+ind_ash),iel) -&
+                                                                                   &coefe*Alphae*Vvece(j)*bg(k)*NiNi*bn
+                  END DO
+               END DO
+                   elMat%fh(ind_ff(indi+2),iel) = elMat%fh(ind_ff(indi+2),iel) - coefe*Alphae*( dot_product (matmul(transpose(Taue),bg),ufg)  )*Ni*bn 
+            ENDIF
+         END DO
+
+      
+         DO i=3,4
+            ! Stabilization part--> use tau for parallel diffusion
+            indi = i + ind_asf
+            elMat%All(ind_ff(indi),ind_ff(indi),iel) = elMat%All(ind_ff(indi),ind_ff(indi),iel) - tau(i,i)*NiNi
+            elMat%Alu(ind_ff(indi),ind_fe(indi),iel) = elMat%Alu(ind_ff(indi),ind_fe(indi),iel) + tau(i,i)*NiNi
+         END DO
+      ELSE
+         DO i=3,4
+            ! Stabilization part--> use tau for perpendicular diffusion
+            indi = i + ind_asf
+            elMat%All(ind_ff(indi),ind_ff(indi),iel) = elMat%All(ind_ff(indi),ind_ff(indi),iel) - tau(1,1)*NiNi ! TODO: I assume the diffusion is the same in all eqs.
+            elMat%Alu(ind_ff(indi),ind_fe(indi),iel) = elMat%Alu(ind_ff(indi),ind_fe(indi),iel) + tau(1,1)*NiNi ! TODO: I assume the diffusion is the same in all eqs.
+         END DO
+
+      END IF ! tangency
+
+      ! Perpendicular diffusion for energies
+      DO k = 3,4
+         DO idm = 1,Ndim
+            indi = ind_asf + k
+            indj = ind_ash + idm + (k - 1)*Ndim
+            ! Non-tangent case
+            elMat%Alq(ind_ff(indi),ind_fG(indj),iel)=elMat%Alq(ind_ff(indi),ind_fG(indj),iel)-&
+                                                   &NiNi*(ng(idm)*diffiso(k,k)-bn*bg(idm)*diffani(k,k) ) 
+         END DO
+      END DO
+#endif
+
+
+!      ! Perpendicular diffusion
+!      IF (ntang) THEN
+!         DO k = 1,Neqgrad
+!            DO idm = 1,Ndim
+!               indi = ind_asf + k
+!               indj = ind_ash + idm + (k - 1)*Ndim
+!               ! Non-tangent case
+!               elMat%Alq(ind_ff(indi),ind_fG(indj),iel)=elMat%Alq(ind_ff(indi),ind_fG(indj),iel)-&
+!                                                      &NiNi*(ng(idm)*diffiso(k,k)-bn*bg(idm)*diffani(k,k) ) 
+!            END DO
+!         END DO
+!      ELSE
+!         DO k = 1,Neq
+!            DO idm = 1,Ndim
+!               indi = ind_asf + k
+!               indj = ind_ash + idm + (k - 1)*Ndim
+!               ! Tangent case
+!               elMat%Alq(ind_ff(indi),ind_fG(indj),iel) = elMat%Alq(ind_ff(indi),ind_fG(indj),iel) - NiNi*ng(idm)
+!            END DO
+!         END DO
+!      ENDIF
+
+#ifdef VORTICITY
+
+      !*****************************************************
+      ! Third equation - VORTICITY MODEL
+      !*****************************************************
+      IF (ntang) THEN
+         i = 3
+         ! Vorticity equation         
+         if (switch%dirivortlim) then
+            ! Dirichlet weak form for the vorticity equation: set vorticity to 0!!!
+            indi = i + ind_asf
+            elMat%All(ind_ff(indi),ind_ff(indi),iel) = elMat%All(ind_ff(indi),ind_ff(indi),iel) - numer%tau(i)*NiNi
+            !elMat%fh(ind_ff(indi),iel) = elMat%fh(ind_ff(indi),iel) - numer%tau(k)*kmult(indi)
+         else
+            ! Neumann for the vorticity equation
+            ! Stabilization part
+            indi = i + ind_asf
+            elMat%All(ind_ff(indi),ind_ff(indi),iel) = elMat%All(ind_ff(indi),ind_ff(indi),iel) - tau(i,i)*NiNi
+            elMat%Alu(ind_ff(indi),ind_fe(indi),iel) = elMat%Alu(ind_ff(indi),ind_fe(indi),iel) + tau(i,i)*NiNi
+            DO idm = 1,Ndim
+               indi = ind_asf + i
+               indj = ind_ash + idm + (i - 1)*Ndim
+               elMat%Alq(ind_ff(indi),ind_fG(indj),iel) = elMat%Alq(ind_ff(indi),ind_fG(indj),iel) - NiNi*ng(idm)
+            END DO
+         end if
+      END IF
+
+      ! Potential equation
+      IF (ntang) THEN
+         IF (switch%fixdPotLim) THEN
+            !*****************************************
+            ! Fixed potential on the limiter
+            !*****************************************
+            i = 4
+            indi = ind_asf + i
+            elMat%All(ind_ff(indi),ind_ff(indi),iel) = elMat%All(ind_ff(indi),ind_ff(indi),iel) - numer%tau(i)*NiNi
+            elMat%fh(ind_ff(indi),iel) = elMat%fh(ind_ff(indi),iel) - numer%tau(i)*Ni*phys%Mref*phys%Potfloat
+         ELSE
+            !*****************************************
+            ! Bohm condition for the potential (Robin)
+            !*****************************************
+            ! Diagonal part (\Gradpar Phi)
+            i = 4
+            indi = ind_asf + i
+            DO idm = 1,Ndim
+               indj = ind_ash + idm + (i - 1)*Ndim
+               elMat%Alq(ind_ff(indi),ind_fG(indj),iel) = elMat%Alq(ind_ff(indi),ind_fG(indj),iel) + NiNi*bg(idm)
+            END DO
+
+            ! Non diagonal part --> non linear part (\Gradpar n / n)
+            i = 4
+            j = 1
+            indi = ind_asf + i
+            indj = ind_asf + j
+            DO idm = 1,Ndim
+               indk = ind_ash + idm + (j - 1)*Ndim
+               kcoeff = phys%Mref*bg(idm)
+               ! Linear part
+               elMat%Alq(ind_ff(indi),ind_fG(indk),iel) = elMat%Alq(ind_ff(indi),ind_fG(indk),iel) - kcoeff*NiNi/ufg(1)
+               ! Non linear correction
+               elMat%All(ind_ff(indi),ind_ff(indj),iel) = elMat%All(ind_ff(indi),ind_ff(indj),iel) + &
+                                                          &kcoeff*Qpr(idm,1)*NiNi/ufg(1)**2
+               elMat%fh(ind_ff(indi),iel) = elMat%fh(ind_ff(indi),iel) + kcoeff*Qpr(idm,1)*Ni/ufg(1)
+            END DO
+
+            ! Non diagonal part --> linear part (\Gammma * \Lambda)
+            i = 4
+            j = 2
+            indi = ind_asf + i
+            indj = ind_asf + j
+            elMat%All(ind_ff(indi),ind_ff(indj),iel) = elMat%All(ind_ff(indi),ind_ff(indj),iel) + &
+                                                       &phys%etapar/phys%c2*NiNi*phys%Mref*phys%Potfloat
+
+            ! Diagonal part --> non linear part (\Gammma * \phi)
+            ! \phi^(k+1)*\Gamma^k
+            i = 4
+            j = 4
+            indi = ind_asf + i
+            indj = ind_asf + j
+            elMat%All(ind_ff(indi),ind_ff(indj),iel) = elMat%All(ind_ff(indi),ind_ff(indj),iel) - &
+                                                       &phys%etapar/phys%c2*NiNi*ufg(2)
+            ! \phi^k*\Gamma^(k+1)
+            i = 4
+            j = 2
+            indi = ind_asf + i
+            indj = ind_asf + j
+           elMat%All(ind_ff(indi),ind_ff(indj),iel) = elMat%All(ind_ff(indi),ind_ff(indj),iel) - &
+                                                       &phys%etapar/phys%c2*NiNi*ufg(4)
+            ! \phi^k*\Gamma^k
+            elMat%fh(ind_ff(indi),iel) = elMat%fh(ind_ff(indi),iel) - phys%etapar/phys%c2*Ni*ufg(4)*ufg(2)
+
+         END IF
+      END IF
+
+#endif
+
+   END SUBROUTINE assembly_bohm_bc_new
 END SUBROUTINE HDG_BC
 
