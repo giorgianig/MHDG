@@ -293,6 +293,7 @@ MODULE types
       integer        :: ptor     ! Polynomial degree in the toroidal direction
       real*8         :: tmax     ! Max extention in the toroidal direction
       integer        :: npartor  ! Number of MPI divisions in the toroidal direction
+      integer        :: bohmtypebc ! Implementation of the Bohm bc for Gamma
    END TYPE Numeric_type
 
    !*******************************************************

@@ -402,12 +402,21 @@ CONTAINS
       integer(psb_ipk_)     :: iter, itmax, itrace, istopc, irst
       real(psb_dpk_)        :: err
       real*8  :: tps, tpe
-      integer :: cks, clock_rate, cke
+      integer :: cks, clock_rate, cke,ierr
       if (lssolver%timing) then
          call cpu_time(tps)
          call system_clock(cks, clock_rate)
       endif
 
+
+!write(6,*) "saving matrix"
+!!call mm_mat_write(matPSBLAS%mat,'sparse_matrix' ,ierr,1,'psblas_mat')
+!!call mm_array_write(matPSBLAS%b%v%v,'rhs',ierr,1,'psblas_b')
+!call mm_array_write(matPSBLAS%x%v%v,'solution_pastix',ierr,1,'psblas_solpastix')
+!!call mm_array_write(rhs%vals,ierr,1,'psblas_b')
+!!call mm_array_write(sol%u_tilde,ierr,1,'psblas_x0')
+!write(6,*) "done saving matrix"
+!stop
       !******************************************
       !  Solve
       !******************************************

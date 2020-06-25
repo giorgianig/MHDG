@@ -189,8 +189,8 @@ CONTAINS
    !*******************************************
    ! Compute the stabilization tensor tau
    !*******************************************
-   SUBROUTINE computeTauGaussPoints(up, uc, b, n, iel, ifa, isext, xy, tau)
-      real*8, intent(in)  :: up(:), uc(:), b(:), n(:), xy(:)
+   SUBROUTINE computeTauGaussPoints(up, uc, b, bmod, n, iel, ifa, isext, xy, tau)
+      real*8, intent(in)  :: up(:), uc(:), b(:), bmod, n(:), xy(:)
       real, intent(in) :: isext
       integer, intent(in)  :: ifa, iel
       real*8, intent(out) :: tau(:, :)

@@ -5,7 +5,7 @@ clear
 %**********************************
 % Parallel/serial
 %**********************************
-parallel=1;
+parallel=0;
 nproc=48;
 
 %**********************************
@@ -16,7 +16,7 @@ plotCons = 0; % Plot conservative variables
 % Dimensional (1) or non-dimensional (0) plots
 cons_dimensional_plots = 0; % conservative variables
 phys_dimensional_plots = 0; % physical variables
-nref = 1; % plot order
+nref = 5; % plot order
 
 %**********************************
 % 3D stuff
@@ -36,9 +36,9 @@ path2save = '/home/giorgio/Dropbox/PostDoc_Marseille/Latex/NGammaVortPot/';
 %**********************************
 % Solution
 %**********************************
-solpath = '/home/giorgio/Dropbox/Fortran/Results/aux_psblas/';
-meshpath = '/home/giorgio/Dropbox/Fortran/MHDG_ref3.0/matlab/Meshes/Parallel/';
-solname = 'Sol2D_CircLimAlign_Quads_Nel2688_P3_DPe0.980E+00_0099';
+solpath = '/home/giorgio/Dropbox/Fortran/MHDG_ref3.0/test/';
+meshpath = '/home/giorgio/Dropbox/Fortran/MHDG_ref3.0/test/';
+solname = 'Sol2D_CircLimAlign_Quads_Nel208_P4_DPe0.100E+02';
 
 
 

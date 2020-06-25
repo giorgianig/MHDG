@@ -237,7 +237,8 @@ PROGRAM MHDG
 
          ! Assembly the global matrix
          CALL hdg_Assembly()
-
+!call HDF5_save_CSR_matrix('Mat')
+!stop
          ! Solve linear system
          CALL solve_global_system()
 

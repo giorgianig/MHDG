@@ -1820,14 +1820,13 @@ CONTAINS
          ! Parallel diffusion for the temperature
          IF (i == 3) THEN
             DO j = 1,4
-               ind_j = j + ind_ass
                Auu(:,:,i+(j-1)*Neq) = Auu(:,:,i+(j-1)*Neq)+coefi*(gmi*dAlpha_dUi(j) + Alphai*(dot_product(Taui(:,j),b)))*NNxy + &
                                      &(dot_product(Zet(:,j),b) + ds_dU(j))*NNi
                DO k = 1,Ndim
                   z = i+(k-1)*Neq+(j-1)*Neq*Ndim
-                  Aqq(:,:,z) = Aqq(:,:,z)+ coefi*Alphai*Vveci(j)*b(k)*NNxy
+                  Auq(:,:,z) = Auq(:,:,z)+ coefi*Alphai*Vveci(j)*b(k)*NNxy
                   IF (j == 4) THEN
-                     Aqq(:,:,z) = Aqq(:,:,z)+W*NNi*b(k)
+                     Auq(:,:,z) = Auq(:,:,z)+W*NNi*b(k)
                   END IF
                END DO
             END DO

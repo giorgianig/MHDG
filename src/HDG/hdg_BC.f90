@@ -417,6 +417,9 @@ CONTAINS
                   delta = 0
                   setval = upg(g,2)
                END IF
+               IF (numer%bohmtypebc==1) then
+                  delta=1
+               endif
             END IF
 
             ! Impose the velocity at the sound speed in case of subsonic
@@ -428,7 +431,7 @@ CONTAINS
             IF (numer%stab > 1) THEN
                ! Compute tau in the Gauss points
                IF (numer%stab < 5) THEN
-                  CALL computeTauGaussPoints(upg(g,:),ufg(g,:),b(g,:),n_g(g,:),iel,ifa,1.,xyf(g,:),tau_stab)
+                  CALL computeTauGaussPoints(upg(g,:),ufg(g,:),b(g,:),Bmod(g),n_g(g,:),iel,ifa,1.,xyf(g,:),tau_stab)
                ELSE
                   CALL computeTauGaussPoints_matrix(upg(g,:),ufg(g,:),b(g,:),n_g(g,:),xyf(g,:),1.,iel,tau_stab)
                ENDIF
@@ -441,7 +444,7 @@ CONTAINS
             END IF
 
             ! Assembly Bohm contribution
-            CALL assembly_bohm_bc(iel3,ind_asf,ind_ash,ind_ff,ind_fe,ind_fg,NiNi,Ni,qfg(g,:),ufg(g,:),&
+            CALL assembly_bohm_bc_new(iel3,ind_asf,ind_ash,ind_ff,ind_fe,ind_fg,NiNi,Ni,qfg(g,:),ufg(g,:),&
                  &b(g,:),n_g(g,:),tau_stab,setval,delta,diff_iso_fac(:,:,g),diff_ani_fac(:,:,g),ntang)
          END DO
       END DO
@@ -458,11 +461,10 @@ CONTAINS
    integer                   :: nod(refElPol%Nfacenodes)
    integer                   :: ind_uf(refElPol%Nfacenodes*phys%neq),ind_ff(refElPol%Nfacenodes*phys%neq)
    integer                   :: ind_fe(refElPol%Nfacenodes*phys%neq)
-   real*8                    :: uf(refElPol%Nfacenodes*phys%neq)
-   real*8                    :: Xf(Mesh%Nnodesperface,Mesh%Ndim)
-   integer                   :: ind_fG(refElPol%Nfacenodes*phys%neq*Mesh%Ndim)
-   integer                   :: ind_qf(refElPol%Nfacenodes*phys%neq*Mesh%Ndim)
-   real*8                    :: qqf(refElPol%Nfacenodes,phys%neq*Mesh%Ndim),qfg(refElPol%Ngauss1d,phys%neq*Mesh%Ndim)
+   real*8                    :: Xf(Mesh%Nnodesperface,2)
+   integer                   :: ind_fG(refElPol%Nfacenodes*phys%neq*2)
+   integer                   :: ind_qf(refElPol%Nfacenodes*phys%neq*2)
+   real*8                    :: uf(refElPol%Nfacenodes*phys%neq),qf(refElPol%Nfacenodes,phys%neq*2)
    real*8                    :: coefi,coefe
    real*8                    :: tau_save_el(refElPol%Ngauss1d,phys%neq),xy_g_save_el(refElPol%Ngauss1d,2)
    logical                   :: save_tau
@@ -472,6 +474,13 @@ CONTAINS
    integer                   :: ind_asf(refElPol%Nfacenodes),ind_ash(refElPol%Nfacenodes)
    real*8                    :: Bfl(refElPol%Nfacenodes,3)
    real*8                    :: Bmod_nod(refElPol%Nfacenodes),b_nod(refElPol%Nfacenodes,3)
+   real*8                    :: xyg(refElPol%Ngauss1d,2),xyder(refElPol%Ngauss1d,2)
+   real*8                    :: Bmod(refElPol%Ngauss1d),b(refElPol%Ngauss1d,3)
+   real*8                    :: ufg(refElPol%Ngauss1d,phys%neq),qfg(refElPol%Ngauss1d,phys%neq*2)
+   real*8                    :: upg(refElPol%Ngauss1d,phys%neq)
+   real*8                    :: uex(refElPol%Ngauss1d,phys%neq)
+   real*8                    :: diff_iso_fac(phys%neq,phys%neq,refElPol%Ngauss1d)
+   real*8                    :: diff_ani_fac(phys%neq,phys%neq,refElPol%Ngauss1d)
 
    save_tau = switch%saveTau
    Ndim = 2
@@ -522,6 +531,7 @@ CONTAINS
       !****************************************************
       ! Magnetic field of the nodes of the face
       Bfl = phys%B(Mesh%T(iel,nod),:)
+
       ! Magnetic field norm and direction at element nodes
       Bmod_nod = sqrt(Bfl(:,1)**2 + Bfl(:,2)**2 + Bfl(:,3)**2)
       b_nod(:,1) = Bfl(:,1)/Bmod_nod
@@ -534,10 +544,38 @@ CONTAINS
       ind_fe = reshape(tensorSumInt((/(i,i=1,neq)/),neq*(nod - 1)),(/neq*Npfl/))
       ind_fG = reshape(tensorSumInt((/(i,i=1,neq*Ndim)/),neq*Ndim*(refElPol%face_nodes(ifl,:) - 1)),(/neq*Ndim*Npfl/))
       ind_qf = (iel - 1)*Ndim*Neq*Npel + ind_fG
-      qqf = transpose(reshape(sol%q(ind_qf),(/Ndim*Neq,Npfl/)))
+      
 
-      ! Solution in this face
+      ! Gauss points position
+      xyg = matmul(refElPol%N1D,Xf)
+
+      ! Shape function derivatives at Gauss points
+      xyDer = matmul(refElPol%Nxi1D,Xf)
+
+      ! Solution at nodes 
       uf = sol%u_tilde(ind_uf)
+
+      ! Solution gradient at nodes 
+      qf = transpose(reshape(sol%q(ind_qf),(/Ndim*Neq,Npfl/)))
+
+      ! Solution at face Gauss points
+      ufg = matmul(refElPol%N1D,transpose(reshape(uf,[neq,Npfl])))
+
+      ! Gradient solution at face gauss points
+      qfg = matmul(refElPol%N1D,qf)
+
+      ! Analytical solution at face Gauss points
+      CALL analytical_solution(xyg(:,1),xyg(:,2),uex)
+
+      ! Magnetic field norm and direction at Gauss points
+      Bmod = matmul(refElPol%N1d,Bmod_nod)
+      b = matmul(refElPol%N1d,b_nod)
+
+      ! Compute diffusion at faces Gauss points
+      CALL setLocalDiff(xyg,diff_iso_fac,diff_ani_fac,Bmod)
+
+      ! Physical variables at Gauss points
+      CALL cons2phys(ufg,upg)
 
       ! Type of boundary
       fl = Mesh%boundaryFlag(ifa)
@@ -588,16 +626,7 @@ CONTAINS
    SUBROUTINE set_dirichletwf_bc
       integer                   :: g
       real*8                    :: dline,xyDerNorm_g
-      real*8                    :: uex(Ng1d,neq)
-      real*8                    :: xyf(Ng1d,Ndim),xyDer(Ng1d,Ndim)
       real*8                    :: NiNi(Npfl,Npfl),Ni(Npfl)
-
-      ! Set the face solution
-      xyf = matmul(refElPol%N1D,Xf)
-      CALL analytical_solution(xyf(:,1),xyf(:,2),uex)
-
-      ! Shape function derivatives at Gauss points
-      xyDer = matmul(refElPol%Nxi1D,Xf)
 
       ! Loop in 1D Gauss points
       DO g = 1,Ng1d
@@ -606,7 +635,7 @@ CONTAINS
          xyDerNorm_g = norm2(xyDer(g,:))
          dline = refElPol%gauss_weights1D(g)*xyDerNorm_g
          IF (switch%axisym) THEN
-            dline = dline*xyf(g,1)
+            dline = dline*xyg(g,1)
          END IF
          NiNi = tensorProduct(refElPol%N1D(g,:),refElPol%N1D(g,:))*dline
          Ni = refElPol%N1D(g,:)*dline
@@ -622,17 +651,8 @@ CONTAINS
       integer                   :: g
       real*8                    :: dline,xyDerNorm_g
       real*8                    :: t_g(Ndim),n_g(Ndim)
-      real*8                    :: uex(Ng1d,neq)
-      real*8                    :: xyf(Ng1d,Ndim),xyDer(Ng1d,Ndim)
       real*8                    :: NiNi(Npfl,Npfl),Ni(Npfl)
-
-      ! Set the face solution
-      xyf = matmul(refElPol%N1D,Xf)
-      CALL analytical_solution(xyf(:,1),xyf(:,2),uex)
-
-      ! Shape function derivatives at Gauss points
-      xyDer = matmul(refElPol%Nxi1D,Xf)
-
+      real                      :: tau_stab(Neq,Neq)
       ! Loop in 1D Gauss points
       DO g = 1,Ng1d
 
@@ -640,16 +660,34 @@ CONTAINS
          xyDerNorm_g = norm2(xyDer(g,:))
          dline = refElPol%gauss_weights1D(g)*xyDerNorm_g
          IF (switch%axisym) THEN
-            dline = dline*xyf(g,1)
+            dline = dline*xyg(g,1)
          END IF
 
          ! Unit normal to the boundary
          t_g = xyDer(g,:)/xyDerNorm_g
          n_g = [t_g(2),-t_g(1)]
 
+
+         !****************** Stabilization part******************************
+         IF (numer%stab > 1) THEN
+            ! Compute tau in the Gauss points
+            IF (numer%stab < 5) THEN
+               CALL computeTauGaussPoints(upg(g,:),ufg(g,:),b(g,1:2),Bmod(g),n_g,iel,ifa,1.,xyg(g,:),tau_stab)
+            ELSE
+               CALL computeTauGaussPoints_matrix(upg(g,:),ufg(g,:),b(g,1:2),n_g,xyg(g,:),1.,iel,tau_stab)
+            ENDIF
+         ELSE 
+            tau_stab=0.
+            DO i = 1,Neq
+               tau_stab(i,i) = numer%tau(i)
+            END DO
+         END IF
+         !****************** End stabilization part******************************
+
+
          NiNi = tensorProduct(refElPol%N1D(g,:),refElPol%N1D(g,:))*dline
          Ni = refElPol%N1D(g,:)*dline
-         CALL assembly_diric_neum_bc(iel,ind_asf,ind_ash,ind_ff,ind_fg,uex(g,:),NiNi,Ni,n_g)
+         CALL assembly_diric_neum_bc(iel,ind_asf,ind_ash,ind_ff,ind_fg,uex(g,:),NiNi,Ni,b(g,1:2),n_g,tau_stab,diff_iso_fac(:,:,g),diff_ani_fac(:,:,g))
       END DO
 
    END SUBROUTINE set_diric_neum_bc
@@ -660,24 +698,8 @@ CONTAINS
    SUBROUTINE set_dirichletstr_bc
       integer                   :: g,i,j,idm
       real*8                    :: dline,xyDerNorm_g
-      real*8                    :: xyf(Ng1d,Ndim),xyDer(Ng1d,Ndim)
-      real*8                    :: uex(Ng1d,neq)
       real*8                    :: t_g(Ndim),n_g(Ndim),fh(Npfl*neq)
       real*8                    :: Ni(Npfl)
-      real*8                    :: b(Ng1d,3)
-
-      ! Magnetic field norm and direction at Gauss points
-      b = matmul(refElPol%N1d,b_nod)
-
-      ! Set the face solution
-      xyf = matmul(refElPol%N1D,Xf)
-      CALL analytical_solution(xyf(:,1),xyf(:,2),uex)
-
-      ! Shape function derivatives at Gauss points
-      xyDer = matmul(refElPol%Nxi1D,Xf)
-
-      ! Gradient solution at face gauss points
-      qfg = matmul(refElPol%N1D,qqf)
 
       ! Loop in 1D Gauss points
       DO g = 1,Ng1d
@@ -686,7 +708,7 @@ CONTAINS
          xyDerNorm_g = norm2(xyDer(g,:))
          dline = refElPol%gauss_weights1D(g)*xyDerNorm_g
          IF (switch%axisym) THEN
-            dline = dline*xyf(g,1)
+            dline = dline*xyg(g,1)
          END IF
          ! Unit normal to the boundary
          t_g = xyDer(g,:)/xyDerNorm_g
@@ -706,52 +728,17 @@ CONTAINS
    SUBROUTINE set_Bohm_bc(tau_save_el,xy_g_save_el)
       integer                   :: g,i,j,k,idm
       real*8                    :: dline,xyDerNorm_g
-      real*8 :: setval
-      real*8                    :: xyf(Ng1d,Ndim),xyDer(Ng1d,Ndim)
+      real*8                    :: setval
       real*8                    :: t_g(Ndim),n_g(Ndim)
-      real*8                    :: ufg(Ng1d,Neq),upg(Ng1d,phys%npv)
       real*8                    :: inc,sn,delta
       real*8                    :: NiNi(Npfl,Npfl),Ni(Npfl)
       real*8                    :: soundSpeed
-      real*8                    :: tau_ngamma(2)
-!                                                        real*8                    :: b_f(Ng1d,Ndim),divb_f(Ng1d),drift_f(Ng1d,Ndim)
-!#ifdef MOVINGEQUILIBRIUM
-!       real*8                    :: b_nod(Mesh%Nnodesperelem,Ndim),Bmod(Mesh%Nnodesperelem)
-!#endif
-      real*8                    :: qfg(Ng1d,neq*Ndim)
       real*8                    :: bn
-!      logical                   :: ntang
+      logical                   :: ntang
       real*8,intent(out)        :: tau_save_el(:,:),xy_g_save_el(:,:)
       real                      :: tau_stab(Neq,Neq)
-      real*8                    :: diff_iso_fac(phys%neq,phys%neq,Ng1d),diff_ani_fac(phys%neq,phys%neq,Ng1d)
-      real*8                    :: Bmod(Ng1d),b(Ng1d,3)
+      
 
-      ! Magnetic field norm and direction at Gauss points
-      Bmod = matmul(refElPol%N1d,Bmod_nod)
-      b = matmul(refElPol%N1d,b_nod)
-
-      ! Gradient solution at face gauss points
-      qfg = matmul(refElPol%N1D,qqf)
-
-      ! Gauss points position
-      xyf = matmul(refElPol%N1D,Xf)
-
-      ! Compute diffusion at faces Gauss points
-      CALL setLocalDiff(xyf,diff_iso_fac,diff_ani_fac,Bmod)
-
-      ! Shape function derivatives at Gauss points
-      xyDer = matmul(refElPol%Nxi1D,Xf)
-
-      ! Set the face solution
-      ufg = matmul(refElPol%N1D,transpose(reshape(uf,[neq,Npfl])))
-
-      ! Shape function derivatives at Gauss points
-      xyDer = matmul(refElPol%Nxi1D,Xf)
-
-      ! Physical variables at Gauss points
-      CALL cons2phys(ufg,upg)
-
-! VEDERE PERCHÈ CALCOLO DUE VOLTE LE VARIABILI FISICHE NEI PUNTI DI GAUSS!!!!!!!!!!!!!!!!!!
       ! Loop in 1D Gauss points
       DO g = 1,Ng1d
 
@@ -759,7 +746,7 @@ CONTAINS
          xyDerNorm_g = norm2(xyDer(g,:))
          dline = refElPol%gauss_weights1D(g)*xyDerNorm_g
          IF (switch%axisym) THEN
-            dline = dline*xyf(g,1)
+            dline = dline*xyg(g,1)
          END IF
 
          ! Unit normal to the boundary
@@ -796,6 +783,9 @@ CONTAINS
                  delta = 0
                setval = upg(g,2)
             END IF
+            if (numer%bohmtypebc.eq.1) then
+               delta=1
+            endif
          END IF
 #endif
          ! Shape functions
@@ -805,30 +795,32 @@ CONTAINS
          IF (numer%stab > 1) THEN
             ! Compute tau in the Gauss points
             IF (numer%stab < 5) THEN
-               CALL computeTauGaussPoints(upg(g,:),ufg(g,:),b(g,1:2),n_g,iel,ifa,1.,xyf(g,:),tau_stab)
+               CALL computeTauGaussPoints(upg(g,:),ufg(g,:),b(g,1:2),Bmod(g),n_g,iel,ifa,1.,xyg(g,:),tau_stab)
             ELSE
-               CALL computeTauGaussPoints_matrix(upg(g,:),ufg(g,:),b(g,1:2),n_g,xyf(g,:),1.,iel,tau_stab)
+               CALL computeTauGaussPoints_matrix(upg(g,:),ufg(g,:),b(g,1:2),n_g,xyg(g,:),1.,iel,tau_stab)
             ENDIF
 
             if (save_tau) then
                DO i = 1,Neq
                   tau_save_el(g,:) = tau_stab(i,i)
                END DO
-               xy_g_save_el(g,:) = xyf(g,:)
+               xy_g_save_el(g,:) = xyg(g,:)
             endif
-            !****************** End stabilization part******************************
          ELSE 
             tau_stab=0.
             DO i = 1,Neq
                tau_stab(i,i) = numer%tau(i)
             END DO
          END IF
+         !****************** End stabilization part******************************
+
+
 
          ! Assembly Bohm contribution
 !         CALL assembly_bohm_bc(iel,ind_asf,ind_ash,ind_ff,ind_fe,ind_fg,NiNi,Ni,qfg(g,:),&
 !              &ufg(g,:),b(g,1:2),n_g,tau_stab,setval,delta,diff_iso_fac(:,:,g),diff_ani_fac(:,:,g))
 
-         CALL assembly_bohm_bc(iel,ind_asf,ind_ash,ind_ff,ind_fe,ind_fg,NiNi,Ni,qfg(g,:),&
+         CALL assembly_bohm_bc_new(iel,ind_asf,ind_ash,ind_ff,ind_fe,ind_fg,NiNi,Ni,qfg(g,:),&
               &ufg(g,:),b(g,1:2),n_g,tau_stab,setval,delta,diff_iso_fac(:,:,g),diff_ani_fac(:,:,g),ntang)
       END DO ! END loop in Gauss points
 
@@ -861,10 +853,12 @@ CONTAINS
    !*********************************
    ! Assembly Dirichlet and Neumann
    !*********************************
-   SUBROUTINE assembly_diric_neum_bc(iel,ind_asf,ind_ash,ind_ff,ind_fg,uexg,NiNi,Ni,n)
+   SUBROUTINE assembly_diric_neum_bc(iel,ind_asf,ind_ash,ind_ff,ind_fg,uexg,NiNi,Ni,bg,ng,tau,diffiso,diffani)
       integer*4    :: iel,ind_asf(:),ind_ash(:),ind_ff(:),ind_fg(:)
-      real*8       :: NiNi(:,:),Ni(:),uexg(:),n(:)
-      real*8       :: kmult(Neq*Npfl)
+      real*8       :: NiNi(:,:),Ni(:),uexg(:),bg(:),ng(:)
+      real*8       :: tau(:,:)
+      real*8       :: diffiso(:,:),diffani(:,:)
+      real*8       :: kmult(Neq*Npfl),bn
       integer*4    :: i,j,k,idm,ndir
       integer*4    :: ind(Npfl),indi(Npfl),indj(Npfl)
 
@@ -889,6 +883,12 @@ CONTAINS
 !            elMat%Alq(ind_ff(indi),ind_fG(indj),iel)=elMat%Alq(ind_ff(indi),ind_fG(indj),iel)+NiNi*n(idm)
 !                              END DO
 !                                                END DO
+
+#ifndef VORTICITY
+      write(6,*) "Wrong bc! Should be used only for vorticity"
+      stop
+#endif     
+      bn = dot_product(bg,ng)
 
       ! Dirichlet values
       kmult = col(tensorProduct(uexg(:),Ni))
@@ -915,30 +915,32 @@ CONTAINS
          ! Neumann homogeneous for the vorticity
          i = 3
          ind = i + ind_asf
-         elMat%All(ind_ff(ind),ind_ff(ind),iel) = elMat%All(ind_ff(ind),ind_ff(ind),iel) - numer%tau(i)*NiNi
-         elMat%Alu(ind_ff(ind),ind_fe(ind),iel) = elMat%Alu(ind_ff(ind),ind_fe(ind),iel) + numer%tau(i)*NiNi
+         elMat%All(ind_ff(ind),ind_ff(ind),iel) = elMat%All(ind_ff(ind),ind_ff(ind),iel) - tau(i,i)*NiNi
+         elMat%Alu(ind_ff(ind),ind_fe(ind),iel) = elMat%Alu(ind_ff(ind),ind_fe(ind),iel) + tau(i,i)*NiNi
          DO idm = 1,Ndim
             indi = ind_asf + i
             indj = ind_ash + idm + (i - 1)*Ndim
-            elMat%Alq(ind_ff(indi),ind_fG(indj),iel) = elMat%Alq(ind_ff(indi),ind_fG(indj),iel) + NiNi*n(idm)
+            elMat%Alq(ind_ff(indi),ind_fG(indj),iel) = elMat%Alq(ind_ff(indi),ind_fG(indj),iel) + &
+                                    &NiNi*(ng(idm)*diffiso(i,i)-bn*bg(idm)*diffani(i,i) ) 
          END DO
       endif
 
       ! Neumann homogeneous for the potential
       i = 4
       ind = i + ind_asf
-      elMat%All(ind_ff(ind),ind_ff(ind),iel) = elMat%All(ind_ff(ind),ind_ff(ind),iel) - numer%tau(i)*NiNi
-      elMat%Alu(ind_ff(ind),ind_fe(ind),iel) = elMat%Alu(ind_ff(ind),ind_fe(ind),iel) + numer%tau(i)*NiNi
+      elMat%All(ind_ff(ind),ind_ff(ind),iel) = elMat%All(ind_ff(ind),ind_ff(ind),iel) - tau(i,i)*NiNi
+      elMat%Alu(ind_ff(ind),ind_fe(ind),iel) = elMat%Alu(ind_ff(ind),ind_fe(ind),iel) + tau(i,i)*NiNi
       DO idm = 1,Ndim
          indi = ind_asf + i
          indj = ind_ash + idm + (i - 1)*Ndim
-         elMat%Alq(ind_ff(indi),ind_fG(indj),iel) = elMat%Alq(ind_ff(indi),ind_fG(indj),iel) + NiNi*n(idm)
+         elMat%Alq(ind_ff(indi),ind_fG(indj),iel) = elMat%Alq(ind_ff(indi),ind_fG(indj),iel) + &
+                                                   &NiNi*(ng(idm)*diffiso(i,i)-bn*bg(idm)*diffani(i,i) )
       END DO
       j = 1
       DO idm = 1,Ndim
          indi = ind_asf + i
          indj = ind_ash + idm + (j - 1)*Ndim
-         elMat%Alq(ind_ff(indi),ind_fG(indj),iel) = elMat%Alq(ind_ff(indi),ind_fG(indj),iel) + NiNi*n(idm)/uexg(1)*phys%Mref
+         elMat%Alq(ind_ff(indi),ind_fG(indj),iel) = elMat%Alq(ind_ff(indi),ind_fG(indj),iel) + NiNi*ng(idm)/uexg(1)*phys%Mref
       END DO
 
    END SUBROUTINE assembly_diric_neum_bc
@@ -1306,14 +1308,13 @@ CONTAINS
 
       
       bn = dot_product(bg,ng)
-      inc = bn/norm2(bg(1:2))
 
       ! Compute Q^T^(k-1)
       Qpr = reshape(qfg,(/Ndim,Neq/))
 
 
       !*****************************************************
-      ! First equation
+      ! First equation--> Neumann homog.
       !*****************************************************
       i = 1
       indi = i + ind_asf
@@ -1330,7 +1331,7 @@ CONTAINS
 
 
       !*****************************************************
-      ! Second equation
+      ! Second equation--> Dirich. or Neumann
       !*****************************************************
       i = 2
       indi = i + ind_asf
@@ -1339,8 +1340,7 @@ CONTAINS
          IF (ntang) THEN
             ! >>>>>>>> Non tangent case (delta=1) <<<<<<<<<<
             elMat%All(ind_ff(indi),ind_ff(indi),iel) = elMat%All(ind_ff(indi),ind_ff(indi),iel) - numer%tau(i)*NiNi
-            elMat%fh(ind_ff(indi),iel) = elMat%fh(ind_ff(indi),iel) - numer%tau(i)*Ni*setval ! TODO: verify this
-!            elMat%Alu(ind_ff(ind),ind_fe(ind - 1),iel) = elMat%Alu(ind_ff(ind),ind_fe(ind - 1),iel) + numer%tau(i)*setval*NiNi
+            elMat%Alu(ind_ff(indi),ind_fe(indi - 1),iel) = elMat%Alu(ind_ff(indi),ind_fe(indi - 1),iel) + numer%tau(i)*setval*NiNi
          ELSE
             ! >>>>>>>> Tangent case (delta=0) <<<<<<<<<<
             ! Stabilization part
@@ -1358,21 +1358,21 @@ CONTAINS
          IF (ntang) THEN
             ! >>>>>>>> Non tangent case  <<<<<<<<<<
             if (delta==1) then
-            ! Velocity is subsonic--> Dirichlet
-            elMat%All(ind_ff(indi),ind_ff(indi),iel) = elMat%All(ind_ff(indi),ind_ff(indi),iel) - numer%tau(i)*NiNi
-            elMat%fh(ind_ff(indi),iel) = elMat%fh(ind_ff(indi),iel) - numer%tau(i)*Ni*setval ! TODO: verify this
-!            elMat%Alu(ind_ff(ind),ind_fe(ind - 1),iel) = elMat%Alu(ind_ff(ind),ind_fe(ind - 1),iel) + numer%tau(i)*setval*NiNi
+						         ! Velocity is subsonic--> Dirichlet
+						         elMat%All(ind_ff(indi),ind_ff(indi),iel) = elMat%All(ind_ff(indi),ind_ff(indi),iel) - numer%tau(i)*NiNi
+			            elMat%Alu(ind_ff(indi),ind_fe(indi - 1),iel) = elMat%Alu(ind_ff(indi),ind_fe(indi - 1),iel) + numer%tau(i)*setval*NiNi
             else
-            ! Velocity is supersonic--> Neumann (delta=0)
-            ! Stabilization part
-            elMat%All(ind_ff(indi),ind_ff(indi),iel) = elMat%All(ind_ff(indi),ind_ff(indi),iel) - tau(i,i)*NiNi
-            elMat%Alu(ind_ff(indi),ind_fe(indi),iel) = elMat%Alu(ind_ff(indi),ind_fe(indi),iel) + tau(i,i)*NiNi
-            ! Gradient part
-            DO idm = 1,Ndim
-               indj = ind_ash + idm + (i - 1)*Ndim
-               elMat%Alq(ind_ff(indi),ind_fG(indj),iel)=elMat%Alq(ind_ff(indi),ind_fG(indj),iel)-&
-                                                      &NiNi*(ng(idm)*diffiso(i,i)-bn*bg(idm)*diffani(i,i) ) 
-            END DO
+						         ! Velocity is supersonic--> Neumann (delta=0)
+						         ! Stabilization part
+						         elMat%All(ind_ff(indi),ind_ff(indi),iel) = elMat%All(ind_ff(indi),ind_ff(indi),iel) - tau(i,i)*NiNi
+						         elMat%Alu(ind_ff(indi),ind_fe(indi),iel) = elMat%Alu(ind_ff(indi),ind_fe(indi),iel) + tau(i,i)*NiNi
+						         ! Gradient part
+						         DO idm = 1,Ndim
+						            indj = ind_ash + idm + (i - 1)*Ndim
+						            elMat%Alq(ind_ff(indi),ind_fG(indj),iel)=elMat%Alq(ind_ff(indi),ind_fG(indj),iel)-&
+						                                                   &NiNi*(ng(idm)*diffiso(i,i)-bn*bg(idm)*diffani(i,i) ) 
+						         END DO
+            endif
          ELSE
             ! >>>>>>>> Tangent case (delta=0) <<<<<<<<<<
             ! Stabilization part
@@ -1509,22 +1509,21 @@ CONTAINS
       !*****************************************************
       IF (ntang) THEN
          i = 3
+         indi = i + ind_asf
          ! Vorticity equation         
          if (switch%dirivortlim) then
             ! Dirichlet weak form for the vorticity equation: set vorticity to 0!!!
-            indi = i + ind_asf
             elMat%All(ind_ff(indi),ind_ff(indi),iel) = elMat%All(ind_ff(indi),ind_ff(indi),iel) - numer%tau(i)*NiNi
             !elMat%fh(ind_ff(indi),iel) = elMat%fh(ind_ff(indi),iel) - numer%tau(k)*kmult(indi)
          else
             ! Neumann for the vorticity equation
             ! Stabilization part
-            indi = i + ind_asf
             elMat%All(ind_ff(indi),ind_ff(indi),iel) = elMat%All(ind_ff(indi),ind_ff(indi),iel) - tau(i,i)*NiNi
             elMat%Alu(ind_ff(indi),ind_fe(indi),iel) = elMat%Alu(ind_ff(indi),ind_fe(indi),iel) + tau(i,i)*NiNi
             DO idm = 1,Ndim
-               indi = ind_asf + i
                indj = ind_ash + idm + (i - 1)*Ndim
-               elMat%Alq(ind_ff(indi),ind_fG(indj),iel) = elMat%Alq(ind_ff(indi),ind_fG(indj),iel) - NiNi*ng(idm)
+               elMat%Alq(ind_ff(indi),ind_fG(indj),iel) = elMat%Alq(ind_ff(indi),ind_fG(indj),iel) - &
+                                                          &NiNi*(ng(idm)*diffiso(i,i)-bn*bg(idm)*diffani(i,i) ) 
             END DO
          end if
       END IF
@@ -1588,11 +1587,13 @@ CONTAINS
             j = 2
             indi = ind_asf + i
             indj = ind_asf + j
-           elMat%All(ind_ff(indi),ind_ff(indj),iel) = elMat%All(ind_ff(indi),ind_ff(indj),iel) - &
+            elMat%All(ind_ff(indi),ind_ff(indj),iel) = elMat%All(ind_ff(indi),ind_ff(indj),iel) - &
                                                        &phys%etapar/phys%c2*NiNi*ufg(4)
             ! \phi^k*\Gamma^k
             elMat%fh(ind_ff(indi),iel) = elMat%fh(ind_ff(indi),iel) - phys%etapar/phys%c2*Ni*ufg(4)*ufg(2)
 
+
+ ! TODO: check if I need stabilization part 
          END IF
       END IF
 

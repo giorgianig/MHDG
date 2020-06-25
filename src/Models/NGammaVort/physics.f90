@@ -235,8 +235,8 @@ CONTAINS
    !*******************************************
    ! Compute the stabilization tensor tau
    !*******************************************
-   SUBROUTINE computeTauGaussPoints(up,uc,b,n,iel,ifa,isext,xy,tau)
-      real*8,intent(in)  :: up(:),uc(:),b(:),n(:),xy(:)
+   SUBROUTINE computeTauGaussPoints(up,uc,b,bmod,n,iel,ifa,isext,xy,tau)
+      real*8,intent(in)  :: up(:),uc(:),b(:),bmod,n(:),xy(:)
       real,intent(in) :: isext
       integer,intent(in)  :: ifa,iel
       real*8,intent(out) :: tau(:,:)
@@ -262,14 +262,14 @@ CONTAINS
             tau_aux(1) = tau_aux(1) + phys%diff_n*refElTor%Ndeg/(numer%tmax*xy(1)/numer%ntor)/phys%lscale
             tau_aux(2) = tau_aux(2) + phys%diff_u*refElTor%Ndeg/(numer%tmax*xy(1)/numer%ntor)/phys%lscale
             tau_aux(3) = tau_aux(3) + 1/phys%etapar*refElTor%Ndeg/(numer%tmax*xy(1)/numer%ntor)/phys%lscale
-            tau_aux(4) = tau_aux(4) + phys%diff_pot*refElTor%Ndeg/(numer%tmax*xy(1)/numer%ntor)/phys%lscale
+            tau_aux(4) = tau_aux(4) + 1/bmod**2*refElTor%Ndeg/(numer%tmax*xy(1)/numer%ntor)/phys%lscale
             if (abs(isext - 1.) < 1e-8) then
-               tau_aux(3) = 1
-               if (switch%fixdPotLim) then
-                  tau_aux(4) = 1
-               else
-                  tau_aux(4) = phys%etapar
-               endif
+               tau_aux(3) = phys%diff_vort*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
+!               if (switch%fixdPotLim) then
+!                  tau_aux(4) = 1
+!               else
+!                  tau_aux(4) = phys%etapar
+!               endif
             endif
          else
 #endif
@@ -277,14 +277,14 @@ CONTAINS
             tau_aux(1) = tau_aux(1) + phys%diff_n*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
             tau_aux(2) = tau_aux(2) + phys%diff_u*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
             tau_aux(3) = tau_aux(3) + 1/phys%etapar*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
-            tau_aux(4) = tau_aux(4) + phys%diff_pot*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
+            tau_aux(4) = tau_aux(4) + 1/bmod**2*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
             if (abs(isext - 1.) < 1e-8) then
-               tau_aux(3) = 1
-               if (switch%fixdPotLim) then
-                  tau_aux(4) = 1
-               else
-                  tau_aux(4) = phys%etapar
-               endif               
+               tau_aux(3) = phys%diff_vort*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
+!               if (switch%fixdPotLim) then
+!                  tau_aux(4) = 1
+!               else
+!                  tau_aux(4) = phys%etapar
+!               endif               
             endif
 #ifdef TOR3D
          endif
