@@ -240,8 +240,8 @@ CONTAINS
       real,intent(in) :: isext
       integer,intent(in)  :: ifa,iel
       real*8,intent(out) :: tau(:,:)
-      real*8              :: tau_aux(4)
-      real*8 :: xc,yc,rad,h,aux,bn,bnorm
+      real*8              :: tau_aux(4),bort(2)
+      real*8 :: xc,yc,rad,h,aux,bn,bnorm,bortn
       real*8 :: U1,U2,U3,U4
       integer :: ndim
       U1 = uc(1)
@@ -253,18 +253,26 @@ CONTAINS
       ndim = size(n)
       bn = dot_product(b(1:ndim),n)
       bnorm = norm2(b(1:ndim))
+      bort(1) = b(1)
+      bort(2) = -b(2)
+      bortn = dot_product(bort,n)
+
+
+
+bortn=1.
+
 
       if (numer%stab == 2 .or. numer%stab == 3) then
          tau_aux = abs(uc(2)*bn/uc(1))
 #ifdef TOR3D
          if (abs(n(3)) > 0.1) then
             ! Poloidal face
-            tau_aux(1) = tau_aux(1) + phys%diff_n*refElTor%Ndeg/(numer%tmax*xy(1)/numer%ntor)/phys%lscale
-            tau_aux(2) = tau_aux(2) + phys%diff_u*refElTor%Ndeg/(numer%tmax*xy(1)/numer%ntor)/phys%lscale
-            tau_aux(3) = tau_aux(3) + 1/phys%etapar*refElTor%Ndeg/(numer%tmax*xy(1)/numer%ntor)/phys%lscale
-            tau_aux(4) = tau_aux(4) + 1/bmod**2*refElTor%Ndeg/(numer%tmax*xy(1)/numer%ntor)/phys%lscale
+            tau_aux(1) = tau_aux(1) + phys%diff_n*abs(bortn)*refElTor%Ndeg/(numer%tmax*xy(1)/numer%ntor)/phys%lscale
+            tau_aux(2) = tau_aux(2) + phys%diff_u*abs(bortn)*refElTor%Ndeg/(numer%tmax*xy(1)/numer%ntor)/phys%lscale
+            tau_aux(3) = tau_aux(3) + (phys%Mref/phys%etapar*abs(bn)+phys%diff_vort*abs(bortn))*refElTor%Ndeg/(numer%tmax*xy(1)/numer%ntor)/phys%lscale
+            tau_aux(4) = tau_aux(4) + phys%Mref/bmod**2*abs(bortn)*refElTor%Ndeg/(numer%tmax*xy(1)/numer%ntor)/phys%lscale
             if (abs(isext - 1.) < 1e-8) then
-               tau_aux(3) = phys%diff_vort*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
+               tau_aux(3) = phys%diff_vort*abs(bortn)*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
 !               if (switch%fixdPotLim) then
 !                  tau_aux(4) = 1
 !               else
@@ -273,13 +281,16 @@ CONTAINS
             endif
          else
 #endif
+
+
             ! Toroidal face
-            tau_aux(1) = tau_aux(1) + phys%diff_n*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
-            tau_aux(2) = tau_aux(2) + phys%diff_u*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
-            tau_aux(3) = tau_aux(3) + 1/phys%etapar*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
-            tau_aux(4) = tau_aux(4) + 1/bmod**2*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
+            tau_aux(1) = tau_aux(1) + phys%diff_n*abs(bortn)*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
+            tau_aux(2) = tau_aux(2) + phys%diff_u*abs(bortn)*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
+            tau_aux(3) = tau_aux(3) + (1./phys%etapar*abs(bn)+phys%diff_vort*abs(bortn))*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
+!tau_aux(3) = tau_aux(3) + (1/phys%etapar)*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
+            tau_aux(4) = tau_aux(4) + 1./bmod**2*abs(bortn)*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
             if (abs(isext - 1.) < 1e-8) then
-               tau_aux(3) = phys%diff_vort*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
+               tau_aux(3) = phys%diff_vort*abs(bortn)*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
 !               if (switch%fixdPotLim) then
 !                  tau_aux(4) = 1
 !               else
@@ -297,6 +308,8 @@ CONTAINS
       tau(2,2) = tau_aux(2)
       tau(3,3) = tau_aux(3)
       tau(4,4) = tau_aux(4)
+
+!tau = tau/(refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale)
    END SUBROUTINE computeTauGaussPoints
 
    SUBROUTINE computeTauGaussPoints_matrix(up,uc,b,n,xy,isext,iel,tau)

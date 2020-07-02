@@ -50,7 +50,7 @@
    tau(3) = 1.E-0  ! Stabilization parameter 3rd equation
    tau(4) = 1.E-0  ! Stabilization parameter 4th equation         
    nrp    = 100     ! Max number of Newton-Raphson iterations
-   tNR    = 1e-6  ! Tolerance of the Newton-Raphson scheme
+   tNR    = 1e-4  ! Tolerance of the Newton-Raphson scheme
    tTM    = 1e-4  ! Tolerance for the steady state achievement
    div    = 1e9   ! Divergence of Newton-Raphon iteration
    sc_coe = 0     ! Shock capturing coefficient 
@@ -62,7 +62,7 @@
    thr    = 1.e-7 ! Min value of density allowed (works only if the switch is activated) 
    thrpre = 1e-8 ! Min value of pressure allowed (works only if the switch is activated) 
    stab   = 2     ! Stabilization type
-   dumpnr = 0.25   ! Dumping factor for Newton-Raphson (0<dumpnr<1)
+   dumpnr = 1.   ! Dumping factor for Newton-Raphson (0<dumpnr<1)
    ntor   = 4     ! Number of elements in the toroidal direction
    ptor   = 4     ! Polinomial degree in the toroidal direction
    tmax   = 6.28  ! Max extention in the toroidal direction 
@@ -87,11 +87,11 @@
 
 &PHYS_LST
    ! ****** Diffusion parameters in m^2/s
-   diff_n = 10 ! diffusion in the continuity equation
-   diff_u = 10 ! diffusion in the momentum equation
-   diff_e = 10 ! perpendicular diffusion for the energy equation
-   diff_ee = 10 ! perpendicular diffusion in the electron temperature equation (for the TiTe model)
-   diff_vort = 10 ! diffusion in the vorticity equation
+   diff_n = 1 ! diffusion in the continuity equation
+   diff_u = 1 ! diffusion in the momentum equation
+   diff_e = 1 ! perpendicular diffusion for the energy equation
+   diff_ee = 1 ! perpendicular diffusion in the electron temperature equation (for the TiTe model)
+   diff_vort = 1 ! diffusion in the vorticity equation
    ! ****** Background temperature in the isothermal model in eV (useless in the non-isothermal model)
    Tbg = 50
    ! ****** Boundary conditions: set the correspondance between boundary flag and boundary condition

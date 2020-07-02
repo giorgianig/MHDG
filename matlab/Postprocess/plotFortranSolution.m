@@ -38,7 +38,7 @@ path2save = '/home/giorgio/Dropbox/PostDoc_Marseille/Latex/NGammaVortPot/';
 %**********************************
 solpath = '/home/giorgio/Dropbox/Fortran/MHDG_ref3.0/test/';
 meshpath = '/home/giorgio/Dropbox/Fortran/MHDG_ref3.0/test/';
-solname = 'Sol2D_CircLimAlign_Quads_Nel208_P4_DPe0.100E+02';
+solname = 'Sol2D_CircLimAlign_Quads_Nel208_P4_DPe0.200E+01';
 
 
 

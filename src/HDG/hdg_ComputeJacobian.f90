@@ -675,7 +675,7 @@ CONTAINS
                ! Non constant stabilization
                ! Compute tau in the Gauss points
                IF (numer%stab < 5) THEN
-                  CALL computeTauGaussPoints(upgf(g,:),ufg(g,:),b(g,:),n_g(g,:),iel2,ifa,0.,xyf(g,:),tau)
+                  CALL computeTauGaussPoints(upgf(g,:),ufg(g,:),b(g,:),Bmod(g),n_g(g,:),iel2,ifa,0.,xyf(g,:),tau)
                ELSE
                   CALL computeTauGaussPoints_matrix(upgf(g,:),ufg(g,:),b(g,:),n_g(g,:),xyf(g,:),0.,iel2,tau)
                ENDIF
@@ -825,7 +825,7 @@ CONTAINS
                   ! Non constant stabilization
                   ! Compute tau in the Gauss points
                   IF (numer%stab < 5) THEN
-                     CALL computeTauGaussPoints(upgf(g,:),ufg(g,:),b(g,:),n_g(g,:),iel2,ifa,0.,xyf(g,:),tau)
+                     CALL computeTauGaussPoints(upgf(g,:),ufg(g,:),b(g,:),Bmod(g),n_g(g,:),iel2,ifa,0.,xyf(g,:),tau)
                   ELSE
                      CALL computeTauGaussPoints_matrix(upgf(g,:),ufg(g,:),b(g,:),n_g(g,:),xyf(g,:),0.,iel2,tau)
                   ENDIF
@@ -982,7 +982,7 @@ CONTAINS
                ! Non constant stabilization
                ! Compute tau in the Gauss points
                IF (numer%stab < 5) THEN
-                  CALL computeTauGaussPoints(upgf(g,:),ufg(g,:),b(g,:),n_g(g,:),iel2,ifa,isext,xyf(g,:),tau)
+                  CALL computeTauGaussPoints(upgf(g,:),ufg(g,:),b(g,:),Bmod(g),n_g(g,:),iel2,ifa,isext,xyf(g,:),tau)
                ELSE
                   CALL computeTauGaussPoints_matrix(upgf(g,:),ufg(g,:),b(g,:),n_g(g,:),xyf(g,:),isext,iel2,tau)
                ENDIF
@@ -1420,7 +1420,7 @@ CONTAINS
             ! Non constant stabilization
             ! Compute tau in the Gauss points
             IF (numer%stab < 5) THEN
-               CALL computeTauGaussPoints(upgf(g,:),ufg(g,:),b(g,:),n_g,iel,ifa,0.,xyf(g,:),tau)
+               CALL computeTauGaussPoints(upgf(g,:),ufg(g,:),b(g,:),Bmod(g),n_g,iel,ifa,0.,xyf(g,:),tau)
             ELSE
                CALL computeTauGaussPoints_matrix(upgf(g,:),ufg(g,:),b(g,:),n_g,xyf(g,:),0.,iel,tau)
             ENDIF
@@ -1556,7 +1556,7 @@ CONTAINS
             ! Non constant stabilization
             ! Compute tau in the Gauss points
             IF (numer%stab < 5) THEN
-               CALL computeTauGaussPoints(upgf(g,:),ufg(g,:),b(g,:),n_g,iel,ifa,isext,xyf(g,:),tau)
+               CALL computeTauGaussPoints(upgf(g,:),ufg(g,:),b(g,:),Bmod(g),n_g,iel,ifa,isext,xyf(g,:),tau)
             ELSE
                CALL computeTauGaussPoints_matrix(upgf(g,:),ufg(g,:),b(g,:),n_g,xyf(g,:),isext,iel,tau)
             ENDIF

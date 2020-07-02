@@ -818,7 +818,7 @@ CONTAINS
 
          ! Assembly Bohm contribution
 !         CALL assembly_bohm_bc(iel,ind_asf,ind_ash,ind_ff,ind_fe,ind_fg,NiNi,Ni,qfg(g,:),&
-!              &ufg(g,:),b(g,1:2),n_g,tau_stab,setval,delta,diff_iso_fac(:,:,g),diff_ani_fac(:,:,g))
+!              &ufg(g,:),b(g,1:2),n_g,tau_stab,setval,delta,diff_iso_fac(:,:,g),diff_ani_fac(:,:,g),ntang)
 
          CALL assembly_bohm_bc_new(iel,ind_asf,ind_ash,ind_ff,ind_fe,ind_fg,NiNi,Ni,qfg(g,:),&
               &ufg(g,:),b(g,1:2),n_g,tau_stab,setval,delta,diff_iso_fac(:,:,g),diff_ani_fac(:,:,g),ntang)
@@ -897,6 +897,7 @@ CONTAINS
       i = 1
       ind = i + ind_asf
       elMat%All(ind_ff(ind),ind_ff(ind),iel) = elMat%All(ind_ff(ind),ind_ff(ind),iel) - numer%tau(i)*NiNi
+
       elMat%fh(ind_ff(ind),iel) = elMat%fh(ind_ff(ind),iel) - numer%tau(i)*kmult(ind)
 
       ! Dirichlet weak form for the second equation
@@ -917,6 +918,7 @@ CONTAINS
          ind = i + ind_asf
          elMat%All(ind_ff(ind),ind_ff(ind),iel) = elMat%All(ind_ff(ind),ind_ff(ind),iel) - tau(i,i)*NiNi
          elMat%Alu(ind_ff(ind),ind_fe(ind),iel) = elMat%Alu(ind_ff(ind),ind_fe(ind),iel) + tau(i,i)*NiNi
+!write(6,*) "tau(i,i)",tau(i,i)
          DO idm = 1,Ndim
             indi = ind_asf + i
             indj = ind_ash + idm + (i - 1)*Ndim
@@ -1507,7 +1509,9 @@ CONTAINS
       !*****************************************************
       ! Third equation - VORTICITY MODEL
       !*****************************************************
+      ! Vorticity equation
       IF (ntang) THEN
+         !! NON-TANGENT CASE FOR VORTICITY
          i = 3
          indi = i + ind_asf
          ! Vorticity equation         
@@ -1520,16 +1524,35 @@ CONTAINS
             ! Stabilization part
             elMat%All(ind_ff(indi),ind_ff(indi),iel) = elMat%All(ind_ff(indi),ind_ff(indi),iel) - tau(i,i)*NiNi
             elMat%Alu(ind_ff(indi),ind_fe(indi),iel) = elMat%Alu(ind_ff(indi),ind_fe(indi),iel) + tau(i,i)*NiNi
+            ! Gradient part
             DO idm = 1,Ndim
                indj = ind_ash + idm + (i - 1)*Ndim
                elMat%Alq(ind_ff(indi),ind_fG(indj),iel) = elMat%Alq(ind_ff(indi),ind_fG(indj),iel) - &
                                                           &NiNi*(ng(idm)*diffiso(i,i)-bn*bg(idm)*diffani(i,i) ) 
             END DO
          end if
-      END IF
+      ELSE
+         !! TANGENT CASE FOR VORTICITY
+         ! Neumann for the vorticity equation
+         ! Stabilization part
+         i = 3
+         indi = i + ind_asf
+         elMat%All(ind_ff(indi),ind_ff(indi),iel) = elMat%All(ind_ff(indi),ind_ff(indi),iel) - tau(i,i)*NiNi
+         elMat%Alu(ind_ff(indi),ind_fe(indi),iel) = elMat%Alu(ind_ff(indi),ind_fe(indi),iel) + tau(i,i)*NiNi
+         ! Gradient part
+         DO idm = 1,Ndim
+            indj = ind_ash + idm + (i - 1)*Ndim
+            elMat%Alq(ind_ff(indi),ind_fG(indj),iel) = elMat%Alq(ind_ff(indi),ind_fG(indj),iel) - &
+                                                       &NiNi*(ng(idm)*diffiso(i,i)-bn*bg(idm)*diffani(i,i) ) 
+         END DO
 
+      ENDIF
+      !*****************************************************
+      ! Fourth equation - VORTICITY MODEL
+      !*****************************************************
       ! Potential equation
       IF (ntang) THEN
+         !! NON-TANGENT CASE FOR POTENTIAL
          IF (switch%fixdPotLim) THEN
             !*****************************************
             ! Fixed potential on the limiter
@@ -1595,6 +1618,20 @@ CONTAINS
 
  ! TODO: check if I need stabilization part 
          END IF
+      ELSE
+         !! TANGENT CASE FOR POTENTIAL
+         ! Neumann for the potential equation
+         ! Stabilization part
+         i = 4
+         indi = i + ind_asf
+         elMat%All(ind_ff(indi),ind_ff(indi),iel) = elMat%All(ind_ff(indi),ind_ff(indi),iel) - tau(i,i)*NiNi
+         elMat%Alu(ind_ff(indi),ind_fe(indi),iel) = elMat%Alu(ind_ff(indi),ind_fe(indi),iel) + tau(i,i)*NiNi
+         ! Gradient part
+         DO idm = 1,Ndim
+            indj = ind_ash + idm + (i - 1)*Ndim
+            elMat%Alq(ind_ff(indi),ind_fG(indj),iel) = elMat%Alq(ind_ff(indi),ind_fG(indj),iel) - &
+                                                       &NiNi*(ng(idm)*diffiso(i,i)-bn*bg(idm)*diffani(i,i) ) 
+         END DO      
       END IF
 
 #endif
