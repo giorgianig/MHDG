@@ -489,7 +489,7 @@ CONTAINS
 
    SUBROUTINE add_perturbation()
 						integer             :: Np1d,Np2d,Np 
-						integer             :: itor,itorg,iel,iel2,i,imod,nmod,ieq,indl,iphi
+						integer             :: itor,itorg,iel,iel2,i,imod,nmod,ieq,indl,iphi,ntorloc,itheta
 						integer,allocatable :: ind(:)
 						real*8              :: Xe(Mesh%Nnodesperelem,Mesh%Ndim),pertphi,perttheta
 #ifdef TOR3D
@@ -543,7 +543,7 @@ CONTAINS
          DO iel2 = 1,Mesh%Nelems
             iel = iel2
 #ifdef TOR3D
-            iel = (itor - 1)*N2d+iel2
+            iel = (itor - 1)*Mesh%Nelems+iel2
 #endif
 												ind = (iel - 1)*Np + (/(i,i=1,Np)/)
 												Xe = Mesh%X(Mesh%T(iel2,:),:)*simpar%refval_length
@@ -605,7 +605,7 @@ CONTAINS
 						DO iel = 1,Mesh%Nelems
 									ind = (iel - 1)*refElPol%Nnodes2D + (/(i,i=1,refElPol%Nnodes2D)/)
 									Xe = Mesh%X(Mesh%T(iel,:),:)
-		       smod = 1.
+		       smod = 0.1
 		       rs = 0.04/simpar%refval_length
 		       xsource = xm+0.85*(xmax-xm)
 		       ysource = ym

@@ -536,6 +536,7 @@ CONTAINS
    ! Analytical solution
    !****************************************
    SUBROUTINE analytical_solution(x,y,u)
+use mpi_omp
       real*8,dimension(:),intent(IN)        :: x,y
       real*8,dimension(:,:),intent(OUT)     :: u
       real*8,dimension(size(u,1),size(u,2))  :: up
@@ -596,6 +597,7 @@ CONTAINS
 									rs = 0.04/simpar%refval_length
 									xsource = xm-0.5*(xmax-xm)
 									ysource = ym
+!write(6,*) "proc:",mpivar%glob_id,"xm:",xm,"xmax",xmax,"xsource:",xsource
 									dsource   = sqrt((x-xsource)**2+(y-ysource)**2)
 									aux = -dsource**2/rs**2
 						   up(:,1) = 1e-3

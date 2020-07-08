@@ -27,7 +27,7 @@ CONTAINS
       character(10)  :: str
       character(70)  :: npr, nid
       real*8, parameter::tol = 1e-6
-
+      real*8 :: xmin
       integer :: elemType, ndim, Nnodes, Nelems, Nnodesperelem, Nfaces
       integer :: Nextfaces, Nnodesperface, IERR
       integer(HID_T) :: file_id
@@ -248,8 +248,12 @@ CONTAINS
       Mesh%elemType = elemType
       Mesh%Nextfaces = Nextfaces
 
+      xmin = minval(Mesh%X(:,1))
+#ifdef PARALL
+      CALL MPI_ALLREDUCE(MPI_IN_PLACE, xmin, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD, ierr)
+#endif
       ! Apply shift if axisymmetric case
-      IF ((switch%axisym .and. switch%testcase .ge. 60) .or. (switch%axisym .and. minval(Mesh%X(:, 1)) < tol)) THEN
+      IF ((switch%axisym .and. switch%testcase .ge. 60) .or. (switch%axisym .and. xmin < tol)) THEN
          IF (MPIvar%glob_id .eq. 0) THEN
             WRITE (6, *) "*** Applying translation in axisymmetric case!"
          ENDIF

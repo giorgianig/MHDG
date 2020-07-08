@@ -3,7 +3,7 @@
 # Makefile
 # date: 12/02/2016
 #---------------------------------------
-include Make.inc/arch.make
+include Make.inc/arch.make_marconi
 
 .PHONY : clean
 
@@ -192,7 +192,7 @@ hdg_PrecalculatedFirstEquation.o : hdg_PrecalculatedFirstEquation.F globals.o an
 hdg_ComputeJacobian.F : $(SDIR)/HDG/hdg_ComputeJacobian.f90
 	$(CMP) -s $< $@ || $(CP) -f $< $@
 
-hdg_ComputeJacobian.o : hdg_ComputeJacobian.F globals.o analytical.o LinearAlgebra.o PrintUtils.o physics.o
+hdg_ComputeJacobian.o : hdg_ComputeJacobian.F globals.o analytical.o LinearAlgebra.o PrintUtils.o physics.o hdg_LimitingTechniques.o
 	$(FC) -c $(FCFLAGS) $(INC)  $< -o $@	
 
 hdg_Mapping.F : $(SDIR)/HDG/hdg_Mapping.f90
