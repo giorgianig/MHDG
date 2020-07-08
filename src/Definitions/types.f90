@@ -18,6 +18,7 @@ MODULE types
    INTEGER, PARAMETER, PUBLIC :: bc_dirichlet = 1
    INTEGER, PARAMETER, PUBLIC :: bc_dirichlet_weak_form = 2
    INTEGER, PARAMETER, PUBLIC :: bc_dirichlet_weak_form_oldvalues = 3
+   INTEGER, PARAMETER, PUBLIC :: bc_Transmission = 4
    INTEGER, PARAMETER, PUBLIC :: bc_dirichlet_and_Neumann = 5
    ! 20-.. In out type
    INTEGER, PARAMETER, PUBLIC :: bc_inout = 20
@@ -520,6 +521,7 @@ CONTAINS
       bc_flag_name(1) = 'Dirichlet strong form'
       bc_flag_name(2) = 'Dirichlet weak form'
       bc_flag_name(3) = 'Dirichlet weak form using old values of the variables'
+      bc_flag_name(4) = 'Transmission boundary conditions'
       bc_flag_name(5) = 'Dirichlet in some equations and Neumann in others '
       bc_flag_name(20) = 'Inlet-Outlet'
       bc_flag_name(30) = 'Neumann homogeneus'

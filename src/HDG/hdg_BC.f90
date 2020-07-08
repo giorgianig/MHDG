@@ -453,9 +453,9 @@ CONTAINS
 
 #else
 !***********************************************************************
-!
+! 
 !                            VERSION 2D
-!
+! 
 !***********************************************************************
    integer                   :: ifa,ifl,iel,fl,bc,Npfl,Neq,Npel,i,Ndim,Fi,Ng1d
    integer                   :: nod(refElPol%Nfacenodes)
@@ -592,8 +592,10 @@ CONTAINS
          CALL set_dirichletwf_bc()
       CASE (bc_dirichlet_and_Neumann)
          CALL set_diric_neum_bc()
-!                                        CASE(bc_NeumannH)
-!                                           CALL set_NeumannH()
+      CASE(bc_NeumannH)
+         CALL set_NeumannH_bc()
+      CASE(bc_Transmission)
+         CALL set_Transmission_bc()
       CASE (bc_Bohm)
 
          CALL set_Bohm_bc(tau_save_el,xy_g_save_el)
@@ -643,6 +645,57 @@ CONTAINS
       END DO
 
    END SUBROUTINE set_dirichletwf_bc
+
+
+
+   !***************************************************************
+   ! Neumann in all variables
+   !***************************************************************
+   SUBROUTINE set_NeumannH_bc
+      integer                   :: g
+      real*8                    :: dline,xyDerNorm_g
+      real*8                    :: t_g(Ndim),n_g(Ndim)
+      real*8                    :: NiNi(Npfl,Npfl),Ni(Npfl)
+      real                      :: tau_stab(Neq,Neq)
+      ! Loop in 1D Gauss points
+      DO g = 1,Ng1d
+
+         ! Calculate the integration weight
+         xyDerNorm_g = norm2(xyDer(g,:))
+         dline = refElPol%gauss_weights1D(g)*xyDerNorm_g
+         IF (switch%axisym) THEN
+            dline = dline*xyg(g,1)
+         END IF
+
+         ! Unit normal to the boundary
+         t_g = xyDer(g,:)/xyDerNorm_g
+         n_g = [t_g(2),-t_g(1)]
+
+
+         !****************** Stabilization part******************************
+         IF (numer%stab > 1) THEN
+            ! Compute tau in the Gauss points
+            IF (numer%stab < 5) THEN
+               CALL computeTauGaussPoints(upg(g,:),ufg(g,:),b(g,1:2),Bmod(g),n_g,iel,ifa,1.,xyg(g,:),tau_stab)
+            ELSE
+               CALL computeTauGaussPoints_matrix(upg(g,:),ufg(g,:),b(g,1:2),n_g,xyg(g,:),1.,iel,tau_stab)
+            ENDIF
+         ELSE 
+            tau_stab=0.
+            DO i = 1,Neq
+               tau_stab(i,i) = numer%tau(i)
+            END DO
+         END IF
+         !****************** End stabilization part******************************
+
+
+         NiNi = tensorProduct(refElPol%N1D(g,:),refElPol%N1D(g,:))*dline
+         Ni = refElPol%N1D(g,:)*dline
+         CALL assembly_neum_bc(iel,ind_asf,ind_ash,ind_ff,ind_fg,NiNi,n_g,tau_stab)
+      END DO
+
+   END SUBROUTINE set_NeumannH_bc
+
 
    !***************************************************************
    ! Dirichlet in weak form in some variables and Neumann in others
@@ -698,9 +751,41 @@ CONTAINS
    SUBROUTINE set_dirichletstr_bc
       integer                   :: g,i,j,idm
       real*8                    :: dline,xyDerNorm_g
-      real*8                    :: t_g(Ndim),n_g(Ndim),fh(Npfl*neq)
+      real*8                    :: t_g(Ndim),n_g(Ndim)
       real*8                    :: Ni(Npfl)
 
+      ! Loop in 1D Gauss points
+      DO g = 1,Ng1d
+
+         ! Calculate the integration weight
+         xyDerNorm_g = norm2(xyDer(g,:))
+         dline = refElPol%gauss_weights1D(g)*xyDerNorm_g
+         IF (switch%axisym) THEN
+            dline = dline*xyg(g,1)
+         END IF
+
+         ! Unit normal to the boundary
+         t_g = xyDer(g,:)/xyDerNorm_g
+         n_g = [t_g(2),-t_g(1)]
+
+         ! Shaspe functions product
+         Ni = refElPol%N1D(g,:)*dline
+         CALL assembly_dirichletstr_bc(iel,ind_asf,ind_ash,ind_fe,ind_fg,Ni,qfg(g,:),uex(g,:),b(g,1:2),n_g)
+
+      END DO
+
+   END SUBROUTINE set_dirichletstr_bc
+
+
+
+   !********************************
+   ! Transmission boundary condition
+   !********************************
+   SUBROUTINE set_Transmission_bc
+      integer                   :: g,i,j,idm
+      real*8                    :: dline,xyDerNorm_g
+      real*8                    :: t_g(Ndim),n_g(Ndim)
+      real*8                    :: NiNi(Npfl,Npfl),Ni(Npfl)
       ! Loop in 1D Gauss points
       DO g = 1,Ng1d
 
@@ -714,13 +799,15 @@ CONTAINS
          t_g = xyDer(g,:)/xyDerNorm_g
          n_g = [t_g(2),-t_g(1)]
 
-         ! Shaspe functions product
-         Ni = refElPol%N1D(g,:)*dline
-         CALL assembly_dirichletstr_bc(iel,ind_asf,ind_ash,ind_fe,ind_fg,Ni,qfg(g,:),uex(g,:),b(g,1:2),n_g)
 
+         ! Shaspe functions product
+         NiNi = tensorProduct(refElPol%N1D(g,:),refElPol%N1D(g,:))*dline
+         Ni = refElPol%N1D(g,:)*dline
+         CALL assembly_trasm_bc(iel,ind_asf,ind_ff,NiNi,Ni,ufg(g,:))
       END DO
 
-   END SUBROUTINE set_dirichletstr_bc
+   END SUBROUTINE set_Transmission_bc
+
 
    !****************************
    ! Bohm
@@ -850,6 +937,61 @@ CONTAINS
 
    END SUBROUTINE assembly_dirichletwf_bc
 
+
+   !*********************************
+   ! Trasmissive conditions
+   !*********************************
+   SUBROUTINE assembly_trasm_bc(iel,ind_asf,ind_ff,NiNi,Ni,ug)
+      integer*4    :: iel,ind_asf(:),ind_ff(:)
+      real*8       :: NiNi(:,:),Ni(:),ug(:)
+      real*8       :: kmult(Neq*Npfl)
+      integer*4    :: i,j,k,idm
+      integer*4    :: ind(Npfl),indi(Npfl),indj(Npfl)
+
+      kmult = col(tensorProduct(ug(:),Ni))
+      DO i = 1,Neq
+         ind = i + ind_asf
+         elMat%All(ind_ff(ind),ind_ff(ind),iel) = elMat%All(ind_ff(ind),ind_ff(ind),iel) - numer%tau(i)*NiNi
+         elMat%fh(ind_ff(ind),iel) = elMat%fh(ind_ff(ind),iel) - numer%tau(i)*kmult(ind)
+      END DO
+
+
+   END SUBROUTINE assembly_trasm_bc
+
+
+
+
+   !*********************************
+   ! Assembly  Neumann
+   !*********************************
+   SUBROUTINE assembly_neum_bc(iel,ind_asf,ind_ash,ind_ff,ind_fg,NiNi,ng,tau)
+      integer*4    :: iel,ind_asf(:),ind_ash(:),ind_ff(:),ind_fg(:)
+      real*8       :: NiNi(:,:),ng(:)
+      real*8       :: tau(:,:)
+      integer*4    :: i,j,k,idm
+      integer*4    :: ind(Npfl),indi(Npfl),indj(Npfl)
+
+
+      DO i = 1,Neq
+						   ind = i + ind_asf
+						   elMat%All(ind_ff(ind),ind_ff(ind),iel) = elMat%All(ind_ff(ind),ind_ff(ind),iel) - tau(i,i)*NiNi
+						   elMat%Alu(ind_ff(ind),ind_fe(ind),iel) = elMat%Alu(ind_ff(ind),ind_fe(ind),iel) + tau(i,i)*NiNi
+						   DO idm = 1,Ndim
+						      indi = ind_asf + i
+						      indj = ind_ash + idm + (i - 1)*Ndim
+						      elMat%Alq(ind_ff(indi),ind_fG(indj),iel) = elMat%Alq(ind_ff(indi),ind_fG(indj),iel) + NiNi*ng(idm)
+						   END DO
+      END DO
+
+   END SUBROUTINE assembly_neum_bc
+
+
+
+
+
+
+
+
    !*********************************
    ! Assembly Dirichlet and Neumann
    !*********************************
@@ -973,7 +1115,6 @@ CONTAINS
       kmultconv = col(tensorProduct(matmul(An,uexg),Ni))
       uexn = reshape(tensorProduct(ng,uexg),(/Ndim*neq/)) ! Ndim*neq x 1
       kmultfseq = col(tensorProduct(uexn,Ni))  ! Ndim*neq*npf
-
       DO i = 1,Neq
          ind = i + ind_asf
          elMat%Aul_dir(ind_fe(ind),iel) = elMat%Aul_dir(ind_fe(ind),iel) - numer%tau(i)*kmultstab(ind) + kmultconv(ind)

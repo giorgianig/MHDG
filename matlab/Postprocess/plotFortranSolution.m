@@ -1,6 +1,6 @@
 % plot Fortran solution
 clear
-% close all
+close all
 
 %**********************************
 % Parallel/serial
@@ -13,6 +13,7 @@ nproc=48;
 %**********************************
 plotPhys = 1; % Plot physical values
 plotCons = 0; % Plot conservative variables
+plotGrads =0;  % Plot gradients
 % Dimensional (1) or non-dimensional (0) plots
 cons_dimensional_plots = 0; % conservative variables
 phys_dimensional_plots = 0; % physical variables
@@ -36,9 +37,11 @@ path2save = '/home/giorgio/Dropbox/PostDoc_Marseille/Latex/NGammaVortPot/';
 %**********************************
 % Solution
 %**********************************
+% solpath = '/home/giorgio/Dropbox/Fortran/Results/';
+% meshpath = '/home/giorgio/Dropbox/Fortran/MHDG_ref3.0/matlab/Meshes/Parallel/';
 solpath = '/home/giorgio/Dropbox/Fortran/MHDG_ref3.0/test/';
-meshpath = '/home/giorgio/Dropbox/Fortran/MHDG_ref3.0/test/';
-solname = 'Sol2D_CircLimAlign_Quads_Nel208_P4_DPe0.200E+01';
+meshpath = solpath;
+solname = 'Sol2D_Square_Quads_5_P3_DPe0.000E+00_0004';
 
 
 
@@ -54,6 +57,11 @@ for i=1:10
         pos = pos+i-1;
         break
     end
+end
+if strcmpi(solname(4:5),'2D')
+    Ndim=2;
+elseif strcmpi(solname(4:5),'3D')
+    Ndim=3;
 end
 
 % Make sure that I look only for 1 process if not parallel
@@ -81,6 +89,9 @@ for iproc = 1:nproc
     uc = transpose(reshape(u,[Neq,numel(u)/Neq]));
     up = cons2phys(uc,simulation_parameters);
     
+    if plotGrads
+        qr = transpose(reshape(q,[Neq*Ndim,numel(q)/Neq/Ndim]));
+    end
     % Reference element on plane
     if Mesh.elemType==1
         elemType=0;
@@ -89,7 +100,7 @@ for iproc = 1:nproc
     end
     refEl = createReferenceElement(elemType,size(Mesh.T,2));
     
-    iplot = 4;
+    iplot = 0;
     if strcmpi(solname(4:5),'2D')
         %**********************************
         % 2D plot...
@@ -101,7 +112,7 @@ for iproc = 1:nproc
                     uplot = uc(:,i)*simulation_parameters.adimensionalization.reference_values_conservative_variables(i);
                 end
                 iplot = iplot +1;
-                figure(iplot),hold on, plotSolution(Mesh.X,Mesh.T,uplot,refEl,nref);axis off                
+                figure(iplot),hold on, plotSolution(Mesh.X,Mesh.T,uplot,refEl,nref);axis off
                 name = simulation_parameters.physics.conservative_variable_names{i};
                 title(name)
                 if printout
@@ -117,8 +128,21 @@ for iproc = 1:nproc
                 end
                 iplot = iplot +1;
                 figure(iplot),hold on, plotSolution(Mesh.X,Mesh.T,uplot,refEl,nref);axis off
-                if i==3,plotMesh(Mesh.X,Mesh.T,elemType),end
+                %                 if i==3,plotMesh(Mesh.X,Mesh.T,elemType),end
                 name = simulation_parameters.physics.physical_variable_names{i};
+                title(name)
+                if printout
+                    readyforprintjpeg([8 6],16,[],[],1,[],[],path2save,[name,num2str(testnumber)])
+                end
+            end
+        end
+        if plotGrads
+            for i=1:size(qr,2)
+                qplot = qr(:,i);
+                iplot = iplot +1;
+                figure(iplot),hold on, plotSolution(Mesh.X,Mesh.T,qplot,refEl,nref);axis off
+                %                 if i==3,plotMesh(Mesh.X,Mesh.T,elemType),end
+                name = ['Q',num2str(i)];
                 title(name)
                 if printout
                     readyforprintjpeg([8 6],16,[],[],1,[],[],path2save,[name,num2str(testnumber)])
@@ -170,6 +194,19 @@ for iproc = 1:nproc
                         readyforprintjpeg([8 6],16,[],[],1,[],[],path2save,[name,num2str(testnumber)])
                     end
                     drawnow
+                end
+            end
+            if plotGrads
+                for i=1:size(qr,2)
+                    qplot = qr(:,i);
+                    qplot = extractSolutionInAtGivenTheta(qplot,T,refEl,refElTor,tpos(itor));
+                    iplot = iplot +1;
+                    figure(iplot),hold on, plotSolution(Mesh.X,Mesh.T,qplot,refEl,nref);axis off
+                    name = ['Q',num2str(i)];
+                    title([name,'- Plane ' num2str(itor)])
+                    if printout
+                        readyforprintjpeg([8 6],16,[],[],1,[],[],path2save,[name,num2str(testnumber)])
+                    end
                 end
             end
         end

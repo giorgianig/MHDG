@@ -14,6 +14,7 @@ SUBROUTINE HDG_computeJacobian()
    USE printUtils
    USE MPI_OMP
    USE Debug
+   USE hdg_limitingtechniques, ONLY:HDG_ShockCapturing
 
    IMPLICIT NONE
 
@@ -165,6 +166,12 @@ SUBROUTINE HDG_computeJacobian()
    CALL set_permutations(Neq*Npfl,Neq,perm)
 
    save_tau = switch%saveTau
+   
+   ! Compute shock capturing diffusion
+   if (switch%shockcp.gt.0) then
+      call HDG_ShockCapturing()
+   end if
+
 #endif
    ! reshape
    sizeu = size(sol%u)
@@ -545,14 +552,12 @@ CONTAINS
 
             ! Diamagnetic drift !TODO: verify drift intensity in isothermal and non-isothermal cases
             driftg = 0.
-            if (switch%driftdia) then
-               gradbmod = 0.
-               gradbmod(1) = dot_product(Nr,Bmod_nod)
-               gradbmod(2) = dot_product(Nz,Bmod_nod)
-               gradbmod(3) = dot_product(Nt,Bmod_nod)
-               call cross_product(b(g,:),gradbmod,driftg)
-               driftg = phys%dfcoef*driftg/Bmod(g)
-            endif
+            gradbmod = 0.
+            gradbmod(1) = dot_product(Nr,Bmod_nod)
+            gradbmod(2) = dot_product(Nz,Bmod_nod)
+            gradbmod(3) = dot_product(Nt,Bmod_nod)
+            call cross_product(b(g,:),gradbmod,driftg)
+            driftg = phys%dfcoef*driftg/Bmod(g)
 
             CALL assemblyVolumeContribution(Auq,Auu,rhs,b(g,:),divbg,driftg,Bmod(g),force(g,:),&
           &ktis,diff_iso_vol(:,:,g),diff_ani_vol(:,:,g),Ni,NNi,Nxyzg,NNxy,NxyzNi,NNbb,upg(g,:),ueg(g,:),qeg(g,:),u0eg(g,:,:))
@@ -1160,6 +1165,7 @@ CONTAINS
       real*8                        :: Bmod_nod(Npel),b_nod(Npel,3),b(Ng2d,3),Bmod(Ng2d),divbg,driftg(3),gradbmod(3)
       real*8                        :: diff_iso_vol(Neq,Neq,Ng2d),diff_ani_vol(Neq,Neq,Ng2d)
       real*8,allocatable  :: Auq(:,:,:),Auu(:,:,:),rhs(:,:)
+      real*8              :: auxdiffsc(Ng2d)
 
       ind_ass = (/(i,i=0,Neq*(Npel - 1),Neq)/)
       ind_asq = (/(i,i=0,Neq*(Npel - 1)*Ndim,Neq*Ndim)/)
@@ -1237,6 +1243,13 @@ CONTAINS
       ! Compute diffusion at Gauss points
       CALL setLocalDiff(xy,diff_iso_vol,diff_ani_vol,Bmod)
 
+      if (switch%shockcp.gt.0) then
+         auxdiffsc = matmul(refElPol%N2D,Mesh%scdiff_nodes(iel,:))
+         do i=1,Neq
+            diff_iso_vol(i,i,:) = diff_iso_vol(i,i,:)+auxdiffsc
+         end do
+      endif
+      
       ! Loop in 2D Gauss points
       Ngauss = Ng2d
       J11 = matmul(refElPol%Nxi2D,Xel(:,1))                           ! ng x 1
@@ -1295,13 +1308,11 @@ CONTAINS
 
          ! Diamagnetic drift !TODO: verify drift intensity in isothermal and non-isothermal cases
          driftg = 0.
-         if (switch%driftdia) then
-            gradbmod = 0.
-            gradbmod(1) = dot_product(Nxg,Bmod_nod)
-            gradbmod(2) = dot_product(Nyg,Bmod_nod)
-            call cross_product(b(g,:),gradbmod,driftg)
-            driftg = phys%dfcoef*driftg/Bmod(g)
-         endif
+         gradbmod = 0.
+         gradbmod(1) = dot_product(Nxg,Bmod_nod)
+         gradbmod(2) = dot_product(Nyg,Bmod_nod)
+         call cross_product(b(g,:),gradbmod,driftg)
+         driftg = phys%dfcoef*driftg/Bmod(g)
 
          CALL assemblyVolumeContribution(Auq,Auu,rhs,b(g,:),divbg,driftg,Bmod(g),force(g,:),&
           &ktis,diff_iso_vol(:,:,g),diff_ani_vol(:,:,g),Ni,NNi,Nxyzg,NNxy,NxyzNi,NNbb,upg(g,:),ueg(g,:),qeg(g,:),u0eg(g,:,:))
@@ -1336,6 +1347,8 @@ CONTAINS
       real*8                    :: tau(Neq,Neq)
       real*8                    :: Bmod_nod(Npfl),b_nod(Npfl,3),b(Ng1d,3),Bmod(Ng1d)
       real*8                    :: diff_iso_fac(Neq,Neq,Ng1d),diff_ani_fac(Neq,Neq,Ng1d)
+      real*8              :: auxdiffsc(Ng1d)
+
       if (save_tau) then
          tau_save_el = 0.
          xy_g_save_el = 0.
@@ -1385,6 +1398,13 @@ CONTAINS
 
       ! Compute diffusion at faces Gauss points
       CALL setLocalDiff(xyf,diff_iso_fac,diff_ani_fac,Bmod)
+
+      if (switch%shockcp.gt.0) then
+         auxdiffsc = matmul(refElPol%N1D,Mesh%scdiff_nodes(iel,refElPol%face_nodes(ifa,:)))
+         do i=1,Neq
+            diff_iso_fac(i,i,:) = diff_iso_fac(i,i,:)+auxdiffsc
+         end do
+      endif
 
       ! Physical variables at face Gauss points
       CALL cons2phys(ufg,upgf)
@@ -1467,7 +1487,7 @@ CONTAINS
       real*8                    :: upgf(Ng1d,phys%npv)
       real*8                    :: Bmod_nod(Npfl),b_nod(Npfl,3),b(Ng1d,3),Bmod(Ng1d)
       real*8                    :: diff_iso_fac(Neq,Neq,Ng1d),diff_ani_fac(Neq,Neq,Ng1d)
-
+      real*8              :: auxdiffsc(Ng1d)
       if (save_tau) then
          tau_save_el = 0.
          xy_g_save_el = 0.
@@ -1519,6 +1539,12 @@ CONTAINS
 
       ! Compute diffusion at faces Gauss points
       CALL setLocalDiff(xyf,diff_iso_fac,diff_ani_fac,Bmod)
+      if (switch%shockcp.gt.0) then
+         auxdiffsc = matmul(refElPol%N1D,Mesh%scdiff_nodes(iel,refElPol%face_nodes(ifa,:)))
+         do i=1,Neq
+            diff_iso_fac(i,i,:) = diff_iso_fac(i,i,:)+auxdiffsc
+         end do
+      endif
 
       ! Physical variables at face Gauss points
       CALL cons2phys(ufg,upgf)
@@ -1792,7 +1818,11 @@ CONTAINS
             z = i+(i-2)*Neq
             Auu(:,:,z) = Auu(:,:,z) - phys%a*divb*NNi
          END IF
+#ifdef VORTICITY
+         IF (switch%driftdia .and. i.ne.4) THEN
+#else
          IF (switch%driftdia) THEN
+#endif
             ! B x GradB drift (isothermal)
             DO k = 1,Ndim
                z = i+(i-1)*Neq
@@ -1852,12 +1882,17 @@ CONTAINS
              Auu(:,:,z)=Auu(:,:,z)- A(i,j)*NNxy
          END DO
 
-         ! Perpendicular diffusion contribution
          DO k = 1,Ndim
             ! Diagonal terms for perpendicular diffusion
              z = i+(k-1)*Neq+(i-1)*Neq*Ndim
              Auq(:,:,z)=Auq(:,:,z)+diffiso(i,i)*NxyzNi(:,:,k) - diffani(i,i)*NNxy*b(k)
 #ifdef VORTICITY
+            IF (i==3) THEN
+               ii =1
+						         ! B x GradB current in the vorticity equation
+			            z = i+(ii-1)*Neq
+			            Auu(:,:,z)= Auu(:,:,z) +2*transpose(NxyzNi(:,:,k))*drift(k)
+            ENDIF
             IF (switch%driftexb .and. i .ne. 4) THEN
                ! ExB terms
                kcoeff = 1./Bmod

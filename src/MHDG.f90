@@ -169,6 +169,13 @@ PROGRAM MHDG
    ! Compute first equation (definition of the gradient)
    CALL HDG_precalculatedfirstequation()
 
+
+	 ! Initialize shock capturing
+	 if (switch%shockcp.gt.0) then
+	    CALL initializeShockCapturing()
+	 endif	 
+
+
    ! Initialize the solution
    IF (nb_args .eq. 2) THEN
       ! restart simulation: load solution from file (the name is given in argument)
@@ -186,7 +193,7 @@ PROGRAM MHDG
    ENDIF
 
    ! Save solution
-   CALL setSolName(save_name, mesh_name, 0, .false., .false.)
+   CALL setSolName(save_name, mesh_name, 0, .true., .false.)
    CALL HDF5_save_solution(save_name)
 
    ! Allocate and initialize uiter and u0
@@ -238,6 +245,9 @@ PROGRAM MHDG
          ! Assembly the global matrix
          CALL hdg_Assembly()
 !call HDF5_save_CSR_matrix('Mat')
+!call HDF5_save_CSR_vector('rhs')
+!stop
+!call print_matrices_hdf5
 !stop
          ! Solve linear system
          CALL solve_global_system()

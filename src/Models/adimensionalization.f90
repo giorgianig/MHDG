@@ -83,6 +83,7 @@ SUBROUTINE adimensionalization()
    phys%dfcoef = 1.
    phys%c1 = 1.
    phys%c2 = 1.
+   phys%Mref = 1.
 
    IF (switch%testcase < 10) THEN
       WRITE (6, *) "No adimensionalization needed"

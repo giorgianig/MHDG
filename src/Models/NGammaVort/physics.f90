@@ -136,6 +136,7 @@ CONTAINS
       d_iso = 0.
       d_ani = 0.
       coeff = 1./Bmod**2
+
       !*****************************
       ! Diagonal terms
       !*****************************
@@ -162,9 +163,14 @@ CONTAINS
       d_iso(4,1,:) = coeff*phys%Mref
       d_ani(4,1,:) = coeff*phys%Mref
 
+
+
+      d_iso(4,1,:) = 0.
+      d_ani(4,1,:) = 0.
+ 
 !write(6,*) "diff_pot: ",1./Bmod**2*phys%Mref*0.0232
 
-      if (switch%testcase < 50) then
+      if (switch%testcase .eq. 1) then
          d_iso(4,4,:) = phys%diff_pot
          d_ani(4,4,:) = phys%diff_pot
          d_iso(3,4,:) = 0.

@@ -30,11 +30,12 @@ CONTAINS
       real*8,dimension(:),intent(IN)        :: x,y,t
       real*8,dimension(:,:),intent(OUT)     :: u
       real*8,dimension(size(u,1),size(u,2))  :: up
-      integer:: i,j,ind,N2D,N1D
+      integer:: i,j,k,ind,N2D,N1D
       real*8 :: a,b,r,xx,yy,tt,xmax,xmin,ymax,ymin,xm,ym
-      real*8 :: aux
+      real*8 :: dsource(refElPol%Nnodes2D),aux(refElPol%Nnodes2D),xsource,ysource,smod
 
       u = 0.
+      up = 0.
       a = 2*pi
       N2D = size(x,1)
       N1D = size(t,1)
@@ -64,14 +65,26 @@ CONTAINS
                up(ind,2) = cos(a*xx)*cos(a*yy)
                up(ind,3) = cos(a*xx)*sin(a*yy)
                up(ind,4) = sin(a*xx)*cos(a*yy)
-!                                                                                        CASE(2)
-!                                                                                        ! Axisimmetric case with div(b)~=0
-!                                                                                                                IF (.not.switch%axisym) THEN
-!                                                                                                                                 WRITE(6,*) "This is an axisymmetric test case!"
-!                                                                                                                                 stop
-!                                                                                                                END IF
-!                                                                                                                        up(ind,1) = 2+sin(a* xx)*sin(a* yy)
-!                                                                                                                        up(ind,2) = cos(a* xx)*cos(a* yy)
+
+            CASE (5)
+               IF (switch%axisym) THEN
+                  WRITE (6,*) "This is NOT an axisymmetric test case!"
+                  stop
+               END IF
+               ! Cartesian case,circular field centered in [xm,ym] in the poloidal plane,Bt = 1
+														 smod = 1.
+														 rs = 0.04/simpar%refval_length
+														 xsource = xm+0.5*(xmax-xm)
+														 ysource = ym
+														 dsource   = sqrt((Xe(:,1)-xsource)**2+(Xe(:,2)-ysource)**2)
+														 aux = -dsource**2/rs**2
+               up(ind,1) = 1e-6
+												   DO k=1,refElPol%Nnodes2D
+																		if (aux(k).gt.-30) then
+																				 up(ind(k),1) =  up(ind(k),1)+smod*exp(aux(k))
+																		endif
+												   END DO
+
             CASE (50:64)
                up(ind,1) = 1.
                up(ind,2) = 0.
@@ -515,9 +528,9 @@ CONTAINS
    END SUBROUTINE body_force
 #else
 !***********************************************************************
-!
+! 
 !                            VERSION 2D
-!
+! 
 !***********************************************************************
    !*****************************************
    ! Analytical solution
@@ -526,11 +539,22 @@ CONTAINS
       real*8,dimension(:),intent(IN)        :: x,y
       real*8,dimension(:,:),intent(OUT)     :: u
       real*8,dimension(size(u,1),size(u,2))  :: up
-      integer:: i
-      real*8 :: a,r(size(x))
+      real*8 :: a,b,xx,yy,tt,xmax,xmin,ymax,ymin,xm,ym
+      real*8 :: dsource(size(x)),aux(size(x)),xsource,ysource,smod
+      integer:: i,np
+      real*8 :: r(size(x)),rs
 
+      np = size(x)
+      u = 0.
       up = 0.
       a = 2*pi
+      xmax = Mesh%xmax
+      xmin = Mesh%xmin
+      ymax = Mesh%ymax
+      ymin = Mesh%ymin
+      xm = 0.5*(xmax + xmin)
+      ym = 0.5*(ymax + ymin)
+
       SELECT CASE (switch%testcase)
       CASE (1)
          IF (switch%axisym) THEN
@@ -543,14 +567,43 @@ CONTAINS
          up(:,2) = cos(a*x)*cos(a*y)
          up(:,3) = cos(a*x)*sin(a*y)
          up(:,4) = sin(a*x)*cos(a*y)
-!                                                CASE(2)
-!                                                ! Axisimmetric case with div(b)~=0
-!                                                   IF (.not.switch%axisym) THEN
-!                                                      WRITE(6,*) "This is an axisymmetric test case!"
-!                                                      stop
-!                                                   END IF
-!                                                                  up(:,1) = 2+sin(a*x)*sin(a*y)
-!                                                                  up(:,2) = cos(a*x)*cos(a*y)
+
+						CASE (5)
+						   IF (switch%axisym) THEN
+						      WRITE (6,*) "This is NOT an axisymmetric test case!"
+						      stop
+						   END IF
+						   ! Cartesian case,circular field centered in [xm,ym] in the poloidal plane,Bt = 1
+									smod = 1.
+									rs = 0.04/simpar%refval_length
+									xsource = xm-0.5*(xmax-xm)
+									ysource = ym
+									dsource   = sqrt((x-xsource)**2+(y-ysource)**2)
+									aux = -dsource**2/rs**2
+						   up(:,1) = 1e-3
+									DO i=1,np
+												if (aux(i).gt.-30) then
+															up(i,1) =  up(i,1)+smod*exp(aux(i))
+												endif
+									END DO
+						CASE (6)
+						   IF (.not.switch%axisym) THEN
+						      WRITE (6,*) "This is an axisymmetric test case!"
+						      stop
+						   END IF
+						   ! Cartesian case,circular field centered in [xm,ym] in the poloidal plane,Bt = 1
+									smod = 1.
+									rs = 0.04/simpar%refval_length
+									xsource = xm-0.5*(xmax-xm)
+									ysource = ym
+									dsource   = sqrt((x-xsource)**2+(y-ysource)**2)
+									aux = -dsource**2/rs**2
+						   up(:,1) = 1e-3
+									DO i=1,np
+												if (aux(i).gt.-30) then
+															up(i,1) =  up(i,1)+smod*exp(aux(i))
+												endif
+									END DO
       CASE (50:64)
          up(:,1) = 1.
          up(:,2) = 0.
@@ -712,6 +765,8 @@ CONTAINS
          k = phys%a
          f(:,1) = 0.
          f(:,2) = 0.
+      CASE (5:6)
+         ! Do nothing
       CASE (50:)
          !Do nothing
       CASE DEFAULT

@@ -3,19 +3,19 @@ clc
 close all
 mark = {'bo','ko','go','mo','yo','bo','bo','ko','go','mo','yo','bo'};
 % Mesh to load
-path2mesh ='../Meshes/';
+path2mesh ='/home/giorgio/Dropbox/Matlab/Meshes/Meshes_2D/ConvergenceMeshes/';
 % meshName  = 'Circle_ONION_3_P10.mat';
 % meshName  = 'West_Hugo_h0.02_refCorn0.001_refSep0.01_YesHole_P4.mat';
-meshName  = 'CircLimAlign_Quads_Nel1536_P3.mat';
+meshName  = 'Square_Quads_9216els_P4.mat';
 % meshName  = 'CircLimAlign_Quads_Nel128_P3.mat';
 % path2mesh = '/home/giorgio/Dropbox/Matlab/Meshes/Meshes_2D/';
 % meshName  = 'mesh1_P1.mat';
 % Number of divisions
-ndiv = 12;
-divType = 'rot';
-% divType = 'x';
+ndiv = 48;
+% divType = 'rot';
+divType = 'x';
 % divType = 'y';
-theta0 = 1*pi/180;
+theta0 = 0*pi/180;
 elemType = 0;
 
 % theta0 = pi/180;

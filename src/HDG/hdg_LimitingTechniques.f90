@@ -64,8 +64,15 @@ CONTAINS
 
       IF (switch%shockcp .eq. 0) RETURN
 
+      IF (utils%printint > 0) THEN
+         WRITE (6, *) '*************************************************'
+         WRITE (6, *) '*  Initializing shock capturing                 *'
+         WRITE (6, *) '*************************************************'
+      END IF
+
       Ne = Mesh%Nelems
       ALLOCATE (Mesh%flag_elems_sc(Ne))
+      ALLOCATE (Mesh%scdiff_nodes(Mesh%Nelems, Mesh%Nnodesperelem))
       Mesh%flag_elems_sc = 0
 
       SELECT CASE (switch%shockcp)
@@ -88,8 +95,7 @@ CONTAINS
          END IF
 
       CASE (3)
-         ALLOCATE (refElPol%Nlin(Mesh%Nnodesperelem, refElPol%Nvertices))
-         ALLOCATE (Mesh%scdiff_nodes(Mesh%Nelems, Mesh%Nnodesperelem))
+         ALLOCATE (refElPol%Nlin(Mesh%Nnodesperelem, refElPol%Nvertices))         
          Mesh%scdiff_nodes = 0.
          IF (refElPol%Nvertices .eq. 3) THEN
             refElPol%Nlin(:, 1) = -0.5*(refElPol%coord2d(:, 1) + refElPol%coord2d(:, 2))
@@ -816,17 +822,14 @@ CONTAINS
    END SUBROUTINE HDG_AddDiffusionCorner
 
 !****************************************************************************************
-!
+! 
 !                        SHOCK CAPTURING
-!
+! 
 !****************************************************************************************
    SUBROUTINE HDG_ShockCapturing()
       USE reference_element, ONLY: vandermonde_2d, vandermonde_qua
       integer*4             :: iel, i, j, Ndim, Neq, Nel, Np, ct, Nf, Nfp, ctgl, ierr, inod
-      integer*4             :: perm(phys%Neq*Mesh%Nnodesperface), ind_loc(refElPol%Nfaces, phys%Neq*Mesh%Nnodesperface)
-      real*8                :: Xe(1:Mesh%Nnodesperelem, 1:Mesh%Ndim)
       real*8                :: diff(Mesh%Nelems), maxdiff
-      real*8, allocatable    :: Pel(:, :), Qel(:, :), Lfel(:, :)
       real*8                :: tol = 1e-12
       integer               :: els(size(Mesh%N, 2))
       real*8                :: auxones(Mesh%Nnodesperelem), diffnod(Mesh%Nnodesperelem), diffver(refElPol%Nvertices)
@@ -836,7 +839,7 @@ CONTAINS
       IF (switch%shockcp .eq. 0) RETURN
 
       IF (MPIvar%glob_id .eq. 0) THEN
-         IF (utils%printint > 0) THEN
+         IF (utils%printint > 1) THEN
             WRITE (6, *) '*************************************************'
             WRITE (6, *) '*           Shock capturing                     *'
             WRITE (6, *) '*************************************************'
@@ -867,12 +870,10 @@ CONTAINS
          WRITE (6, *) "Vandermonde matrix for this element type not coded yet"
          STOP
       END IF
-
       ! Invert Vandermonde matrix
       CALL invert_matrix(Vand, invVand)
       CALL findCoeffShockCaptur(1.e-1, diff, invVand)
       ! *****
-
       ! First loop in elements to allocate
       ct = 0
       IF (switch%shockcp .eq. 1) THEN
@@ -900,41 +901,16 @@ CONTAINS
          STOP
       END IF
 
-      ! Keep track of shock capturing diffusion added
-      IF (switch%shockcp .eq. 3) THEN
-         Mesh%scdiff_nodes = 0.
-      END IF
+      ! Initialize shock capturing diffusion storing
+      Mesh%scdiff_nodes = 0.
 
       IF (ct .gt. 0) THEN
 
-         ALLOCATE (Pel(Neq*Np, Ndim*Neq*Np))
-         ALLOCATE (Qel(Neq*Np, Ndim*Neq*Np))
-
          ! Allocate
-         ALLOCATE (Lfel(Neq*Nf*Nfp, Neq*Ndim*Np))
          Mesh%flag_elems_sc = 0
-         IF (ALLOCATED(elMat%P_sc)) THEN
-            DEALLOCATE (elMat%P_sc)
-         END IF
-         ALLOCATE (elMat%P_sc(Neq*Np, Ndim*Neq*Np, ct))
-         IF (ALLOCATED(elMat%Lf_sc)) THEN
-            DEALLOCATE (elMat%Lf_sc)
-         END IF
-         ALLOCATE (elMat%Lf_sc(Neq*Nf*Nfp, Neq*Ndim*Np, ct))
-         elMat%P_sc = 0.
-         elMat%Lf_sc = 0.
 
          auxones = 1.
 
-         perm = 0
-         CALL set_permutations(Neq*Nfp, Neq, perm)
-
-         ind_loc = 0
-         DO i = 1, Nf
-            DO j = 1, Neq*Nfp
-               ind_loc(i, j) = Neq*Nfp*(i - 1) + j
-            END DO
-         END DO
          !*****************
          ! Loop in elements
          !*****************
@@ -964,35 +940,11 @@ CONTAINS
 
             maxdiff = max(maxdiff, maxval(diffnod))
 
-            IF (switch%shockcp .eq. 3) THEN
-               Mesh%scdiff_nodes(iel, :) = diffnod
-            END IF
-
-            Pel = 0.
-            Qel = 0.
-            Lfel = 0.
-
-            ! Coordinates of the nodes of the element
-            Xe = Mesh%X(Mesh%T(iel, :), :)
-
-            ! Compute the matrices for the element
-            CALL elemental_matrices(Xe, Pel, Qel, Lfel, diffnod)
-
-            ! Flip the faces for the elements for which the face is already been counted
-            DO j = 1, Nf
-               IF (Mesh%flipface(iel, j)) THEN
-                  Lfel(ind_loc(j, :), :) = Lfel(ind_loc(j, perm), :)
-               END if
-            END DO
-
-            ! Store the matrices for all the elements
-            elMat%P_sc(:, :, ct) = Pel - Qel
-            elMat%Lf_sc(:, :, ct) = Lfel
+            ! Store the shock capturing diffusion
+            Mesh%scdiff_nodes(iel, :) = diffnod
             Mesh%flag_elems_sc(iel) = ct
             ct = ct + 1
          END DO
-
-         DEALLOCATE (Pel, Qel, Lfel)
 
          ctgl = ct - 1
       ELSE
@@ -1288,7 +1240,7 @@ CONTAINS
          ! ud = u(:,2);
 #ifndef TEMPERATURE
          ! use u_par for shock detection
-         udet = up(:, 2)
+         udet = up(:, 1)
 #else
          udet = up(:, 9)
 #endif

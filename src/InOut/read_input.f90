@@ -186,7 +186,7 @@ SUBROUTINE READ_input()
    END IF
 
    ! Some checking of the inputs
-   if (time%tis .ne. 1 .and. time%tis .ne. 2) then
+   if (time%tis .gt. 6) then
       write (6, *) "Error: wrong time integration scheme in parameters: tis=", time%tis
       stop
    end if
