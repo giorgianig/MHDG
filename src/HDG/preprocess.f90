@@ -529,6 +529,7 @@ CONTAINS
       ! Loop in elements
       IF (refElPol%elemType .eq. 0) THEN
 !$OMP PARALLEL PRIVATE(i,p1,p2,p3,h1,h2,h3)
+!$OMP DO
          DO i = 1, Mesh%Nelems
             p1 = Mesh%X(Mesh%Tlin(i, 1), :)
             p2 = Mesh%X(Mesh%Tlin(i, 2), :)
@@ -538,9 +539,11 @@ CONTAINS
             h3 = norm2(p3 - p2)
             Mesh%elemSize(i) = min(h1, h2, h3)
          END DO
+!$OMP END DO
 !$OMP END PARALLEL
       ELSEIF (refElPol%elemType .eq. 1) THEN
 !$OMP PARALLEL PRIVATE(i,p1,p2,p3,p4,h1,h2,h3,h4)
+!$OMP DO
          DO i = 1, Mesh%Nelems
             p1 = Mesh%X(Mesh%Tlin(i, 1), :)
             p2 = Mesh%X(Mesh%Tlin(i, 2), :)
@@ -552,6 +555,7 @@ CONTAINS
             h4 = norm2(p4 - p3)
             Mesh%elemSize(i) = min(h1, h2, h3, h4)
          END DO
+!$OMP END DO
 !$OMP END PARALLEL
       END IF
 

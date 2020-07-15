@@ -134,6 +134,8 @@ Prova.Coordinates = Xplot;
     end
     axis equal
     colormap('jet')
+%     colormap('hot')
+%     colormap('hsv')
     colorbar('location','East');
 else
     
@@ -147,7 +149,9 @@ else
             'FaceColor','interp','EdgeAlpha',0);
     end
     axis equal
-    colormap('jet')
+%     colormap('jet')
+    colormap('hot')
+%     colormap('hsv')
     colorbar('location','East','fontname','times new roman',...
         'axislocation','out');
     assi = axis;

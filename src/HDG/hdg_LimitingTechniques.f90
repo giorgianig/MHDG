@@ -1239,7 +1239,6 @@ CONTAINS
          ! use gamma for shock detection
          ! ud = u(:,2);
 #ifndef TEMPERATURE
-         ! use u_par for shock detection
          udet = up(:, 1)
 #else
          udet = up(:, 9)
@@ -1261,6 +1260,9 @@ CONTAINS
          eps0 = numer%sc_coe*Mesh%elemSize/refElPol%Ndeg
          eps = 0.
          ! Loop in elements
+!$OMP PARALLEL DEFAULT(SHARED) &
+!$OMP PRIVATE(i)
+!$OMP DO SCHEDULE(STATIC)
          DO i = 1, Nel
             IF (SUM(um(:, i)**2) .lt. thresh) THEN
                se(i) = -100
@@ -1271,6 +1273,8 @@ CONTAINS
                eps(i) = eps0(i)
             END IF
          END DO
+!$OMP END DO
+!$OMP END PARALLEL
          DEALLOCATE (up, udet, um, umho)
       END SUBROUTINE findCoeffShockCaptur
 

@@ -1,6 +1,6 @@
 % plot Fortran solution
 clear
-close all
+% close all
 
 %**********************************
 % Parallel/serial
@@ -17,7 +17,8 @@ plotGrads =0;  % Plot gradients
 % Dimensional (1) or non-dimensional (0) plots
 cons_dimensional_plots = 0; % conservative variables
 phys_dimensional_plots = 0; % physical variables
-nref = 5; % plot order
+nref = 10; % plot order
+varnplot = [2,4]; % I don't plot these variables
 
 %**********************************
 % 3D stuff
@@ -37,11 +38,13 @@ path2save = '/home/giorgio/Dropbox/PostDoc_Marseille/Latex/NGammaVortPot/';
 %**********************************
 % Solution
 %**********************************
-% solpath = '/home/giorgio/Dropbox/Fortran/Results/';
-% meshpath = '/home/giorgio/Dropbox/Fortran/MHDG_ref3.0/matlab/Meshes/Parallel/';
-solpath = '/home/giorgio/Dropbox/Fortran/MHDG_ref3.0/test/';
-meshpath = solpath;
-solname = 'Sol2D_Square_Quads_5_P3_DPe0.000E+00_0004';
+solpath = '/home/giorgio/Dropbox/Fortran/Results/';
+meshpath = '/home/giorgio/Dropbox/Fortran/MHDG_ref3.0/matlab/Meshes/';
+solname = 'Sol2D_Square_Quads_Nel9216_P3_DPe0.100E-04_0125';
+% solpath = '/home/giorgio/Dropbox/Fortran/MHDG_ref3.0/test/';
+% meshpath = solpath;
+% solname = 'Sol2D_Square_5_P3_DPe0.100E-04_1750';
+
 
 
 
@@ -100,19 +103,20 @@ for iproc = 1:nproc
     end
     refEl = createReferenceElement(elemType,size(Mesh.T,2));
     
-    iplot = 0;
+    iplot = 5;
     if strcmpi(solname(4:5),'2D')
         %**********************************
         % 2D plot...
         %**********************************
         if plotCons
             for i=1:size(uc,2)
+                if ismember(i,varnplot),continue,end
                 uplot = uc(:,i);
                 if cons_dimensional_plots
                     uplot = uc(:,i)*simulation_parameters.adimensionalization.reference_values_conservative_variables(i);
                 end
                 iplot = iplot +1;
-                figure(iplot),hold on, plotSolution(Mesh.X,Mesh.T,uplot,refEl,nref);axis off
+                figure(iplot),clf, plotSolution(Mesh.X,Mesh.T,uplot,refEl,nref);axis off
                 name = simulation_parameters.physics.conservative_variable_names{i};
                 title(name)
                 if printout
@@ -122,13 +126,14 @@ for iproc = 1:nproc
         end
         if plotPhys
             for i=1:size(up,2)
+                if ismember(i,varnplot),continue,end
                 uplot = up(:,i);
                 if phys_dimensional_plots
                     uplot = up(:,i)*simulation_parameters.adimensionalization.reference_values_physical_variables(i);
                 end
                 iplot = iplot +1;
-                figure(iplot),hold on, plotSolution(Mesh.X,Mesh.T,uplot,refEl,nref);axis off
-                %                 if i==3,plotMesh(Mesh.X,Mesh.T,elemType),end
+                figure(iplot),clf, plotSolution(Mesh.X,Mesh.T,uplot,refEl,nref);axis off
+                                if i==1,plotMesh(Mesh.X,Mesh.T,elemType),end
                 name = simulation_parameters.physics.physical_variable_names{i};
                 title(name)
                 if printout
@@ -138,9 +143,10 @@ for iproc = 1:nproc
         end
         if plotGrads
             for i=1:size(qr,2)
+                if ismember(i,varnplot),continue,end
                 qplot = qr(:,i);
                 iplot = iplot +1;
-                figure(iplot),hold on, plotSolution(Mesh.X,Mesh.T,qplot,refEl,nref);axis off
+                figure(iplot),clf, plotSolution(Mesh.X,Mesh.T,qplot,refEl,nref);axis off
                 %                 if i==3,plotMesh(Mesh.X,Mesh.T,elemType),end
                 name = ['Q',num2str(i)];
                 title(name)
@@ -164,6 +170,7 @@ for iproc = 1:nproc
         for itor = 1:ntpos
             if plotCons
                 for i=1:size(uc,2)
+                    if ismember(i,varnplot),continue,end
                     uplot = uc(:,i);
                     if cons_dimensional_plots
                         uplot = uc(:,i)*simulation_parameters.adimensionalization.reference_values_conservative_variables(i);
@@ -181,6 +188,7 @@ for iproc = 1:nproc
             end
             if plotPhys
                 for i=1:size(up,2)
+                    if ismember(i,varnplot),continue,end
                     uplot = up(:,i);
                     if phys_dimensional_plots
                         uplot = up(:,i)*simulation_parameters.adimensionalization.reference_values_physical_variables(i);
@@ -198,6 +206,7 @@ for iproc = 1:nproc
             end
             if plotGrads
                 for i=1:size(qr,2)
+                    if ismember(i,varnplot),continue,end
                     qplot = qr(:,i);
                     qplot = extractSolutionInAtGivenTheta(qplot,T,refEl,refElTor,tpos(itor));
                     iplot = iplot +1;
@@ -212,6 +221,11 @@ for iproc = 1:nproc
         end
     end
 end
+
+
+
+figure(100+iplot), clf,plotSolution(Mesh.X,Mesh.T,col(transpose(scdiff_nodes)),refEl,nref);axis off
+hold on, plotMesh(Mesh.X,Mesh.T,elemType)
 % Mesh.maxx = max((X(:,1)+3.4)/lscale);
 % Mesh.minx = min((X(:,1)+3.4)/lscale);
 %
