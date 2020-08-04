@@ -477,7 +477,7 @@ CONTAINS
    real*8                    :: xyg(refElPol%Ngauss1d,2),xyder(refElPol%Ngauss1d,2)
    real*8                    :: Bmod(refElPol%Ngauss1d),b(refElPol%Ngauss1d,3)
    real*8                    :: ufg(refElPol%Ngauss1d,phys%neq),qfg(refElPol%Ngauss1d,phys%neq*2)
-   real*8                    :: upg(refElPol%Ngauss1d,phys%neq)
+   real*8                    :: upg(refElPol%Ngauss1d,phys%neq),uexpg(refElPol%Ngauss1d,phys%neq)
    real*8                    :: uex(refElPol%Ngauss1d,phys%neq)
    real*8                    :: diff_iso_fac(phys%neq,phys%neq,refElPol%Ngauss1d)
    real*8                    :: diff_ani_fac(phys%neq,phys%neq,refElPol%Ngauss1d)
@@ -558,14 +558,14 @@ CONTAINS
       ! Solution gradient at nodes 
       qf = transpose(reshape(sol%q(ind_qf),(/Ndim*Neq,Npfl/)))
 
+      ! Analytical solution at face Gauss points
+      call analytical_solution(xyg(:,1),xyg(:,2),uex)
+
       ! Solution at face Gauss points
       ufg = matmul(refElPol%N1D,transpose(reshape(uf,[neq,Npfl])))
-
+      
       ! Gradient solution at face gauss points
       qfg = matmul(refElPol%N1D,qf)
-
-      ! Analytical solution at face Gauss points
-      CALL analytical_solution(xyg(:,1),xyg(:,2),uex)
 
       ! Magnetic field norm and direction at Gauss points
       Bmod = matmul(refElPol%N1d,Bmod_nod)
@@ -576,6 +576,9 @@ CONTAINS
 
       ! Physical variables at Gauss points
       CALL cons2phys(ufg,upg)
+
+      ! Physical variables at Gauss points with analytical sol
+      CALL cons2phys(uex,uexpg)
 
       ! Type of boundary
       fl = Mesh%boundaryFlag(ifa)
@@ -725,9 +728,9 @@ CONTAINS
          IF (numer%stab > 1) THEN
             ! Compute tau in the Gauss points
             IF (numer%stab < 5) THEN
-               CALL computeTauGaussPoints(upg(g,:),ufg(g,:),b(g,1:2),Bmod(g),n_g,iel,ifa,1.,xyg(g,:),tau_stab)
+               CALL computeTauGaussPoints(uexpg(g,:),uex(g,:),b(g,1:2),Bmod(g),n_g,iel,ifa,1.,xyg(g,:),tau_stab)
             ELSE
-               CALL computeTauGaussPoints_matrix(upg(g,:),ufg(g,:),b(g,1:2),n_g,xyg(g,:),1.,iel,tau_stab)
+               CALL computeTauGaussPoints_matrix(uexpg(g,:),uex(g,:),b(g,1:2),n_g,xyg(g,:),1.,iel,tau_stab)
             ENDIF
          ELSE 
             tau_stab=0.
@@ -770,7 +773,7 @@ CONTAINS
 
          ! Shaspe functions product
          Ni = refElPol%N1D(g,:)*dline
-         CALL assembly_dirichletstr_bc(iel,ind_asf,ind_ash,ind_fe,ind_fg,Ni,qfg(g,:),uex(g,:),b(g,1:2),n_g)
+         CALL assembly_dirichletstr_bc(iel,ind_asf,ind_ash,ind_fe,ind_fg,Ni,qfg(g,:),uex(g,:),uexpg(g,:),b(g,1:2),n_g)
 
       END DO
 
@@ -908,7 +911,7 @@ CONTAINS
 !              &ufg(g,:),b(g,1:2),n_g,tau_stab,setval,delta,diff_iso_fac(:,:,g),diff_ani_fac(:,:,g),ntang)
 
          CALL assembly_bohm_bc_new(iel,ind_asf,ind_ash,ind_ff,ind_fe,ind_fg,NiNi,Ni,qfg(g,:),&
-              &ufg(g,:),b(g,1:2),n_g,tau_stab,setval,delta,diff_iso_fac(:,:,g),diff_ani_fac(:,:,g),ntang)
+              &ufg(g,:),upg(g,:),b(g,1:2),n_g,tau_stab,setval,delta,diff_iso_fac(:,:,g),diff_ani_fac(:,:,g),ntang)
       END DO ! END loop in Gauss points
 
    END SUBROUTINE set_Bohm_bc
@@ -922,13 +925,13 @@ CONTAINS
    !*********************************
    ! Assembly Dirichlet in weak form
    !*********************************
-   SUBROUTINE assembly_dirichletwf_bc(iel,ind_asf,ind_ff,uexg,NiNi,Ni)
+   SUBROUTINE assembly_dirichletwf_bc(iel,ind_asf,ind_ff,ufg,NiNi,Ni)
       integer*4    :: iel,ind_asf(:),ind_ff(:)
-      real*8       :: NiNi(:,:),Ni(:),uexg(:)
+      real*8       :: NiNi(:,:),Ni(:),ufg(:)
       real*8       :: kmult(Neq*Npfl)
       integer*4    :: ind(Npfl),i
 
-      kmult = col(tensorProduct(uexg(:),Ni))
+      kmult = col(tensorProduct(ufg(:),Ni))
       DO i = 1,Neq
          ind = i + ind_asf
          elMat%All(ind_ff(ind),ind_ff(ind),iel) = elMat%All(ind_ff(ind),ind_ff(ind),iel) - numer%tau(i)*NiNi
@@ -995,9 +998,9 @@ CONTAINS
    !*********************************
    ! Assembly Dirichlet and Neumann
    !*********************************
-   SUBROUTINE assembly_diric_neum_bc(iel,ind_asf,ind_ash,ind_ff,ind_fg,uexg,NiNi,Ni,bg,ng,tau,diffiso,diffani)
+   SUBROUTINE assembly_diric_neum_bc(iel,ind_asf,ind_ash,ind_ff,ind_fg,ufg,NiNi,Ni,bg,ng,tau,diffiso,diffani)
       integer*4    :: iel,ind_asf(:),ind_ash(:),ind_ff(:),ind_fg(:)
-      real*8       :: NiNi(:,:),Ni(:),uexg(:),bg(:),ng(:)
+      real*8       :: NiNi(:,:),Ni(:),ufg(:),bg(:),ng(:)
       real*8       :: tau(:,:)
       real*8       :: diffiso(:,:),diffani(:,:)
       real*8       :: kmult(Neq*Npfl),bn
@@ -1033,7 +1036,7 @@ CONTAINS
       bn = dot_product(bg,ng)
 
       ! Dirichlet values
-      kmult = col(tensorProduct(uexg(:),Ni))
+      kmult = col(tensorProduct(ufg(:),Ni))
 
       ! Dirichlet weak form for the first equation
       i = 1
@@ -1084,7 +1087,7 @@ CONTAINS
       DO idm = 1,Ndim
          indi = ind_asf + i
          indj = ind_ash + idm + (j - 1)*Ndim
-         elMat%Alq(ind_ff(indi),ind_fG(indj),iel) = elMat%Alq(ind_ff(indi),ind_fG(indj),iel) + NiNi*ng(idm)/uexg(1)*phys%Mref
+         elMat%Alq(ind_ff(indi),ind_fG(indj),iel) = elMat%Alq(ind_ff(indi),ind_fG(indj),iel) + NiNi*ng(idm)/ufg(1)*phys%Mref
       END DO
 
    END SUBROUTINE assembly_diric_neum_bc
@@ -1092,9 +1095,9 @@ CONTAINS
    !*********************************
    ! Assembly Dirichlet in strong form
    !*********************************
-   SUBROUTINE assembly_dirichletstr_bc(iel,ind_asf,ind_ash,ind_fe,ind_fg,Ni,qg,uexg,bg,ng)
+   SUBROUTINE assembly_dirichletstr_bc(iel,ind_asf,ind_ash,ind_fe,ind_fg,Ni,qg,ufg,upg,bg,ng)
       integer*4        :: iel,ind_asf(:),ind_ash(:),ind_fe(:),ind_fg(:)
-      real*8           :: Ni(:),uexg(:),bg(:),ng(:)
+      real*8           :: Ni(:),ufg(:),upg(:),bg(:),ng(:)
       real*8           :: qg(:)
       real*8           :: bn,An(Neq,Neq)
       integer          :: i,j,idm
@@ -1102,18 +1105,23 @@ CONTAINS
       real*8           :: uexn(Ndim*neq)
       integer*4        :: ind(Npfl),ind_1f(Npfl)
       real*8           :: Qpr(Ndim,Neq)
+      real*8           :: auxvec(Neq)
 #ifdef TEMPERATURE
       real*8           :: Vveci(Neq),Alphai,taui(Ndim,Neq),dV_dUi(Neq,Neq),gmi,dAlpha_dUi(Neq)
       real*8           :: Vvece(Neq),Alphae,taue(Ndim,Neq),dV_dUe(Neq,Neq),gme,dAlpha_dUe(Neq)
 #endif
+
       bn = dot_product(bg,ng)
 
-      CALL jacobianMatricesFace(uexg,bn,An)
-
+      CALL jacobianMatricesFace(ufg,bn,An)
       ! Contribution of the current integration point to the elemental matrix
-      kmultstab = col(tensorProduct(uexg,Ni))
-      kmultconv = col(tensorProduct(matmul(An,uexg),Ni))
-      uexn = reshape(tensorProduct(ng,uexg),(/Ndim*neq/)) ! Ndim*neq x 1
+      kmultstab = col(tensorProduct(ufg,Ni))
+      kmultconv = col(tensorProduct(matmul(An,ufg),Ni))
+						if (switch%logrho) then
+									call logrhojacobianVector(ufg,upg,auxvec)
+									kmultconv = kmultconv +col(tensorProduct(auxvec,bn*Ni))
+						endif
+      uexn = reshape(tensorProduct(ng,ufg),(/Ndim*neq/)) ! Ndim*neq x 1
       kmultfseq = col(tensorProduct(uexn,Ni))  ! Ndim*neq*npf
       DO i = 1,Neq
          ind = i + ind_asf
@@ -1129,12 +1137,12 @@ CONTAINS
 
 #ifdef TEMPERATURE
       ! Compute V(U^(k-1))
-      call computeVi(uexg,Vveci)
-      call computeVe(uexg,Vvece)
+      call computeVi(ufg,Vveci)
+      call computeVe(ufg,Vvece)
 
       ! Compute dV_dU (k-1)
-      call compute_dV_dUi(uexg,dV_dUi)
-      call compute_dV_dUe(uexg,dV_dUe)
+      call compute_dV_dUi(ufg,dV_dUi)
+      call compute_dV_dUe(ufg,dV_dUe)
 
       ! Compute Gamma and tau
       gmi = dot_product(matmul(Qpr,Vveci),bg)   ! scalar
@@ -1143,21 +1151,21 @@ CONTAINS
       Taue = matmul(Qpr,dV_dUe)
 
       ! Compute Alpha(U^(k-1))
-      Alphai = computeAlphai(uexg)
-      Alphae = computeAlphae(uexg)
+      Alphai = computeAlphai(ufg)
+      Alphae = computeAlphae(ufg)
 
       ! Compute dAlpha/dU^(k-1)
-      call compute_dAlpha_dUi(uexg,dAlpha_dUi)
-      call compute_dAlpha_dUe(uexg,dAlpha_dUe)
+      call compute_dAlpha_dUi(ufg,dAlpha_dUi)
+      call compute_dAlpha_dUe(ufg,dAlpha_dUe)
 
       DO i = 3,4
          DO j = 1,4
             IF (i == 3) THEN
                elMat%Aul_dir(ind_fe(i + ind_asf),iel) = elMat%Aul_dir(ind_fe(i + ind_asf),iel) - &
-                             &coefi*Ni*bn*((gmi*dAlpha_dUi(j) + Alphai*(dot_product(Taui(:,j),bg)))*uexg(j))
+                             &coefi*Ni*bn*((gmi*dAlpha_dUi(j) + Alphai*(dot_product(Taui(:,j),bg)))*ufg(j))
             ELSE
                elMat%Aul_dir(ind_fe(i + ind_asf),iel) = elMat%Aul_dir(ind_fe(i + ind_asf),iel) - &
-                             &coefe*Ni*bn*((gme*dAlpha_dUe(j) + Alphae*(dot_product(Taue(:,j),bg)))*uexg(j))
+                             &coefe*Ni*bn*((gme*dAlpha_dUe(j) + Alphae*(dot_product(Taue(:,j),bg)))*ufg(j))
             END IF
          END DO
       END DO
@@ -1434,9 +1442,9 @@ CONTAINS
    ! Assembly Bohm
    !*********************************
    SUBROUTINE assembly_bohm_bc_new(iel,ind_asf,ind_ash,ind_ff,ind_fe,ind_fg,NiNi,Ni,qfg,&
-                                   &ufg,bg,ng,tau,setval,delta,diffiso,diffani,ntang)
+                                   &ufg,upg,bg,ng,tau,setval,delta,diffiso,diffani,ntang)
       integer*4        :: iel,ind_asf(:),ind_ash(:),ind_ff(:),ind_fe(:),ind_fg(:)
-      real*8           :: NiNi(:,:),Ni(:),ufg(:),bg(:),ng(:),tau(:,:),setval,delta
+      real*8           :: NiNi(:,:),Ni(:),ufg(:),upg(:),bg(:),ng(:),tau(:,:),setval,delta
       real*8           :: diffiso(:,:),diffani(:,:)
       logical          :: ntang
       real*8           :: qfg(:)
@@ -1483,7 +1491,19 @@ CONTAINS
          IF (ntang) THEN
             ! >>>>>>>> Non tangent case (delta=1) <<<<<<<<<<
             elMat%All(ind_ff(indi),ind_ff(indi),iel) = elMat%All(ind_ff(indi),ind_ff(indi),iel) - numer%tau(i)*NiNi
-            elMat%Alu(ind_ff(indi),ind_fe(indi - 1),iel) = elMat%Alu(ind_ff(indi),ind_fe(indi - 1),iel) + numer%tau(i)*setval*NiNi
+            if (switch%logrho) then
+               elMat%Alu(ind_ff(indi),ind_fe(indi - 1),iel) = elMat%Alu(ind_ff(indi),ind_fe(indi - 1),iel) + numer%tau(i)*setval*upg(1)*NiNi
+               elMat%fh(ind_ff(indi),iel) = elMat%fh(ind_ff(indi),iel) - numer%tau(i)*setval*upg(1)*(1-ufg(1))*Ni
+            else
+               elMat%Alu(ind_ff(indi),ind_fe(indi - 1),iel) = elMat%Alu(ind_ff(indi),ind_fe(indi - 1),iel) + numer%tau(i)*setval*NiNi
+            endif
+!write(6,*) "All:"
+!call displayMatrix(elMat%All(ind_ff(indi),ind_ff(indi),iel))
+!write(6,*) "Alu:"
+!call displayMatrix(elMat%Alu(ind_ff(indi),ind_fe(indi - 1),iel))
+!write(6,*) "fh: "
+!call displayVector(elMat%fh(ind_ff(indi),iel))
+!stop      
          ELSE
             ! >>>>>>>> Tangent case (delta=0) <<<<<<<<<<
             ! Stabilization part
@@ -1503,7 +1523,12 @@ CONTAINS
             if (delta==1) then
 						         ! Velocity is subsonic--> Dirichlet
 						         elMat%All(ind_ff(indi),ind_ff(indi),iel) = elMat%All(ind_ff(indi),ind_ff(indi),iel) - numer%tau(i)*NiNi
-			            elMat%Alu(ind_ff(indi),ind_fe(indi - 1),iel) = elMat%Alu(ind_ff(indi),ind_fe(indi - 1),iel) + numer%tau(i)*setval*NiNi
+               if (switch%logrho) then
+                  elMat%Alu(ind_ff(indi),ind_fe(indi - 1),iel) = elMat%Alu(ind_ff(indi),ind_fe(indi - 1),iel) + numer%tau(i)*setval*upg(1)*NiNi
+                  elMat%fh(ind_ff(indi),iel) = elMat%fh(ind_ff(indi),iel) - numer%tau(i)*setval*upg(1)*(1-ufg(1))*Ni
+               else
+                  elMat%Alu(ind_ff(indi),ind_fe(indi - 1),iel) = elMat%Alu(ind_ff(indi),ind_fe(indi - 1),iel) + numer%tau(i)*setval*NiNi
+               endif
             else
 						         ! Velocity is supersonic--> Neumann (delta=0)
 						         ! Stabilization part

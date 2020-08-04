@@ -174,6 +174,7 @@ MODULE types
       real*8      :: a              ! Proportionality constant between pressure and density for isothermal model (p = a*rho)
       real*8      :: dfcoef         ! Constant related to the drift velocity
       integer*4   :: bcflags(1:10)  ! Set the correspondence between mesh boundary flag (Mesh%boundaryFlag) and the boundary condition
+      real*8      :: diagsource(1:10)     ! Diagonal implicit sources
       character(LEN=20), pointer:: phyVarNam(:) => Null() ! Names of the physical variables (set in initPhys)
       character(LEN=20), pointer:: conVarNam(:) => Null() ! Names of the conservative variables (set in initPhys)
       real*8             :: lscale       ! Length scale for the non-dimensionalization of the equations
@@ -248,6 +249,7 @@ MODULE types
       integer :: pertini  ! add perturbation in the initial solution
                           ! 1 -add sinusoidal perturbation
                           ! 2 -add density blob
+      logical :: logrho   ! solve for the density logarithm instead of density
    END TYPE Switches_type
 
    !*******************************************************

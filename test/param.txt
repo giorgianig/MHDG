@@ -7,12 +7,12 @@
       ! false = no
    driftdia = .false. ! Set to FALSE to ignore diamagnetic drifts terms
    driftexb = .true. ! Set to FALSE to ignore ExB drifts terms
-   testcase = 6       ! Determine the analytical solution and the body forces
+   testcase = 7       ! Determine the analytical solution and the body forces
    psdtime  = .false.  ! Reduce the diffusion every time we reach the steady state 
                       ! condition (only works if steady=.false.)
    diffred  = 0.5 ! Reduction factor of the diffusion for psdtime simulation
    diffmin  = 1e-6    ! Minimum value of the diffusion for a psdtime simulation
-   shockcp  = 3       ! Shock capturing option
+   shockcp  = 0       ! Shock capturing option
                       ! 0 - No shock capturing
                       ! 1 - Constant in each element
                       ! 2 - Linear interpolation between nodes
@@ -41,14 +41,14 @@
    dirivortlim   = .true. ! Dirichlet boundary condition on the vorticity in the limiter boundary
    convvort   = .false.  ! Consider the convective term in the vorticity equation 
    pertini    = 0        ! Add perturbation. 0-no perturbation; 1-sinusoidal perturbation; 2-blob
-   
+   logrho = .false.
 /
 
 &NUMER_LST
-   tau(1) = 1.E0  ! Stabilization parameter 1st equation
-   tau(2) = 1.E0  ! Stabilization parameter 2nd equation
-   tau(3) = 1.E0  ! Stabilization parameter 3rd equation
-   tau(4) = 1.E0  ! Stabilization parameter 4th equation         
+   tau(1) = 1.E1  ! Stabilization parameter 1st equation
+   tau(2) = 1.E1  ! Stabilization parameter 2nd equation
+   tau(3) = 1.E1  ! Stabilization parameter 3rd equation
+   tau(4) = 1.E1  ! Stabilization parameter 4th equation         
    nrp    = 3     ! Max number of Newton-Raphson iterations
    tNR    = 1e-4  ! Tolerance of the Newton-Raphson scheme
    tTM    = 1e-4  ! Tolerance for the steady state achievement
@@ -87,10 +87,10 @@
 
 &PHYS_LST
    ! ****** Diffusion parameters in m^2/s
-   diff_n = 1e-5 ! diffusion in the continuity equation
-   diff_u = 1e-5 ! diffusion in the momentum equation
-   diff_e = 1e-5 ! perpendicular diffusion for the energy equation
-   diff_ee = 1e-5 ! perpendicular diffusion in the electron temperature equation (for the TiTe model)
+   diff_n = 1e-4 ! diffusion in the continuity equation
+   diff_u = 1e-4 ! diffusion in the momentum equation
+   diff_e = 1e-4 ! perpendicular diffusion for the energy equation
+   diff_ee = 1e-4 ! perpendicular diffusion in the electron temperature equation (for the TiTe model)
    diff_vort = 1e-4 ! diffusion in the vorticity equation
    ! ****** Background temperature in the isothermal model in eV (useless in the non-isothermal model)
    Tbg = 50
@@ -98,7 +98,7 @@
    ! each component must be put separetly
    ! The dimension of bcflags is set to 10, means that at most 10 different kinds of boundary 
    ! condition can exist
-   bcflags(1:6) = 4 30 30 4 4 4
+   bcflags(1:6) = 4 2 30 30 30 4
    bcflags(7)   = 50 ! Limiter
    bcflags(8)   = 2  ! In
    bcflags(9)   = 50 ! Out
@@ -120,6 +120,7 @@
    ! ***** Coefficients for the vorticity model
    etapar   = 1e-5
    Potfloat = 3.
+   diagsource = 1e-4 0. 1e-4 0. 0. 0. 0. 0. 0. 0. 
 /
 
 &UTILS_LST
@@ -131,7 +132,7 @@
 
 
 &LSSOLV_LST
-   sollib  = 2  ! Solver library to be used
+   sollib  = 1  ! Solver library to be used
                                      ! 1-Pastix
                                      ! 2-PSBLAS
    lstiming = true                                  

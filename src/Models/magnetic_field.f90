@@ -123,19 +123,19 @@ CONTAINS
                   WRITE (6, *) "This is NOT an axisymmetric test case!"
                   stop
                END IF
-               ! Axysimmetric case, circular field centered in [xm, ym] in the poloidal plane, Bt = 1
+               ! 
                phys%B(ind, 1) = 0.
                phys%B(ind, 2) = 0.
                phys%B(ind, 3) = 1.
-            CASE (6)
+            CASE (6:7)
                IF (.not.switch%axisym) THEN
                   WRITE (6, *) "This is an axisymmetric test case!"
                   stop
                END IF
-               ! Axysimmetric case, circular field centered in [xm, ym] in the poloidal plane, Bt = 1
+               ! Axysimmetric case
                phys%B(ind, 1) = 0.
                phys%B(ind, 2) = 0.
-               phys%B(ind, 3) = 1.+xx
+               phys%B(ind, 3) = 1.+xx               
             CASE (50:59)
                write (6, *) "Error in defineMagneticField: you should not be here!"
                STOP

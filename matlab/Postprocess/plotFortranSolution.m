@@ -1,6 +1,6 @@
 % plot Fortran solution
 clear
-% close all
+close all
 
 %**********************************
 % Parallel/serial
@@ -17,8 +17,8 @@ plotGrads =0;  % Plot gradients
 % Dimensional (1) or non-dimensional (0) plots
 cons_dimensional_plots = 0; % conservative variables
 phys_dimensional_plots = 0; % physical variables
-nref = 10; % plot order
-varnplot = [2,4]; % I don't plot these variables
+nref = 4; % plot order
+varnplot = [];%[2,4]; % I don't plot these variables
 
 %**********************************
 % 3D stuff
@@ -38,12 +38,12 @@ path2save = '/home/giorgio/Dropbox/PostDoc_Marseille/Latex/NGammaVortPot/';
 %**********************************
 % Solution
 %**********************************
-solpath = '/home/giorgio/Dropbox/Fortran/Results/';
-meshpath = '/home/giorgio/Dropbox/Fortran/MHDG_ref3.0/matlab/Meshes/';
-solname = 'Sol2D_Square_Quads_Nel9216_P3_DPe0.100E-04_0125';
-% solpath = '/home/giorgio/Dropbox/Fortran/MHDG_ref3.0/test/';
-% meshpath = solpath;
-% solname = 'Sol2D_Square_5_P3_DPe0.100E-04_1750';
+% solpath = '/home/giorgio/Dropbox/Fortran/Results/';
+% meshpath = '/home/giorgio/Dropbox/Fortran/MHDG_ref3.0/matlab/Meshes/Parallel/';
+% solname = 'Sol2D_Square_Quads_9216els_P4_DPe0.100E-04_0500';
+solpath = '/home/giorgio/Dropbox/Fortran/MHDG_ref3.0/test//';
+meshpath = '/home/giorgio/Dropbox/Fortran/MHDG_ref3.0/test/';
+solname = 'Sol2D_Square_Quads_6_P3_DPe0.100E-03_0400';
 
 
 
@@ -116,7 +116,13 @@ for iproc = 1:nproc
                     uplot = uc(:,i)*simulation_parameters.adimensionalization.reference_values_conservative_variables(i);
                 end
                 iplot = iplot +1;
-                figure(iplot),clf, plotSolution(Mesh.X,Mesh.T,uplot,refEl,nref);axis off
+                figure(iplot)
+                if parallel
+                    hold on
+                else
+                    clf
+                end
+                plotSolution(Mesh.X,Mesh.T,uplot,refEl,nref);axis off
                 name = simulation_parameters.physics.conservative_variable_names{i};
                 title(name)
                 if printout
@@ -132,8 +138,15 @@ for iproc = 1:nproc
                     uplot = up(:,i)*simulation_parameters.adimensionalization.reference_values_physical_variables(i);
                 end
                 iplot = iplot +1;
-                figure(iplot),clf, plotSolution(Mesh.X,Mesh.T,uplot,refEl,nref);axis off
-                                if i==1,plotMesh(Mesh.X,Mesh.T,elemType),end
+                figure(iplot)                 
+                if parallel
+                    hold on
+                else
+                    clf
+                end
+                plotSolution(Mesh.X,Mesh.T,uplot,refEl,nref);axis off
+%                 if i==1,plotMesh(Mesh.X,Mesh.T,elemType),end
+%                 if i==1,caxis([0,1]),end
                 name = simulation_parameters.physics.physical_variable_names{i};
                 title(name)
                 if printout
@@ -146,7 +159,13 @@ for iproc = 1:nproc
                 if ismember(i,varnplot),continue,end
                 qplot = qr(:,i);
                 iplot = iplot +1;
-                figure(iplot),clf, plotSolution(Mesh.X,Mesh.T,qplot,refEl,nref);axis off
+                 figure(iplot)
+                if parallel
+                    hold on
+                else
+                    clf
+                end
+                plotSolution(Mesh.X,Mesh.T,qplot,refEl,nref);axis off
                 %                 if i==3,plotMesh(Mesh.X,Mesh.T,elemType),end
                 name = ['Q',num2str(i)];
                 title(name)
@@ -223,9 +242,10 @@ for iproc = 1:nproc
 end
 
 
-
+if exist('scdiff_nodes')
 figure(100+iplot), clf,plotSolution(Mesh.X,Mesh.T,col(transpose(scdiff_nodes)),refEl,nref);axis off
 hold on, plotMesh(Mesh.X,Mesh.T,elemType)
+end
 % Mesh.maxx = max((X(:,1)+3.4)/lscale);
 % Mesh.minx = min((X(:,1)+3.4)/lscale);
 %

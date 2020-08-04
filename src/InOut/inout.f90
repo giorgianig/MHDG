@@ -472,6 +472,7 @@ CONTAINS
          call HDF5_logical_saving(group_id2, switch%dirivortcore, 'dirivortcore')
          call HDF5_logical_saving(group_id2, switch%dirivortlim, 'dirivortlim')
          call HDF5_logical_saving(group_id2, switch%convvort, 'convvort')
+         call HDF5_logical_saving(group_id2, switch%logrho, 'logrho')
          call HDF5_group_close(group_id2, ierr)
 
 ! Create numerics parameters group

@@ -1193,7 +1193,6 @@ CONTAINS
       ! Body force at the integration points
       CALL body_force(xy(:,1),xy(:,2),force)
 
-                                                        !! Some sources for West cases
       IF (switch%testcase .ge. 51 .and. switch%testcase .le. 54) THEN
          fluxg = matmul(refElPol%N2D,fluxel)
          DO g = 1,Ng2d
@@ -1448,7 +1447,7 @@ CONTAINS
 
          ! Assembly local contributions
          CALL assemblyIntFacesContribution(iel,ind_asf,ind_ash,ind_ff,ind_fe,ind_fg,b(g,:),Bmod(g),&
-                                   n_g,diff_iso_fac(:,:,g),diff_ani_fac(:,:,g),NNif,Nif,Nfbn,ufg(g,:),qfg(g,:),tau)
+                                   n_g,diff_iso_fac(:,:,g),diff_ani_fac(:,:,g),NNif,Nif,Nfbn,ufg(g,:),upgf(g,:),qfg(g,:),tau)
 
          if (save_tau) then
             DO i = 1,Neq
@@ -1605,14 +1604,14 @@ CONTAINS
          IF (Mesh%boundaryFlag(Mesh%F(iel,ifa) - Mesh%Nintfaces) .eq. 0) THEN
             ! Ghost face: assembly it as interior
             CALL assemblyIntFacesContribution(iel,ind_asf,ind_ash,ind_ff,ind_fe,ind_fg,b(g,:),Bmod(g),&
-                                      n_g,diff_iso_fac(:,:,g),diff_ani_fac(:,:,g),NNif,Nif,Nfbn,ufg(g,:),qfg(g,:),tau)
+                                      n_g,diff_iso_fac(:,:,g),diff_ani_fac(:,:,g),NNif,Nif,Nfbn,ufg(g,:),upgf(g,:),qfg(g,:),tau)
          ELSE
             CALL assemblyExtFacesContribution(iel,isdir,ind_asf,ind_ash,ind_ff,ind_fe,ind_fg,b(g,:),Bmod(g),&
-                                      n_g,diff_iso_fac(:,:,g),diff_ani_fac(:,:,g),NNif,Nif,Nfbn,ufg(g,:),qfg(g,:),tau)
+                                      n_g,diff_iso_fac(:,:,g),diff_ani_fac(:,:,g),NNif,Nif,Nfbn,ufg(g,:),upgf(g,:),qfg(g,:),tau)
          ENDIF
 #else
          CALL assemblyExtFacesContribution(iel,isdir,ind_asf,ind_ash,ind_ff,ind_fe,ind_fg,b(g,:),Bmod(g),&
-                                      n_g,diff_iso_fac(:,:,g),diff_ani_fac(:,:,g),NNif,Nif,Nfbn,ufg(g,:),qfg(g,:),tau)
+                                      n_g,diff_iso_fac(:,:,g),diff_ani_fac(:,:,g),NNif,Nif,Nfbn,ufg(g,:),upgf(g,:),qfg(g,:),tau)
 #endif
          if (save_tau) then
             DO i = 1,Neq
@@ -1733,7 +1732,8 @@ CONTAINS
       real*8                    :: Qpr(Ndim,Neq),exb(3),bb(3)
 
       real*8                    :: qq(3,Neq),b(Ndim)
-
+      real*8                    :: grad_n(3),gradpar_n
+      real*8                    :: auxvec(Neq)
 #ifdef TEMPERATURE
       real*8,dimension(neq,neq) :: GG
       real*8                    :: Telect
@@ -1741,6 +1741,8 @@ CONTAINS
       real*8                    :: Vvece(Neq),dV_dUe(Neq,Neq),Alphae,dAlpha_dUe(Neq),gme,taue(Ndim,Neq)
       real*8                    :: W,dW_dU(Neq,Neq),s,ds_dU(Neq),Zet(ndim,Neq)
 #endif
+
+
       b = b3(1:Ndim)
 
       bb = 0.
@@ -1755,6 +1757,10 @@ CONTAINS
       qq = 0.
       qq(1:Ndim,:) = Qpr
 
+       ! Perpendicular gradient of density
+       grad_n=qq(:,1)
+       gradpar_n = dot_product(grad_n,b3)
+       
 #ifdef TEMPERATURE
       ! Jacobian for the curvature term
       CALL GimpMatrix(ue,divb,GG)
@@ -1816,7 +1822,12 @@ CONTAINS
          IF (i == 2) THEN
             ! Curvature contribution (isothermal)
             z = i+(i-2)*Neq
-            Auu(:,:,z) = Auu(:,:,z) - phys%a*divb*NNi
+            if (switch%logrho) then
+               Auu(:,:,z) = Auu(:,:,z) - phys%a*divb*upe(1)*NNi
+               rhs(:,i)=rhs(:,i)+Ni*phys%a*divb*upe(1)*(1-ue(1))
+            else
+               Auu(:,:,z) = Auu(:,:,z) - phys%a*divb*NNi
+            endif
          END IF
 #ifdef VORTICITY
          IF (switch%driftdia .and. i.ne.4) THEN
@@ -1882,16 +1893,48 @@ CONTAINS
              Auu(:,:,z)=Auu(:,:,z)- A(i,j)*NNxy
          END DO
 
+
+#ifndef TEMPERATURE
+         ! Added term for n=exp(x) change of variable
+         if (switch%logrho) then 
+            call logrhojacobianVector(ue,upe,auxvec)
+            rhs(:,i)=rhs(:,i)+NNbb*auxvec(i)
+
+						      do j = 1,Neq               
+					           if (i==1 .and. j==1) then
+                   z = i+(j-1)*Neq
+					              Auu(:,:,z)=Auu(:,:,z)+upe(2)*transpose(NNxy) ! TODO: this is a first order linearization!!!
+					           endif
+						      end do
+         endif
+#endif
+
          DO k = 1,Ndim
             ! Diagonal terms for perpendicular diffusion
              z = i+(k-1)*Neq+(i-1)*Neq*Ndim
              Auq(:,:,z)=Auq(:,:,z)+diffiso(i,i)*NxyzNi(:,:,k) - diffani(i,i)*NNxy*b(k)
+             
+#ifndef TEMPERATURE
+             ! Added term for n=exp(x) change of variable \Grad \chi **2 
+             if (switch%logrho) then
+                if (i==1) then
+                   Auq(:,:,z)=Auq(:,:,z)-2*(diffiso(i,i)*grad_n(k) - diffani(i,i)*b(k)*gradpar_n)*NNi
+                   rhs(:,i)=rhs(:,i)-Ni*(diffiso(i,i)*grad_n(k)*grad_n(k) - diffani(i,i)*gradpar_n**2/Ndim )
+                endif
+             endif
+#endif             
+
+
 #ifdef VORTICITY
             IF (i==3) THEN
                ii =1
 						         ! B x GradB current in the vorticity equation
 			            z = i+(ii-1)*Neq
-			            Auu(:,:,z)= Auu(:,:,z) +2*transpose(NxyzNi(:,:,k))*drift(k)
+               if (switch%logrho) then
+                  Auu(:,:,z)= Auu(:,:,z) +2*upe(1)*transpose(NxyzNi(:,:,k))*drift(k) ! TODO: first order linearization
+               else
+			               Auu(:,:,z)= Auu(:,:,z) +2*transpose(NxyzNi(:,:,k))*drift(k)
+               endif
             ENDIF
             IF (switch%driftexb .and. i .ne. 4) THEN
                ! ExB terms
@@ -1933,18 +1976,30 @@ CONTAINS
             Auu(:,:,z)=Auu(:,:,z) +NNi            
          ENDIF
 #endif
+
+
+         ! Diagonal implicit sources
+         if (switch%logrho) then
+            rhs(:,i)=rhs(:,i)-phys%diagsource(i)*Ni            
+         else
+            z = i+(i-1)*Neq
+            Auu(:,:,z)=Auu(:,:,z) +phys%diagsource(i)*NNi            
+         endif
+         
       END DO ! Loop in equations
 
       ! Assembly RHS
       IF (.not. switch%steady) THEN
 #ifdef VORTICITY
-         u0e(4,:) = 0. ! TODO: check this
+         u0e(4,:) = 0. 
 #endif
          DO iord = 1,time%tis
             ! Time derivative contribution
              rhs=rhs+ktis(iord + 1)*tensorProduct(Ni,u0e(:,iord))/time%dt
          END DO
       END IF
+
+
       ! Linear body force contribution
       rhs=rhs+tensorProduct(Ni,f)
 
@@ -1956,12 +2011,12 @@ CONTAINS
 ! 
 !********************************************************************
    SUBROUTINE assemblyIntFacesContribution(iel,ind_asf,ind_ash,ind_ff,ind_fe,&
-              &ind_fg,b3,Bmod,n,diffiso,diffani,NNif,Nif,Nfbn,uf,qf,tau,ifa)
+              &ind_fg,b3,Bmod,n,diffiso,diffani,NNif,Nif,Nfbn,uf,upf,qf,tau,ifa)
       integer*4,intent(IN)      :: iel,ind_asf(:),ind_ash(:),ind_ff(:),ind_fe(:),ind_fg(:)
       real*8,intent(IN)         :: b3(:),n(:),Bmod
       real*8,intent(IN)         :: diffiso(:,:),diffani(:,:)
       real*8,intent(IN)         :: NNif(:,:),Nif(:),Nfbn(:)
-      real*8,intent(IN)         :: uf(:)
+      real*8,intent(IN)         :: uf(:),upf(:)
       real*8,intent(IN)         :: qf(:)
       real*8,optional,intent(IN) :: tau(:,:)
       real*8                     :: kcoeff
@@ -1970,6 +2025,7 @@ CONTAINS
       integer*4                  :: i,j,k,ii,alpha,beta
       integer*4,dimension(size(ind_asf))  :: ind_if,ind_jf,ind_kf
       real*8,dimension(neq,neq) :: A
+      real*8                    :: auxvec(Neq)
       real*8                    :: nn(3),qq(3,Neq),bb(3)
       real*8                    :: bn,kmult(size(ind_asf),size(ind_asf)),kmultf(size(ind_asf))
       real*8                    :: Qpr(Ndim,Neq),exb(3)
@@ -2078,6 +2134,16 @@ CONTAINS
             elMat%All(ind_ff(ind_if),ind_ff(ind_jf),iel) = elMat%All(ind_ff(ind_if),ind_ff(ind_jf),iel) + kmult
          END DO ! j-loop
 
+#ifndef TEMPERATURE
+         ! Added term for n=exp(x) change of variable
+         if (switch%logrho) then 
+            call logrhojacobianVector(uf,upf,auxvec)
+            kmultf = Nfbn*auxvec(i)
+            elMat%S(ind_fe(ind_if),iel) = elMat%S(ind_fe(ind_if),iel)-kmultf
+            elMat%fh(ind_ff(ind_if),iel) = elMat%fh(ind_ff(ind_if),iel) -kmultf
+         endif
+#endif
+
 #ifdef TEMPERATURE
          ! Parallel diffusion for the temperature
          IF (i == 3) THEN
@@ -2149,13 +2215,13 @@ CONTAINS
 ! 
 !********************************************************************
    SUBROUTINE assemblyExtFacesContribution(iel,isdir,ind_asf,ind_ash,ind_ff,ind_fe,&
-              &ind_fg,b3,Bmod,n,diffiso,diffani,NNif,Nif,Nfbn,uf,qf,tau,ifa)
+              &ind_fg,b3,Bmod,n,diffiso,diffani,NNif,Nif,Nfbn,uf,upf,qf,tau,ifa)
       integer*4,intent(IN)      :: iel,ind_asf(:),ind_ash(:),ind_ff(:),ind_fe(:),ind_fg(:)
       logical                   :: isdir
       real*8,intent(IN)         :: b3(:),n(:),Bmod
       real*8,intent(IN)         :: diffiso(:,:),diffani(:,:)
       real*8,intent(IN)         :: NNif(:,:),Nif(:),Nfbn(:)
-      real*8,intent(IN)         :: uf(:)
+      real*8,intent(IN)         :: uf(:),upf(:)
       real*8,intent(IN)         :: qf(:)
       real*8,optional,intent(IN) :: tau(:,:)
       integer*4,optional         :: ifa
@@ -2163,6 +2229,7 @@ CONTAINS
       integer*4                 :: i,j,k,ii,alpha,beta
       integer*4,dimension(Npfl)  :: ind_if,ind_jf,ind_kf
       real*8,dimension(neq,neq) :: A
+      real*8                    :: auxvec(neq)
       real*8                    :: bn,kmult(Npfl,Npfl),kmultf(Npfl)
       real*8                    :: Qpr(Ndim,Neq),exb(3)
       real*8                    :: nn(3),qq(3,Neq),b(Ndim),bb(3)
@@ -2262,8 +2329,23 @@ CONTAINS
                ind_jf = ind_asf + j
                kmult = bn*A(i,j)*NNif
                elMat%Aul(ind_fe(ind_if),ind_ff(ind_jf),iel) = elMat%Aul(ind_fe(ind_if),ind_ff(ind_jf),iel) + kmult
-            END DO ! j-loop
+	           END DO ! j-loop
          ENDIF
+
+
+#ifndef TEMPERATURE
+          ! Added term for n=exp(x) change of variable
+          if (.not. isdir) then
+							      if (switch%logrho) then
+						          call logrhojacobianVector(uf,upf,auxvec)
+				            kmultf = Nfbn*auxvec(i)
+				            elMat%S(ind_fe(ind_if),iel) = elMat%S(ind_fe(ind_if),iel)-kmultf
+							      endif
+          endif
+#endif
+
+
+
 #ifdef TEMPERATURE
          ! Parallel diffusion for the temperature
          IF (i == 3) THEN

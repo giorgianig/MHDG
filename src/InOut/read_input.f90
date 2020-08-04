@@ -15,7 +15,7 @@ SUBROUTINE READ_input()
    IMPLICIT NONE
 
    logical :: driftdia,driftexb, axisym, restart,steady,dotiming,psdtime,decoup
-   logical :: ckeramp,saveNR,filter,saveTau,lstiming,fixdPotLim,dirivortcore,dirivortlim,convvort
+   logical :: ckeramp,saveNR,filter,saveTau,lstiming,fixdPotLim,dirivortcore,dirivortlim,convvort,logrho
    integer :: thresh, difcor, tis, stab,pertini
    integer :: itmax, itrace, rest, istop, sollib
    integer :: uinput, printint, testcase, nrp
@@ -26,7 +26,7 @@ SUBROUTINE READ_input()
    real*8  :: sc_coe, so_coe, df_coe, thr, thrpre, minrho, dc_coe, sc_sen
    real*8  :: epn, Mref, diff_pari, diff_e, Gmbohm, Gmbohme
    real*8  :: diff_pare, diff_ee, tie, dumpnr, tmax, tol
-   real*8  :: diff_vort, diff_pot, etapar, c1, c2, Potfloat
+   real*8  :: diff_vort, diff_pot, etapar, c1, c2, Potfloat,diagsource(10)
    character(100) :: msg
    character(20)  :: kmethd, ptype
 
@@ -35,14 +35,16 @@ SUBROUTINE READ_input()
    integer           :: jsweeps, novr, fill, jsweeps2, novr2, fill2, outer_sweeps, maxlevs, csize, cfill, cjswp
    real              :: thrsol, thrsol2, mncrratio, athres, cthres
 
+   
    ! Defining the variables to READ from the file
    NAMELIST /SWITCH_LST/ steady, axisym, driftdia, driftexb, testcase, psdtime, diffred, diffmin, &
-                       & shockcp, limrho, difcor, thresh, filter, decoup, ckeramp, saveNR, saveTau, fixdPotLim, dirivortcore,dirivortlim, convvort,pertini
+                       & shockcp, limrho, difcor, thresh, filter, decoup, ckeramp, saveNR, saveTau, fixdPotLim, dirivortcore,dirivortlim, convvort,pertini,&
+                       & logrho
    NAMELIST /NUMER_LST/ tau,nrp,tNR,tTM,div,sc_coe,sc_sen,minrho,so_coe,df_coe,dc_coe,thr,thrpre,stab,dumpnr,ntor,ptor,tmax,npartor,bohmtypebc
    NAMELIST /GEOM_LST/ R0, q
    NAMELIST /TIME_LST/ dt0, nts, tfi, tsw, tis
    NAMELIST /PHYS_LST/ diff_n, diff_u, diff_e, diff_ee, diff_vort, Tbg, bcflags, bohmth,&
-                       &Gmbohm, Gmbohme, a, Mref, tie, diff_pari, diff_pare, diff_pot, epn, etapar, Potfloat
+                       &Gmbohm, Gmbohme, a, Mref, tie, diff_pari, diff_pare, diff_pot, epn, etapar, Potfloat,diagsource
    NAMELIST /UTILS_LST/ PRINTint, dotiming, freqdisp, freqsave
    NAMELIST /LSSOLV_LST/ sollib, lstiming, itmax, itrace, rest, istop, tol, kmethd, ptype,&
    &smther, jsweeps,&
@@ -52,6 +54,7 @@ SUBROUTINE READ_input()
 
    ! Reading the file
    uinput = 100
+   diagsource = 0.
    OPEN (uinput, file='param.txt', status='unknown')
    READ (uinput, SWITCH_LST)
    READ (uinput, NUMER_LST)
@@ -85,6 +88,7 @@ SUBROUTINE READ_input()
    switch%dirivortlim = dirivortlim
    switch%convvort = convvort
    switch%pertini = pertini
+   switch%logrho = logrho
    numer%tau = tau
    numer%nrp = nrp
    numer%tNR = tNR
@@ -131,6 +135,7 @@ SUBROUTINE READ_input()
    phys%diff_pot = diff_pot
    phys%etapar = etapar
    phys%Potfloat = Potfloat
+   phys%diagsource = diagsource
    utils%PRINTint = printint
    utils%timing = dotiming
    utils%freqdisp = freqdisp
@@ -249,6 +254,7 @@ SUBROUTINE READ_input()
       PRINT *, '                - perp. diffusion in the potential equation:         ', diff_pot
 #endif
       PRINT *, '                - constant for the momentum equation (isoth)        ', a
+      PRINT *, '                - diagonal implicit sources                         ', diagsource
       PRINT *, '        ***************** Switches ****************************'
       PRINT *, '                - stady state simulation:                           ', switch%steady
       PRINT *, '                - axisym:                                           ', switch%axisym
@@ -257,6 +263,7 @@ SUBROUTINE READ_input()
       PRINT *, '                - test case:                                        ', testcase
       PRINT *, '                - shockcp:                                          ', shockcp
       PRINT *, '                - minrho:                                           ', minrho
+      PRINT *, '                - logrho:                                           ', logrho
       PRINT *, '                - thresh:                                           ', thresh
       PRINT *, '                - filter:                                           ', filter
 #ifdef TEMPERATURE
