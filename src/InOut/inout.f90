@@ -529,7 +529,7 @@ CONTAINS
 !**********************************************************************
    subroutine HDF5_load_solution(fname)
       USE globals
-      USE LinearAlgebra, ONLY: tensorsumint, colint
+      USE LinearAlgebra, ONLY: tensorsumint, colint,col
       implicit none
 
       character(LEN=100) :: fname
@@ -539,7 +539,7 @@ CONTAINS
       character(70)  :: npr, nid
       integer :: ierr
       character(len=1000) :: fname_complete
-      integer(HID_T) :: file_id, group_id
+      integer(HID_T) :: file_id, group_id,group_id2
       real, pointer :: oldtres(:), oldtime(:)
       real, pointer:: u_aux(:), u_tilde_aux(:), q_aux(:)
 #ifdef TOR3D
@@ -548,9 +548,10 @@ CONTAINS
 #endif
       integer :: Neq, Ndim, N2d, Nel, Np1d, Np2d, Np, Nfl, Nfp, Nfg, Nf, sizeutilde, sizeu
       integer :: iel, ifa, iface, Fi, itor, dd, delta, i, j, it, iel3
-      real, allocatable    :: u2D(:), q2D(:), ut2D(:), q2D_add(:, :)
+      real, allocatable    :: u2D(:), q2D(:), ut2D(:), q2D_add(:, :),uaux(:,:),utaux(:,:),qaux(:,:)
 integer, allocatable :: indu2D(:), indq2D(:), indu3D(:), indq3D(:), indufp(:), induf2D(:), induf3D(:), indul(:), indql(:), indutl(:)
       integer, allocatable :: ind_q_add(:)
+      integer :: logrho_ptr
       Neq = phys%Neq
       mod_ptr => model_string
 #ifdef TOR3D
@@ -617,6 +618,11 @@ integer, allocatable :: indu2D(:), indq2D(:), indu3D(:), indq3D(:), indufp(:), i
          CALL HDF5_open(fname_complete, file_id, IERR)
          CALL HDF5_group_open(file_id, 'simulation_parameters', group_id, ierr)
          CALL HDF5_string_reading(group_id, mod_ptr, 'model')
+#ifndef TEMPERATURE
+      CALL HDF5_group_open(group_id, 'switches', group_id2, ierr)
+      CALL HDF5_integer_reading(group_id2, logrho_ptr, 'logrho')
+      CALL HDF5_group_close(group_id2, ierr)
+#endif
          CALL HDF5_group_close(group_id, ierr)
          ! Check if the readed solution corresponds to the right model
          IF (simpar%model .ne. model_string) THEN
@@ -787,6 +793,11 @@ integer, allocatable :: indu2D(:), indq2D(:), indu3D(:), indq3D(:), indufp(:), i
       CALL HDF5_open(fname_complete, file_id, IERR)
       CALL HDF5_group_open(file_id, 'simulation_parameters', group_id, ierr)
       CALL HDF5_string_reading(group_id, mod_ptr, 'model')
+#ifndef TEMPERATURE
+      CALL HDF5_group_open(group_id, 'switches', group_id2, ierr)
+      CALL HDF5_integer_reading(group_id2, logrho_ptr, 'logrho')
+      CALL HDF5_group_close(group_id2, ierr)
+#endif
       CALL HDF5_group_close(group_id, ierr)
 
       ! Check if the readed solution corresponds to the right model
@@ -799,6 +810,46 @@ integer, allocatable :: indu2D(:), indq2D(:), indu3D(:), indq3D(:), indufp(:), i
       CALL HDF5_array1D_reading(file_id, sol%q, 'q')
       CALL HDF5_close(file_id)
 #endif
+
+
+
+
+      if (switch%logrho .and. logrho_ptr.eq.0 ) then
+         write(6,*) "Readed solution without logrho but switch logrho set to true: "
+         write(6,*) "Computing log of density"
+         allocate(uaux(size(sol%u)/phys%neq,phys%neq))
+         allocate(utaux(size(sol%u_tilde)/phys%neq,phys%neq))
+         allocate(qaux(size(sol%q)/phys%neq/Ndim,phys%neq*Ndim))
+         uaux = transpose(reshape(sol%u,[phys%neq,size(sol%u)/phys%neq]))
+         utaux = transpose(reshape(sol%u_tilde,[phys%neq,size(sol%u_tilde)/phys%neq]))
+         qaux = transpose(reshape(sol%q,[phys%neq*Ndim,size(sol%q)/phys%neq/Ndim]))
+         qaux(:,1) = qaux(:,1)/uaux(:,1)
+         qaux(:,2) = qaux(:,2)/uaux(:,1)
+         uaux(:,1) = log(uaux(:,1))
+         utaux(:,1) = log(utaux(:,1))         
+         sol%u = col(transpose(uaux))
+         sol%u_tilde = col(transpose(utaux))
+         sol%q = col(transpose(qaux))
+         deallocate(uaux,utaux,qaux)
+      elseif (.not.switch%logrho .and. logrho_ptr.eq.1 ) then
+         write(6,*) "Readed solution with logrho but switch logrho set to false: "
+         write(6,*) "Computing exp of density"
+         allocate(uaux(size(sol%u)/phys%neq,phys%neq))
+         allocate(utaux(size(sol%u_tilde)/phys%neq,phys%neq))
+         allocate(qaux(size(sol%q)/phys%neq/Ndim,phys%neq*Ndim))
+         uaux = transpose(reshape(sol%u,[phys%neq,size(sol%u)/phys%neq]))
+         utaux = transpose(reshape(sol%u_tilde,[phys%neq,size(sol%u_tilde)/phys%neq]))
+         qaux = transpose(reshape(sol%q,[phys%neq*Ndim,size(sol%q)/phys%neq/Ndim]))
+         uaux(:,1) = exp(uaux(:,1))
+         utaux(:,1) = exp(utaux(:,1))             
+         qaux(:,1) = qaux(:,1)*uaux(:,1)
+         qaux(:,2) = qaux(:,2)*uaux(:,1)
+         sol%u = col(transpose(uaux))
+         sol%u_tilde = col(transpose(utaux))
+         sol%q = col(transpose(qaux))
+         deallocate(uaux,utaux,qaux)
+      endif
+
 
       ! Message to confirm succesful reading of file
       IF (MPIvar%glob_id .eq. 0) THEN

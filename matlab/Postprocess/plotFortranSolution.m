@@ -38,12 +38,12 @@ path2save = '/home/giorgio/Dropbox/PostDoc_Marseille/Latex/NGammaVortPot/';
 %**********************************
 % Solution
 %**********************************
-% solpath = '/home/giorgio/Dropbox/Fortran/Results/';
+solpath = '/home/giorgio/Dropbox/Fortran/Results/';
 % meshpath = '/home/giorgio/Dropbox/Fortran/MHDG_ref3.0/matlab/Meshes/Parallel/';
 % solname = 'Sol2D_Square_Quads_9216els_P4_DPe0.100E-04_0500';
-solpath = '/home/giorgio/Dropbox/Fortran/MHDG_ref3.0/test//';
+% solpath = '/home/giorgio/Dropbox/Fortran/MHDG_ref3.0/test//';
 meshpath = '/home/giorgio/Dropbox/Fortran/MHDG_ref3.0/test/';
-solname = 'Sol2D_Square_Quads_6_P3_DPe0.100E-03_0400';
+solname = 'Sol2D_Square_Quads_6_P3_DPe0.100E-03_0266';
 
 
 

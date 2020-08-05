@@ -41,7 +41,7 @@
    dirivortlim   = .true. ! Dirichlet boundary condition on the vorticity in the limiter boundary
    convvort   = .false.  ! Consider the convective term in the vorticity equation 
    pertini    = 0        ! Add perturbation. 0-no perturbation; 1-sinusoidal perturbation; 2-blob
-   logrho = .false.
+   logrho = .true.
 /
 
 &NUMER_LST
