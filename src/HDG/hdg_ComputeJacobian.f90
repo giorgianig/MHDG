@@ -1091,7 +1091,12 @@ allocate(Xfl(refElPol%Nfacenodes,2))
          if (iface.le.Mesh%Nintfaces) then
             CALL elemental_matrices_faces_int(iel,ifa,Xfl,Bfl,qef,uef,uf,tau_save_el,xy_g_save_el)
          else
-            CALL elemental_matrices_faces_ext(iel,ifa,isdir,Xfl,Bfl,qef,uef,uf,tau_save_el,xy_g_save_el)
+            if (Mesh%periodic_faces(iface-Mesh%Nintfaces).eq.0) then
+               CALL elemental_matrices_faces_ext(iel,ifa,isdir,Xfl,Bfl,qef,uef,uf,tau_save_el,xy_g_save_el)
+            else
+               ! periodic face
+               CALL elemental_matrices_faces_int(iel,ifa,Xfl,Bfl,qef,uef,uf,tau_save_el,xy_g_save_el)
+            endif
          endif
          ! Flip faces
          if (Mesh%flipface(iel,ifa)) then

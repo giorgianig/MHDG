@@ -11,7 +11,7 @@ MODULE initialization
    USE analytical
    USE physics
    USE MPI_OMP
-   USE LinearAlgebra, ONLY: col
+   USE LinearAlgebra, ONLY: col,tensorProduct,solve_linear_system
 
    IMPLICIT NONE
 CONTAINS
@@ -165,6 +165,7 @@ CONTAINS
    !********************************
    SUBROUTINE init_sol
       integer :: Neq,Ndim,Ntorloc,N2d,Nel,Np1d,Np2d,Np,Nfl,Nfp,Nfg,Nf,sizeutilde,sizeu
+      integer :: Ngvo
       Neq = phys%Neq
 #ifdef TOR3D
       Ndim = 3                             ! N. of dimensions
@@ -186,6 +187,7 @@ CONTAINS
       Nfg = Np2d*2 + refElPol%Nfaces*Nfl    ! N. of nodes in all the faces of a 3D element
       Nf = Mesh%Nfaces                   ! N. of faces in the 2D mesh
       sizeu = Neq*Nel*Np                    ! Size of u
+      Ngvo = refElPol%Ngauss2d*refEltor%Ngauss1d
 #ifdef PARALL
       if (MPIvar%ntor .gt. 1) then
          sizeutilde = Neq*ntorloc*(Nfl*Nf + Np2d*N2d) + Neq*Np2d*N2d! Size of utilde
@@ -203,6 +205,7 @@ CONTAINS
       Nfg = refElPol%Nfacenodes*Nf
       sizeu = Neq*Nel*Np
       sizeutilde = Neq*Mesh%Nfaces*Mesh%Nnodesperface
+      Ngvo = refElPol%Ngauss2d
 #endif
 
       ! Allocation of the solution vector
@@ -218,15 +221,26 @@ CONTAINS
          write (6,*) "*** Initializing the solution"
       END IF
       ENDIF
-
-      ! The solution is intialized in each node to the analytical solution
-      IF (MPIvar%glob_id .eq. 0) THEN
-         IF (utils%printint > 0) THEN
-            write (6,*) "******* Initializing the solution to the analytic solution"
-         END IF
-      ENDIF
-      CALL init_sol_analytic()
-
+      if (switch%init.eq.1) then
+						   ! The solution is intialized in each node to the analytical solution
+						   IF (MPIvar%glob_id .eq. 0) THEN
+						      IF (utils%printint > 0) THEN
+						         write (6,*) "******* Initializing the solution to the analytic solution"
+						      END IF
+						   ENDIF
+						   CALL init_sol_analytic()
+      elseif (switch%init.eq.2) then
+						   ! The solution is intialized in each node to the analytical solution
+						   IF (MPIvar%glob_id .eq. 0) THEN
+						      IF (utils%printint > 0) THEN
+						         write (6,*) "******* Initializing the solution with L2 projection"
+						      END IF
+						   ENDIF
+						   CALL init_sol_l2proj()
+      else
+         write(6,*) "Wrong initialization type"
+         stop   
+      endif
       ! Extract the face solution from the elemental one
       CALL extractFaceSolution()
 
@@ -330,6 +344,179 @@ CONTAINS
 #endif
          DEALLOCATE (u)
       END SUBROUTINE init_sol_analytic
+
+
+
+
+
+
+
+      !***********************************************************
+      ! Initialization of the solution using an L2 projection
+      !***********************************************************
+      SUBROUTINE init_sol_l2proj
+         integer             :: itor,itorg,iel,iel3,i,g
+         integer             :: ind(Np)
+         real*8              :: Xe(Mesh%Nnodesperelem,Mesh%Ndim)
+         real*8              :: ue(Np,Neq)
+         real*8              :: uex(Np,Neq),uey(Np,Neq)
+         real*8,allocatable  :: u(:,:)
+         real*8              :: tdiv(numer%ntor + 1)
+#ifdef TOR3D
+         real*8              :: htor,tel(refElTor%Nnodes1d)
+#endif
+         real*8,allocatable :: qx(:,:),qy(:,:),auxq(:,:)
+         
+#ifdef TOR3D
+         real*8,allocatable :: qt(:,:)
+         real*8              :: uet(Np,Neq)
+#endif
+						   real*8                :: J11(Ngvo),J12(Ngvo)
+						   real*8                :: J21(Ngvo),J22(Ngvo)
+						   real*8                :: detJ(Ngvo)
+						   real*8                :: iJ11(Ngvo),iJ12(Ngvo)
+						   real*8                :: iJ21(Ngvo),iJ22(Ngvo)
+         real*8                :: dvolu,M(Np,Np),rhs_u(Np,Neq),rhs_ux(Np,Neq),rhs_uy(Np,Neq)
+         real*8                :: xyg(Ngvo,2)
+         real*8                :: ug(Ngvo,Neq)
+         real*8                :: ugx(Ngvo,Neq),ugy(Ngvo,Neq)
+         real*8,parameter     :: tol = 1e-12
+
+         ALLOCATE (u(Nel*Np,phys%Neq))
+         u = 0.
+         ALLOCATE (qx(Nel*Np,phys%Neq))
+         ALLOCATE (qy(Nel*Np,phys%Neq))
+         ALLOCATE (auxq(Nel*Np*phys%Neq,Ndim))
+         qx = 0.; qy = 0.
+#ifdef TOR3D
+         ALLOCATE (qt(Nel*Np,phys%Neq))
+         qt = 0.
+#endif
+
+#ifdef TOR3D
+write(6,*) "Not coded yet"
+stop
+!         !****************************************
+!         !          3D
+!         !****************************************
+!         htor = numer%tmax/numer%ntor
+!         tdiv = 0.
+!         DO i = 1,numer%ntor
+!            tdiv(i + 1) = i*htor
+!         END DO
+
+!         DO itor = 1,ntorloc
+!#ifdef PARALL
+!            itorg = itor + (MPIvar%itor - 1)*numer%ntor/MPIvar%ntor
+!            if (itorg == numer%ntor + 1) itorg = 1
+!#else
+!            itorg = itor
+!#endif
+!            tel = tdiv(itorg) + 0.5*(refElTor%coord1d+1)*(tdiv(itorg + 1) - tdiv(itorg))
+!            DO iel = 1,Mesh%Nelems
+!               iel3 = (itor - 1)*N2d+iel
+!               ind = (iel3 - 1)*Np + (/(i,i=1,Np)/)
+!               Xe = Mesh%X(Mesh%T(iel,:),:)
+!               CALL analytical_solution(Xe(:,1),Xe(:,2),tel,ue)
+!               CALL analytical_gradient(Xe(:,1),Xe(:,2),tel,ue,uex,uey,uet)
+!               qx(ind,:) = uex
+!               qy(ind,:) = uey
+!               qt(ind,:) = uet
+!               u(ind,:) = ue
+!            END DO
+!         END DO
+#else
+         !****************************************
+         !          2D
+         !****************************************
+         DO iel = 1,Mesh%Nelems
+
+            ind = (iel - 1)*Np + (/(i,i=1,Np)/)
+            Xe = Mesh%X(Mesh%T(iel,:),:)
+												J11 = matmul(refElPol%Nxi2D,Xe(:,1))                           ! ng x 1
+												J12 = matmul(refElPol%Nxi2D,Xe(:,2))                           ! ng x 1
+												J21 = matmul(refElPol%Neta2D,Xe(:,1))                          ! ng x 1
+												J22 = matmul(refElPol%Neta2D,Xe(:,2))                          ! ng x 1
+												detJ = J11*J22 - J21*J12                    ! determinant of the Jacobian
+												iJ11 = J22/detJ
+												iJ12 = -J12/detJ
+												iJ21 = -J21/detJ
+												iJ22 = J11/detJ
+
+            ! Solution at Gauss points
+            xyg = matmul(refElPol%N2D,Xe)
+            CALL analytical_solution(xyg(:,1),xyg(:,2),ug)
+            CALL analytical_gradient(xyg(:,1),xyg(:,2),ug,ugx,ugy)
+
+
+            ! Initialize mass matrix and rhs
+            M=0.
+            rhs_u=0.
+            rhs_ux=0.
+            rhs_uy=0.
+		          DO g=1,Ngvo
+
+
+														 IF (detJ(g) < tol) THEN
+														    error stop "Negative jacobian"
+														 END if
+
+														 ! Integration weight
+														 dvolu = refElPol%gauss_weights2D(g)*detJ(g)
+														 IF (switch%axisym) THEN
+														    dvolu = dvolu*xyg(g,1)
+														 END IF
+
+
+               M = M + TensorProduct(refElPol%N2D(g,:),refElPol%N2D(g,:))*dvolu
+               rhs_u = rhs_u+tensorProduct(refElPol%N2D(g,:),ug(g,:))*dvolu
+               rhs_ux = rhs_ux+tensorProduct(refElPol%N2D(g,:),ugx(g,:))*dvolu
+               rhs_uy = rhs_uy+tensorProduct(refElPol%N2D(g,:),ugy(g,:))*dvolu
+		          END DO
+            call solve_linear_system(M,rhs_u,ue)
+            call solve_linear_system(M,rhs_ux,uex)
+            call solve_linear_system(M,rhs_uy,uey)
+            qx(ind,:) = uex
+            qy(ind,:) = uey
+            u(ind,:) = ue
+         END DO
+
+
+
+
+#endif
+
+         !****************************************
+         !          common
+         !****************************************
+         sol%u = reshape(transpose(u),(/Nel*Np*phys%Neq/))
+
+         auxq(:,1) = reshape(transpose(qx),(/Nel*Np*phys%Neq/))
+         auxq(:,2) = reshape(transpose(qy),(/Nel*Np*phys%Neq/))
+#ifdef TOR3D
+         auxq(:,3) = reshape(transpose(qt),(/Nel*Np*phys%Neq/))
+#endif
+         sol%q = reshape(transpose(auxq),(/Nel*Np*phys%Neq*Ndim/))
+         DEALLOCATE (qx,qy,auxq)
+#ifdef TOR3D
+         DEALLOCATE (qt)
+#endif
+         DEALLOCATE (u)
+      END SUBROUTINE init_sol_l2proj
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
       !***************************************************************
       ! Extract face solution: routine to define a nodal face solution
@@ -469,8 +656,8 @@ CONTAINS
          END DO
 
          DO iFace = 1,Mesh%Nextfaces
-            iElem = Mesh%intfaces(iFace,1)
-            ifa = Mesh%intfaces(iFace,2)
+            iElem = Mesh%extfaces(iFace,1)
+            ifa = Mesh%extfaces(iFace,2)
             IF (.not. Mesh%Fdir(iElem,ifa)) THEN
                ind_ue = (iElem - 1)*Np + (/(i,i=1,Np)/)
                ind_uf = Mesh%Nintfaces*Nfp + (iFace - 1)*Nfp + (/(i,i=1,Nfp)/)
@@ -478,7 +665,6 @@ CONTAINS
                u_tilde(ind_uf,:) = u(ind_ue(faceNodes),:)
             END IF
          END DO
-
          sol%u_tilde = reshape(transpose(u_tilde),(/Nf*Nfp*neq/))
 
          DEALLOCATE (u,u_tilde)

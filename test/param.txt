@@ -5,6 +5,7 @@
    axisym = .true. ! Is it an axisymmetric simulation?
       ! true = yes
       ! false = no
+   init = 2        ! Initialization type: 1-analytical at nodes; 2-L2 projection
    driftdia = .false. ! Set to FALSE to ignore diamagnetic drifts terms
    driftexb = .true. ! Set to FALSE to ignore ExB drifts terms
    testcase = 7       ! Determine the analytical solution and the body forces
@@ -41,7 +42,7 @@
    dirivortlim   = .true. ! Dirichlet boundary condition on the vorticity in the limiter boundary
    convvort   = .false.  ! Consider the convective term in the vorticity equation 
    pertini    = 0        ! Add perturbation. 0-no perturbation; 1-sinusoidal perturbation; 2-blob
-   logrho = .true.
+   logrho = .false.
 /
 
 &NUMER_LST
@@ -98,7 +99,7 @@
    ! each component must be put separetly
    ! The dimension of bcflags is set to 10, means that at most 10 different kinds of boundary 
    ! condition can exist
-   bcflags(1:6) = 4 2 30 30 30 4
+   bcflags(1:6) = 4 2 30 70 70 4
    bcflags(7)   = 50 ! Limiter
    bcflags(8)   = 2  ! In
    bcflags(9)   = 50 ! Out
@@ -120,7 +121,7 @@
    ! ***** Coefficients for the vorticity model
    etapar   = 1e-5
    Potfloat = 3.
-   diagsource = 1e-4 0. 1e-4 0. 0. 0. 0. 0. 0. 0. 
+   diagsource = 5e-4 0. 5e-4 0. 0. 0. 0. 0. 0. 0. 
 /
 
 &UTILS_LST

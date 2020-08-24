@@ -68,10 +68,10 @@ SUBROUTINE solve_global_system
          matK%start = .false.
       ELSE
          call build_mat_PASTIX(matPASTIX)
-#ifdef PARALL
+!#ifdef PARALL
          ! This needs to be redone in parallel (who knows why??)
          call check_mat_PASTIX(matPASTIX)
-#endif
+!#endif
       END IF
       call LU_mat_pastix(matPASTIX)
       call solve_mat_PASTIX(matPASTIX)

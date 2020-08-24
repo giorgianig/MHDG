@@ -599,6 +599,9 @@ CONTAINS
          CALL set_NeumannH_bc()
       CASE(bc_Transmission)
          CALL set_Transmission_bc()
+      CASE(bc_periodic)
+          CYCLE ! done in assembly
+!         CALL set_periodic_bc()
       CASE (bc_Bohm)
 
          CALL set_Bohm_bc(tau_save_el,xy_g_save_el)
@@ -650,6 +653,47 @@ CONTAINS
    END SUBROUTINE set_dirichletwf_bc
 
 
+
+
+   !****************************
+   ! Periodic bc
+   !****************************
+   SUBROUTINE set_periodic_bc
+      integer                   :: g,i,ifan,ifln,ieln,Fin,ind_ufn(refElPol%Nfacenodes*phys%neq)
+      real*8                    :: dline,xyDerNorm_g
+      real*8                    :: NiNi(Npfl,Npfl),Ni(Npfl)
+      real*8                    :: ufn(refElPol%Nfacenodes*phys%neq)
+      real*8                    :: ufgn(refElPol%Ngauss1d,phys%neq),uaux(refElPol%Ngauss1d,phys%neq)
+
+      ! Solution in the corresponding face
+      ifan = Mesh%periodic_faces(ifa)
+      ieln = Mesh%extfaces(ifan,1)
+      ifln = Mesh%extfaces(ifan,2)
+						Fin = ifan + Mesh%Nintfaces
+						ind_ufn = (Fin - 1)*Neq*Npfl + (/(i,i=1,Neq*Npfl)/)
+						ufn = sol%u_tilde(ind_ufn)
+						uaux = matmul(refElPol%N1D,transpose(reshape(ufn,[neq,Npfl])))
+
+      ! Flip solution in the corresponding face
+      do i=1,refElPol%Ngauss1d
+         ufgn(i,:) = uaux(refElPol%Ngauss1d+1-i,:)
+      end do
+
+      ! Loop in 1D Gauss points
+      DO g = 1,Ng1d
+
+         ! Calculate the integration weight
+         xyDerNorm_g = norm2(xyDer(g,:))
+         dline = refElPol%gauss_weights1D(g)*xyDerNorm_g
+         IF (switch%axisym) THEN
+            dline = dline*xyg(g,1)
+         END IF
+         NiNi = tensorProduct(refElPol%N1D(g,:),refElPol%N1D(g,:))*dline
+         Ni = refElPol%N1D(g,:)*dline
+         CALL assembly_dirichletwf_bc(iel,ind_asf,ind_ff,ufgn(g,:),NiNi,Ni)
+      END DO
+
+   END SUBROUTINE set_periodic_bc
 
    !***************************************************************
    ! Neumann in all variables
@@ -939,6 +983,27 @@ CONTAINS
       END DO
 
    END SUBROUTINE assembly_dirichletwf_bc
+
+
+
+!   !*********************************
+!   ! Assembly periodic bc
+!   !*********************************
+!   SUBROUTINE assembly_periodic_bc(iel,ind_ff,ind_ff,NiNi)
+!      integer*4    :: iel,ind_ff(:)
+!      real*8       :: NiNi(:,:)
+!      real*8       :: kmult(Neq*Npfl)
+!      integer*4    :: ind(Npfl),i
+
+!      kmult = col(tensorProduct(ufg(:),Ni))
+!      DO i = 1,Neq
+!         ind = i + ind_asf
+!         elMat%All(ind_ff(ind),ind_ff(ind),iel) = elMat%All(ind_ff(ind),ind_ff(ind),iel) - numer%tau(i)*NiNi
+!         elMat%fh(ind_ff(ind),iel) = elMat%fh(ind_ff(ind),iel) - numer%tau(i)*kmult(ind)
+!      END DO
+
+!   END SUBROUTINE assembly_periodic_bc
+
 
 
    !*********************************

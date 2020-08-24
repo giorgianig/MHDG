@@ -246,6 +246,9 @@ PROGRAM MHDG
          CALL hdg_Assembly()
 !call HDF5_save_CSR_matrix('Mat')
 !call HDF5_save_CSR_vector('rhs')
+!call displayMatrixInt(Mesh%F)
+!call displayMatrixInt(Mesh%extfaces)
+!call displayVectorInt(Mesh%periodic_faces)
 !stop
 !call print_matrices_hdf5
 !stop
@@ -295,7 +298,6 @@ PROGRAM MHDG
             WRITE (6, *) " "
             WRITE (6, *) " "
          ENDIF
-
       END DO ! ************ END OF NEWTON-RAPHSON LOOP *********************
 
 !  ! Apply threshold

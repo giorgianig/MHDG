@@ -594,7 +594,12 @@ allocate(Xfl(refElPol%Nfacenodes,2))
          if (iface.le.Mesh%Nintfaces) then
             call elemental_matrices_int_faces(iel,ifa,Xfl)
          else
-            call elemental_matrices_ext_faces(iel,ifa,Xfl)
+            if (Mesh%periodic_faces(iface-Mesh%Nintfaces).eq.0) then
+               call elemental_matrices_ext_faces(iel,ifa,Xfl)
+            else
+               ! periodic face
+               call elemental_matrices_int_faces(iel,ifa,Xfl)               
+            endif
          endif
       END DO
       

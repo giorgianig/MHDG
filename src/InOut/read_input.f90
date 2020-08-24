@@ -16,7 +16,7 @@ SUBROUTINE READ_input()
 
    logical :: driftdia,driftexb, axisym, restart,steady,dotiming,psdtime,decoup
    logical :: ckeramp,saveNR,filter,saveTau,lstiming,fixdPotLim,dirivortcore,dirivortlim,convvort,logrho
-   integer :: thresh, difcor, tis, stab,pertini
+   integer :: thresh, difcor, tis, stab,pertini,init
    integer :: itmax, itrace, rest, istop, sollib
    integer :: uinput, printint, testcase, nrp
    integer :: nts, tsw, freqdisp, freqsave, shockcp, limrho
@@ -37,7 +37,7 @@ SUBROUTINE READ_input()
 
    
    ! Defining the variables to READ from the file
-   NAMELIST /SWITCH_LST/ steady, axisym, driftdia, driftexb, testcase, psdtime, diffred, diffmin, &
+   NAMELIST /SWITCH_LST/ steady, axisym, init, driftdia, driftexb, testcase, psdtime, diffred, diffmin, &
                        & shockcp, limrho, difcor, thresh, filter, decoup, ckeramp, saveNR, saveTau, fixdPotLim, dirivortcore,dirivortlim, convvort,pertini,&
                        & logrho
    NAMELIST /NUMER_LST/ tau,nrp,tNR,tTM,div,sc_coe,sc_sen,minrho,so_coe,df_coe,dc_coe,thr,thrpre,stab,dumpnr,ntor,ptor,tmax,npartor,bohmtypebc
@@ -68,6 +68,7 @@ SUBROUTINE READ_input()
    ! Storing at the right place
    switch%steady = steady
    switch%axisym = axisym
+   switch%init = init
    switch%driftdia = driftdia
    switch%driftexb = driftexb
    switch%testcase = testcase
@@ -258,6 +259,11 @@ SUBROUTINE READ_input()
       PRINT *, '        ***************** Switches ****************************'
       PRINT *, '                - stady state simulation:                           ', switch%steady
       PRINT *, '                - axisym:                                           ', switch%axisym
+      if (switch%init.eq.1) then
+      PRINT *, '  Initializing with analytical solution at nodes                    '
+      else
+      PRINT *, '  Initializing with L2 projection                                   '
+      endif
       PRINT *, '                - driftdia:                                         ', driftdia
       PRINT *, '                - driftexb:                                         ', driftexb
       PRINT *, '                - test case:                                        ', testcase

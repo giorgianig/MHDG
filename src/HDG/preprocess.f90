@@ -426,6 +426,18 @@ CONTAINS
       END IF
 
       CALL set_boundary_flag_names()
+
+      ! Periodic faces preprocess
+      allocate(Mesh%periodic_faces(Mesh%Nextfaces))
+      Mesh%periodic_faces = 0
+      do ifa = 1, Mesh%Nextfaces
+         fl = Mesh%boundaryFlag(ifa)
+         if (phys%bcflags(fl) == bc_periodic) then
+            call periodic_faces_preprocess()
+            exit
+         end if
+      end do
+
       IF (MPIvar%glob_id .eq. 0) THEN
          WRITE (6, *) '*************************************************'
          WRITE (6, *) '*          BOUNDARY CONDITIONS                  *'
@@ -459,6 +471,46 @@ CONTAINS
 #endif
          WRITE (6, *) ' '
       END IF
+      
+      contains
+
+
+      subroutine periodic_faces_preprocess()
+      integer*4 :: i,j,ifa,ifan,fl,iel,ieln,ni,ne,nin,nen
+      real*8    :: xi,xe,yi,ye,xin,xen,yin,yen
+      do i = 1, Mesh%Nextfaces
+         fl = Mesh%boundaryFlag(i)
+         if (phys%bcflags(fl) == bc_periodic) then
+            ! Find corresponding face
+            iel = Mesh%extFaces(i,1)
+            ifa = Mesh%extFaces(i,2)
+            ni = refElPol%face_nodes(ifa,1)
+            ne = refElPol%face_nodes(ifa,refElPol%Nfacenodes)
+            xi=Mesh%X(Mesh%T(iel,ni),1)
+            xe=Mesh%X(Mesh%T(iel,ne),1)
+            yi=Mesh%X(Mesh%T(iel,ni),2)
+            ye=Mesh%X(Mesh%T(iel,ne),2)
+            do j = 1, Mesh%Nextfaces
+               if (i==j) cycle
+               ieln = Mesh%extFaces(j,1)
+               ifan = Mesh%extFaces(j,2)
+               nin = refElPol%face_nodes(ifan,1)
+               nen = refElPol%face_nodes(ifan,refElPol%Nfacenodes)
+               xin=Mesh%X(Mesh%T(ieln,nin),1)
+               xen=Mesh%X(Mesh%T(ieln,nen),1)
+               yin=Mesh%X(Mesh%T(ieln,nin),2)
+               yen=Mesh%X(Mesh%T(ieln,nen),2)              
+               if ( (xi.ne.xe .and. xi==xen .and. xe==xin) .or. (yi.ne.ye .and. yi==yen .and. ye==yin) ) then
+                  Mesh%periodic_faces(i)=j
+                  exit
+               endif
+            end do
+         endif
+      end do
+
+      end subroutine periodic_faces_preprocess
+
+
 
    END SUBROUTINE Bc_preprocess
 
@@ -467,6 +519,7 @@ CONTAINS
       integer :: ifa, igh
       integer :: infoFace(5), infoFace_ex(2)
       logical :: isdir
+      integer :: ifan,ieln,Fi,Fi_per
 
       igh = 0
       ALLOCATE (Mesh%F(Mesh%Nelems, refElPol%Nfaces))
@@ -509,6 +562,20 @@ CONTAINS
             END IF
          END IF
 #endif
+      END DO
+      ! Modify flipface for periodic faces
+      DO ifa = 1, Mesh%Nextfaces
+         if (Mesh%periodic_faces(ifa).ne.0) then
+               infoFace_ex = Mesh%extFaces(ifa, :)
+               Fi=Mesh%F(infoFace_ex(1), infoFace_ex(2))
+               ieln = Mesh%extfaces(Mesh%periodic_faces(ifa),1)
+               ifan = Mesh%extfaces(Mesh%periodic_faces(ifa),2)
+               Fi_per = Mesh%F(ieln,ifan)
+               if (Fi>Fi_per) then
+                  Mesh%flipFace(infoFace_ex(1), infoFace_ex(2))=.true.
+               endif
+                           
+         endif
       END DO
 
    END SUBROUTINE CreateFaceConnectivity

@@ -30,6 +30,8 @@ MODULE types
    INTEGER, PARAMETER, PUBLIC :: bc_BohmSimp = 52
    ! 60-.. Slip wall type
    INTEGER, PARAMETER, PUBLIC :: bc_slip_wall = 60
+   ! 70-.. Periodic
+   INTEGER, PARAMETER, PUBLIC :: bc_periodic = 70
 
    ! Boundary conditions flags and names
    CHARACTER(100) ::  bc_flag_type(10), bc_flag_name(max_num_diff_bc)
@@ -116,6 +118,7 @@ MODULE types
       logical, allocatable :: flipface(:, :)    ! for each triangle, and for each face, 0 if the order of the numbering in the face is to be kept, 1 if the
       ! order is to be reversed
       logical, allocatable    :: Fdir(:, :)         ! for each element states if each local face is of Dirichlet type
+      integer*4, allocatable  :: periodic_faces(:)  ! Mapping for periodic faces
       integer*4, allocatable  :: Diric(:)
       integer*4, allocatable  :: numberbcs(:)
       real*8, allocatable     :: elemSize(:)   ! element size (area in 2D, volume in 3D) [Number of elements]
@@ -225,6 +228,7 @@ MODULE types
       logical :: driftdia ! Set to TRUE to consider diamagnetic drift
       logical :: driftexb ! Set to TRUE to consider ExB drift
       logical :: steady
+      integer :: init     ! 1-init. analy. solution at nodes; 2-L2 projection
       ! Set to TRUE for a steady state computation
       ! Set to FALSE for a transient computation
       integer :: testcase  ! Define the testcase ( which analytical solution, body force, magnetic field...)
@@ -531,6 +535,7 @@ CONTAINS
       bc_flag_name(51) = 'Bohm for the velocity, Neumann homogeneous for the other variables'
       bc_flag_name(52) = 'Simplified Bohm bc: normal Bohm for the velocity, Grad//T=0 for Ti, Te'
       bc_flag_name(60) = 'Slip wall'
+      bc_flag_name(70) = 'Periodic'
 
    END SUBROUTINE set_boundary_flag_names
 

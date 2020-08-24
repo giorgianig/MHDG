@@ -227,7 +227,9 @@ CONTAINS
       IF (ASSOCIATED(Mesh%toroidal)) THEN
          DEALLOCATE (Mesh%toroidal)
       END IF
-
+      IF (ALLOCATED(Mesh%periodic_faces)) THEN
+         DEALLOCATE (Mesh%periodic_faces)
+      END IF
       ! sol type
       IF (ASSOCIATED(sol%u)) THEN
          DEALLOCATE (sol%u)
