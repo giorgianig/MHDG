@@ -1319,7 +1319,7 @@ CONTAINS
          driftg = phys%dfcoef*driftg/Bmod(g)
 
          CALL assemblyVolumeContribution(Auq,Auu,rhs,b(g,:),divbg,driftg,Bmod(g),force(g,:),&
-          &ktis,diff_iso_vol(:,:,g),diff_ani_vol(:,:,g),Ni,NNi,Nxyzg,NNxy,NxyzNi,NNbb,upg(g,:),ueg(g,:),qeg(g,:),u0eg(g,:,:))
+          &ktis,diff_iso_vol(:,:,g),diff_ani_vol(:,:,g),Ni,NNi,Nxyzg,NNxy,NxyzNi,NNbb,upg(g,:),ueg(g,:),qeg(g,:),u0eg(g,:,:),xy(g,:))
       END DO ! END loop in volume Gauss points
       call do_assembly(Auq,Auu,rhs,ind_ass,ind_asq,iel)
       deallocate(Auq,Auu,rhs)
@@ -1722,12 +1722,12 @@ CONTAINS
 ! 
 !********************************************************************
    SUBROUTINE assemblyVolumeContribution(Auq,Auu,rhs,b3,divb,drift,Bmod,f,&
-               &ktis,diffiso,diffani,Ni,NNi,Nxyzg,NNxy,NxyzNi,NNbb,upe,ue,qe,u0e) 
+               &ktis,diffiso,diffani,Ni,NNi,Nxyzg,NNxy,NxyzNi,NNbb,upe,ue,qe,u0e,xy) 
       real*8,intent(inout)      :: Auq(:,:,:),Auu(:,:,:),rhs(:,:)
       real*8,intent(IN)         :: b3(:),divb,drift(:),f(:),ktis(:),Bmod
       real*8,intent(IN)         :: diffiso(:,:),diffani(:,:)
       real*8,intent(IN)         :: Ni(:),NNi(:,:),Nxyzg(:,:),NNxy(:,:),NxyzNi(:,:,:),NNbb(:)
-      real*8,intent(IN)         :: upe(:),ue(:)
+      real*8,intent(IN)         :: upe(:),ue(:),xy(:)
       real*8,intent(INOUT)      :: u0e(:,:)
       real*8,intent(IN)         :: qe(:)
       integer*4                 :: i,j,k,iord,ii,alpha,beta,z
@@ -1976,20 +1976,42 @@ CONTAINS
 #ifdef VORTICITY
          ! The vorticity is the source term in the potential equation
          IF (i == 4) THEN
-             j=3
+            j=3
             z = i+(j-1)*Neq
             Auu(:,:,z)=Auu(:,:,z) +NNi            
          ENDIF
 #endif
 
 
-         ! Diagonal implicit sources
-         if (switch%logrho) then
-            rhs(:,i)=rhs(:,i)-phys%diagsource(i)*Ni            
-         else
-            z = i+(i-1)*Neq
-            Auu(:,:,z)=Auu(:,:,z) +phys%diagsource(i)*NNi            
+
+#ifdef VORTICITY
+!									if (switch%testcase.eq.7 .and. switch%logrho .and. i.eq.1 .and. upe(1).gt.1) then
+!											 rhs(:,i)=rhs(:,i)-100*(upe(1)-1.)*Ni            
+!									endif         
+         if (switch%testcase.eq.7) then
+										  if ( (xy(1)-geom%R0)/phys%lscale .gt. 0.4 ) then
+															! Implicit sources to take into account parallel losses
+															if (switch%logrho) then
+                  if (i==1) then
+																     rhs(:,i)=rhs(:,i)-phys%diagsource(i)*Ni            
+                  else if (i==3) then
+                     j=4
+																					z = i+(j-1)*Neq
+																					Auu(:,:,z)=Auu(:,:,z) +phys%diagsource(i)*NNi 
+                  endif
+															else
+                  if (i==1) then
+																					z = i+(i-1)*Neq
+																					Auu(:,:,z)=Auu(:,:,z) +phys%diagsource(i)*NNi            
+                  else if (i==3) then
+                     j=4
+																					z = i+(j-1)*Neq
+																					Auu(:,:,z)=Auu(:,:,z) +phys%diagsource(i)*NNi    
+                  endif             
+															endif
+            endif
          endif
+#endif
          
       END DO ! Loop in equations
 

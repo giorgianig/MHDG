@@ -19,6 +19,7 @@ cons_dimensional_plots = 0; % conservative variables
 phys_dimensional_plots = 0; % physical variables
 nref = 4; % plot order
 varnplot = [];%[2,4]; % I don't plot these variables
+iplot = 0;
 
 %**********************************
 % 3D stuff
@@ -39,11 +40,11 @@ path2save = '/home/giorgio/Dropbox/PostDoc_Marseille/Latex/NGammaVortPot/';
 % Solution
 %**********************************
 % solpath = '/home/giorgio/Dropbox/Fortran/Results/';
-% meshpath = '/home/giorgio/Dropbox/Fortran/MHDG_ref3.0/matlab/Meshes/Parallel/';
-% solname = 'Sol2D_Square_Quads_9216els_P4_DPe0.100E-04_0500';
+% meshpath = '/home/giorgio/Dropbox/Fortran/MHDG_ref3.0/test/';
+% solname = 'Sol2D_Square_Quads_6_P3_DPe0.100E-03_1358';
 solpath = '/home/giorgio/Dropbox/Fortran/MHDG_ref3.0/test//';
 meshpath = '/home/giorgio/Dropbox/Fortran/MHDG_ref3.0/test/';
-solname = 'Sol2D_Square_Quads_5_P3_DPe0.100E-03_0000';
+solname = 'Sol2D_Square_Quads_5_P3_DPe0.500E-04_0370';
 
 
 
@@ -103,7 +104,6 @@ for iproc = 1:nproc
     end
     refEl = createReferenceElement(elemType,size(Mesh.T,2));
     
-    iplot = 5;
     if strcmpi(solname(4:5),'2D')
         %**********************************
         % 2D plot...

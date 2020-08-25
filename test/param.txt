@@ -88,10 +88,10 @@
 
 &PHYS_LST
    ! ****** Diffusion parameters in m^2/s
-   diff_n = 1e-4 ! diffusion in the continuity equation
-   diff_u = 1e-4 ! diffusion in the momentum equation
-   diff_e = 1e-4 ! perpendicular diffusion for the energy equation
-   diff_ee = 1e-4 ! perpendicular diffusion in the electron temperature equation (for the TiTe model)
+   diff_n = 5e-5 ! diffusion in the continuity equation
+   diff_u = 5e-5 ! diffusion in the momentum equation
+   diff_e = 5e-5 ! perpendicular diffusion for the energy equation
+   diff_ee = 5e-5 ! perpendicular diffusion in the electron temperature equation (for the TiTe model)
    diff_vort = 1e-4 ! diffusion in the vorticity equation
    ! ****** Background temperature in the isothermal model in eV (useless in the non-isothermal model)
    Tbg = 50
@@ -121,7 +121,7 @@
    ! ***** Coefficients for the vorticity model
    etapar   = 1e-5
    Potfloat = 3.
-   diagsource = 5e-4 0. 5e-4 0. 0. 0. 0. 0. 0. 0. 
+   diagsource = 5e-1 0. 5e-1 0. 0. 0. 0. 0. 0. 0. 
 /
 
 &UTILS_LST
