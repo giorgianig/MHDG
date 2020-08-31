@@ -562,7 +562,7 @@ CONTAINS
       IF (MPIvar%glob_id .eq. 0) THEN
          WRITE (6, '(" * ", 60("-"), "*")')
          WRITE (6, '(" * Time (adimensional) = ", E12.5, 27X, " *")') time%t
-         WRITE (6, '(" * Dt (seconds)        = ", E12.5, 27X, " *")') time%dt*1.3736e-07
+         WRITE (6, '(" * Dt (adimensional)        = ", E12.5, 27X, " *")') time%dt
          WRITE (6, '(" * ", 45("^"), 14X, " *")')
          WRITE (6, '(" * ", 10("_"), "      Minimum   ", 4X, "     Maximum   ", 14X, " *")')
          DO ieq = 1, phys%npv

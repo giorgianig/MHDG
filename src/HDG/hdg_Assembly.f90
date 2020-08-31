@@ -1206,7 +1206,7 @@ SUBROUTINE HDG_assembly()
    Fasind = 0
    rept = 0
    DO i = 1, Nfaces
-      IF (MeshMatCSR.cols%ghostfaces(i) .eq. 1) THEN
+      IF (Mesh%ghostfaces(i) .eq. 1) THEN
          rept = rept + 1
          CYCLE
       END IF

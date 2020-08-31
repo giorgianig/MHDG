@@ -543,7 +543,7 @@ use mpi_omp
       real*8 :: a,b,xx,yy,tt,xmax,xmin,ymax,ymin,xm,ym
       real*8 :: dsource(size(x)),aux(size(x)),xsource,ysource,smod
       integer:: i,np
-      real*8 :: r(size(x)),rs
+      real*8 :: r(size(x)),rs,umin
 
       np = size(x)
       u = 0.
@@ -610,12 +610,14 @@ use mpi_omp
 						      WRITE (6,*) "This is an axisymmetric test case!"
 						      stop
 						   END IF
-						   ! 
+						   ! Turbulence interchange case
+        umin = 1e-2 
 							 xsource = xm-0.5*(xmax-xm)
 							 rs = 0.01/simpar%refval_length
 							 dsource = -(x-xsource)/rs
 							 aux = 0.5*(1+tanh(dsource))
-							 up(:,1) = 1e-3+aux
+        
+							 up(:,1) = aux+umin*(1-aux)
       CASE (50:64)
          up(:,1) = 1.
          up(:,2) = 0.
