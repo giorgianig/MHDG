@@ -14,7 +14,7 @@ SUBROUTINE READ_input()
    USE MPI_OMP
    IMPLICIT NONE
 
-   logical :: driftdia,driftexb, axisym, restart,steady,dotiming,psdtime,decoup
+   logical :: driftdia,driftexb, axisym, restart,steady,dotiming,psdtime,decoup,bxgradb
    logical :: ckeramp,saveNR,filter,saveTau,lstiming,fixdPotLim,dirivortcore,dirivortlim,convvort,logrho
    integer :: thresh, difcor, tis, stab,pertini,init
    integer :: itmax, itrace, rest, istop, sollib
@@ -39,7 +39,7 @@ SUBROUTINE READ_input()
    ! Defining the variables to READ from the file
    NAMELIST /SWITCH_LST/ steady, axisym, init, driftdia, driftexb, testcase, psdtime, diffred, diffmin, &
                        & shockcp, limrho, difcor, thresh, filter, decoup, ckeramp, saveNR, saveTau, fixdPotLim, dirivortcore,dirivortlim, convvort,pertini,&
-                       & logrho
+                       & logrho,bxgradb
    NAMELIST /NUMER_LST/ tau,nrp,tNR,tTM,div,sc_coe,sc_sen,minrho,so_coe,df_coe,dc_coe,thr,thrpre,stab,dumpnr,ntor,ptor,tmax,npartor,bohmtypebc
    NAMELIST /GEOM_LST/ R0, q
    NAMELIST /TIME_LST/ dt0, nts, tfi, tsw, tis
@@ -90,6 +90,7 @@ SUBROUTINE READ_input()
    switch%convvort = convvort
    switch%pertini = pertini
    switch%logrho = logrho
+   switch%bxgradb = bxgradb
    numer%tau = tau
    numer%nrp = nrp
    numer%tNR = tNR

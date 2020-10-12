@@ -2,6 +2,7 @@
 clear
 close all
 
+global theta ntor
 %**********************************
 % Parallel/serial
 %**********************************
@@ -19,15 +20,13 @@ cons_dimensional_plots = 0; % conservative variables
 phys_dimensional_plots = 0; % physical variables
 nref = 4; % plot order
 varnplot = [];%[2,4]; % I don't plot these variables
-iplot = 0;
+iplot0 = 0;
 
 %**********************************
 % 3D stuff
 %**********************************
-ntpos =2;
-theta = 2*pi;        % Toroidal angle considered
+ntpos =1;
 dth = 1e-14;
-tpos = linspace(0+dth,theta-dth,ntpos);
 
 %**********************************
 % Printing out
@@ -42,13 +41,17 @@ path2save = '/home/giorgio/Dropbox/PostDoc_Marseille/Latex/NGammaVortPot/';
 % solpath = '/home/giorgio/Dropbox/Fortran/Results/';
 % meshpath = '/home/giorgio/Dropbox/Fortran/MHDG_ref3.0/test/';
 % solname = 'Sol2D_Square_Quads_6_P3_DPe0.100E-03_1358';
-solpath = '/home/giorgio/Dropbox/Fortran/MHDG_ref3.0/test//';
-meshpath = '/home/giorgio/Dropbox/Fortran/MHDG_ref3.0/test/';
-solname = 'Sol2D_Square_Quads_5_P3_DPe0.500E-04_0370';
+solpath = '/home/giorgio/Dropbox/Fortran/MHDG_ref3.0/test/';
+meshpath = solpath;
+% meshpath = '/home/giorgio/Dropbox/Fortran/MHDG_ref3.0/matlab/Meshes/';
+solname = 'Sol3D_CircLimAlign_Quads_Nel208_P4_Ntor2Ptor2_DPe0.100E+02_1759';
+
+% solname = 'Sol2D_CircLimAlign_Quads_Nel208_P4_DPe0.300E+01';
 
 
-
-
+% solpath = '/home/giorgio/Results_MHDG/interchange/sol_9216els_P4/sol1/';
+% meshpath = '/home/giorgio/Dropbox/Fortran/MHDG_ref3.0/matlab/Meshes/Parallel/';
+% solname = 'Sol2D_Square_Quads_9216els_P4_DPe0.500E-04_1770';
 
 
 %**********************************
@@ -65,7 +68,7 @@ end
 if strcmpi(solname(4:5),'2D')
     Ndim=2;
 elseif strcmpi(solname(4:5),'3D')
-    Ndim=3;
+    Ndim=3;    
 end
 
 % Make sure that I look only for 1 process if not parallel
@@ -92,7 +95,10 @@ for iproc = 1:nproc
     % Conservative and physical variables
     uc = transpose(reshape(u,[Neq,numel(u)/Neq]));
     up = cons2phys(uc,simulation_parameters);
-    
+    theta = simulation_parameters.numerics.Max_extention_in_the_toroidal_direction;
+    ntor = simulation_parameters.numerics.Number_of_elements_in_the_toroidal_direction;
+    tpos = linspace(0+dth,theta-dth,ntpos);
+
     if plotGrads
         qr = transpose(reshape(q,[Neq*Ndim,numel(q)/Neq/Ndim]));
     end
@@ -104,6 +110,7 @@ for iproc = 1:nproc
     end
     refEl = createReferenceElement(elemType,size(Mesh.T,2));
     
+    iplot = iplot0;
     if strcmpi(solname(4:5),'2D')
         %**********************************
         % 2D plot...
@@ -174,6 +181,12 @@ for iproc = 1:nproc
                 end
             end
         end
+        if parallel
+            if exist('scdiff_nodes')
+                figure(100+iplot), hold on,plotSolution(Mesh.X,Mesh.T,col(transpose(scdiff_nodes)),refEl,nref);axis off
+                hold on, plotMesh(Mesh.X,Mesh.T,elemType)
+            end
+        end
     elseif strcmpi(solname(4:5),'3D')
         %**********************************
         % 3D plot...
@@ -194,7 +207,7 @@ for iproc = 1:nproc
                     if cons_dimensional_plots
                         uplot = uc(:,i)*simulation_parameters.adimensionalization.reference_values_conservative_variables(i);
                     end
-                    uplot = extractSolutionInAtGivenTheta(uplot,T,refEl,refElTor,tpos(itor));
+                    uplot = extractSolutionInAtGivenTheta(uplot,Mesh.T,refEl,refElTor,tpos(itor));
                     iplot = iplot +1;
                     figure(iplot),hold on, plotSolution(Mesh.X,Mesh.T,uplot,refEl,nref);axis off
                     name = simulation_parameters.physics.conservative_variable_names{i};
@@ -212,7 +225,7 @@ for iproc = 1:nproc
                     if phys_dimensional_plots
                         uplot = up(:,i)*simulation_parameters.adimensionalization.reference_values_physical_variables(i);
                     end
-                    uplot = extractSolutionInAtGivenTheta(uplot,T,refEl,refElTor,tpos(itor));
+                    uplot = extractSolutionInAtGivenTheta(uplot,Mesh.T,refEl,refElTor,tpos(itor));
                     iplot = iplot +1;
                     figure(iplot),hold on, plotSolution(Mesh.X,Mesh.T,uplot,refEl,nref);axis off
                     name = simulation_parameters.physics.physical_variable_names{i};
@@ -241,10 +254,11 @@ for iproc = 1:nproc
     end
 end
 
-
-if exist('scdiff_nodes')
-figure(100+iplot), clf,plotSolution(Mesh.X,Mesh.T,col(transpose(scdiff_nodes)),refEl,nref);axis off
-hold on, plotMesh(Mesh.X,Mesh.T,elemType)
+if ~parallel
+    if exist('scdiff_nodes')
+        figure(100+iplot), clf,plotSolution(Mesh.X,Mesh.T,col(transpose(scdiff_nodes)),refEl,nref);axis off
+        hold on, plotMesh(Mesh.X,Mesh.T,elemType)
+    end
 end
 % Mesh.maxx = max((X(:,1)+3.4)/lscale);
 % Mesh.minx = min((X(:,1)+3.4)/lscale);

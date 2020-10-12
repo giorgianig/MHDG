@@ -43,6 +43,12 @@ SUBROUTINE HDG_BC()
    real*8                    :: Bfl(refElTor%Nfl,3)
    integer                   :: indbt(refElTor%Nfl)
    real*8                    :: Bmod_nod(refElTor%Nfl),b_nod(refElTor%Nfl,3)
+   real*8                    :: uex(refElTor%Ngl,phys%neq),uexpg(refElTor%Ngl,phys%npv)
+			real*8                    :: upg(refElTor%Ngl,phys%npv)
+			real*8,pointer            :: Nfi(:,:)
+   real*8                    :: ug(refElTor%Ngl),ufg(refElTor%Ngl,phys%neq)
+   real*8                    :: diff_iso_fac(phys%neq,phys%neq,refElTor%Ngl),diff_ani_fac(phys%neq,phys%neq,refElTor%Ngl)
+   real*8                    :: Bmod(refElTor%Ngl),b(refElTor%Ngl,3)
 
    if (utils%timing) then
       call cpu_time(timing%tps1)
@@ -136,6 +142,12 @@ SUBROUTINE HDG_BC()
          xyf = matmul(refElPol%N1D,Xf)
          thetafg = matmul(refElTor%N1D,tel)
 
+						   ! Set the face solution
+						   CALL analytical_solution(xyf(:,1),xyf(:,2),thetafg,uex)
+   
+						  ! Physical variables at Gauss points with analytical sol
+						   CALL cons2phys(uex,uexpg)
+
          ! Exterior normal & elemental surface
          xyd_g = matmul(refelPol%Nxi1D,Xf)
          xydNorm_g = sqrt(xyd_g(:,1)**2 + xyd_g(:,2)**2)
@@ -162,6 +174,25 @@ SUBROUTINE HDG_BC()
          ! Solution in this face
          uf = sol%u_tilde(ind_uf)
 
+				    ! Magnetic field norm and direction at Gauss points
+				    Bmod = matmul(refElTor%sFTF,Bmod_nod)
+				    b = matmul(refElTor%sFTF,b_nod)
+
+				    ! Face shape functions
+				    Nfi => refElTor%sFTF
+
+				    ! Gradient solution at face gauss points
+				    qfg = matmul(Nfi,qqf)
+
+				    ! Set the face solution
+				    ufg = matmul(Nfi,transpose(reshape(uf,[neq,Npfl])))
+
+				    ! Physical variables at Gauss points
+				    CALL cons2phys(ufg,upg)
+
+				    ! Compute diffusion at faces Gauss points
+				    CALL setLocalDiff(xyf,diff_iso_fac,diff_ani_fac,Bmod)
+
          ! Type of boundary
          fl = Mesh%boundaryFlag(ifa)
 #ifdef PARALL
@@ -177,10 +208,6 @@ SUBROUTINE HDG_BC()
             CALL set_dirichletwf_bc()
          CASE (bc_dirichlet_and_Neumann)
             CALL set_diric_neum_bc()
-!        CASE(bc_dirichlet_weak_form_oldvalues)
-!           CALL set_dirichletwfoldval_bc()
-!                                           CASE(bc_NeumannH)
-!                                              CALL set_NeumannH()
          CASE (bc_Bohm)
             CALL set_Bohm_bc()
          CASE DEFAULT
@@ -207,13 +234,8 @@ CONTAINS
    !****************************
    SUBROUTINE set_dirichletwf_bc
       integer                   :: g,igpol,igtor
-      real*8                    :: uex(refElTor%Ngl,Neq)
       real*8                    :: f(Neq,Npfl),dsurfg
-      real*8,pointer            :: Nfi(:,:)
       real*8                    :: NiNi(Npfl,Npfl),Ni(Npfl)
-
-      ! Set the face solution
-      CALL analytical_solution(xyf(:,1),xyf(:,2),thetafg,uex)
 
       ! Face shape functions
       Nfi => refElTor%sFTF
@@ -248,13 +270,10 @@ CONTAINS
    !***************************************************************
    SUBROUTINE set_diric_neum_bc
       integer                   :: g,igpol,igtor
-      real*8                    :: uex(refElTor%Ngl,Neq)
       real*8                    :: f(Neq,Npfl),dsurfg
-      real*8,pointer            :: Nfi(:,:)
       real*8                    :: NiNi(Npfl,Npfl),Ni(Npfl)
-
-      ! Set the face solution
-      CALL analytical_solution(xyf(:,1),xyf(:,2),thetafg,uex)
+      real                      :: tau_stab(Neq,Neq)
+      
 
       ! Face shape functions
       Nfi => refElTor%sFTF
@@ -276,9 +295,25 @@ CONTAINS
             NiNi = dsurfg*tensorProduct(Nfi(g,:),Nfi(g,:))
             Ni = Nfi(g,:)*dsurfg
 
-            ! Assembly contribution
-            CALL assembly_diric_neum_bc(iel3,ind_asf,ind_ash,ind_ff,ind_fg,uex(g,:),NiNi,Ni,n_g(g,:))
 
+            !****************** Stabilization part******************************
+            IF (numer%stab > 1) THEN
+               ! Compute tau in the Gauss points
+               IF (numer%stab < 5) THEN
+                  CALL computeTauGaussPoints(upg(g,:),ufg(g,:),b(g,:),Bmod(g),n_g(g,:),iel,ifa,1.,xyf(g,:),tau_stab)
+               ELSE
+                  CALL computeTauGaussPoints_matrix(upg(g,:),ufg(g,:),b(g,:),n_g(g,:),xyf(g,:),1.,iel,tau_stab)
+               ENDIF
+               !****************** End stabilization part******************************
+            ELSE
+               tau_stab=0.
+               DO i = 1,Neq
+                  tau_stab(i,i) = numer%tau(i)
+               END DO
+            END IF
+
+            ! Assembly contribution
+            CALL assembly_diric_neum_bc(iel3,ind_asf,ind_ash,ind_ff,ind_fg,uex(g,:),NiNi,Ni,b(g,:),n_g(g,:),tau_stab,diff_iso_fac(:,:,g),diff_ani_fac(:,:,g))
          END DO
       END DO
 
@@ -289,19 +324,14 @@ CONTAINS
    !****************************
    SUBROUTINE set_dirichletstr_bc
       integer                   :: g,igpol,igtor
-      real*8                    :: uex(refElTor%Ngl,neq),dsurfg
-      real*8,pointer            :: Nfi(:,:)
       real*8                    :: Ni(Npfl)
-      real*8                    :: b(Ngfl,3)
+      real*8                    :: dsurfg
 
       ! Magnetic field norm and direction at Gauss points
       b = matmul(refElTor%sFTF,b_nod)
 
       ! Face shape functions
       Nfi => refElTor%sFTF
-
-      ! Set the face solution
-      CALL analytical_solution(xyf(:,1),xyf(:,2),thetafg,uex)
 
       ! Gradient solution at face gauss points
       qfg = matmul(Nfi,qqf)
@@ -323,8 +353,7 @@ CONTAINS
 
             ! Shaspe functions product
             Ni = Nfi(g,:)*dsurfg
-            CALL assembly_dirichletstr_bc(iel3,ind_asf,ind_ash,ind_fe,ind_fg,Ni,qfg(g,:),uex(g,:),b(g,:),n_g(g,:))
-
+            CALL assembly_dirichletstr_bc(iel3,ind_asf,ind_ash,ind_fe,ind_fg,Ni,qfg(g,:),uex(g,:),uexpg(g,:),b(g,:),n_g(g,:))
          END DO
       END DO
    END SUBROUTINE set_dirichletstr_bc
@@ -337,39 +366,13 @@ CONTAINS
       integer                   :: g,igpol,igtor
       real*8                    :: dsurfg
       real*8                    :: setval,delta
-      real*8                    :: ug(Ngfl),ufg(Ngfl,Neq)
-      real*8                    :: upg(Ngfl,phys%npv)
       real*8                    :: inc,sn
-      real*8,pointer            :: Nfi(:,:)
       real*8                    :: NiNi(Npfl,Npfl),Ni(Npfl)
       real*8                    :: soundSpeed
-      real*8                    :: qfg(Ngfl,neq*3)
       real*8                    :: bn
       logical                   :: ntang
       real                      :: tau_stab(Neq,Neq)
-      real*8                    :: diff_iso_fac(phys%neq,phys%neq,Ngfl),diff_ani_fac(phys%neq,phys%neq,Ngfl)
-      real*8                    :: Bmod(Ngfl),b(Ngfl,3)
 
-      ! Magnetic field norm and direction at Gauss points
-      Bmod = matmul(refElTor%sFTF,Bmod_nod)
-      b = matmul(refElTor%sFTF,b_nod)
-
-      ! Face shape functions
-      Nfi => refElTor%sFTF
-
-      ! Gradient solution at face gauss points
-      qfg = matmul(Nfi,qqf)
-
-      ! Set the face solution
-      ufg = matmul(Nfi,transpose(reshape(uf,[neq,Npfl])))
-
-      ! Physical variables at Gauss points
-      CALL cons2phys(ufg,upg)
-
-      ! Compute diffusion at faces Gauss points
-      CALL setLocalDiff(xyf,diff_iso_fac,diff_ani_fac,Bmod)
-
-      ! Compute magnetic field at Gauss points
 
       !*****************************
       ! Loop in face Gauss points
@@ -444,8 +447,13 @@ CONTAINS
             END IF
 
             ! Assembly Bohm contribution
-            CALL assembly_bohm_bc_new(iel3,ind_asf,ind_ash,ind_ff,ind_fe,ind_fg,NiNi,Ni,qfg(g,:),ufg(g,:),&
-                 &b(g,:),n_g(g,:),tau_stab,setval,delta,diff_iso_fac(:,:,g),diff_ani_fac(:,:,g),ntang)
+!            CALL assembly_bohm_bc_new(iel3,ind_asf,ind_ash,ind_ff,ind_fe,ind_fg,NiNi,Ni,qfg(g,:),ufg(g,:),&
+!                 &b(g,:),n_g(g,:),tau_stab,setval,delta,diff_iso_fac(:,:,g),diff_ani_fac(:,:,g),ntang)
+
+         CALL assembly_bohm_bc_new(iel3,ind_asf,ind_ash,ind_ff,ind_fe,ind_fg,NiNi,Ni,qfg(g,:),&
+              &ufg(g,:),upg(g,:),b(g,:),n_g(g,:),tau_stab,setval,delta,diff_iso_fac(:,:,g),diff_ani_fac(:,:,g),ntang)
+
+
          END DO
       END DO
 
@@ -477,7 +485,7 @@ CONTAINS
    real*8                    :: xyg(refElPol%Ngauss1d,2),xyder(refElPol%Ngauss1d,2)
    real*8                    :: Bmod(refElPol%Ngauss1d),b(refElPol%Ngauss1d,3)
    real*8                    :: ufg(refElPol%Ngauss1d,phys%neq),qfg(refElPol%Ngauss1d,phys%neq*2)
-   real*8                    :: upg(refElPol%Ngauss1d,phys%neq),uexpg(refElPol%Ngauss1d,phys%neq)
+   real*8                    :: upg(refElPol%Ngauss1d,phys%npv),uexpg(refElPol%Ngauss1d,phys%npv)
    real*8                    :: uex(refElPol%Ngauss1d,phys%neq)
    real*8                    :: diff_iso_fac(phys%neq,phys%neq,refElPol%Ngauss1d)
    real*8                    :: diff_ani_fac(phys%neq,phys%neq,refElPol%Ngauss1d)
@@ -655,45 +663,45 @@ CONTAINS
 
 
 
-   !****************************
-   ! Periodic bc
-   !****************************
-   SUBROUTINE set_periodic_bc
-      integer                   :: g,i,ifan,ifln,ieln,Fin,ind_ufn(refElPol%Nfacenodes*phys%neq)
-      real*8                    :: dline,xyDerNorm_g
-      real*8                    :: NiNi(Npfl,Npfl),Ni(Npfl)
-      real*8                    :: ufn(refElPol%Nfacenodes*phys%neq)
-      real*8                    :: ufgn(refElPol%Ngauss1d,phys%neq),uaux(refElPol%Ngauss1d,phys%neq)
+!   !****************************
+!   ! Periodic bc
+!   !****************************
+!   SUBROUTINE set_periodic_bc
+!      integer                   :: g,i,ifan,ifln,ieln,Fin,ind_ufn(refElPol%Nfacenodes*phys%neq)
+!      real*8                    :: dline,xyDerNorm_g
+!      real*8                    :: NiNi(Npfl,Npfl),Ni(Npfl)
+!      real*8                    :: ufn(refElPol%Nfacenodes*phys%neq)
+!      real*8                    :: ufgn(refElPol%Ngauss1d,phys%neq),uaux(refElPol%Ngauss1d,phys%neq)
 
-      ! Solution in the corresponding face
-      ifan = Mesh%periodic_faces(ifa)
-      ieln = Mesh%extfaces(ifan,1)
-      ifln = Mesh%extfaces(ifan,2)
-						Fin = ifan + Mesh%Nintfaces
-						ind_ufn = (Fin - 1)*Neq*Npfl + (/(i,i=1,Neq*Npfl)/)
-						ufn = sol%u_tilde(ind_ufn)
-						uaux = matmul(refElPol%N1D,transpose(reshape(ufn,[neq,Npfl])))
+!      ! Solution in the corresponding face
+!      ifan = Mesh%periodic_faces(ifa)
+!      ieln = Mesh%extfaces(ifan,1)
+!      ifln = Mesh%extfaces(ifan,2)
+!						Fin = ifan + Mesh%Nintfaces
+!						ind_ufn = (Fin - 1)*Neq*Npfl + (/(i,i=1,Neq*Npfl)/)
+!						ufn = sol%u_tilde(ind_ufn)
+!						uaux = matmul(refElPol%N1D,transpose(reshape(ufn,[neq,Npfl])))
 
-      ! Flip solution in the corresponding face
-      do i=1,refElPol%Ngauss1d
-         ufgn(i,:) = uaux(refElPol%Ngauss1d+1-i,:)
-      end do
+!      ! Flip solution in the corresponding face
+!      do i=1,refElPol%Ngauss1d
+!         ufgn(i,:) = uaux(refElPol%Ngauss1d+1-i,:)
+!      end do
 
-      ! Loop in 1D Gauss points
-      DO g = 1,Ng1d
+!      ! Loop in 1D Gauss points
+!      DO g = 1,Ng1d
 
-         ! Calculate the integration weight
-         xyDerNorm_g = norm2(xyDer(g,:))
-         dline = refElPol%gauss_weights1D(g)*xyDerNorm_g
-         IF (switch%axisym) THEN
-            dline = dline*xyg(g,1)
-         END IF
-         NiNi = tensorProduct(refElPol%N1D(g,:),refElPol%N1D(g,:))*dline
-         Ni = refElPol%N1D(g,:)*dline
-         CALL assembly_dirichletwf_bc(iel,ind_asf,ind_ff,ufgn(g,:),NiNi,Ni)
-      END DO
+!         ! Calculate the integration weight
+!         xyDerNorm_g = norm2(xyDer(g,:))
+!         dline = refElPol%gauss_weights1D(g)*xyDerNorm_g
+!         IF (switch%axisym) THEN
+!            dline = dline*xyg(g,1)
+!         END IF
+!         NiNi = tensorProduct(refElPol%N1D(g,:),refElPol%N1D(g,:))*dline
+!         Ni = refElPol%N1D(g,:)*dline
+!         CALL assembly_dirichletwf_bc(iel,ind_asf,ind_ff,ufgn(g,:),NiNi,Ni)
+!      END DO
 
-   END SUBROUTINE set_periodic_bc
+!   END SUBROUTINE set_periodic_bc
 
    !***************************************************************
    ! Neumann in all variables
@@ -772,9 +780,9 @@ CONTAINS
          IF (numer%stab > 1) THEN
             ! Compute tau in the Gauss points
             IF (numer%stab < 5) THEN
-               CALL computeTauGaussPoints(uexpg(g,:),uex(g,:),b(g,1:2),Bmod(g),n_g,iel,ifa,1.,xyg(g,:),tau_stab)
+               CALL computeTauGaussPoints(upg(g,:),ufg(g,:),b(g,1:2),Bmod(g),n_g,iel,ifa,1.,xyg(g,:),tau_stab)
             ELSE
-               CALL computeTauGaussPoints_matrix(uexpg(g,:),uex(g,:),b(g,1:2),n_g,xyg(g,:),1.,iel,tau_stab)
+               CALL computeTauGaussPoints_matrix(upg(g,:),ufg(g,:),b(g,1:2),n_g,xyg(g,:),1.,iel,tau_stab)
             ENDIF
          ELSE 
             tau_stab=0.
@@ -921,6 +929,9 @@ CONTAINS
                delta=1
             endif
          END IF
+
+
+										
 #endif
          ! Shape functions
          NiNi = tensorProduct(refElPol%N1D(g,:),refElPol%N1D(g,:))*dline
@@ -980,6 +991,8 @@ CONTAINS
          ind = i + ind_asf
          elMat%All(ind_ff(ind),ind_ff(ind),iel) = elMat%All(ind_ff(ind),ind_ff(ind),iel) - numer%tau(i)*NiNi
          elMat%fh(ind_ff(ind),iel) = elMat%fh(ind_ff(ind),iel) - numer%tau(i)*kmult(ind)
+!         elMat%All(ind_ff(ind),ind_ff(ind),iel) = elMat%All(ind_ff(ind),ind_ff(ind),iel) - NiNi
+!         elMat%fh(ind_ff(ind),iel) = elMat%fh(ind_ff(ind),iel) - kmult(ind)
       END DO
 
    END SUBROUTINE assembly_dirichletwf_bc
@@ -1107,7 +1120,6 @@ CONTAINS
       i = 1
       ind = i + ind_asf
       elMat%All(ind_ff(ind),ind_ff(ind),iel) = elMat%All(ind_ff(ind),ind_ff(ind),iel) - numer%tau(i)*NiNi
-
       elMat%fh(ind_ff(ind),iel) = elMat%fh(ind_ff(ind),iel) - numer%tau(i)*kmult(ind)
 
       ! Dirichlet weak form for the second equation
@@ -1132,11 +1144,20 @@ CONTAINS
          DO idm = 1,Ndim
             indi = ind_asf + i
             indj = ind_ash + idm + (i - 1)*Ndim
-            elMat%Alq(ind_ff(indi),ind_fG(indj),iel) = elMat%Alq(ind_ff(indi),ind_fG(indj),iel) + &
-                                    &NiNi*(ng(idm)*diffiso(i,i)-bn*bg(idm)*diffani(i,i) ) 
+!            elMat%Alq(ind_ff(indi),ind_fG(indj),iel) = elMat%Alq(ind_ff(indi),ind_fG(indj),iel) + &
+!                                    &NiNi*(ng(idm)*diffiso(i,i)-bn*bg(idm)*diffani(i,i) ) 
+
+
+elMat%Alq(ind_ff(indi), ind_fG(indj), iel) = elMat%Alq(ind_ff(indi), ind_fG(indj), iel) + NiNi*ng(idm)
          END DO
       endif
 
+
+
+!if (iel==1) then
+!call hdf5_save_matrix( elMat%Alq(:,:,iel), 'Alq')
+!stop
+!endif
       ! Neumann homogeneous for the potential
       i = 4
       ind = i + ind_asf
@@ -1145,15 +1166,28 @@ CONTAINS
       DO idm = 1,Ndim
          indi = ind_asf + i
          indj = ind_ash + idm + (i - 1)*Ndim
+!         elMat%Alq(ind_ff(indi),ind_fG(indj),iel) = elMat%Alq(ind_ff(indi),ind_fG(indj),iel) + &
+!                                                   &NiNi*(ng(idm)*diffiso(i,i)-bn*bg(idm)*diffani(i,i) )
+
          elMat%Alq(ind_ff(indi),ind_fG(indj),iel) = elMat%Alq(ind_ff(indi),ind_fG(indj),iel) + &
-                                                   &NiNi*(ng(idm)*diffiso(i,i)-bn*bg(idm)*diffani(i,i) )
+                                                   &NiNi*ng(idm)
+
       END DO
       j = 1
       DO idm = 1,Ndim
          indi = ind_asf + i
          indj = ind_ash + idm + (j - 1)*Ndim
-         elMat%Alq(ind_ff(indi),ind_fG(indj),iel) = elMat%Alq(ind_ff(indi),ind_fG(indj),iel) + NiNi*ng(idm)/ufg(1)*phys%Mref
+!         elMat%Alq(ind_ff(indi),ind_fG(indj),iel) = elMat%Alq(ind_ff(indi),ind_fG(indj),iel) + NiNi*ng(idm)/ufg(1)*phys%Mref
+
+ elMat%Alq(ind_ff(indi),ind_fG(indj),iel) = elMat%Alq(ind_ff(indi),ind_fG(indj),iel) + NiNi*ng(idm)/ufg(1)*phys%Mref
       END DO
+
+
+!if (iel==1) then
+!call hdf5_save_matrix( elMat%Alq(:,:,iel), 'Alq')
+!stop
+!endif
+
 
    END SUBROUTINE assembly_diric_neum_bc
 
@@ -1267,6 +1301,13 @@ CONTAINS
       ENDIF
 #endif
 
+
+!if (iel==195) then
+!call hdf5_save_matrix( elMat%Alu(:,:,iel),"Alu")
+!stop
+!endif
+
+!tau=1.
       bn = dot_product(bg,ng)
 
       ! Compute Q^T^(k-1)
@@ -1279,6 +1320,11 @@ CONTAINS
             elMat%All(ind_ff(ind),ind_ff(ind),iel) = elMat%All(ind_ff(ind),ind_ff(ind),iel) - tau(i,i)*NiNi
             IF (i == 2) THEN
                elMat%Alu(ind_ff(ind),ind_fe(ind - 1),iel) = elMat%Alu(ind_ff(ind),ind_fe(ind - 1),iel) + tau(i,i)*(delta*setval)*NiNi
+!if (iel==195) then
+!write(6,*) "delta",delta
+!write(6,*) "setval",setval
+!write(6,*) "tau(i,i)",tau(i,i)
+!endif               
                elMat%Alu(ind_ff(ind),ind_fe(ind),iel) = elMat%Alu(ind_ff(ind),ind_fe(ind),iel) + tau(i,i)*(1 - delta)*NiNi
             ELSE
                elMat%Alu(ind_ff(ind),ind_fe(ind),iel) = elMat%Alu(ind_ff(ind),ind_fe(ind),iel) + tau(i,i)*NiNi
@@ -1302,6 +1348,12 @@ CONTAINS
             END DO
          END DO
       ENDIF
+
+
+!if (iel==195) then
+!call hdf5_save_matrix( elMat%Alu(:,:,iel),"Alu")
+!stop
+!endif
 
 #ifdef TEMPERATURE
       IF (ntang) THEN

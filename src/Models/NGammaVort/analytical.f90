@@ -66,29 +66,10 @@ CONTAINS
                up(ind,3) = cos(a*xx)*sin(a*yy)
                up(ind,4) = sin(a*xx)*cos(a*yy)
 
-            CASE (5)
-               IF (switch%axisym) THEN
-                  WRITE (6,*) "This is NOT an axisymmetric test case!"
-                  stop
-               END IF
-               ! Cartesian case,circular field centered in [xm,ym] in the poloidal plane,Bt = 1
-														 smod = 1.
-														 rs = 0.04/simpar%refval_length
-														 xsource = xm+0.5*(xmax-xm)
-														 ysource = ym
-														 dsource   = sqrt((Xe(:,1)-xsource)**2+(Xe(:,2)-ysource)**2)
-														 aux = -dsource**2/rs**2
-               up(ind,1) = 1e-6
-												   DO k=1,refElPol%Nnodes2D
-																		if (aux(k).gt.-30) then
-																				 up(ind(k),1) =  up(ind(k),1)+smod*exp(aux(k))
-																		endif
-												   END DO
-
             CASE (50:64)
                up(ind,1) = 1.
                up(ind,2) = 0.
-               up(ind,3) = 1.
+               up(ind,3) = 0.
                up(ind,4) = 0.
             CASE (65)
                up(ind,1) = 1.

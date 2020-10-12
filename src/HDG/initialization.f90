@@ -509,7 +509,138 @@ stop
 
 
 
+!     subroutine reset_variables()
+!         integer      :: iel,i,iface,ifa,ieq
+!         integer      :: Np,Neq,Nf,Nel,Nut
+!         integer      :: ind(Mesh%Nnodesperelem)
+!         real*8       :: Xe(Mesh%Nnodesperelem,Mesh%Ndim),Xf(Mesh%Nnodesperface,Mesh%Ndim)
+!         real*8       :: ue(refEl%Nnodes2D,phys%Neq)
+!         integer      :: ind_uf(Mesh%Nnodesperface),faceNodes(Mesh%Nnodesperface)
+!         real*8,allocatable :: u(:,:)
+!         real*8,allocatable :: qx(:,:),qy(:,:),auxq(:,:)
+!         real*8,allocatable :: u_tilde(:,:)
 
+
+
+
+!!         integer :: neq,Ne,Nf,Nfe,unkF,Np,Nfp,iElem,ifa,iFace,i
+!!         integer :: ind_uf(1:Mesh%Nnodesperface),faceNodes(1:Mesh%Nnodesperface)
+!!         integer :: ind_ue(1:Mesh%Nnodesperelem)
+!!         logical :: alreadydone(1:Mesh%ukf)         
+!         
+!!         real*8,allocatable :: u(:,:)
+!!         real*8              :: tdiv(numer%ntor + 1)
+!!#ifdef TOR3D
+!!         real*8              :: htor,tel(refElTor%Nnodes1d)
+!!#endif
+!!         real*8,allocatable :: qx(:,:),qy(:,:),auxq(:,:)
+!!         real*8              :: uex(Np,Neq),uey(Np,Neq)
+!!#ifdef TOR3D
+!!         real*8,allocatable :: qt(:,:)
+!!         real*8              :: uet(Np,Neq)
+!!#endif
+!!         ALLOCATE (u(Nel*Np,phys%Neq))
+!!         u = 0.
+!!         ALLOCATE (qx(Nel*Np,phys%Neq))
+!!         ALLOCATE (qy(Nel*Np,phys%Neq))
+!!         ALLOCATE (auxq(Nel*Np*phys%Neq,Ndim))
+!!         qx = 0.; qy = 0.
+!!#ifdef TOR3D
+!!         ALLOCATE (qt(Nel*Np,phys%Neq))
+!!         qt = 0.
+!!#endif
+!         neq = phys%Neq
+!         Nel = Mesh%Nelems
+!         Np = Mesh%Nnodesperelem
+!         Nfp = Mesh%Nnodesperface
+!         Nut = size(sol%u_tilde)
+!         
+!         ALLOCATE (u(Nel*Np,Neq))
+!         ALLOCATE (qx(Nel*Np,Neq))
+!         ALLOCATE (qy(Nel*Np,Neq))
+!         ALLOCATE (auxq(Nel*Np*Neq,Ndim))
+!         ALLOCATE (u_tilde(Nut,neq))
+!         
+!         u = transpose(reshape(sol%u,[Neq,Nel*Np]))
+!         u_tilde = transpose(reshape(sol%u_tilde,[Neq,Nut]))
+!         q = transpose(reshape(sol%u,[Neq*Ndim,Nel*Np]))
+!         
+!         
+!         
+!#ifdef TOR3D
+! write(6,*) "Reset variables error in 3D: Not coded yet"
+! stop
+!#else
+!         !****************************************
+!         !          2D
+!         !****************************************
+!         DO iel = 1,Mesh%Nelems
+
+!            ind = (iel - 1)*Np + (/(i,i=1,Np)/)
+!            Xe = Mesh%X(Mesh%T(iel,:),:)
+!            CALL analytical_solution(Xe(:,1),Xe(:,2),ue)
+!            CALL analytical_gradient(Xe(:,1),Xe(:,2),ue,uex,uey)
+!            do ieq = 1,phys%neq
+!               if (switch%reset_eqs(ieq).ne.0) then
+!                  qx(ind,ieq) = uex
+!                  qy(ind,ieq) = uey
+!                  u(ind,ieq) = ue
+!                  
+!               endif
+!            end do
+!         END DO
+!         
+!         
+!         DO iFace = 1,Mesh%Nintfaces
+!            iel = Mesh%intfaces(iFace,1)
+!            ifa = Mesh%intfaces(iFace,2)
+!            faceNodes = refElPol%Face_nodes(ifa,:)
+!            Xf = Mesh%X(Mesh%T(iel,faceNodes),:)
+!            CALL analytical_solution(Xf(:,1),Xf(:,2),uf)            
+!            ind_uf = (iFace - 1)*Nfp + (/(i,i=1,Nfp)/)
+!            do ieq = 1,phys%neq
+!               if (switch%reset_eqs(ieq).ne.0) then
+!                  u_tilde(ind_uf,ieq) = uf
+!               endif
+!            end do
+!         END DO
+
+!         DO iFace = 1,Mesh%Nextfaces
+!            iel = Mesh%extfaces(iFace,1)
+!            ifa = Mesh%extfaces(iFace,2)
+!            faceNodes = refElPol%Face_nodes(ifa,:)
+!            Xf = Mesh%X(Mesh%T(iel,faceNodes),:)
+!            CALL analytical_solution(Xf(:,1),Xf(:,2),uf)
+!            IF (.not. Mesh%Fdir(iel,ifa)) THEN
+!               ind_uf = Mesh%Nintfaces*Nfp + (iFace - 1)*Nfp + (/(i,i=1,Nfp)/)
+!               do ieq = 1,phys%neq
+!                  if (switch%reset_eqs(ieq).ne.0) then               
+!                     u_tilde(ind_uf,:) = u(ind_ue(faceNodes),:)
+!                  endif
+!               end do               
+!            END IF
+!         END DO
+!                  
+!#endif
+
+!!         !****************************************
+!!         !          common
+!!         !****************************************
+!!         sol%u = reshape(transpose(u),(/Nel*Np*phys%Neq/))
+
+!!         auxq(:,1) = reshape(transpose(qx),(/Nel*Np*phys%Neq/))
+!!         auxq(:,2) = reshape(transpose(qy),(/Nel*Np*phys%Neq/))
+!!#ifdef TOR3D
+!!         auxq(:,3) = reshape(transpose(qt),(/Nel*Np*phys%Neq/))
+!!#endif
+!!         sol%q = reshape(transpose(auxq),(/Nel*Np*phys%Neq*Ndim/))
+!!         DEALLOCATE (qx,qy,auxq)
+!!#ifdef TOR3D
+!!         DEALLOCATE (qt)
+!!#endif
+!!         DEALLOCATE (u)
+!              
+!     end subroutine reset_variables
 
 
 

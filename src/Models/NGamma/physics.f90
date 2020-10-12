@@ -23,14 +23,15 @@ CONTAINS
       phys%Neq = 2
 
       ! number of physical variables
-      phys%npv = 2
+      phys%npv = 3
 
       ALLOCATE (phys%phyVarNam(phys%npv))
       ALLOCATE (phys%conVarNam(phys%Neq))
 
       ! Set the name of the physical variables
       phys%phyVarNam(1) = "rho"
-      phys%phyVarNam(2) = "Mach"
+      phys%phyVarNam(2) = "u"
+      phys%phyVarNam(3) = "Mach"
 
       ! Set the name of the conservative variables
       if (switch%logrho) then
@@ -49,7 +50,8 @@ CONTAINS
       ALLOCATE (simpar%physvar_refval(phys%npv))
       ALLOCATE (simpar%consvar_refval(phys%Neq))
       simpar%physvar_refval(1) = simpar%refval_density
-      simpar%physvar_refval(2) = 1.
+      simpar%physvar_refval(2) = simpar%refval_speed
+      simpar%physvar_refval(3) = 1.
       if (switch%logrho) then
          simpar%consvar_refval(1) = log(simpar%refval_density)
       else
@@ -90,7 +92,7 @@ CONTAINS
          up(:, 1) = ua(:, 1)
       endif
       up(:, 2) = ua(:, 2)/up(:, 1)
-
+      up(:, 3) = ua(:, 2)/up(:, 1)/sqrt(phys%a)
    END SUBROUTINE cons2phys
 
 

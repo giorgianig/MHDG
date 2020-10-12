@@ -560,7 +560,7 @@ CONTAINS
             driftg = phys%dfcoef*driftg/Bmod(g)
 
             CALL assemblyVolumeContribution(Auq,Auu,rhs,b(g,:),divbg,driftg,Bmod(g),force(g,:),&
-          &ktis,diff_iso_vol(:,:,g),diff_ani_vol(:,:,g),Ni,NNi,Nxyzg,NNxy,NxyzNi,NNbb,upg(g,:),ueg(g,:),qeg(g,:),u0eg(g,:,:))
+          &ktis,diff_iso_vol(:,:,g),diff_ani_vol(:,:,g),Ni,NNi,Nxyzg,NNxy,NxyzNi,NNbb,upg(g,:),ueg(g,:),qeg(g,:),u0eg(g,:,:),xy(g,:))
          END DO ! END loop in volume Gauss points
       END DO
       call do_assembly(Auq,Auu,rhs,ind_ass,ind_asq,iel)
@@ -688,7 +688,7 @@ CONTAINS
 
             ! Assembly local contributions
             CALL assemblyIntFacesContribution(iel,ind_asf,ind_ash,ind_ff,ind_fe,ind_fg,b(g,:),Bmod(g),&
-                           n_g(g,:),diff_iso_fac(:,:,g),diff_ani_fac(:,:,g),NNif,Nif,Nfbn,ufg(g,:),qfg(g,:),tau,ifa)
+                           n_g(g,:),diff_iso_fac(:,:,g),diff_ani_fac(:,:,g),NNif,Nif,Nfbn,ufg(g,:),upgf(g,:),qfg(g,:),tau,ifa)
          END DO
 !      END DO
 
@@ -838,7 +838,7 @@ CONTAINS
 
                ! Assembly local contributions
                CALL assemblyIntFacesContribution(iel,ind_asf,ind_ash,ind_ff,ind_fe,ind_fg,b(g,:),Bmod(g),&
-                           n_g(g,:),diff_iso_fac(:,:,g),diff_ani_fac(:,:,g),NNif,Nif,Nfbn,ufg(g,:),qfg(g,:),tau,ifa)
+                           n_g(g,:),diff_iso_fac(:,:,g),diff_ani_fac(:,:,g),NNif,Nif,Nfbn,ufg(g,:),upgf(g,:),qfg(g,:),tau,ifa)
 
             END DO ! Gauss points
          END DO
@@ -998,14 +998,15 @@ CONTAINS
             IF (Mesh%boundaryFlag(Mesh%F(iel2,ifa - 1) - Mesh%Nintfaces) .eq. 0) THEN
                ! Ghost face: assembly it as interior
                CALL assemblyIntFacesContribution(iel,ind_asf,ind_ash,ind_ff,ind_fe,ind_fg,b(g,:),Bmod(g),&
-                           n_g(g,:),diff_iso_fac(:,:,g),diff_ani_fac(:,:,g),NNif,Nif,Nfbn,ufg(g,:),qfg(g,:),tau,ifa)
+                           n_g(g,:),diff_iso_fac(:,:,g),diff_ani_fac(:,:,g),NNif,Nif,Nfbn,ufg(g,:),upgf(g,:),qfg(g,:),tau,ifa)
             ELSE
                CALL assemblyExtFacesContribution(iel,isdir,ind_asf,ind_ash,ind_ff,ind_fe,ind_fg,b(g,:),Bmod(g),&
-                           n_g(g,:),diff_iso_fac(:,:,g),diff_ani_fac(:,:,g),NNif,Nif,Nfbn,ufg(g,:),qfg(g,:),tau,ifa)
+                           n_g(g,:),diff_iso_fac(:,:,g),diff_ani_fac(:,:,g),NNif,Nif,Nfbn,ufg(g,:),upgf(g,:),qfg(g,:),tau,ifa)
             ENDIF
 #else
             CALL assemblyExtFacesContribution(iel,isdir,ind_asf,ind_ash,ind_ff,ind_fe,ind_fg,b(g,:),Bmod(g),&
-                           n_g(g,:),diff_iso_fac(:,:,g),diff_ani_fac(:,:,g),NNif,Nif,Nfbn,ufg(g,:),qfg(g,:),tau,ifa)
+                           n_g(g,:),diff_iso_fac(:,:,g),diff_ani_fac(:,:,g),NNif,Nif,Nfbn,ufg(g,:),upgf(g,:),qfg(g,:),tau,ifa)
+
 #endif
          END DO ! Gauss points
       END DO
@@ -1918,7 +1919,12 @@ CONTAINS
             ! Diagonal terms for perpendicular diffusion
              z = i+(k-1)*Neq+(i-1)*Neq*Ndim
              Auq(:,:,z)=Auq(:,:,z)+diffiso(i,i)*NxyzNi(:,:,k) - diffani(i,i)*NNxy*b(k)
-             
+
+!write(6,*) "diffiso(i,i)",diffiso(i,i) 
+!write(6,*) "diffani(i,i)",diffani(i,i)                         
+!write(6,*) "xy",xy             
+!write(6,*) "b",b
+!stop
 #ifndef TEMPERATURE
              ! Added term for n=exp(x) change of variable \Grad \chi **2 
              if (switch%logrho) then
@@ -1931,16 +1937,18 @@ CONTAINS
 
 
 #ifdef VORTICITY
-            IF (i==3) THEN
-               ii =1
-						         ! B x GradB current in the vorticity equation
-			            z = i+(ii-1)*Neq
-               if (switch%logrho) then
-                  Auu(:,:,z)= Auu(:,:,z) +2*upe(1)*transpose(NxyzNi(:,:,k))*drift(k) ! TODO: first order linearization
-               else
-			               Auu(:,:,z)= Auu(:,:,z) +2*transpose(NxyzNi(:,:,k))*drift(k)
-               endif
-            ENDIF
+            if (switch%bxgradb) then
+               ! B x GradB current in the vorticity equation
+						         IF (i==3) THEN
+						            ii =1
+									         z = i+(ii-1)*Neq
+						            if (switch%logrho) then
+						               Auu(:,:,z)= Auu(:,:,z) +2*upe(1)*transpose(NxyzNi(:,:,k))*drift(k) ! TODO: first order linearization
+						            else
+									            Auu(:,:,z)= Auu(:,:,z) +2*transpose(NxyzNi(:,:,k))*drift(k)
+						            endif
+						         ENDIF
+            endif
             IF (switch%driftexb .and. i .ne. 4) THEN
                ! ExB terms
                kcoeff = 1./Bmod
@@ -1969,16 +1977,27 @@ CONTAINS
                ENDIF
                 z=i+(k-1)*Neq+(ii-1)*Ndim*Neq
                 Auq(:,:,z)=Auq(:,:,z)+kcoeff*diffiso(i,ii)*NxyzNi(:,:,k) - kcoeff*diffani(i,ii)*NNxy*b(k)
+
+!write(6,*) "kcoeff",kcoeff
+!write(6,*) "i:",i,"ii:",ii, "diffiso(i,ii)",diffiso(i,ii)
+!write(6,*) "i:",i,"ii:",ii, "diffani(i,ii)",diffani(i,ii)
+!call HDF5_save_matrix(kcoeff*diffiso(i,ii)*NxyzNi(:,:,k) - kcoeff*diffani(i,ii)*NNxy*b(k),'fava')       
+!stop 
+
             END DO
 #endif
          END DO ! loop in k: 1-Ndim
+
+
+
 
 #ifdef VORTICITY
          ! The vorticity is the source term in the potential equation
          IF (i == 4) THEN
             j=3
             z = i+(j-1)*Neq
-            Auu(:,:,z)=Auu(:,:,z) +NNi            
+            Auu(:,:,z)=Auu(:,:,z) +NNi       
+!            rhs(:,i)=rhs(:,i)-ue(j)*Ni ! doens't work very well like this
          ENDIF
 #endif
 
@@ -2014,6 +2033,7 @@ CONTAINS
 #endif
          
       END DO ! Loop in equations
+
 
       ! Assembly RHS
       IF (.not. switch%steady) THEN

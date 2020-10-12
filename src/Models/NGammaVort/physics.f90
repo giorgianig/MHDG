@@ -23,16 +23,17 @@ CONTAINS
       phys%Neq = 4
 
       ! number of physical variables
-      phys%npv = 4
+      phys%npv = 5
 
       ALLOCATE (phys%phyVarNam(phys%npv))
       ALLOCATE (phys%conVarNam(phys%Neq))
 
       ! Set the name of the physical variables
       phys%phyVarNam(1) = "rho"
-      phys%phyVarNam(2) = "Mach"
+      phys%phyVarNam(2) = "u"
       phys%phyVarNam(3) = "Vorticity"
       phys%phyVarNam(4) = "Electric potential"
+      phys%phyVarNam(5) = "Mach"
 
       ! Set the name of the conservative variables
       if (switch%logrho) then
@@ -53,9 +54,10 @@ CONTAINS
       ALLOCATE (simpar%physvar_refval(phys%npv))
       ALLOCATE (simpar%consvar_refval(phys%Neq))
       simpar%physvar_refval(1) = simpar%refval_density
-      simpar%physvar_refval(2) = 1.
+      simpar%physvar_refval(2) = simpar%refval_speed
       simpar%physvar_refval(3) = simpar%refval_vorticity
       simpar%physvar_refval(4) = simpar%refval_potential
+      simpar%physvar_refval(5) = 1.
       if (switch%logrho) then
          simpar%consvar_refval(1) = log(simpar%refval_density)
       else
@@ -100,6 +102,7 @@ CONTAINS
       up(:,2) = ua(:,2)/up(:, 1)
       up(:,3) = ua(:,3)
       up(:,4) = ua(:,4)
+      up(:,5) = ua(:,2)/up(:, 1)/sqrt(phys%a)
    END SUBROUTINE cons2phys
 
    SUBROUTINE jacobianMatrices(U,A)
@@ -205,8 +208,22 @@ CONTAINS
 
 
 
-      d_iso(4,1,:) = 0.
-      d_ani(4,1,:) = 0.
+
+
+!d_iso(4,1,:) = 0.
+!d_ani(4,1,:) = 0.
+         
+!d_iso(3,1,:) = 0.
+!d_ani(3,1,:) = 0.
+!   
+!d_iso(3,4,:) = 0.
+!d_ani(3,4,:) = 0.
+
+         
+      if (switch%testcase.ge.5 .and. switch%testcase.le.7) then
+         d_iso(4,1,:) = 0.
+         d_ani(4,1,:) = 0.
+      endif
  
 !write(6,*) "diff_pot: ",1./Bmod**2*phys%Mref*0.0232
 

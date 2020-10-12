@@ -1,21 +1,21 @@
 &SWITCH_LST
-   steady = .false.   ! Is it a steady state simulation?
+   steady = .true.   ! Is it a steady state simulation?
       ! .false. = time evolving simulation
       ! .true.  = steady state simulation
    axisym = .true. ! Is it an axisymmetric simulation?
       ! true = yes
       ! false = no
-   init = 2        ! Initialization type: 1-analytical at nodes; 2-L2 projection
+   init = 1        ! Initialization type: 1-analytical at nodes; 2-L2 projection
    driftdia = .false. ! Set to FALSE to ignore diamagnetic drifts terms
-   driftexb = .true. ! Set to FALSE to ignore ExB drifts terms
-   testcase = 7       ! Determine the analytical solution and the body forces
+   driftexb = .false. ! Set to FALSE to ignore ExB drifts terms
+   testcase = 60       ! Determine the analytical solution and the body forces
    psdtime  = .false.  ! Reduce the diffusion every time we reach the steady state 
                       ! condition (only works if steady=.false.)
    diffred  = 0.5 ! Reduction factor of the diffusion for psdtime simulation
    diffmin  = 1e-6    ! Minimum value of the diffusion for a psdtime simulation
    shockcp  = 0       ! Shock capturing option
                       ! 0 - No shock capturing
-                      ! 1 - Constant in each element
+                      ! 1 - Constant in each elementSol2D_CircLimAlign_Quads_Nel208_P4_DPe0.150E+02
                       ! 2 - Linear interpolation between nodes
                       ! 3 - Linear interpolation between nodes+save parameter
    limrho   = 0       ! Option for limiting the min value of rho
@@ -38,21 +38,23 @@
    saveTau  = .false.   ! save tau on faces
    !***** N-Gamma-Vorticity model 
    fixdPotLim = .true. ! Fix potential at the floating potential on the limiter
-   dirivortcore  = .false. ! Dirichlet boundary condition on the vorticity in the core boundary
-   dirivortlim   = .true. ! Dirichlet boundary condition on the vorticity in the limiter boundary
+   dirivortcore  = .true. ! Dirichlet boundary condition on the vorticity in the core boundary
+   dirivortlim   = .false. ! Dirichlet boundary condition on the vorticity in the limiter boundary
    convvort   = .false.  ! Consider the convective term in the vorticity equation 
    pertini    = 0        ! Add perturbation. 0-no perturbation; 1-sinusoidal perturbation; 2-blob
    logrho = .false.
+   bxgradb = .false.     ! Consider the term in BxGradB in the vorticity equation
+   
 /
 
 &NUMER_LST
-   tau(1) = 1.E1  ! Stabilization parameter 1st equation
-   tau(2) = 1.E1  ! Stabilization parameter 2nd equation
-   tau(3) = 1.E1  ! Stabilization parameter 3rd equation
-   tau(4) = 1.E1  ! Stabilization parameter 4th equation         
-   nrp    = 3     ! Max number of Newton-Raphson iterations
+   tau(1) = 1.E0  ! Stabilization parameter 1st equation
+   tau(2) = 1.E0  ! Stabilization parameter 2nd equation
+   tau(3) = 1.E0  ! Stabilization parameter 3rd equation
+   tau(4) = 1.E0  ! Stabilization parameter 4th equation         
+   nrp    = 3    ! Max number of Newton-Raphson iterations
    tNR    = 1e-4  ! Tolerance of the Newton-Raphson scheme
-   tTM    = 1e-4  ! Tolerance for the steady state achievement
+   tTM    = 1e-14  ! Tolerance for the steady state achievement
    div    = 1e9   ! Divergence of Newton-Raphon iteration
    sc_coe = 2e-1     ! Shock capturing coefficient 
    minrho = 1e-4    ! Value of rho to start applying limiting
@@ -62,13 +64,13 @@
    dc_coe = 0.1   ! Coefficient of the diffusion to add in the corners 
    thr    = 1.e-7 ! Min value of density allowed (works only if the switch is activated) 
    thrpre = 1e-8 ! Min value of pressure allowed (works only if the switch is activated) 
-   stab   = 1     ! Stabilization type
-   dumpnr = 1.   ! Dumping factor for Newton-Raphson (0<dumpnr<1)
-   ntor   = 4     ! Number of elements in the toroidal direction
-   ptor   = 4     ! Polinomial degree in the toroidal direction
-   tmax   = 6.28  ! Max extention in the toroidal direction 
+   stab   = 2    ! Stabilization type
+   dumpnr = 1   ! Dumping factor for Newton-Raphson (0<dumpnr<1)
+   ntor   = 2     ! Number of elements in the toroidal direction
+   ptor   = 2     ! Polinomial degree in the toroidal direction
+   tmax   = 0.785398  ! Max extention in the toroidal direction 
    npartor= 1      ! Number of MPI partition in the toroidal direction 
-   bohmtypebc=1    ! Implementation of the Bohm bc for Gamma (1-Dirichlet always, 2-Dirichlet+Neumann)   
+   bohmtypebc=2   ! Implementation of the Bohm bc for Gamma (1-Dirichlet always, 2-Dirichlet+Neumann)   
 /
 
 &GEOM_LST ! Blabla
@@ -77,7 +79,7 @@
 /
 
 &TIME_LST
-   dt0 = 2e-2 !7.2800e-3    ! Initial time step
+   dt0 = 1e0 !7.2800e-3    ! Initial time step
    nts = 10000   ! Max number of time iterations to do in the current session (only for transient simulations)
    tfi = 1e5   ! Final time: the simulation stops when this time is reached
    tsw = 0     ! Switch to modify the time step
@@ -88,20 +90,20 @@
 
 &PHYS_LST
    ! ****** Diffusion parameters in m^2/s
-   diff_n = 5e-5 ! diffusion in the continuity equation
-   diff_u = 5e-5 ! diffusion in the momentum equation
-   diff_e = 5e-5 ! perpendicular diffusion for the energy equation
-   diff_ee = 5e-5 ! perpendicular diffusion in the electron temperature equation (for the TiTe model)
-   diff_vort = 1e-4 ! diffusion in the vorticity equation
+   diff_n = 2 ! diffusion in the continuity equation
+   diff_u = 2 ! diffusion in the momentum equation
+   diff_e = 2 ! perpendicular diffusion for the energy equation
+   diff_ee = 2 ! perpendicular diffusion in the electron temperature equation (for the TiTe model)
+   diff_vort = 2 ! diffusion in the vorticity equation
    ! ****** Background temperature in the isothermal model in eV (useless in the non-isothermal model)
    Tbg = 50
    ! ****** Boundary conditions: set the correspondance between boundary flag and boundary condition
    ! each component must be put separetly
    ! The dimension of bcflags is set to 10, means that at most 10 different kinds of boundary 
    ! condition can exist
-   bcflags(1:6) = 4 2 30 70 70 4
+   bcflags(1:6) = 2 2 2 2 2 2 
    bcflags(7)   = 50 ! Limiter
-   bcflags(8)   = 2  ! In
+   bcflags(8)   = 5  ! In
    bcflags(9)   = 50 ! Out
    bcflags(10)  = 50 ! Upper Limiter
    ! ****** Boundary threshold for Bohm
@@ -121,7 +123,7 @@
    ! ***** Coefficients for the vorticity model
    etapar   = 1e-5
    Potfloat = 3.
-   diagsource = 5e-1 0. 5e-1 0. 0. 0. 0. 0. 0. 0. 
+   diagsource = 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 
 /
 
 &UTILS_LST

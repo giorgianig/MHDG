@@ -144,7 +144,7 @@ CONTAINS
                ! Circular case with limiter
                R0 = geom%R0
                q = geom%q
-               B0 = 2
+               B0 = 2!*0.1522
                xr = xx*phys%lscale
                yr = yy*phys%lscale
 
