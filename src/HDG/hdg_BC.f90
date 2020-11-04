@@ -1144,11 +1144,11 @@ CONTAINS
          DO idm = 1,Ndim
             indi = ind_asf + i
             indj = ind_ash + idm + (i - 1)*Ndim
-!            elMat%Alq(ind_ff(indi),ind_fG(indj),iel) = elMat%Alq(ind_ff(indi),ind_fG(indj),iel) + &
-!                                    &NiNi*(ng(idm)*diffiso(i,i)-bn*bg(idm)*diffani(i,i) ) 
+            elMat%Alq(ind_ff(indi),ind_fG(indj),iel) = elMat%Alq(ind_ff(indi),ind_fG(indj),iel) + &
+                                    &NiNi*(ng(idm)*diffiso(i,i)-bn*bg(idm)*diffani(i,i) ) 
 
 
-elMat%Alq(ind_ff(indi), ind_fG(indj), iel) = elMat%Alq(ind_ff(indi), ind_fG(indj), iel) + NiNi*ng(idm)
+!elMat%Alq(ind_ff(indi), ind_fG(indj), iel) = elMat%Alq(ind_ff(indi), ind_fG(indj), iel) + NiNi*ng(idm)
          END DO
       endif
 
@@ -1163,6 +1163,12 @@ elMat%Alq(ind_ff(indi), ind_fG(indj), iel) = elMat%Alq(ind_ff(indi), ind_fG(indj
       ind = i + ind_asf
       elMat%All(ind_ff(ind),ind_ff(ind),iel) = elMat%All(ind_ff(ind),ind_ff(ind),iel) - tau(i,i)*NiNi
       elMat%Alu(ind_ff(ind),ind_fe(ind),iel) = elMat%Alu(ind_ff(ind),ind_fe(ind),iel) + tau(i,i)*NiNi
+
+
+!      elMat%All(ind_ff(ind),ind_ff(ind),iel) = elMat%All(ind_ff(ind),ind_ff(ind),iel) - 0.1*NiNi
+!      elMat%Alu(ind_ff(ind),ind_fe(ind),iel) = elMat%Alu(ind_ff(ind),ind_fe(ind),iel) + 0.1*NiNi
+
+
       DO idm = 1,Ndim
          indi = ind_asf + i
          indj = ind_ash + idm + (i - 1)*Ndim
@@ -1177,9 +1183,7 @@ elMat%Alq(ind_ff(indi), ind_fG(indj), iel) = elMat%Alq(ind_ff(indi), ind_fG(indj
       DO idm = 1,Ndim
          indi = ind_asf + i
          indj = ind_ash + idm + (j - 1)*Ndim
-!         elMat%Alq(ind_ff(indi),ind_fG(indj),iel) = elMat%Alq(ind_ff(indi),ind_fG(indj),iel) + NiNi*ng(idm)/ufg(1)*phys%Mref
-
- elMat%Alq(ind_ff(indi),ind_fG(indj),iel) = elMat%Alq(ind_ff(indi),ind_fG(indj),iel) + NiNi*ng(idm)/ufg(1)*phys%Mref
+         elMat%Alq(ind_ff(indi),ind_fG(indj),iel) = elMat%Alq(ind_ff(indi),ind_fG(indj),iel) + NiNi*ng(idm)/ufg(1)*phys%Mref
       END DO
 
 

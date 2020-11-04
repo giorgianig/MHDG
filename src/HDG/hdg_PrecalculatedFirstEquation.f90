@@ -671,7 +671,8 @@ CONTAINS
       DO g = 1,NGauss
 
          IF (detJ(g) < tol) THEN
-            error stop "Negative jacobian"
+            write(6,*) "iel: ", iel, "detJ(g): ", detJ(g)
+            error stop "Negative jacobian in element: "
          END if
 
          ! x and y derivatives of the shape functions

@@ -7,7 +7,7 @@ global theta ntor
 % Parallel/serial
 %**********************************
 parallel=0;
-nproc=48;
+nproc=16;
 
 %**********************************
 % Plot options
@@ -43,8 +43,8 @@ path2save = '/home/giorgio/Dropbox/PostDoc_Marseille/Latex/NGammaVortPot/';
 % solname = 'Sol2D_Square_Quads_6_P3_DPe0.100E-03_1358';
 solpath = '/home/giorgio/Dropbox/Fortran/MHDG_ref3.0/test/';
 meshpath = solpath;
-% meshpath = '/home/giorgio/Dropbox/Fortran/MHDG_ref3.0/matlab/Meshes/';
-solname = 'Sol3D_CircLimAlign_Quads_Nel208_P4_Ntor2Ptor2_DPe0.100E+02_1759';
+meshpath = '/home/giorgio/Dropbox/Fortran/MHDG_ref3.0/matlab/Meshes/';
+solname = 'Sol2D_CircLimAlign_Quads_Nel480_P4_DPe0.600E+01_0005';
 
 % solname = 'Sol2D_CircLimAlign_Quads_Nel208_P4_DPe0.300E+01';
 
@@ -79,12 +79,24 @@ end
 for iproc = 1:nproc
     
     % Load results
-    if parallel
-        meshname = [solname(7:pos) '_' num2str(iproc) '_' num2str(nproc) '.h5'];
-        solname_comp = [solname '_' num2str(iproc) '_' num2str(nproc) '.h5'];
+    if Ndim==2
+        if parallel
+            meshname = [solname(7:pos) '_' num2str(iproc) '_' num2str(nproc) '.h5'];
+            solname_comp = [solname '_' num2str(iproc) '_' num2str(nproc) '.h5'];
+        else
+            meshname = [solname(7:pos), '.h5'];
+            solname_comp = [solname, '.h5'];
+        end
+    elseif Ndim==3
+        if parallel
+            meshname = [solname(7:pos) '_' num2str(iproc) '_' num2str(nproc) '.h5'];
+            solname_comp = [solname '_ip' num2str(iproc) '_it1' '_np' num2str(nproc) '.h5'];
+        else
+            meshname = [solname(7:pos), '.h5'];
+            solname_comp = [solname, '.h5'];
+        end        
     else
-        meshname = [solname(7:pos), '.h5'];
-        solname_comp = [solname, '.h5'];
+        error('Wrong number of dimensions')
     end
     HDF5load([solpath,solname_comp]);
     Mesh = HDF5load([meshpath,meshname]);
@@ -152,7 +164,7 @@ for iproc = 1:nproc
                     clf
                 end
                 plotSolution(Mesh.X,Mesh.T,uplot,refEl,nref);axis off
-%                 if i==1,plotMesh(Mesh.X,Mesh.T,elemType),end
+                if i==3,plotMesh(Mesh.X,Mesh.T,elemType),end
 %                 if i==1,caxis([0,1]),end
                 name = simulation_parameters.physics.physical_variable_names{i};
                 title(name)

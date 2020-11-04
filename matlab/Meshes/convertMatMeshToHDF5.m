@@ -72,19 +72,19 @@ h5create(fileName,'/Tb',size(Tb));
 h5create(fileName,'/boundaryFlag',size(boundaryFlag));
 
 % Write in the database
-h5disp(fileName)
+h5disp(fileName);
 h5write(fileName,'/T',T);
-h5write(fileName,'/X',X)
-h5write(fileName,'/Nnodes',Nnodes)
-h5write(fileName,'/Ndim',Ndim)
-h5write(fileName,'/Nelems',Nelems)
-h5write(fileName,'/Nnodesperelem',Nnodesperelem)
-h5write(fileName,'/elemType',elemType)
-h5write(fileName,'/Nextfaces',size(Tb,1))
-h5write(fileName,'/Nnodesperface',s2)
-h5write(fileName,'/Tb',Tb)
-h5write(fileName,'/boundaryFlag',boundaryFlag)
+h5write(fileName,'/X',X);
+h5write(fileName,'/Nnodes',Nnodes);
+h5write(fileName,'/Ndim',Ndim);
+h5write(fileName,'/Nelems',Nelems);
+h5write(fileName,'/Nnodesperelem',Nnodesperelem);
+h5write(fileName,'/elemType',elemType);
+h5write(fileName,'/Nextfaces',size(Tb,1));
+h5write(fileName,'/Nnodesperface',s2);
+h5write(fileName,'/Tb',Tb);
+h5write(fileName,'/boundaryFlag',boundaryFlag);
 
 % Check
-h5disp(fileName)
+h5disp(fileName);
 % h5read(fileName,'/Ndim')

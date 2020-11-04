@@ -6,12 +6,12 @@ mark = {'bo','r*','gs','k*','m>','yo','bo','r*','gs','k<','m>','yo','bo','r*','g
 path2mesh = './';
 % meshName  = 'Circle_ONION_3_P10.mat';
 % meshName  = 'West_Hugo_h0.02_refCorn0.001_refSep0.01_YesHole_P4.mat';
-meshName  = 'Circle_LIM_InfThin_h0.1_RefCorn0.02_P6.mat';
+% meshName  = 'Circle_LIM_InfThin_h0.1_RefCorn0.02_P6.mat';
 
 % path2mesh = '/home/giorgio/Dropbox/Matlab/Meshes/Meshes_2D/';
-meshName  = 'CircLimAlign_Quads_Nel550_P4.mat';
+meshName  = 'CircLimAlign_Quads_Nel384_P3.mat';
 % Number of divisions
-ndiv = 4;
+ndiv = 48;
  divType = 'rot';
 % divType = 'x';
 %divType = 'y';

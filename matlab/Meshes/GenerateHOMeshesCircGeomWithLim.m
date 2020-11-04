@@ -4,29 +4,30 @@ clear
 
 %% Define geometry
 r0 = 0.5;    % inner radius
-re = 1;       % outer radius
+re = 0.85;       % outer radius
 rs  = 0.75;  % separatrix radius
 
 %% Define mesh
 elemType = 0;    % element type -  0: quads, 1: tria
 nonst  = 0;   % alignement with the magnetic field - 0: aligned; 1: non aligned (apply a random displacement to nodes)
 delta = 0.0;   % in case on non-alignement: magnitude of the  displacement
-ne1 = 20;      % number of layers in the closed-line zone
-ne2 = 20;    % number of layers in the open-line zone (SOL)
+ne1 = 3;      % number of layers in the closed-line zone
+ne2 = 3;    % number of layers in the open-line zone (SOL)
 elong = 2;   % elongation of the elements in the poloidal direction
 
 % Refinement around the limiter
 nlref = 1;     % refinement on the limiter: number of original layers in the refinement
-lref = 8;       % refinement on the limiter: the number of final layers corresponds to the original one mulptiplyed by this
+lref = 7;       % refinement on the limiter: the number of final layers corresponds to the original one mulptiplyed by this
 factorl = 4;   % refinement on the limiter: intensity
 
 % Refinement at the separatrix
 nsref = 1;    % refinement on the separatrix: number of original layers in the refinement
-sref = 2;      % refinement on the separatrix: the number of final layers corresponds to the original one mulptiplyed by this
-factors = 1; % refinement on the separatrix: intensity
+sref = 3;      % refinement on the separatrix: the number of final layers corresponds to the original one mulptiplyed by this
+factors = 3+*
+8///                                                                                                                                            ; % refinement on the separatrix: intensity
 
 %% Define nesting and polynomial degrees
-npol = 2;%1:8;
+npol = 4;%1:8;
 nsiz = 1;%1:7;
 
 %% Working
@@ -131,6 +132,7 @@ for ic=nsiz
         [X3,T3] = CreaMalla(elemType,NNodesLin,xs,1-xs,s       ,s+ys2,nx-2*nlref,nyref);
         q = (X3(:,2)-s)/ys2;
         r = (exp(factors*q)-1)/(exp(factors)-1);
+%         r = flipud(r);
         X3(:,2) = s+r*ys2;
         [X1,T1] = sawMeshes(X1,T1,X3,T3,s+ys2,2);
         clear X3 T3
@@ -140,6 +142,7 @@ for ic=nsiz
         [X3,T3] = CreaMalla(elemType,NNodesLin,0,xs,s       ,s+ys2,nxref,nyref);
         q = (X3(:,2)-s)/ys2;
         r = (exp(factors*q)-1)/(exp(factors)-1);
+%          r = flipud(r);
         X3(:,2) = s+r*ys2;
         [X2,T2] = sawMeshes(X2,T2,X3,T3,s+ys2,2);
         clear X3 T3
@@ -154,6 +157,7 @@ for ic=nsiz
         [X3,T3] = CreaMalla(elemType,NNodesLin,1-xs,1,s       ,s+ys2,nxref,nyref);
         q = (X3(:,2)-s)/ys2;
         r = (exp(factors*q)-1)/(exp(factors)-1);
+%          r = flipud(r);
         X3(:,2) = s+r*ys2;
         [X2,T2] = sawMeshes(X2,T2,X3,T3,s+ys2,2);
         clear X3 T3
@@ -315,7 +319,8 @@ for ic=nsiz
             'elementFaceInfo','elemInfo')
         
         
-       convertMatMeshToHDF5
-        
+       convertMatMeshToHDF5;
+       
+       disp(['Number of elements: ',num2str(size(T,1))])
     end
 end

@@ -239,7 +239,6 @@ CONTAINS
          d_iso(4,1,:) = phys%diff_ee
          d_ani(4,1,:) = phys%diff_ee
       endif
-
       if (switch%difcor .gt. 0) then
          call computeIperDiffusion(xy,iperdiff)
          d_iso(1,1,:) = d_iso(1,1,:)*iperdiff
@@ -280,9 +279,9 @@ CONTAINS
          STOP
       END SELECT
 
-                                                                !!**********************************************************
-                                                                !! Gaussian around the corner
-                                                                !!**********************************************************
+					!!**********************************************************
+					!! Gaussian around the corner
+					!!**********************************************************
       h = 10e-3
       rad = sqrt((X(:,1)*phys%lscale - xcorn)**2 + (X(:,2)*phys%lscale - ycorn)**2)
       ipdiff = 1 + numer%dc_coe*exp(-(2*rad/h)**2)
@@ -304,7 +303,7 @@ CONTAINS
       integer,intent(in)  :: ifa,iel
       real*8,intent(out) :: tau(:,:)
       real*8              :: tau_aux(4),bort(2)
-      real*8 :: xc,yc,rad,h,aux,bn,bnorm,bortn
+      real*8 :: xc,yc,rad,h,aux,bn,bnorm,bortn,coef_scale 
       real*8 :: U1,U2,U3,U4
       integer :: ndim
       U1 = uc(1)
@@ -319,6 +318,7 @@ CONTAINS
       bort(1) = b(1)
       bort(2) = -b(2)
       bortn = dot_product(bort,n)
+      
 
 
 
@@ -330,35 +330,24 @@ bortn=1.
 #ifdef TOR3D
          if (abs(n(3)) > 0.1) then
             ! Poloidal face
-            tau_aux(1) = tau_aux(1) + phys%diff_n*abs(bortn)*refElTor%Ndeg/(numer%tmax*xy(1)/numer%ntor)/phys%lscale
-            tau_aux(2) = tau_aux(2) + phys%diff_u*abs(bortn)*refElTor%Ndeg/(numer%tmax*xy(1)/numer%ntor)/phys%lscale
-            tau_aux(3) = tau_aux(3) + (phys%Mref/phys%etapar*abs(bn)+phys%diff_vort*abs(bortn))*refElTor%Ndeg/(numer%tmax*xy(1)/numer%ntor)/phys%lscale
-            tau_aux(4) = tau_aux(4) + phys%Mref/bmod**2*abs(bortn)*refElTor%Ndeg/(numer%tmax*xy(1)/numer%ntor)/phys%lscale
-            if (abs(isext - 1.) < 1e-8) then
-               tau_aux(3) = phys%diff_vort*abs(bortn)*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
-!               if (switch%fixdPotLim) then
-!                  tau_aux(4) = 1
-!               else
-!                  tau_aux(4) = phys%etapar
-!               endif
-            endif
+            coef_scale = refElTor%Ndeg/(numer%tmax*xy(1)/numer%ntor)/phys%lscale
+            tau_aux(1) = tau_aux(1) + phys%diff_n*abs(bortn)*coef_scale
+            tau_aux(2) = tau_aux(2) + phys%diff_u*abs(bortn)*coef_scale
+            tau_aux(3) = tau_aux(3) + (phys%Mref/phys%etapar*abs(bn)+phys%diff_vort*abs(bortn))*coef_scale
+            tau_aux(4) = tau_aux(4) + phys%Mref/bmod**2*abs(bortn)*coef_scale
          else
 #endif
 
 
             ! Toroidal face
-            tau_aux(1) = tau_aux(1) + phys%diff_n*abs(bortn)*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
-            tau_aux(2) = tau_aux(2) + phys%diff_u*abs(bortn)*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
-            tau_aux(3) = tau_aux(3) + (1./phys%etapar*abs(bn)+phys%diff_vort*abs(bortn))*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
-!tau_aux(3) = tau_aux(3) + (1/phys%etapar)*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
-            tau_aux(4) = tau_aux(4) + 1./bmod**2*abs(bortn)*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
+            coef_scale = refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
+   coef_scale = 1.
+            tau_aux(1) = tau_aux(1) + phys%diff_n*abs(bortn)*coef_scale
+            tau_aux(2) = tau_aux(2) + phys%diff_u*abs(bortn)*coef_scale
+            tau_aux(3) = tau_aux(3) + (1./phys%etapar*abs(bn)+phys%diff_vort*abs(bortn))*coef_scale
+            tau_aux(4) = tau_aux(4) + 1./bmod**2*abs(bortn)*coef_scale
             if (abs(isext - 1.) < 1e-8) then
-               tau_aux(3) = phys%diff_vort*abs(bortn)*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
-!               if (switch%fixdPotLim) then
-!                  tau_aux(4) = 1
-!               else
-!                  tau_aux(4) = phys%etapar
-!               endif               
+               tau_aux(3) = phys%diff_vort*abs(bortn)*coef_scale
             endif
 #ifdef TOR3D
          endif
