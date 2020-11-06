@@ -496,6 +496,7 @@ CONTAINS
          call HDF5_integer_saving(group_id2, numer%ptor, 'Polynomial_degree_in_the_toroidal_direction')
          call HDF5_real_saving(group_id2, numer%tmax, 'Max_extention_in_the_toroidal_direction')
          call HDF5_integer_saving(group_id2, numer%npartor, 'Number_of_MPI_divisions_in_the_toroidal_direction')
+         call HDF5_real_saving(group_id2, numer%exbdump, 'Dumping_for_ExB_drift')
          call HDF5_group_close(group_id2, ierr)
 
 ! Create time parameters group

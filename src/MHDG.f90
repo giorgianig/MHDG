@@ -196,6 +196,17 @@ PROGRAM MHDG
    CALL setSolName(save_name, mesh_name, 0, .true., .false.)
    CALL HDF5_save_solution(save_name)
 
+
+
+
+
+
+
+
+call mpi_barrier(mpi_comm_world,ierr)
+
+
+
    ! Allocate and initialize uiter and u0
    ALLOCATE (uiter(nu))
    ALLOCATE (sol%u0(nu, time%tis))

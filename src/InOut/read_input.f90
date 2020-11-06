@@ -34,13 +34,14 @@ SUBROUTINE READ_input()
    character(len=20) :: aggr_prol, par_aggr_alg, aggr_ord, aggr_filter, csolve, csbsolve, cmat
    integer           :: jsweeps, novr, fill, jsweeps2, novr2, fill2, outer_sweeps, maxlevs, csize, cfill, cjswp
    real              :: thrsol, thrsol2, mncrratio, athres, cthres
+   real              :: exbdump
 
    
    ! Defining the variables to READ from the file
    NAMELIST /SWITCH_LST/ steady, axisym, init, driftdia, driftexb, testcase, psdtime, diffred, diffmin, &
                        & shockcp, limrho, difcor, thresh, filter, decoup, ckeramp, saveNR, saveTau, fixdPotLim, dirivortcore,dirivortlim, convvort,pertini,&
                        & logrho,bxgradb
-   NAMELIST /NUMER_LST/ tau,nrp,tNR,tTM,div,sc_coe,sc_sen,minrho,so_coe,df_coe,dc_coe,thr,thrpre,stab,dumpnr,ntor,ptor,tmax,npartor,bohmtypebc
+   NAMELIST /NUMER_LST/ tau,nrp,tNR,tTM,div,sc_coe,sc_sen,minrho,so_coe,df_coe,dc_coe,thr,thrpre,stab,dumpnr,ntor,ptor,tmax,npartor,bohmtypebc,exbdump
    NAMELIST /GEOM_LST/ R0, q
    NAMELIST /TIME_LST/ dt0, nts, tfi, tsw, tis
    NAMELIST /PHYS_LST/ diff_n, diff_u, diff_e, diff_ee, diff_vort, Tbg, bcflags, bohmth,&
@@ -111,6 +112,7 @@ SUBROUTINE READ_input()
    numer%tmax = tmax
    numer%npartor = npartor
    numer%bohmtypebc =bohmtypebc
+   numer%exbdump=exbdump
    geom%R0 = R0
    geom%q = q
    time%dt0 = dt0
@@ -318,6 +320,7 @@ SUBROUTINE READ_input()
 #endif
       PRINT *, '                - max extention in the toroidal direction:          ', numer%tmax
 #endif
+      PRINT *, '                - dumping for ExB term:       ', numer%exbdump
       PRINT *, '        ***************** Linear solver params******************'
       IF (lssolver%sollib == 1) THEN
          PRINT *, '                - Library used for the linear system:   PASTIX '

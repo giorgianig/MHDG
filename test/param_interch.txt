@@ -69,6 +69,8 @@
    tmax   = 6.28  ! Max extention in the toroidal direction 
    npartor= 1      ! Number of MPI partition in the toroidal direction 
    bohmtypebc=1    ! Implementation of the Bohm bc for Gamma (1-Dirichlet always, 2-Dirichlet+Neumann)   
+   exbdump = 1. ! Dumping for ExB drift
+
 /
 
 &GEOM_LST ! Blabla

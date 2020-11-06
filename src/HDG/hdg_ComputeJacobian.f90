@@ -1671,8 +1671,8 @@ CONTAINS
 
       ktis = 0.
 
-      if (time%it .lt. time%tis) then
-         it = time%it
+      if (time%ik .lt. time%tis) then
+         it = time%ik
       else
          it = time%tis
       end if
@@ -1951,7 +1951,7 @@ CONTAINS
             endif
             IF (switch%driftexb .and. i .ne. 4) THEN
                ! ExB terms
-               kcoeff = 1./Bmod
+               kcoeff = numer%exbdump/Bmod
                call ijk_cross_product(k,alpha,beta)
                ii = 4
                z = i+(k-1)*Neq+(ii-1)*Neq*Ndim
@@ -2065,7 +2065,7 @@ CONTAINS
       real*8,intent(IN)         :: NNif(:,:),Nif(:),Nfbn(:)
       real*8,intent(IN)         :: uf(:),upf(:)
       real*8,intent(IN)         :: qf(:)
-      real*8,optional,intent(IN) :: tau(:,:)
+      real*8,optional,intent(INOUT) :: tau(:,:)
       real*8                     :: kcoeff
       real*8                     :: b(Ndim)
       integer*4,optional         :: ifa
@@ -2133,7 +2133,7 @@ CONTAINS
 
             IF (switch%driftexb .and. i .ne. 4) THEN
                ! ExB terms
-               kcoeff = 1./Bmod
+               kcoeff = numer%exbdump/Bmod
                ii = 4
                call ijk_cross_product(k,alpha,beta)
                ind_kf = ind_ash + k + (ii - 1)*Ndim
@@ -2147,6 +2147,8 @@ CONTAINS
                kmultf = kcoeff*exb(k)*uf(i)*Nif*b(k)
                elMat%fh(ind_ff(ind_if),iel) = elMat%fh(ind_ff(ind_if),iel) - kmultf
                elMat%S(ind_fe(ind_if),iel) = elMat%S(ind_fe(ind_if),iel) - kmultf
+
+!tau(i,i) = tau(i,i) + abs(kcoeff*exb(k)*b(k))
             ENDIF
             DO ii = 1,Neq
                IF (ii == i) CYCLE ! diagonal alredy assembled
@@ -2270,7 +2272,7 @@ CONTAINS
       real*8,intent(IN)         :: NNif(:,:),Nif(:),Nfbn(:)
       real*8,intent(IN)         :: uf(:),upf(:)
       real*8,intent(IN)         :: qf(:)
-      real*8,optional,intent(IN) :: tau(:,:)
+      real*8,optional,intent(INOUT) :: tau(:,:)
       integer*4,optional         :: ifa
       real*8                    :: kcoeff
       integer*4                 :: i,j,k,ii,alpha,beta
@@ -2334,7 +2336,7 @@ CONTAINS
             IF (switch%driftexb .and. i .ne. 4) THEN
                ! ExB terms
                ii = 4
-               kcoeff = 1./Bmod
+               kcoeff = numer%exbdump/Bmod
                call ijk_cross_product(k,alpha,beta)
                ind_kf = ind_ash + k + (ii - 1)*Ndim
                kmult = kcoeff*NNif*(nn(alpha)*b3(beta) - nn(beta)*b3(alpha))*uf(i)
@@ -2346,6 +2348,7 @@ CONTAINS
                   kmultf = kcoeff*exb(k)*uf(i)*Nif*b(k)
                   elMat%S(ind_fe(ind_if),iel) = elMat%S(ind_fe(ind_if),iel) - kmultf
                ENDIF
+!tau(i,i) = tau(i,i) + abs(kcoeff*exb(k)*b(k))
             ENDIF
             DO ii = 1,Neq
                IF (ii == i) CYCLE ! diagonal alredy assembled

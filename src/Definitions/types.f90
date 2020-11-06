@@ -302,6 +302,7 @@ MODULE types
       real*8         :: tmax     ! Max extention in the toroidal direction
       integer        :: npartor  ! Number of MPI divisions in the toroidal direction
       integer        :: bohmtypebc ! Implementation of the Bohm bc for Gamma
+      real*8         :: exbdump ! Dumping for ExB drifts
    END TYPE Numeric_type
 
    !*******************************************************

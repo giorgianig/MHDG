@@ -52,7 +52,7 @@
    tau(2) = 1.E0  ! Stabilization parameter 2nd equation
    tau(3) = 1.E0  ! Stabilization parameter 3rd equation
    tau(4) = 1.E0  ! Stabilization parameter 4th equation         
-   nrp    = 2    ! Max number of Newton-Raphson iterations
+   nrp    = 3    ! Max number of Newton-Raphson iterations
    tNR    = 1e-4  ! Tolerance of the Newton-Raphson scheme
    tTM    = 1e-14  ! Tolerance for the steady state achievement
    div    = 1e9   ! Divergence of Newton-Raphon iteration
@@ -61,8 +61,8 @@
    so_coe = 0.01  ! Coefficient of the source for limiting rho
    sc_sen = 2   ! Shock capturing sensibility
    df_coe = 100.  ! Coefficient of the diffusion for limiting rho
-   dc_coe = 100   ! Coefficient of the diffusion to add in the corners 
-   thr    = 1.e-6 ! Min value of density allowed (works only if the switch is activated) 
+   dc_coe = 0.1   ! Coefficient of the diffusion to add in the corners 
+   thr    = 1.e-7 ! Min value of density allowed (works only if the switch is activated) 
    thrpre = 1e-8 ! Min value of pressure allowed (works only if the switch is activated) 
    stab   = 2    ! Stabilization type
    dumpnr = 1   ! Dumping factor for Newton-Raphson (0<dumpnr<1)
@@ -71,6 +71,7 @@
    tmax   = 0.785398  ! Max extention in the toroidal direction 
    npartor= 1      ! Number of MPI partition in the toroidal direction 
    bohmtypebc=2   ! Implementation of the Bohm bc for Gamma (1-Dirichlet always, 2-Dirichlet+Neumann)   
+   exbdump = 0.01 ! Dumping for ExB drift
 /
 
 &GEOM_LST ! Blabla
@@ -90,11 +91,11 @@
 
 &PHYS_LST
    ! ****** Diffusion parameters in m^2/s
-   diff_n = 6 ! diffusion in the continuity equation
-   diff_u = 6 ! diffusion in the momentum equation
-   diff_e = 6 ! perpendicular diffusion for the energy equation
-   diff_ee = 6 ! perpendicular diffusion in the electron temperature equation (for the TiTe model)
-   diff_vort = 6 ! diffusion in the vorticity equation
+   diff_n = 0.39 ! diffusion in the continuity equation
+   diff_u = 0.39 ! diffusion in the momentum equation
+   diff_e = 0.39 ! perpendicular diffusion for the energy equation
+   diff_ee = 0.39 ! perpendicular diffusion in the electron temperature equation (for the TiTe model)
+   diff_vort = 0.39 ! diffusion in the vorticity equation
    ! ****** Background temperature in the isothermal model in eV (useless in the non-isothermal model)
    Tbg = 50
    ! ****** Boundary conditions: set the correspondance between boundary flag and boundary condition
