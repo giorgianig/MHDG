@@ -2149,6 +2149,7 @@ CONTAINS
                elMat%S(ind_fe(ind_if),iel) = elMat%S(ind_fe(ind_if),iel) - kmultf
 
 !tau(i,i) = tau(i,i) + abs(kcoeff*exb(k)*b(k))
+tau(i,i) = 100
             ENDIF
             DO ii = 1,Neq
                IF (ii == i) CYCLE ! diagonal alredy assembled
@@ -2348,7 +2349,8 @@ CONTAINS
                   kmultf = kcoeff*exb(k)*uf(i)*Nif*b(k)
                   elMat%S(ind_fe(ind_if),iel) = elMat%S(ind_fe(ind_if),iel) - kmultf
                ENDIF
-!tau(i,i) = tau(i,i) + abs(kcoeff*exb(k)*b(k))
+tau(i,i) = tau(i,i) + abs(kcoeff*exb(k)*b(k))
+tau(i,i) = 100
             ENDIF
             DO ii = 1,Neq
                IF (ii == i) CYCLE ! diagonal alredy assembled
