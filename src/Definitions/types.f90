@@ -175,7 +175,8 @@ MODULE types
       integer     :: npv            ! Number of physical variables
       real*8      :: diff_n, diff_u ! Perpendicular diffusion in the continuity and momentum equation
       real*8      :: a              ! Proportionality constant between pressure and density for isothermal model (p = a*rho)
-      real*8      :: dfcoef         ! Constant related to the drift velocity
+      real*8      :: dfcoef         ! Constant related to the diamagnetic drift velocity
+      real*8      :: dexbcoef         ! Constant related to the ExB drift velocity
       integer*4   :: bcflags(1:10)  ! Set the correspondence between mesh boundary flag (Mesh%boundaryFlag) and the boundary condition
       real*8      :: diagsource(1:10)     ! Diagonal implicit sources
       character(LEN=20), pointer:: phyVarNam(:) => Null() ! Names of the physical variables (set in initPhys)

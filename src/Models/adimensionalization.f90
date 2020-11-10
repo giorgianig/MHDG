@@ -84,6 +84,7 @@ SUBROUTINE adimensionalization()
    phys%c1 = 1.
    phys%c2 = 1.
    phys%Mref = 1.
+   phys%dexbcoef = 1.
 
    IF (switch%testcase < 10) THEN
       WRITE (6, *) "No adimensionalization needed"
@@ -137,6 +138,7 @@ SUBROUTINE adimensionalization()
 
    ! Curvature drift coefficient
    phys%dfcoef = 2*Tev*t0/(L0**2*B0)
+   phys%dexbcoef = phi0/B0*t0/L0^2
 
    ! Store reference values
    simpar%refval_length = L0

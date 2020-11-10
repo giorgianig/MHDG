@@ -44,7 +44,8 @@ path2save = '/home/giorgio/Dropbox/PostDoc_Marseille/Latex/NGammaVortPot/';
 solpath = '/home/giorgio/Dropbox/Fortran/MHDG_ref3.0/test/';
 meshpath = solpath;
 meshpath = '/home/giorgio/Dropbox/Fortran/MHDG_ref3.0/matlab/Meshes/';
-solname = 'Sol2D_CircLimAlign_Quads_Nel480_P4_DPe0.600E+01_0005';
+% solname = 'Sol3D_CircLimAlign_Quads_Nel480_P4_Ntor2Ptor2_DPe0.390E+00_0013';
+solname = 'Sol2D_CircLimAlign_Quads_Nel480_P4_DPe0.391E+00';
 
 % solname = 'Sol2D_CircLimAlign_Quads_Nel208_P4_DPe0.300E+01';
 
@@ -249,10 +250,12 @@ for iproc = 1:nproc
                 end
             end
             if plotGrads
+
+                
                 for i=1:size(qr,2)
                     if ismember(i,varnplot),continue,end
                     qplot = qr(:,i);
-                    qplot = extractSolutionInAtGivenTheta(qplot,T,refEl,refElTor,tpos(itor));
+                    qplot = extractSolutionInAtGivenTheta(qplot,Mesh.T,refEl,refElTor,tpos(itor));
                     iplot = iplot +1;
                     figure(iplot),hold on, plotSolution(Mesh.X,Mesh.T,qplot,refEl,nref);axis off
                     name = ['Q',num2str(i)];
@@ -260,6 +263,7 @@ for iproc = 1:nproc
                     if printout
                         readyforprintjpeg([8 6],16,[],[],1,[],[],path2save,[name,num2str(testnumber)])
                     end
+                    drawnow
                 end
             end
         end

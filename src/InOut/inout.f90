@@ -442,6 +442,7 @@ CONTAINS
          call HDF5_real_saving(group_id2, phys%diff_pot, 'diff_pot')
          call HDF5_real_saving(group_id2, phys%tie, 'tau_ie')
          call HDF5_real_saving(group_id2, phys%dfcoef, 'dfcoef')
+         call HDF5_real_saving(group_id2, phys%dexbcoef, 'dexbcoef')
          call HDF5_real_saving(group_id2, phys%bohmth, 'bohmth')
          call HDF5_real_saving(group_id2, phys%epn, 'epn')
          call HDF5_real_saving(group_id2, phys%Gmbohm, 'Gmbohm')

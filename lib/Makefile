@@ -3,7 +3,7 @@
 # Makefile
 # date: 12/02/2016
 #---------------------------------------
-include Make.inc/arch.make_marconi
+include Make.inc/arch.make
 
 .PHONY : clean
 

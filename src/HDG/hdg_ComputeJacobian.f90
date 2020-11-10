@@ -1749,6 +1749,12 @@ CONTAINS
 #endif
 
 
+
+
+real*8 :: kmult(size(Auq,1),size(Auq,2))
+
+
+
       b = b3(1:Ndim)
 
       bb = 0.
@@ -1918,13 +1924,28 @@ CONTAINS
          DO k = 1,Ndim
             ! Diagonal terms for perpendicular diffusion
              z = i+(k-1)*Neq+(i-1)*Neq*Ndim
-             Auq(:,:,z)=Auq(:,:,z)+diffiso(i,i)*NxyzNi(:,:,k) - diffani(i,i)*NNxy*b(k)
+             kmult = diffiso(i,i)*NxyzNi(:,:,k) - diffani(i,i)*NNxy*b(k)
 
-!write(6,*) "diffiso(i,i)",diffiso(i,i) 
-!write(6,*) "diffani(i,i)",diffani(i,i)                         
-!write(6,*) "xy",xy             
-!write(6,*) "b",b
-!stop
+
+
+
+
+
+
+
+
+
+#ifdef VORTICITY
+             if (i==4) then
+               kmult = kmult/ue(1)
+             endif
+#endif
+
+
+
+
+
+             Auq(:,:,z)=Auq(:,:,z)+kmult
 #ifndef TEMPERATURE
              ! Added term for n=exp(x) change of variable \Grad \chi **2 
              if (switch%logrho) then
@@ -1951,7 +1972,7 @@ CONTAINS
             endif
             IF (switch%driftexb .and. i .ne. 4) THEN
                ! ExB terms
-               kcoeff = numer%exbdump/Bmod
+               kcoeff = phys%dfcoef*numer%exbdump/Bmod
                call ijk_cross_product(k,alpha,beta)
                ii = 4
                z = i+(k-1)*Neq+(ii-1)*Neq*Ndim
@@ -1969,7 +1990,16 @@ CONTAINS
                kcoeff = 1.
                ! Non-linear correction for non-linear diffusive terms.
                ! TODO: find a smarter way to include it,avoiding if statements and model dependencies (i==3,ii==1 only holds for Isothermal+Vorticity model)
-               IF ((i == 3 .or. i == 4) .and. ii == 1) then
+
+
+
+
+
+
+
+
+!               IF ((i == 3 .or. i == 4) .and. ii == 1) then
+               IF ((i == 3) .and. ii == 1) then
                   z = i+(ii-1)*Neq
                   kcoeff = 1./ue(1)
                   Auu(:,:,z)=Auu(:,:,z)-kcoeff**2*(diffiso(i,ii)*Qpr(k,ii)*NxyzNi(:,:,k) - diffani(i,ii)*Qpr(k,ii)*b(k)*NNxy)
@@ -2126,6 +2156,28 @@ CONTAINS
             ind_kf = ind_ash + k + (i - 1)*Ndim
             kmult = NNif*(n(k)*diffiso(i,i) - bn*b(k)*diffani(i,i))
 
+
+
+
+#ifdef VORTICITY
+            if (i==4) then
+                kmult=kmult/uf(1)
+            endif
+#endif
+
+
+
+
+
+
+
+
+
+
+
+
+            
+
             ! Diagonal terms for perpendicular diffusion
             elMat%Alq(ind_ff(ind_if),ind_fG(ind_kf),iel) = elMat%Alq(ind_ff(ind_if),ind_fG(ind_kf),iel) - kmult
             elMat%Auq(ind_fe(ind_if),ind_fG(ind_kf),iel) = elMat%Auq(ind_fe(ind_if),ind_fG(ind_kf),iel) - kmult
@@ -2133,7 +2185,7 @@ CONTAINS
 
             IF (switch%driftexb .and. i .ne. 4) THEN
                ! ExB terms
-               kcoeff = numer%exbdump/Bmod
+               kcoeff = phys%dfcoef*numer%exbdump/Bmod
                ii = 4
                call ijk_cross_product(k,alpha,beta)
                ind_kf = ind_ash + k + (ii - 1)*Ndim
@@ -2158,7 +2210,21 @@ tau(i,i) = 100
                kcoeff = 1.
                ! Non-linear correction for non-linear diffusive terms.
                ! TODO: find a smarter way to include it,avoiding if statements and model dependencies (i==3,ii==1 only holds for Isothermal+Vorticity model)
-               IF ((i == 3 .or. i == 4) .and. ii == 1) then
+
+
+
+
+
+
+
+
+
+!               IF ((i == 3 .or. i == 4) .and. ii == 1) then
+               IF ((i == 3 ) .and. ii == 1) then
+
+
+
+
                   ! Non-linear term in the vorticity equation (\Grad// n/n b)
                   ind_jf = ind_asf + ii
                   kcoeff = 1./uf(1)
@@ -2331,13 +2397,30 @@ tau(i,i) = 100
          DO k = 1,Ndim
             ind_kf = ind_ash + k + (i - 1)*Ndim
             kmult = NNif*(n(k)*diffiso(i,i) - bn*b(k)*diffani(i,i))
+
+
+
+
+#ifdef VORTICITY
+            if (i==4) then
+               kmult=kmult/uf(1)
+            endif            
+#endif
+
+
+
+
+
+
+
+
             ! Diagonal terms for perpendicular diffusion
             elMat%Auq(ind_fe(ind_if),ind_fG(ind_kf),iel) = elMat%Auq(ind_fe(ind_if),ind_fG(ind_kf),iel) - kmult
 #ifdef VORTICITY
             IF (switch%driftexb .and. i .ne. 4) THEN
                ! ExB terms
                ii = 4
-               kcoeff = numer%exbdump/Bmod
+               kcoeff = phys%dfcoef*numer%exbdump/Bmod
                call ijk_cross_product(k,alpha,beta)
                ind_kf = ind_ash + k + (ii - 1)*Ndim
                kmult = kcoeff*NNif*(nn(alpha)*b3(beta) - nn(beta)*b3(alpha))*uf(i)
@@ -2359,7 +2442,13 @@ tau(i,i) = 100
                kcoeff = 1.
                ! Non-linear correction for non-linear diffusive terms.
                ! TODO: find a smarter way to include it,avoiding if statements and model dependencies (i==3,ii==1 only holds for Isothermal+Vorticity model)
-               IF ((i == 3 .or. i == 4) .and. ii == 1) then
+
+
+
+!               IF ((i == 3 .or. i == 4) .and. ii == 1) then
+               IF ((i == 3 ) .and. ii == 1) then
+
+
                   kcoeff = 1./uf(1)
                   IF (.not. isdir) THEN
                      ind_jf = ind_asf + ii
