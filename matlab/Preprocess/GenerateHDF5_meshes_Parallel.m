@@ -1,8 +1,11 @@
 % function GenerateHDF5_meshes_forParallel()
 
 for i = 1:ndiv
-    
-    fileName = [meshName(1:end-4) '_' num2str(i) '_' num2str(ndiv) '.h5'];
+    if strcmpi(meshName(end-2:end),'.h5')
+        fileName = [meshName(1:end-3) '_' num2str(i) '_' num2str(ndiv) '.h5'];
+    else
+        fileName = [meshName(1:end-4) '_' num2str(i) '_' num2str(ndiv) '.h5'];
+    end 
     X = XX{i};
     T = TT{i};
     loc2glob_el = Loc2Glob_el{i};

@@ -11,8 +11,8 @@ COMPTYPE_OPT = opt
 COMPTYPE_DEB = deb
 COMPTYPE_PRO = pro
 #COMPTYPE = $(COMPTYPE_DEB)
-#COMPTYPE = $(COMPTYPE_OPT)
-COMPTYPE = $(COMPTYPE_PRO)
+COMPTYPE = $(COMPTYPE_OPT)
+#COMPTYPE = $(COMPTYPE_PRO)
 
 #-------------------------------------------------------------------------------
 # Mode: serial or parallel
@@ -36,9 +36,9 @@ MDL_NGAMMATITE=NGammaTiTe
 MDL_NGAMMAVORT=NGammaVort
 
 # Model chosen
-#MDL=$(MDL_NGAMMA)
+MDL=$(MDL_NGAMMA)
 #MDL=$(MDL_NGAMMATITE)
-MDL=$(MDL_NGAMMAVORT)
+#MDL=$(MDL_NGAMMAVORT)
 
 # Moving equilibrium
 MVEQ_TRUE = true
@@ -154,9 +154,9 @@ endif
 ifeq ($(COMPTYPE),$(COMPTYPE_DEB))
  FCFLAGS = -fpp -O0 -r8 -qopenmp -xHOST -g -traceback -check all -free
 else ifeq ($(COMPTYPE),$(COMPTYPE_PRO))
- FCFLAGS = -fpp -O3  -parallel -fpe0 -r8 -qopenmp -xHOST -g  -free
+ FCFLAGS = -fpp -O3 -parallel -fpe0 -qopenmp -xHOST -r8 -free -g
 else ifeq ($(COMPTYPE),$(COMPTYPE_OPT))
- FCFLAGS = -fpp -O3 -parallel -fpe0 -qopenmp -xHOST -r8 -free
+ FCFLAGS = -fpp -O2 -parallel -fpe0 -qopenmp -xHOST -r8 -free
 endif
 
 DEF = -DTHREAD_FUNNELED
@@ -166,16 +166,22 @@ DEF = -DTHREAD_FUNNELED
 FCFLAGS += -I/usr/include/hdf5/serial/
 FCFLAGS += -I/usr/include/X11
 ifeq ($(PASTIX),$(LIB_YES))
-FCFLAGS += -I/home/ggiorgiani/libs/pastix_5.2.3_rep/install
-FCFLAGS += -I/home/ggiorgiani/libs/scotch_6.0.4/include
+#FCFLAGS += -I/home/ggiorgiani/libs/pastix_5.2.3_rep/install
+#FCFLAGS += -I/home/ggiorgiani/libs/scotch_6.0.4/include
+ FCFLAGS += -I $(MHDG_PASTIX_DIR)/install
+ FCFLAGS += -I $(MHDG_SCOTCH_DIR)/include
 endif
 ifeq ($(PSBLAS),$(LIB_YES))
-FCFLAGS += -I/home/ggiorgiani/libs/psblas3/include/
-FCFLAGS += -I//home/ggiorgiani/libs/psblas3/modules/
+#FCFLAGS += -I/home/ggiorgiani/libs/psblas3/include/
+#FCFLAGS += -I//home/ggiorgiani/libs/psblas3/modules/
+ FCFLAGS += -I $(MHDG_PSBLAS_DIR)/include/
+ FCFLAGS += -I $(MHDG_PSBLAS_DIR)/modules/
 endif
 ifeq ($(PSBLMG),$(LIB_YES))
-FCFLAGS += -I//home/ggiorgiani/libs/mld2p4-2/modules/
-FCFLAGS += -I/home/ggiorgiani/libs/mld2p4-2/include/
+#FCFLAGS += -I//home/ggiorgiani/libs/mld2p4-2/modules/
+#FCFLAGS += -I/home/ggiorgiani/libs/mld2p4-2/include/
+ FCFLAGS += -I $(MHDG_MLD2P4_DIR)/modules/
+ FCFLAGS += -I $(MHDG_MLD2P4_DIR)/include/
 endif
 
 # Libraries needed for linking
@@ -203,23 +209,32 @@ LIB += -L/trinity/shared/apps/tr17.10/x86_64/hdf5-icc18-impi-1.10.1/lib -lhdf5_f
 LIB += -L/$(MKL_ROOT)/lib/intel64/
 #LIB += -L/$(MKL_ROOT)/lib/intel64/libmkl_intel_lp64.a $(MKL_ROOT)/lib/intel64/libmkl_sequential.a $(MKL_ROOT)/lib/intel64/libmkl_core.a                                                                 
 ifeq ($(PASTIX),$(LIB_YES))
-LIB += -L/home/ggiorgiani/libs/pastix_5.2.3_rep/install/ -lpastix -lm -lrt  -lifcore
-LIB += -L/home/ggiorgiani/libs/scotch_6.0.4/lib/ -lscotch -lscotcherrexit  -lptscotchparmetis -lptscotch
-LIB += -L/trinity/shared/apps/tr17.10/x86_64/hwloc-1.11.8/lib -lhwloc -lpthread
+#LIB += -L/home/ggiorgiani/libs/pastix_5.2.3_rep/install/ -lpastix -lm -lrt  -lifcore
+#LIB += -L/home/ggiorgiani/libs/scotch_6.0.4/lib/ -lscotch -lscotcherrexit  -lptscotchparmetis -lptscotch
+#LIB += -L/trinity/shared/apps/tr17.10/x86_64/hwloc-1.11.8/lib -lhwloc -lpthread
+ LIB += -L $(MHDG_PASTIX_DIR)/install -lpastix -lm -lrt -lifcore
+ LIB += -L $(MHDG_SCOTCH_DIR)/lib -lscotch -lscotcherrexit  -lptscotchparmetis -lptscotch 
+ LIB += -L $(MHDG_HWLOC_DIR)/lib -lpthread -lhwloc
 endif
 LIB +=  -lmkl_intel_lp64 -lmkl_sequential -lmkl_core
 ifeq  ($(PSBLMG),$(LIB_YES))
-LIB += -L/home/ggiorgiani/libs/psblas3/lib/ -L/home/ggiorgiani/libs/mld2p4-2/lib/
-LIB += -lpsb_krylov -lmld_prec -lpsb_prec -lpsb_krylov -lpsb_prec -lpsb_util -lpsb_base
+#LIB += -L/home/ggiorgiani/libs/psblas3/lib/ -L/home/ggiorgiani/libs/mld2p4-2/lib/
+#LIB += -lpsb_krylov -lmld_prec -lpsb_prec -lpsb_krylov -lpsb_prec -lpsb_util -lpsb_base
+ LIB += -L $(MHDG_PSBLAS_DIR)/lib/ -L $(MHDG_MLD2P4_DIR)/lib/ 
+ LIB += -lpsb_krylov -lmld_prec -lpsb_prec -lpsb_krylov -lpsb_prec -lpsb_util -lpsb_base
 else ifeq ($(PSBLAS),$(LIB_YES))
-LIB += -L/home/ggiorgiani/libs/psblas3/lib/
-LIB += -lpsb_util -lpsb_krylov -lpsb_prec -lpsb_base
+#LIB += -L/home/ggiorgiani/libs/psblas3/lib/
+#LIB += -lpsb_util -lpsb_krylov -lpsb_prec -lpsb_base
+ LIB += -L $(MHDG_PSBLAS_DIR)/lib/
+ LIB += -lpsb_util -lpsb_krylov -lpsb_prec -lpsb_base
 endif
 
 ifeq ($(PSBLMG),$(LIB_YES))
-include /home/ggiorgiani/libs/mld2p4-2/include/Make.inc.mld2p4
+#include /home/ggiorgiani/libs/mld2p4-2/include/Make.inc.mld2p4
+ include $(MHDG_MLD2P4_DIR)/include/Make.inc.mld2p4
 else ifeq ($(PSBLAS),$(LIB_YES))
-include /home/ggiorgiani/libs/psblas3/include/Make.inc.psblas
+#include /home/ggiorgiani/libs/psblas3/include/Make.inc.psblas
+ include $(MHDG_PSBLAS_DIR)/include/Make.inc.psblas
 endif
 # Add macros to the compiling flags
 FCFLAGS += $(MACROS)

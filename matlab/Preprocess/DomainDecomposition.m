@@ -3,28 +3,35 @@ clc
 close all
 mark = {'bo','ko','go','mo','yo','bo','bo','ko','go','mo','yo','bo'};
 % Mesh to load
-path2mesh ='../Meshes/';
-% meshName  = 'Circle_ONION_3_P10.mat';
-% meshName  = 'West_Hugo_h0.02_refCorn0.001_refSep0.01_YesHole_P4.mat';
-meshName  = 'CircLimAlign_Quads_Nel98784_P1.mat';
-% meshName  = 'CircLimAlign_Quads_Nel128_P3.mat';
-% path2mesh = '/home/giorgio/Dropbox/Matlab/Meshes/Meshes_2D/';
-% meshName  = 'mesh1_P1.mat';
+path2mesh ='Meshes/';
+meshName  = 'West_YesHole_Nel10861_P4.h5';
+
 % Number of divisions
-ndiv = 48;
+ndiv = 8;
 divType = 'rot';
 % divType = 'x';
 % divType = 'y';
-theta0 = 0*pi/180;
-elemType = 0;
+theta0 = 15*pi/180;
+elemType = 1;
+
+% meshName  = 'Circ_InfLIM_Quads_YesHole_Nel909_P5.h5';
+% 
+% % Number of divisions
+% ndiv = 4;
+% divType = 'rot';
+% % divType = 'x';
+% % divType = 'y';
+% theta0 = 20*pi/180;
+% elemType = 0;
+
 
 % theta0 = pi/180;
 % forbidden values for theta
-theta_forb = [270];
+theta_forb = [280*pi/180];
 
-if elemType==1 % Quadrangles
+if elemType==1 % Triangles
     Nvert =3;
-elseif elemType==0 % Triangles
+elseif elemType==0  % Quadrangles
     Nvert = 4;
 else
     error('Wrong element type')
@@ -36,7 +43,54 @@ elseif elemType==1
 end
 
 %% Loading original mesh
-load([path2mesh meshName]);
+if strcmpi(meshName(end-2:end),'.h5')
+    tmp = elemType;
+    HDF5load([path2mesh meshName]);
+    elemType = tmp;
+    if any(boundaryFlag==1)
+        mask = boundaryFlag == 1;
+        Tb_Dirichlet = Tb(mask,:);
+    end
+    if any(boundaryFlag==2)
+        mask = boundaryFlag == 2;
+        Tb_LEFT = Tb(mask,:);
+    end
+    if any(boundaryFlag==3)
+        mask = boundaryFlag == 3;
+        Tb_RIGHT = Tb(mask,:);
+    end
+    if any(boundaryFlag==4)
+        mask = boundaryFlag == 4;
+        Tb_UP = Tb(mask,:);
+    end
+    if any(boundaryFlag==5)
+        mask = boundaryFlag == 5;
+        Tb_DOWN = Tb(mask,:);
+    end
+    if any(boundaryFlag==6)
+        mask = boundaryFlag == 6;
+        Tb_WALL = Tb(mask,:);
+    end
+    if any(boundaryFlag==7)
+        mask = boundaryFlag == 7;
+        Tb_LIM = Tb(mask,:);
+    end
+    if any(boundaryFlag==8)
+        mask = boundaryFlag == 8;
+        Tb_IN = Tb(mask,:);
+    end
+    if any(boundaryFlag==9)
+        mask = boundaryFlag == 9;
+        Tb_OUT = Tb(mask,:);
+    end
+    if any(boundaryFlag==10)
+        mask = boundaryFlag == 10;
+        Tb_ULIM = Tb(mask,:);
+    end
+else
+    load([path2mesh meshName]);
+end
+
 NelTot = size(T,1);
 refEl = createReferenceElement(elemType,size(T,2),[]);
 aux = whos('Tb_*');
@@ -51,7 +105,7 @@ else
     [intFaces_Glob,extFaces_Glob] = GetFaces(T(:,1:Nvert),refEl.faceNodes);
     intfaces = intFaces_Glob;
     extfaces = extFaces_Glob;
-    save([path2mesh meshName],'intfaces','extfaces','-append')
+    %save([path2mesh meshName],'intfaces','extfaces','-append')
     clear intfaces extfaces
 end
 Nf = size(intFaces_Glob,1)+size(extFaces_Glob,1);
@@ -169,10 +223,10 @@ while redo
             % compute number of elements current division
             ind_it = all([theta_b>theta(it) theta_b<theta(it+1)],2);
             nel = nnz(ind_it);
-            if (nel-nel_mean)>0
+            if (nel-nel_mean)>5
                 theta1=theta(it+1);
                 theta(it+1) = 0.5*(theta0+theta1);
-            elseif (nel-nel_mean)<0
+            elseif (nel-nel_mean)<-5
                 theta0 = theta(it+1);
                 theta(it+1) = 0.5*(theta0+theta1);
             else
@@ -189,12 +243,26 @@ while redo
         theta = theta+0.1;
         redo=1;
     end
-
 end
+
+NelSum = 0
 for it=1:ndiv
     ind = all([theta_b>theta(it) theta_b<theta(it+1)],2);
     nel(it) = nnz(ind);
+    NelSum = NelSum + nel(it);
 end
+
+if NelSum ~= NelTot
+    disp('Error in numbering of elements')
+    disp('nel = ');Nel, NelSum
+    disp('NelTot = ');
+    return
+else
+    disp('Correct numbering of elements')
+    disp('nel = '); nel, NelSum
+    disp('NelTot = '); NelTot
+end
+
 
 %
 % for iter=1:10

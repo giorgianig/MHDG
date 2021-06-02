@@ -11,22 +11,22 @@ rs  = 0.75;  % separatrix radius
 elemType = 0;    % element type -  0: quads, 1: tria
 nonst  = 0;   % alignement with the magnetic field - 0: aligned; 1: non aligned (apply a random displacement to nodes)
 delta = 0.0;   % in case on non-alignement: magnitude of the  displacement
-ne1 = 40;      % number of layers in the closed-line zone
-ne2 = 40;    % number of layers in the open-line zone (SOL)
-elong = 1;   % elongation of the elements in the poloidal direction
+ne1 = 4;      % number of layers in the closed-line zone
+ne2 = 4;    % number of layers in the open-line zone (SOL)
+elong = 4;   % elongation of the elements in the poloidal direction
 
 % Refinement around the limiter
-nlref = 3;     % refinement on the limiter: number of original layers in the refinement
-lref = 9;       % refinement on the limiter: the number of final layers corresponds to the original one multiplied by this
-factorl = 4;   % refinement on the limiter: intensity
+nlref = 1;     % refinement on the limiter: number of original layers in the refinement
+lref = 3;       % refinement on the limiter: the number of final layers corresponds to the original one multiplied by this
+factorl = 2;   % refinement on the limiter: intensity
 
 % Refinement at the separatrix
-nsref = 3;    % refinement on the separatrix: number of original layers in the refinement
-sref = 4;      % refinement on the separatrix: the number of final layers corresponds to the original one multiplied by this
-factors = 4; % refinement on the separatrix: intensity
+nsref = 1;    % refinement on the separatrix: number of original layers in the refinement
+sref = 2;      % refinement on the separatrix: the number of final layers corresponds to the original one multiplied by this
+factors = 2; % refinement on the separatrix: intensity
 
 %% Define nesting and polynomial degrees
-npol = 1;%1:8;
+npol = 4;%1:8;
 nsiz = 1;%1:7;
 
 %% Working
