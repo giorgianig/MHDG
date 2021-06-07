@@ -519,9 +519,9 @@ CONTAINS
       USE LinearAlgebra, ONLY: tensorsumint, colint
       implicit none
 
-      character(LEN=100) :: fname
-      character(len=100), pointer :: mod_ptr
-      character(len=100), target :: model_string
+      character(LEN=200) :: fname
+      character(len=200), pointer :: mod_ptr
+      character(len=200), target :: model_string
 
       character(70)  :: npr, nid
       integer :: ierr
@@ -778,6 +778,7 @@ integer, allocatable :: indu2D(:), indq2D(:), indu3D(:), indq3D(:), indufp(:), i
       ! Check if the readed solution corresponds to the right model
       IF (simpar%model .ne. model_string) THEN
          WRITE (6, *) "Wrong model in loaded solution"
+	WRITE (6,*) model_string
          STOP
       ENDIF
       CALL HDF5_array1D_reading(file_id, sol%u, 'u')

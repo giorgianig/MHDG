@@ -76,6 +76,23 @@ CONTAINS
 
    END SUBROUTINE cons2phys
 
+   ! ******************************
+    ! Split diffusion terms
+    ! ******************************
+    SUBROUTINE compute_W2(U,W2)
+      real*8, intent(IN) :: U(:)
+      real*8             :: W2
+
+      W2 = U(2)/U(1)
+    END SUBROUTINE compute_W2
+    SUBROUTINE compute_dW2_dU(U,res)
+    real*8, intent(IN) :: U(:)
+    real*8             :: res(:,:)
+    res = 0.
+    res(1,1) = -U(2)/(U(1)**2)
+    res(1,2) = 1./U(1)
+     END SUBROUTINE compute_dW2_dU
+
    !*****************************************
    ! Jacobian matrices
    !****************************************

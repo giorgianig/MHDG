@@ -278,7 +278,7 @@ PROGRAM Convergence
             END IF
             WRITE (6, *) " "
          END DO ! End time loop
-         DEALLOCATE (uiter, u0)
+         DEALLOCATE (uiter)
 
          ! Store results
          CALL computeL2ErrorAnalyticSol(L2err_pt)
@@ -325,6 +325,10 @@ PROGRAM Convergence
       WRITE (6, '(" * ", 55("-"), "*")')
       WRITE (6, *) " "
    END DO
+   
+   CALL HDF5_save_matrix(elSize,'elSize') 
+   CALL HDF5_save_array(L2err,'L2err')
+   CALL HDF5_save_array(Slope,'Slope')
 
    DEALLOCATE (L2err, Nunk, elSize, Slope, Nelv)
 

@@ -109,6 +109,76 @@ CONTAINS
 
    END SUBROUTINE cons2phys
 
+   ! ******************************
+    ! Split diffusion terms
+    ! ******************************
+    SUBROUTINE compute_W2(U,W2)
+      real*8, intent(IN) :: U(:)
+      real*8             :: W2
+
+      W2 = U(2)/U(1)
+    END SUBROUTINE compute_W2
+
+    SUBROUTINE compute_W3(U,W3)
+    real*8, intent(IN) :: U(:)
+    real*8             :: W3(:)
+    real*8 												:: rhovar
+    real*8 												:: sigmavar
+
+    rhovar = (phys%diff_e-phys%diff_u)
+    sigmavar = (phys%diff_n-phys%diff_e)
+
+    W3 = 0.
+    W3(1) = sigmavar*U(3)/U(1) + rhovar*(U(2)/U(1))**2
+    W3(2) = -rhovar*U(2)/U(1)
+    END SUBROUTINE compute_W3
+
+    SUBROUTINE compute_W4(U,W4)
+    real*8, intent(IN) :: U(:)
+    real*8             :: W4
+
+    W4 = U(4)/U(1)
+    END SUBROUTINE compute_W4
+
+
+
+    SUBROUTINE compute_dW2_dU(U,res)
+    real*8, intent(IN) :: U(:)
+    real*8             :: res(:,:)
+    res = 0.
+    res(1,1) = -U(2)/(U(1)**2)
+    res(1,2) = 1./U(1)
+     END SUBROUTINE compute_dW2_dU
+
+      SUBROUTINE compute_dW3_dU(U,res)
+    real*8, intent(IN) :: U(:)
+    real*8             :: res(:,:)
+    real*8 												:: rhovar
+    real*8 												:: sigmavar
+
+    rhovar = (phys%diff_e-phys%diff_u)
+    sigmavar = (phys%diff_n-phys%diff_e)
+
+    res = 0.
+    res(1,1) = -sigmavar*U(3)/(U(1)**2)-2*rhovar*(U(2)**2)/(U(1)**3)
+    res(1,2) = 2*rhovar*U(2)/(U(1)**2)
+    res(1,3) = sigmavar*1./U(1)
+
+    res(2,1) = rhovar*U(2)/(U(1)**2)
+    res(2,2) = -rhovar*1./U(1)
+
+
+     END SUBROUTINE compute_dW3_dU
+
+     SUBROUTINE compute_dW4_dU(U,res)
+    real*8, intent(IN) :: U(:)
+    real*8             :: res(:,:)
+    res = 0.
+    res(1,1) = -U(4)/(U(1)**2)
+    res(1,4) = 1./U(1)
+     END SUBROUTINE compute_dW4_dU
+
+
    !*****************************************
    ! Jacobian matrices
    !****************************************
@@ -373,13 +443,61 @@ CONTAINS
       dV_dU(4, 1) = -1/U(1)**2
    END SUBROUTINE compute_dV_dUe
 
+   !   FUNCTION computeAlphai(U) RESULT(res)
+   !      real*8 :: U(:)
+   !      real*8 :: res, aux
+   !      real, parameter :: tol = 1e-5
+   !      aux = U(3)/U(1) - 0.5*U(2)**2/U(1)**2
+   !      if (aux < tol) aux = tol
+   !      res = aux**phys%epn
+   !   END FUNCTION computeAlphai
+
+   !   FUNCTION computeAlphae(U) RESULT(res)
+   !      real*8 :: U(:)
+   !      real*8 :: res, aux
+   !      real, parameter :: tol = 1e-5
+   !      aux = U(4)/U(1)
+   !      if (aux < tol) aux = tol
+   !      res = aux**phys%epn
+   !   END FUNCTION computeAlphae
+
+   !   SUBROUTINE compute_dAlpha_dUi(U, res)
+   !      real*8, intent(IN) :: U(:)
+   !      real*8, intent(OUT):: res(:)
+   !      real*8             :: aux
+   !      real, parameter :: tol = 1e-5
+   !      aux = U(3)/U(1) - 0.5*U(2)**2/U(1)**2
+   !      if (aux < 0) aux = tol
+   !      res = 0.d0
+   !      res(1) = -U(3)/U(1)**2 + U(2)**2/U(1)**3
+   !      res(2) = -U(2)/U(1)**2
+   !      res(3) = 1./U(1)
+   !      res = phys%epn*aux**(phys%epn - 1)*res
+   !   END SUBROUTINE compute_dAlpha_dUi
+
+   !   SUBROUTINE compute_dAlpha_dUe(U, res)
+   !      real*8, intent(IN) :: U(:)
+   !      real*8, intent(OUT):: res(:)
+   !      real*8             :: aux
+   !      real, parameter :: tol = 1e-5
+   !      aux = U(4)/U(1)
+   !      if (aux < 0) aux = tol
+   !      res(1) = -U(4)/U(1)**2
+   !      res(4) = 1./U(1)
+   !      res = phys%epn*aux**(phys%epn - 1)*res
+   !   END SUBROUTINE compute_dAlpha_dUe
+
    FUNCTION computeAlphai(U) RESULT(res)
       real*8 :: U(:)
       real*8 :: res, aux
       real, parameter :: tol = 1e-5
       aux = U(3)/U(1) - 0.5*U(2)**2/U(1)**2
+   if (2./(3.*phys%Mref)*aux > 1.) then
+   res = (3.*phys%Mref/2)**(phys%epn)
+   else
       if (aux < tol) aux = tol
       res = aux**phys%epn
+   endif
    END FUNCTION computeAlphai
 
    FUNCTION computeAlphae(U) RESULT(res)
@@ -387,8 +505,12 @@ CONTAINS
       real*8 :: res, aux
       real, parameter :: tol = 1e-5
       aux = U(4)/U(1)
+     if (2./(3.*phys%Mref)*aux > 1.) then
+   res = (3.*phys%Mref/2)**(phys%epn)
+   else
       if (aux < tol) aux = tol
       res = aux**phys%epn
+   endif
    END FUNCTION computeAlphae
 
    SUBROUTINE compute_dAlpha_dUi(U, res)
@@ -397,13 +519,18 @@ CONTAINS
       real*8             :: aux
       real, parameter :: tol = 1e-5
       aux = U(3)/U(1) - 0.5*U(2)**2/U(1)**2
+   if (2./(3.*phys%Mref)*aux > 1.) then
+   res = 0.d0
+   else
       if (aux < 0) aux = tol
       res = 0.d0
       res(1) = -U(3)/U(1)**2 + U(2)**2/U(1)**3
       res(2) = -U(2)/U(1)**2
       res(3) = 1./U(1)
       res = phys%epn*aux**(phys%epn - 1)*res
+   endif
    END SUBROUTINE compute_dAlpha_dUi
+
 
    SUBROUTINE compute_dAlpha_dUe(U, res)
       real*8, intent(IN) :: U(:)
@@ -411,11 +538,15 @@ CONTAINS
       real*8             :: aux
       real, parameter :: tol = 1e-5
       aux = U(4)/U(1)
+   if (2./(3.*phys%Mref)*aux > 1.) then
+   res = 0.
+   else
       if (aux < 0) aux = tol
       res = 0.d0
       res(1) = -U(4)/U(1)**2
       res(4) = 1./U(1)
       res = phys%epn*aux**(phys%epn - 1)*res
+   endif
    END SUBROUTINE compute_dAlpha_dUe
 
    ! ******************************
@@ -449,7 +580,13 @@ CONTAINS
       if (U4 < tol) U4 = tol
       if (U1 < tol) U1 = tol
       if (U3 < tol) U3 = tol
-      s = 1./phys%tie*(2./3./phys%Mref)**(-0.5)*(U1**(2.5)/U4**1.5)*(U4 - U3 + 0.5*(U(2)**2/U1))
+
+      if (phys%diff_ee .gt. 0.0380) then
+	 s = 1./(phys%tie*0.0380/phys%diff_ee)*(2./3./phys%Mref)**(-0.5)*(U1**(2.5)/U4**1.5)*(U4-U3+0.5*(U(2)**2/U1))
+      else
+         s = 1./(phys%tie)*(2./3./phys%Mref)**(-0.5)*(U1**(2.5)/U4**1.5)*(U4-U3+0.5*(U(2)**2/U1))
+      endif
+
    END SUBROUTINE compute_s
 
    SUBROUTINE compute_ds_dU(U, res)
@@ -467,7 +604,13 @@ CONTAINS
       res(2) = U(2)*(U1/U4)**1.5
       res(3) = -U1**2.5/U4**1.5
       res(4) = -1.5*(U1/U4)**2.5*(U4 - U3 + 0.5*U(2)**2/U1) + U1**2.5/U4**1.5
-      res = 1./phys%tie*(2./3./phys%Mref)**(-0.5)*res
+
+      if (phys%diff_ee .gt. 0.0380) then
+          res = 1./(phys%tie*0.0380/phys%diff_ee)*(2./3./phys%Mref)**(-0.5)*res
+      else
+         res = 1./(phys%tie)*(2./3./phys%Mref)**(-0.5)*res
+      endif
+
    END SUBROUTINE compute_ds_dU
 
    !***********************************************************************
@@ -515,10 +658,10 @@ CONTAINS
          else
 #endif
             ! Toroidal face
-            tau_aux(1) = tau_aux(1) + phys%diff_n*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
-            tau_aux(2) = tau_aux(2) + phys%diff_u*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
-tau_aux(3) = tau_aux(3) + (phys%diff_e + abs(bn)*phys%diff_pari*up(7)**2.5*bnorm/uc(1))*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
-                tau_aux(4) = tau_aux(4) + (phys%diff_ee + abs(bn)*phys%diff_pare*up(8)**2.5*bnorm/uc(1))*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale               
+            tau_aux(1) = tau_aux(1) + phys%diff_n!*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
+            tau_aux(2) = tau_aux(2) + phys%diff_u!*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
+            tau_aux(3) = tau_aux(3) + phys%diff_e + abs(bn)*phys%diff_pari*up(7)**2.5*bnorm/uc(1)*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
+            tau_aux(4) = tau_aux(4) + phys%diff_ee + abs(bn)*phys%diff_pare*up(8)**2.5*bnorm/uc(1)*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
 #ifdef TOR3D
          endif
 #endif

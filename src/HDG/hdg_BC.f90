@@ -803,9 +803,9 @@ CONTAINS
             delta = 1
             IF ((abs(upg(g,2))) .le. SoundSpeed) THEN
                setval = sn*SoundSpeed
-!                 delta = 1
+                 delta = 1
             ELSE IF ((abs(upg(g,2))) .gt. SoundSpeed) THEN
-!                 delta = 0
+                 delta = 0
                setval = upg(g,2)
             END IF
          END IF
@@ -1037,12 +1037,16 @@ CONTAINS
       real*8           :: qfg(:)
       real*8           :: bn,Abohm(Neq,Neq)
       integer          :: i,j,k,idm,Neqstab,Neqgrad
-      integer*4        :: ind(Npfl),indi(Npfl),indj(Npfl),indk(Npfl)
+      integer*4        :: ind(Npfl),indi(Npfl),indj(Npfl),indk(Npfl),ind_jf(Npfl),ind_kf(Npfl)
       real*8           :: Qpr(Ndim,Neq),kcoeff
       logical          :: fixpotonlim
+      real*8           :: W2, dW2_dU(Neq,Neq), QdW2(Neq,Neq)
+      real*8           :: kmult(Npfl,Npfl)
 #ifdef TEMPERATURE
       real*8           :: Vveci(Neq),Alphai,taui(Ndim,Neq),dV_dUi(Neq,Neq),gmi,dAlpha_dUi(Neq)
       real*8           :: Vvece(Neq),Alphae,taue(Ndim,Neq),dV_dUe(Neq,Neq),gme,dAlpha_dUe(Neq)
+      real*8           :: W3(Neq), dW3_dU(Neq,Neq), QdW3(Neq,Neq)
+      real*8           :: W4, dW4_dU(Neq,Neq), QdW4(Neq,Neq)
 #endif
 
       Neqstab = Neq
@@ -1061,6 +1065,10 @@ CONTAINS
 
       ! Compute Q^T^(k-1)
       Qpr = reshape(qfg,(/Ndim,Neq/))
+
+      CALL compute_W2(uf,W2)
+      CALL compute_dW2_dU(uf,dW2_dU)
+      QdW2 = matmul(Qpr,dW2_dU)
 
       ! Case diagonal matrix stabilization
       IF (numer%stab < 5) THEN
@@ -1103,6 +1111,14 @@ CONTAINS
          ! Compute dV_dU (k-1)
          call compute_dV_dUi(ufg,dV_dUi)
          call compute_dV_dUe(ufg,dV_dUe)
+
+         CALL compute_W3(uf,W3)
+         CALL compute_dW3_dU(uf,dW3_dU)
+         QdW3 = matmul(Qpr,dW3_dU)
+
+         CALL compute_W4(uf,W4)
+         CALL compute_dW4_dU(uf,dW4_dU)
+         QdW4 = matmul(Qpr,dW4_dU)
 
          ! Compute Alpha(U^(k-1))
          Alphai = computeAlphai(ufg)
@@ -1177,6 +1193,46 @@ CONTAINS
                indj = ind_ash + idm + (k - 1)*Ndim
                ! Non-tangent case
                                                                                                       elMat%Alq(ind_ff(indi),ind_fG(indj),iel)=elMat%Alq(ind_ff(indi),ind_fG(indj),iel)-NiNi*(ng(idm)*diffiso(k,k)-bn*bg(idm)*diffani(k,k) ) 
+                IF(k == 2) THEN
+                  ! Assembly LQ
+                  j = 1
+                  ind_kf = ind_ash + idm + (j - 1)*Ndim
+                   kmult = (phys%diff_n-phys%diff_u)*NiNi*W2*(ng(idm) - bn*bg(idm))
+                   elMat%Alq(ind_ff(indi),ind_fG(ind_kf),iel) = elMat%Alq(ind_ff(indi),ind_fG(ind_kf),iel) - kmult
+                ! Assembly LU
+                   DO j=1,Neq
+                     ind_jf = ind_asf+j
+                       kmult = (phys%diff_n-phys%diff_u)*QdW2(idm,j)*NiNi*(ng(idm)-bn*bg(idm))
+                      elMat%All(ind_ff(indi),ind_ff(ind_jf),iel)  = elMat%All(ind_ff(indi),ind_ff(ind_jf),iel) - kmult
+                   END DO
+#ifdef TEMPERATURE
+                ELSEIF (k ==3) THEN
+                    ! Assembly LQ
+                    DO j=1,Neq
+                    ind_kf = ind_ash + idm + (j - 1)*Ndim
+                     kmult = NiNi*W3(j)*(ng(idm) - bn*bg(idm))
+                     elMat%Alq(ind_ff(indi),ind_fG(ind_kf),iel) = elMat%Alq(ind_ff(indi),ind_fG(ind_kf),iel) - kmult
+                   END DO
+                  ! Assembly LU
+                     DO j=1,Neq
+                       ind_jf = ind_asf+j
+                         kmult = QdW3(idm,j)*NiNi*(ng(idm)-bn*bg(idm))
+                        elMat%All(ind_ff(indi),ind_ff(ind_jf),iel)  = elMat%All(ind_ff(indi),ind_ff(ind_jf),iel) - kmult
+                     END DO
+                ELSEIF (k ==4) THEN
+                    ! Assembly LQ
+                    j = 1
+                    ind_kf = ind_ash + idm + (j - 1)*Ndim
+                     kmult = (phys%diff_n-phys%diff_ee)*NiNi*W4*(ng(idm) - bn*bg(idm))
+                     elMat%Alq(ind_ff(indi),ind_fG(ind_kf),iel) = elMat%Alq(ind_ff(indi),ind_fG(ind_kf),iel) - kmult
+                  ! Assembly LU
+                     DO j=1,Neq
+                       ind_jf = ind_asf+j
+                         kmult = (phys%diff_n-phys%diff_ee)*QdW4(idm,j)*NiNi*(ng(idm)-bn*bg(idm))
+                        elMat%All(ind_ff(indi),ind_ff(ind_jf),iel)  = elMat%All(ind_ff(indi),ind_ff(ind_jf),iel) - kmult
+                     END DO
+#endif
+                  END IF
             END DO
          END DO
       ELSE
@@ -1271,4 +1327,3 @@ CONTAINS
    END SUBROUTINE assembly_bohm_bc
 
 END SUBROUTINE HDG_BC
-

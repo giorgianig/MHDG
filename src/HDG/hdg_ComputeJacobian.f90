@@ -1277,15 +1277,17 @@ CONTAINS
       real*8                     :: detJ(Ng2d)
       real*8                     :: iJ11(Ng2d),iJ12(Ng2d)
       real*8                     :: iJ21(Ng2d),iJ22(Ng2d)
-      real*8                     :: fluxg(Ng2d)
+      real*8                      :: fluxg(Ng2d),max_flux2D,min_flux2D
       integer*4,dimension(Npel)     :: ind_ass,ind_asg,ind_asq
       real*8                        :: ktis(time%tis + 1)
       real*8,dimension(Npel)        :: Ni,Nxg,Nyg,NNbb,Nx_ax
       real*8,dimension(Npel,Npel)   :: NxNi,NyNi,NNxy,NNi
       real*8                        :: NxyzNi(Npel,Npel,3),Nxyzg(Npel,3)
+      real*8                      :: Pi,sigma,x0,A
       real*8                        :: upg(Ng2d,phys%npv)
       real*8                        :: Bmod_nod(Npel),b_nod(Npel,3),b(Ng2d,3),Bmod(Ng2d),divbg,driftg(3),gradbmod(3)
-      real*8                        :: diff_iso_vol(Neq,Neq,Ng2d),diff_ani_vol(Neq,Neq,Ng2d)
+      real*8                        :: diff_iso_vol(Neq,Neq,Ng2d),diff_ani_vol(Neq,Neq,Ng2d),r
+      real*8                      :: th_n = 1.e-14
 
       ind_ass = (/(i,i=0,Neq*(Npel - 1),Neq)/)
       ind_asg = (/(i,i=0,Neq*(Npel - 1)*Ndim,Neq*Ndim)/)
@@ -1315,39 +1317,144 @@ CONTAINS
       CALL body_force(xy(:,1),xy(:,2),force)
 
                                                         !! Some sources for West cases
-      IF (switch%testcase .ge. 51 .and. switch%testcase .le. 54) THEN
-         fluxg = matmul(refElPol%N2D,fluxel)
+!      IF (switch%testcase .ge. 51 .and. switch%testcase .le. 54) THEN
+!         fluxg = matmul(refElPol%N2D,fluxel)
+!         DO g = 1,Ng2d
+!               IF (fluxg(g) .le. -0.88 .and. fluxg(g) .ge. -0.90) THEN
+!                  force(g,1) = 4.782676673609557e-05
+!               END IF
+!            ELSE IF (switch%testcase == 52) THEN
+!               IF (fluxg(g) .le. -0.90 .and. fluxg(g) .ge. -1.) THEN
+!                  force(g,1) = 9.45155008295538e-06
+!               END IF
+!            ELSE IF (switch%testcase == 53) THEN
+!               IF (fluxg(g) .le. -0.90) THEN
+!                  force(g,1) = 7.24032211339971e-06
+!               END IF
+!            ELSE IF (switch%testcase == 54) THEN
+!               IF (fluxg(g) .le. -1.03) THEN
+!                  force(g,1) = 0.000115575293741846
+!               END IF
+!            ELSE IF (switch%testcase == 55) THEN
+!               IF (fluxg(g) .le. -0.88 .and. fluxg(g) .ge. -0.90) THEN
+!                  force(g,1) = 10
+!               END IF
+!            END IF
+!#ifdef TEMPERATURE
+!            force(g,3) = 18*force(g,1)
+!            force(g,4) = force(g,3)
+!#endif
+!         END DO
+!      END IF
+
+!! Some sources for West cases
+IF (switch%testcase	.ge.50 .and. switch%testcase	.le.54) THEN
+    fluxg = matmul(refElPol%N2D,phys%magnetic_flux(Mesh%T(iel,:)))
+    max_flux2D = maxval(phys%magnetic_flux)
+    min_flux2D = minval(phys%magnetic_flux)
+    fluxg = (fluxg - min_flux2D)/(max_flux2D - min_flux2D)
          DO g = 1,Ng2d
+      IF (ueg(g,1) .lt. th_n) THEN
+        force(g,1) = th_n - ueg(g,1)
+      ENDIF
+#ifdef NEUTRAL
+      !IF (xy(g,1)*phys%lscale .gt. 2.36 .and. xy(g,2)*phys%lscale .lt. -0.69 ) THEN
+        IF (xy(g,1)*phys%lscale .gt. 2.446 .and. xy(g,1)*phys%lscale .lt. 2.59 .and. xy(g,2)*phys%lscale .gt. -0.7964 .and. xy(g,2)*phys%lscale .lt. -0.7304 ) THEN
+#ifdef MOVINGEQUILIBRIUM
+          force(g,5) = phys%puff_exp(time%it+1)
+#else
+          force(g,5) = phys%puff
+#endif
+        END IF
+#endif
             IF (switch%testcase == 51) THEN
                IF (fluxg(g) .le. -0.88 .and. fluxg(g) .ge. -0.90) THEN
                   !force(g,1) = 3.20119388718018e-05
                   force(g,1) = 4.782676673609557e-05
                END IF
             ELSE IF (switch%testcase == 52) THEN
-               IF (fluxg(g) .le. -0.90 .and. fluxg(g) .ge. -1.) THEN
-                  force(g,1) = 9.45155008295538e-06
-               END IF
+          Pi = 3.1415926535
+          sigma = 0.15
+          x0 = 0.
+          A = (phys%lscale**2)/(2*Pi*sigma**2)
+#ifndef NEUTRAL
+	  if(fluxg(g).le.0.32) then
+          	force(g,1) = 0.5*A*exp(-((fluxg(g) - x0)**2)/(2*sigma**2))
+		force(g,4) = 30.*A*exp(-((fluxg(g) - x0)**2)/(2*sigma**2))
+	  else
+		force(g,1) = 0.
+	        force(g,4) = 0.
+
+	  end if
+#endif
+          force(g,3) = 0.
             ELSE IF (switch%testcase == 53) THEN
                IF (fluxg(g) .le. -0.90) THEN
                   force(g,1) = 7.24032211339971e-06
                END IF
             ELSE IF (switch%testcase == 54) THEN
-               IF (fluxg(g) .le. -1.03) THEN
-                  force(g,1) = 0.000115575293741846
+          Pi = 3.1415926535
+          sigma = 0.22
+          x0 = 0.
+          A = (phys%lscale**2)/(2*Pi*sigma**2)
+          IF (fluxg(g) .le. 0.35) THEN
+#ifndef NEUTRAL
+            force(g,1) = 1.*A*exp(-((fluxg(g) - x0)**2)/(2*sigma**2))
+#endif
                END IF
             ELSE IF (switch%testcase == 55) THEN
-               IF (fluxg(g) .le. -0.88 .and. fluxg(g) .ge. -0.90) THEN
-                  force(g,1) = 10
+           Pi = 3.1415926535
+           sigma = 0.22
+           x0 = 0.
+           A = (phys%lscale**2)/(2*Pi*sigma**2)
+           IF (fluxg(g) .le. 0.35) THEN
+#ifndef NEUTRAL
+              force(g,1) = 1.*A*exp(-((fluxg(g) - x0)**2)/(2*sigma**2))
+#endif
                END IF
             END IF
+        !#ifdef TEMPERATURE
+        !             force(g,3) = 0.*force(g,1)
+        !           force(g,4) = 0.*force(g,3)
+        !#endif
+   END DO
+END IF
+
+!!Some sources for Circular cases
+IF (switch%testcase .ge. 60) THEN
+DO g=1,Ng2D
+!#ifdef NEUTRAL
+!             IF (iel .eq. 104 .or. iel .eq. 251) THEN
+!                force(g,5) = 1.e-05
+!             END IF
+!#endif
+    !DO g=1,Ng2D
+        IF (switch%testcase==61) THEN
+             r =   sqrt ( (xy(g,1)*phys%lscale-geom%R0)**2 +(xy(g,2)*phys%lscale)**2 )
+             IF (r .le. 0.4) THEN
+                 force(g,1) = 0. !2.838272668283863e-05
 #ifdef TEMPERATURE
-            force(g,3) = 18*force(g,1)
+      force(g,3) = 8*2.838272668283863e-05 !force(g,1)
+      force(g,4) = 8*2.838272668283863e-05
+#endif
+             END IF
+ELSE IF (switch%testcase==62) THEN
+#ifdef TEMPERATURE
+  Pi = 3.1415926535
+  sigma = 0.3
+  x0 = geom%R0
+  A = (phys%lscale**2)/(2*Pi*sigma**2)
+  force(g,3) = 18.*A*exp(-((xy(g,1)*phys%lscale - x0)**2 + (xy(g,2)*phys%lscale)**2)/(2*sigma**2))
             force(g,4) = force(g,3)
 #endif
+      END IF
+!#ifdef TEMPERATURE
+!             force(g,3) = 18.*2.838272668283863e-06 !force(g,1)
+!             force(g,4) = force(g,3)
+!#endif
          END DO
       END IF
                                                         !! end sources
-
       !****************************************************
       !                      Magnetic field
       !****************************************************
@@ -1840,7 +1947,7 @@ CONTAINS
       real*8,dimension(neq,neq) :: A
       real*8                    :: kcoeff
       real*8                    :: Qpr(Ndim,Neq),exb(3),bb(3)
-
+      real*8                    :: W2,dW2_dU(Neq,Neq),QdW2(Neq,Neq)
       real*8                    :: qq(3,Neq),b(Ndim)
 
 #ifdef TEMPERATURE
@@ -1849,6 +1956,8 @@ CONTAINS
       real*8                    :: Vveci(Neq),dV_dUi(Neq,Neq),Alphai,dAlpha_dUi(Neq),gmi,taui(Ndim,Neq)
       real*8                    :: Vvece(Neq),dV_dUe(Neq,Neq),Alphae,dAlpha_dUe(Neq),gme,taue(Ndim,Neq)
       real*8                    :: W,dW_dU(Neq,Neq),s,ds_dU(Neq),Zet(ndim,Neq)
+      real*8                    :: W3(Neq),dW3_dU(Neq,Neq),QdW3(Neq,Neq)
+      real*8                    :: W4,dW4_dU(Neq,Neq),QdW4(Neq,Neq)
 #endif
       b = b3(1:Ndim)
 
@@ -1860,6 +1969,11 @@ CONTAINS
 
       ! Compute Q^T^(k-1)
       Qpr = reshape(qe,(/Ndim,Neq/))
+
+
+      CALL compute_W2(ue,W2)
+      CALL compute_dW2_dU(ue,dW2_dU)
+      QdW2 = matmul(Qpr,dW2_dU)
 
       qq = 0.
       qq(1:Ndim,:) = Qpr
@@ -1895,6 +2009,14 @@ CONTAINS
       ! Compute dW_dU(U^(k-1))
       call compute_dW_dU(ue,dW_dU)
 
+      CALL compute_W3(ue,W3)
+      CALL compute_dW3_dU(ue,dW3_dU)
+      QdW3 = matmul(Qpr,dW3_dU)
+
+      CALL compute_W4(ue,W4)
+      CALL compute_dW4_dU(ue,dW4_dU)
+      QdW4 = matmul(Qpr,dW4_dU)
+
       ! Temperature exchange terms
       ! s(U^(k-1))
       call compute_S(ue,s)
@@ -1924,11 +2046,21 @@ CONTAINS
          IF (i == 2) THEN
             ! Curvature contribution (isothermal)
             elMat%Auu(ind_i,ind_i - 1,iel) = elMat%Auu(ind_i,ind_i - 1,iel) - phys%a*divb*NNi
+
+             DO j = 1,Neq
+                ind_j = j + ind_ass
+               ! split diffusion momentum equation (LU)
+                DO k = 1,Ndim
+                   elMat%Auu(ind_i,ind_j,iel) = elMat%Auu(ind_i,ind_j,iel) + (phys%diff_n-phys%diff_u)*(NxyzNi(:,:,k)*QdW2(k,j))
+                END DO
+                   elMat%Auu(ind_i,ind_j,iel) = elMat%Auu(ind_i,ind_j,iel) - (phys%diff_n-phys%diff_u)*(dot_product(QdW2(:,j),b))*NNxy
+              END DO
          END IF
          IF (switch%driftdia) THEN
             ! B x GradB drift (isothermal)
             DO k = 1,Ndim
                elMat%Auu(ind_i,ind_i,iel) = elMat%Auu(ind_i,ind_i,iel) + transpose(NxyzNi(:,:,k))*drift(k)
+
             END DO
          END IF
 #else
@@ -1937,6 +2069,13 @@ CONTAINS
                ind_j = j + ind_ass
                ! Curvature contribution (non-isothermal)
                elMat%Auu(ind_i,ind_j,iel) = elMat%Auu(ind_i,ind_j,iel) - GG(i,j)*NNi
+
+               ! split diffusion momentum equation (LU)
+              DO k = 1,Ndim
+                 elMat%Auu(ind_i,ind_j,iel) = elMat%Auu(ind_i,ind_j,iel) + (phys%diff_n-phys%diff_u)*(NxyzNi(:,:,k)*QdW2(k,j))
+              END DO
+               elMat%Auu(ind_i,ind_j,iel) = elMat%Auu(ind_i,ind_j,iel) - (phys%diff_n-phys%diff_u)*(dot_product(QdW2(:,j),b))*NNxy
+
             END DO
          END IF
 
@@ -1975,8 +2114,17 @@ CONTAINS
                      elMat%Auq(ind_i,ind_k,iel) = elMat%Auq(ind_i,ind_k,iel) - W*NNi*b(k)
                   END IF
                END DO
+
+              ! split diffusion electron energy equation (LU)
+              DO k = 1,Ndim
+                 elMat%Auu(ind_i,ind_j,iel) = elMat%Auu(ind_i,ind_j,iel) + (phys%diff_n-phys%diff_ee)*(NxyzNi(:,:,k)*QdW4(k,j))
+              END DO
+               elMat%Auu(ind_i,ind_j,iel) = elMat%Auu(ind_i,ind_j,iel) - (phys%diff_n-phys%diff_ee)*(dot_product(QdW4(:,j),b))*NNxy
+
             END DO
             elMat%S(ind_i,iel) = elMat%S(ind_i,iel) + coefe*Alphae*(dot_product(matmul(transpose(Taue),b),ue))*NNbb - s*Ni
+
+
          END IF
 #endif
          ! Convection contribution
@@ -1990,6 +2138,28 @@ CONTAINS
             ind_j = ind_asq + k + (i - 1)*Ndim
             ! Diagonal terms for perpendicular diffusion
             elMat%Auq(ind_i,ind_j,iel) = elMat%Auq(ind_i,ind_j,iel) + diffiso(i,i)*NxyzNi(:,:,k) - diffani(i,i)*NNxy*b(k)
+            IF (i==2) THEN
+              DO j = 1,Neq
+                 ind_k = k + (j - 1)*Ndim + ind_asg
+                 IF (j == 1) THEN
+                    elMat%Auq(ind_i,ind_k,iel) = elMat%Auq(ind_i,ind_k,iel) + (phys%diff_n-phys%diff_u)*W2*(NxyzNi(:,:,k) -NNxy*b(k))
+                 END IF
+              END DO
+#ifdef TEMPERATURE
+            ELSEIF(i==3) THEN
+              DO j = 1,Neq
+                ind_k = k + (j - 1)*Ndim + ind_asg
+                    elMat%Auq(ind_i,ind_k,iel) = elMat%Auq(ind_i,ind_k,iel) + W3(j)*(NxyzNi(:,:,k) -NNxy*b(k))
+              END DO
+            ELSEIF(i==4) THEN
+              DO j = 1,Neq
+                 ind_k = k + (j - 1)*Ndim + ind_asg
+                 IF (j == 1) THEN
+                    elMat%Auq(ind_i,ind_k,iel) = elMat%Auq(ind_i,ind_k,iel) + (phys%diff_n-phys%diff_ee)*W4*(NxyzNi(:,:,k) -NNxy*b(k))
+                 END IF
+              END DO
+#endif
+            ENDIF
 
 #ifdef VORTICITY
             IF (switch%driftexb .and. i .ne. 4) THEN
@@ -2070,9 +2240,12 @@ CONTAINS
       real*8                    :: nn(3),qq(3,Neq),bb(3)
       real*8                    :: bn,kmult(size(ind_asf),size(ind_asf)),kmultf(size(ind_asf))
       real*8                    :: Qpr(Ndim,Neq),exb(3)
+      real*8                    :: W2,dW2_dU(Neq,Neq),QdW2(Neq,Neq)
 #ifdef TEMPERATURE
       real*8                    :: Vveci(Neq),dV_dUi(Neq,Neq),Alphai,dAlpha_dUi(Neq),gmi,taui(Ndim,Neq)
       real*8                    :: Vvece(Neq),dV_dUe(Neq,Neq),Alphae,dAlpha_dUe(Neq),gme,taue(Ndim,Neq)
+      real*8                    :: W3(Neq),dW3_dU(Neq,Neq),QdW3(Neq,Neq)
+      real*8                    :: W4,dW4_dU(Neq,Neq),QdW4(Neq,Neq)
 #endif
 
       b = b3(1:Ndim)
@@ -2083,6 +2256,10 @@ CONTAINS
 
       ! Compute Q^T^(k-1)
       Qpr = reshape(qf,(/Ndim,Neq/))
+
+      CALL compute_W2(uf,W2)
+      CALL compute_dW2_dU(uf,dW2_dU)
+      QdW2 = matmul(Qpr,dW2_dU)
 
       nn = 0.
       qq = 0.
@@ -2097,6 +2274,14 @@ CONTAINS
       ! Compute dV_dU (k-1)
       call compute_dV_dUi(uf,dV_dUi)
       call compute_dV_dUe(uf,dV_dUe)
+
+      CALL compute_W3(uf,W3)
+      CALL compute_dW3_dU(uf,dW3_dU)
+      QdW3 = matmul(Qpr,dW3_dU)
+
+      CALL compute_W4(uf,W4)
+      CALL compute_dW4_dU(uf,dW4_dU)
+      QdW4 = matmul(Qpr,dW4_dU)
 
       ! Compute Alpha(U^(k-1))
       Alphai = computeAlphai(uf)
@@ -2123,6 +2308,53 @@ CONTAINS
             ! Diagonal terms for perpendicular diffusion
             elMat%Alq(ind_ff(ind_if),ind_fG(ind_kf),iel) = elMat%Alq(ind_ff(ind_if),ind_fG(ind_kf),iel) - kmult
             elMat%Auq(ind_fe(ind_if),ind_fG(ind_kf),iel) = elMat%Auq(ind_fe(ind_if),ind_fG(ind_kf),iel) - kmult
+
+            IF(i == 2) THEN
+              ! Assembly LQ
+              j = 1
+              ind_kf = ind_ash + k + (j - 1)*Ndim
+               kmult = (phys%diff_n-phys%diff_u)*NNif*W2*(n(k) - bn*b(k))
+               elMat%Alq(ind_ff(ind_if),ind_fG(ind_kf),iel) = elMat%Alq(ind_ff(ind_if),ind_fG(ind_kf),iel) - kmult
+               elMat%Auq(ind_fe(ind_if),ind_fG(ind_kf),iel) = elMat%Auq(ind_fe(ind_if),ind_fG(ind_kf),iel) - kmult
+            ! Assembly LU
+               DO j=1,Neq
+                 ind_jf = ind_asf+j
+                 kmult = (phys%diff_n-phys%diff_u)*QdW2(k,j)*NNif*(n(k)-bn*b(k))
+                 elMat%Aul(ind_fe(ind_if),ind_ff(ind_jf),iel)  = elMat%Aul(ind_fe(ind_if),ind_ff(ind_jf),iel) - kmult
+                 elMat%All(ind_ff(ind_if),ind_ff(ind_jf),iel)  = elMat%All(ind_ff(ind_if),ind_ff(ind_jf),iel) - kmult
+               END DO
+#ifdef TEMPERATURE
+           ELSEIF(i==3) THEN
+              ! Assembly LQ electron energy
+              DO j=1,Neq
+                ind_kf = ind_ash + k + (j - 1)*Ndim
+                 kmult = NNif*W3(j)*(n(k) - bn*b(k))
+                 elMat%Alq(ind_ff(ind_if),ind_fG(ind_kf),iel) = elMat%Alq(ind_ff(ind_if),ind_fG(ind_kf),iel) - kmult
+                 elMat%Auq(ind_fe(ind_if),ind_fG(ind_kf),iel) = elMat%Auq(ind_fe(ind_if),ind_fG(ind_kf),iel) - kmult
+              END DO
+             ! Assembly LU electron energy
+               DO j=1,Neq
+                 ind_jf = ind_asf+j
+                 kmult = QdW3(k,j)*NNif*(n(k)-bn*b(k))
+                 elMat%Aul(ind_fe(ind_if),ind_ff(ind_jf),iel)  = elMat%Aul(ind_fe(ind_if),ind_ff(ind_jf),iel) - kmult
+                 elMat%All(ind_ff(ind_if),ind_ff(ind_jf),iel)  = elMat%All(ind_ff(ind_if),ind_ff(ind_jf),iel) - kmult
+               END DO
+            ELSEIF(i == 4) THEN
+               ! Assembly LQ electron energy
+               j = 1
+               ind_kf = ind_ash + k + (j - 1)*Ndim
+                kmult = (phys%diff_n-phys%diff_ee)*NNif*W4*(n(k) - bn*b(k))
+                elMat%Alq(ind_ff(ind_if),ind_fG(ind_kf),iel) = elMat%Alq(ind_ff(ind_if),ind_fG(ind_kf),iel) - kmult
+                elMat%Auq(ind_fe(ind_if),ind_fG(ind_kf),iel) = elMat%Auq(ind_fe(ind_if),ind_fG(ind_kf),iel) - kmult
+              ! Assembly LU electron energy
+                DO j=1,Neq
+                  ind_jf = ind_asf+j
+                  kmult = (phys%diff_n-phys%diff_ee)*QdW4(k,j)*NNif*(n(k)-bn*b(k))
+                  elMat%Aul(ind_fe(ind_if),ind_ff(ind_jf),iel)  = elMat%Aul(ind_fe(ind_if),ind_ff(ind_jf),iel) - kmult
+                  elMat%All(ind_ff(ind_if),ind_ff(ind_jf),iel)  = elMat%All(ind_ff(ind_if),ind_ff(ind_jf),iel) - kmult
+                END DO
+#endif
+            ENDIF
 #ifdef VORTICITY
 
             IF (switch%driftexb .and. i .ne. 4) THEN
@@ -2262,9 +2494,12 @@ CONTAINS
       real*8                    :: bn,kmult(Npfl,Npfl),kmultf(Npfl)
       real*8                    :: Qpr(Ndim,Neq),exb(3)
       real*8                    :: nn(3),qq(3,Neq),b(Ndim),bb(3)
+      real*8                    :: W2, dW2_dU(Neq,Neq), QdW2(Neq,Neq)
 #ifdef TEMPERATURE
       real*8                    :: Vveci(Neq),dV_dUi(Neq,Neq),Alphai,dAlpha_dUi(Neq),gmi,taui(Ndim,Neq)
       real*8                    :: Vvece(Neq),dV_dUe(Neq,Neq),Alphae,dAlpha_dUe(Neq),gme,taue(Ndim,Neq)
+      real*8                    :: W3(Neq), dW3_dU(Neq,Neq), QdW3(Neq,Neq)
+      real*8                    :: W4, dW4_dU(Neq,Neq), QdW4(Neq,Neq)
 #endif
 
       b = b3(1:Ndim)
@@ -2275,6 +2510,10 @@ CONTAINS
 
       ! Compute Q^T^(k-1)
       Qpr = reshape(qf,(/Ndim,Neq/))
+
+      CALL compute_W2(uf,W2)
+      CALL compute_dW2_dU(uf,dW2_dU)
+      QdW2 = matmul(Qpr,dW2_dU)
 
       nn = 0.
       qq = 0.
@@ -2290,6 +2529,14 @@ CONTAINS
       ! Compute dV_dU (k-1)
       call compute_dV_dUi(uf,dV_dUi)
       call compute_dV_dUe(uf,dV_dUe)
+
+      CALL compute_W3(uf,W3)
+      CALL compute_dW3_dU(uf,dW3_dU)
+      QdW3 = matmul(Qpr,dW3_dU)
+
+      CALL compute_W4(uf,W4)
+      CALL compute_dW4_dU(uf,dW4_dU)
+      QdW4 = matmul(Qpr,dW4_dU)
 
       ! Compute Alpha(U^(k-1))
       Alphai = computeAlphai(uf)
@@ -2312,6 +2559,59 @@ CONTAINS
             kmult = NNif*(n(k)*diffiso(i,i) - bn*b(k)*diffani(i,i))
             ! Diagonal terms for perpendicular diffusion
             elMat%Auq(ind_fe(ind_if),ind_fG(ind_kf),iel) = elMat%Auq(ind_fe(ind_if),ind_fG(ind_kf),iel) - kmult
+            IF(i == 2) THEN
+              ! Assembly LQ
+              j = 1
+              ind_kf = ind_ash + k + (j - 1)*Ndim
+               kmult = (phys%diff_n-phys%diff_u)*NNif*W2*(n(k) - bn*b(k))
+               elMat%Auq(ind_fe(ind_if),ind_fG(ind_kf),iel) = elMat%Auq(ind_fe(ind_if),ind_fG(ind_kf),iel) - kmult
+            ! Assembly LU
+               DO j=1,Neq
+                 ind_jf = ind_asf+j
+                 IF (.not. isdir) THEN
+                  kmult = (phys%diff_n-phys%diff_u)*QdW2(k,j)*NNif*(n(k)-bn*b(k))
+                  elMat%Aul(ind_fe(ind_if),ind_ff(ind_jf),iel)  = elMat%Aul(ind_fe(ind_if),ind_ff(ind_jf),iel) - kmult
+                 ENDIF
+               END DO
+#ifdef TEMPERATURE
+           ELSEIF (i ==3) THEN
+                ! Assembly LQ
+                DO j=1,Neq
+                ind_kf = ind_ash + k + (j - 1)*Ndim
+                 kmult = NNif*W3(j)*(n(k) - bn*b(k))
+                 elMat%Auq(ind_fe(ind_if),ind_fG(ind_kf),iel) = elMat%Auq(ind_fe(ind_if),ind_fG(ind_kf),iel) - kmult
+               END DO
+
+              ! Assembly LU
+                 DO j=1,Neq
+                   ind_jf = ind_asf+j
+                   IF (.not. isdir) THEN
+                     kmult = QdW3(k,j)*NNif*(n(k)-bn*b(k))
+                    elMat%Aul(ind_fe(ind_if),ind_ff(ind_jf),iel)  = elMat%Aul(ind_fe(ind_if),ind_ff(ind_jf),iel) - kmult
+                   ENDIF
+                 END DO
+            ELSEIF (i ==4) THEN
+                ! Assembly LQ
+                j = 1
+                ind_kf = ind_ash + k + (j - 1)*Ndim
+                 kmult = (phys%diff_n-phys%diff_ee)*NNif*W4*(n(k) - bn*b(k))
+                 elMat%Auq(ind_fe(ind_if),ind_fG(ind_kf),iel) = elMat%Auq(ind_fe(ind_if),ind_fG(ind_kf),iel) - kmult
+              ! Assembly LU
+                 DO j=1,Neq
+                   ind_jf = ind_asf+j
+                   IF (.not. isdir) THEN
+                     kmult = (phys%diff_n-phys%diff_ee)*QdW4(k,j)*NNif*(n(k)-bn*b(k))
+                    elMat%Aul(ind_fe(ind_if),ind_ff(ind_jf),iel)  = elMat%Aul(ind_fe(ind_if),ind_ff(ind_jf),iel) - kmult
+                  ENDIF
+                   !ind_jf = ind_asf + j
+                   !IF (.not. isdir) THEN
+                  !    kmult = coefe*(gme*dAlpha_dUe(j) + Alphae*(dot_product(Taue(:,j),b)))*NNif*bn
+                  !    elMat%Aul(ind_fe(ind_if),ind_ff(ind_jf),iel) = elMat%Aul(ind_fe(ind_if),ind_ff(ind_jf),iel) - kmult
+                  ! END IF
+                 END DO
+
+#endif
+              END IF
 #ifdef VORTICITY
             IF (switch%driftexb .and. i .ne. 4) THEN
                ! ExB terms
@@ -2422,4 +2722,3 @@ CONTAINS
    END SUBROUTINE assemblyExtFacesContribution
 
 END SUBROUTINE HDG_computeJacobian
-
