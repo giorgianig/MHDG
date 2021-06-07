@@ -7,7 +7,7 @@ diff_vort_old=$(grep -oP 'diff_vort =\K.+?(?=! diffusion in the vorticity equati
 
 # reset values of diffusion
 sed -i "s/diff_n =$diff_n_old/diff_n = $1 /" param.txt
-sed -i "s/diff_u =$diff_u_old/diff_u = $1 /" param.txt
-sed -i "s/diff_e =$diff_e_old/diff_e = $1 /" param.txt
-sed -i "s/diff_ee =$diff_ee_old/diff_ee = $1 /" param.txt
+sed -i "s/diff_u =$diff_u_old/diff_u = $2 /" param.txt
+sed -i "s/diff_e =$diff_e_old/diff_e = $3 /" param.txt
+sed -i "s/diff_ee =$diff_ee_old/diff_ee = $4 /" param.txt
 sed -i "s/diff_vort =$diff_vort_old/diff_vort = $1 /" param.txt

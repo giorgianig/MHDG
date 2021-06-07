@@ -1,5 +1,5 @@
 &SWITCH_LST
-   steady = .true.   ! Is it a steady state simulation?
+   steady = .false.   ! Is it a steady state simulation?
       ! .false. = time evolving simulation
       ! .true.  = steady state simulation
    axisym = .true. ! Is it an axisymmetric simulation?
@@ -7,10 +7,14 @@
       ! false = no
    driftdia = .false. ! Set to FALSE to ignore diamagnetic drifts terms
    driftexb = .false. ! Set to FALSE to ignore ExB drifts terms
-   testcase = 60       ! Determine the analytical solution and the body forces
-   psdtime  = .false.  ! Reduce the diffusion every time we reach the steady state 
+   testcase = 52       ! Determine the analytical solution and the body forces
+   psdtime  = .true.  ! Reduce the diffusion every time we reach the steady state 
                       ! condition (only works if steady=.false.)
-   diffred  = 0.630957344480193 ! Reduction factor of the diffusion for psdtime simulation
+   !diffred  = 0.630957344480193 ! Reduction factor of the diffusion for psdtime simulation
+   diffred  = 0.664466284737929 ! 0.630957344480193 ! Reduction factor of the diffusion for psdtime simulation    
+   !diffred  = 0.68765602193 ! start from 20 and get down to 1 m2/s in 8 steps   
+   !diffred = 0.657066198 ! start from 20 and get down to 0.3 m2/S in 10 steps
+   !diffred = 0.637640288 ! start from 27 to get down to 0.3 in 10 steps
    diffmin  = 1e-6    ! Minimum value of the diffusion for a psdtime simulation
    shockcp  = 0       ! Shock capturing option
                       ! 0 - No shock capturing
@@ -43,24 +47,24 @@
 /
 
 &NUMER_LST
-   tau(1) = 10.E-0  ! Stabilization parameter 1st equation
-   tau(2) = 10.E-0  ! Stabilization parameter 2nd equation
-   tau(3) = 10.E-0  ! Stabilization parameter 3rd equation
-   tau(4) = 10.E-0  ! Stabilization parameter 4th equation         
-   nrp    = 4     ! Max number of Newton-Raphson iterations
+   tau(1) = 1.    ! Stabilization parameter 1st equation
+   tau(2) = 1.    ! Stabilization parameter 2nd equation
+   tau(3) = 1.    ! Stabilization parameter 3rd equation
+   tau(4) = 1.    ! Stabilization parameter 4th equation         
+   nrp    = 50   ! Max number of Newton-Raphson iterations
    tNR    = 1e-4  ! Tolerance of the Newton-Raphson scheme
    tTM    = 1e-4  ! Tolerance for the steady state achievement
-   div    = 1e9   ! Divergence of Newton-Raphon iteration
+   div    = 1e5   ! Divergence of Newton-Raphon iteration
    sc_coe = 0     ! Shock capturing coefficient 
    minrho = 0.    ! Value of rho to start applying limiting
    so_coe = 0.01  ! Coefficient of the source for limiting rho
    sc_sen = 1.4   ! Shock capturing sensibility
    df_coe = 100.  ! Coefficient of the diffusion for limiting rho
    dc_coe = 0.1   ! Coefficient of the diffusion to add in the corners 
-   thr    = 5.5e-4 ! Min value of density allowed (works only if the switch is activated) 
-   thrpre = 1e-8 ! Min value of pressure allowed (works only if the switch is activated) 
+   thr    = 1e-20  ! Min value of density allowed (works only if the switch is activated) 
+   thrpre = 1e-20  ! Min value of pressure allowed (works only if the switch is activated) 
    stab   = 2     ! Stabilization type
-   dumpnr = 1.   ! Dumping factor for Newton-Raphson (0<dumpnr<1)
+   dumpnr = 0.1    ! Dumping factor for Newton-Raphson (0<dumpnr<1)
    ntor   = 2     ! Number of elements in the toroidal direction
    ptor   = 1     ! Polinomial degree in the toroidal direction
    tmax   = 6.28  ! Max extention in the toroidal direction 
@@ -73,7 +77,9 @@
 /
 
 &TIME_LST
-   dt0 = 1e-5 !7.2800e-3    ! Initial time step
+   dt0 = 1.e9 !7.2800e-3    ! Initial time step   
+   !dt0 = 1.e1
+
    nts = 10000   ! Max number of time iterations to do in the current session (only for transient simulations)
    tfi = 1e5   ! Final time: the simulation stops when this time is reached
    tsw = 0     ! Switch to modify the time step
@@ -84,11 +90,11 @@
 
 &PHYS_LST
    ! ****** Diffusion parameters in m^2/s
-   diff_n = 2. ! diffusion in the continuity equation
-   diff_u = 2. ! diffusion in the momentum equation
-   diff_e = 2. ! perpendicular diffusion for the energy equation
-   diff_ee = 2. ! perpendicular diffusion in the electron temperature equation (for the TiTe model)
-   diff_vort = 2. ! diffusion in the vorticity equation
+   diff_n = 2.26 ! 26.3089764123 diffusion in the continuity equation
+   diff_u = 2.26 ! diffusion in the momentum equation
+   diff_e = 2.26! perpendicular diffusion for the energy equation
+   diff_ee = 2.26 ! perpendicular diffusion in the electron temperature equation (for the TiTe model)
+   diff_vort = 1 ! diffusion in the vorticity equation
    ! ****** Background temperature in the isothermal model in eV (useless in the non-isothermal model)
    Tbg = 50
    ! ****** Boundary conditions: set the correspondance between boundary flag and boundary condition
@@ -97,18 +103,19 @@
    ! condition can exist
    bcflags(1:6) =   1 1 1 1 1 1 
    bcflags(7)   = 50 ! Limiter
-   bcflags(8)   = 5  ! In
+   bcflags(8)   = 2  ! In
    bcflags(9)   = 50 ! Out
    bcflags(10)  = 50 ! Upper Limiter
    ! ****** Boundary threshold for Bohm
-   bohmth = 0.1     ! threshold for imposing the bohm boundary condition
+   bohmth = 0.     ! threshold for imposing the bohm boundary condition
    ! ****** Boundary coefficients for the Bohm boundary condition of the temperature equations:
    Gmbohm = 2.5     ! gamma for Bohm boundary condition for energy equation (usually 7) and for ions energy equation (usually 2.5)
    Gmbohme = 4.5    ! gamma for Bohm boundary condition for electron energy equation (usually 4.5)
    ! ****** Coefficients used only for testcase < 10 (otherwise computed internally)
    a      = 25   ! Isothermal compressibility constant (p = a*rho)
-   Mref   = 12   ! Non-isothermal compressibility constant
-   tie    = 1e30 ! temperature interchange coefficient ions-electrons
+   Mref   = 12.4926   ! Non-isothermal compressibility constant
+   !Mref = 12.5  ! to be used for the isothermal convergence test 
+   tie    = -579.6657 ! temperature interchange coefficient ions-electrons
    diff_pari = 10 ! parallel diffusion for the ions temperature
    diff_pare = 20 ! parallel diffusion for the electron temperature
    diff_pot = 4    ! diffusion in the potential equation (only used for analytic tests)
