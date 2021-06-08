@@ -1,9 +1,9 @@
 &SWITCH_LST
-    steady              = .false.        ! Is it a steady state simulation?
+    steady              = .false.       ! Is it a steady state simulation?
                                         ! .false. = time evolving simulation
                                         ! .true.  = steady state simulation
     axisym              = .true.        ! Is it an axisymmetric simulation?
-                                        ! true = yes
+                                        ! true = yes (even for magnetic perturbation)
                                         ! false = no
     init                = 1             ! Initialization type: 1-analytical at nodes; 2-L2 projection
     driftdia            = .false.       ! Set to FALSE to ignore diamagnetic drifts terms
@@ -29,7 +29,9 @@
                                         ! the position of the corner
     thresh              = 0             ! Use a threshold for limiting the min value of rho
                                         ! 0 - No threshold
-                                        ! 1 - Substitute rho with the threshold at nodes, don't do anything at other variables
+                                        ! 1 - Threshold on conservative values (substitute with numer%thr at nodes)
+                                        ! 2 - Threshold on physical values (substitute with numer%thr or numer%thrpre at nodes)
+                                        ! 3 - Threshold with filtering (substitute with numer%thr or numer%thrpre)
     filter              = .false.       ! Filter solution to avoid oscillation in empty zones
     !****** N-Gamma-Ti-Te model                      
     decoup              = .false.       ! decouple the N-Gamma system from the Ti-Te system       
@@ -54,25 +56,25 @@
     tau(2)              = 1.E-0         ! Stabilization parameter 2nd equation
     tau(3)              = 1.E-0         ! Stabilization parameter 3rd equation
     tau(4)              = 1.E-0         ! Stabilization parameter 4th equation         
-    nrp                 = 50           ! Max number of Newton-Raphson iterations
+    nrp                 = 50            ! Max number of Newton-Raphson iterations
     tNR                 = 1e-4          ! Tolerance of the Newton-Raphson scheme
-    tTM                 = 1e-4          ! Tolerance for the steady state achievement
+    tTM                 = 1e-8          ! Tolerance for the steady state achievement
     div                 = 1e5           ! Divergence of Newton-Raphon iteration
     sc_coe              = 0             ! Shock capturing coefficient 
     sc_sen              = 1.4           ! Shock capturing sensibility
-    minrho              = 1.e-4         ! Value of rho to start applying limiting
+    minrho              = 1.e-9         ! Value of rho to start applying limiting
     so_coe              = 0.01          ! Coefficient of the source for limiting rho
     df_coe              = 100.          ! Coefficient of the diffusion for limiting rho
     dc_coe              = 0.1           ! Coefficient of the diffusion to add in the corners 
     thr                 = 1.e-9         ! Min value of density allowed (works only if the switch is activated) 
     thrpre              = 1.e-9         ! Min value of pressure allowed (works only if the switch is activated) 
-    stab                = 2             ! Stabilization type
+    stab                = 2             ! Stabilization type (from 1 to 4 (5), 2 is good, 5 is a simplified version of 2 only for N-Gamma(-T))
     dumpnr              = 0.1           ! Dumping factor for Newton-Raphson (0<dumpnr<1)
     ntor                = 3             ! Number of elements in the toroidal direction
-    ptor                = 4             ! Polinomial degree in the toroidal direction
+    ptor                = 4             ! Polynomial degree in the toroidal direction
     tmax                = 1.5708        ! Max extention in the toroidal direction 
     npartor             = 1             ! Number of MPI partition in the toroidal direction    
-    bohmtypebc          = 2             ! Implementation of the Bohm bc for Gamma (1-Dirichlet always, 2-Dirichlet+Neumann)   
+    bohmtypebc          = 2             ! Implementation of the Bohm bc for Gamma (0-Old Bohm BC, 1-Dirichlet always, 2-Dirichlet+Neumann)   
     exbdump             = 1.            ! Dumping for ExB drift
 /
 
@@ -97,7 +99,7 @@
 
 
 &TIME_LST
-    dt0                 = 1e9           !7.2800e-3    ! Initial time step
+    dt0                 = 1.e9          ! Initial time step
     nts                 = 10000         ! Max number of time iterations to do in the current session (only for transient simulations)
     tfi                 = 1e5           ! Final time: the simulation stops when this time is reached
     tsw                 = 0             ! Switch to modify the time step
@@ -125,7 +127,7 @@
     bcflags(9)          = 50            ! Out
     bcflags(10)         = 50            ! Upper Limiter
     ! ****** Boundary threshold for Bohm
-    bohmth              = 0.1           ! threshold for imposing the bohm boundary condition
+    bohmth              = 0.0           ! threshold for imposing the bohm boundary condition
     ! ****** Boundary coefficients for the Bohm boundary condition of the temperature equations:
     Gmbohm              = 2.5           ! gamma for Bohm boundary condition for energy equation (usually 7) and for ions energy equation (usually 2.5)
     Gmbohme             = 4.5           ! gamma for Bohm boundary condition for electron energy equation (usually 4.5)
@@ -148,7 +150,7 @@
     printint            = 1             ! how much info we want to print
     dotiming            = true          ! timing of the code
     freqdisp            = 1             ! frequency of result display
-    freqsave            = 10            ! frequency of solution save
+    freqsave            = 1             ! frequency of solution save
 /
 
 
@@ -163,12 +165,12 @@
     rest                = 0             ! Restart 
     istop               = 1             ! Stopping criterion (see spec on the library manual)
     tol                 = 1e-5          ! Stopping tolerance
-    kmethd              = 'BICGSTAB'    ! Krylov method (CG, BICGSTAB, CGS,  BICG, BICGSTABL, RGMRES, FCG, CGR)
-    ptype               = 'ML'          ! Preconditioner type (NONE, DIAG, BJAC,JACOBI, GS, FBGS, BJAC, AS, ML)
+    kmethd              = 'BICGSTAB'    ! Krylov method (CG, CGS, GCR, FCG, BICG, BICGSTAB, BICGSTABL, RGMRES)
+    ptype               = 'JACOBI'      ! Preconditioner type (NONE, DIAG, JACOBI, GS, FBGS, BJAC, AS, ML)
     
     ! Parameters relative to the library MLD2P4
     ! First smoother / 1-lev preconditioner
-    smther              = 'FBGS'        ! Smoother type JACOBI FBGS GS BWGS BJAC AS. For 1-level, repeats previous. 
+    smther              = 'JACOBI'      ! Smoother type JACOBI FBGS GS BWGS BJAC AS. For 1-level, repeats previous. 
     jsweeps             = 1             ! Number of sweeps for smoother
     novr                = 0             ! Number of overlap layers for AS
     restr               = 'HALO'        ! AS restriction operator: NONE HALO 

@@ -48,15 +48,14 @@ MHDG uses the `hdf5` format. An installation of [hwloc](https://www.open-mpi.org
 
 MHDG works with several libraries for the parallelization process:
 
-1. [PaStiX](http://pastix.gforge.inria.fr/files/README-txt.html) (tested with PaStiX 5.2.3)
+1. [SCOTCH](https://gitlab.inria.fr/scotch/scotch) (tested with SCOTCH 6.0.4)
 
-2. [PSBLAS](https://github.com/sfilippone/psblas3) (tested with last version)
+2. [PaStiX](http://pastix.gforge.inria.fr/files/README-txt.html) (tested with PaStiX 5.2.3)
 
-3. [MLD2P-4](https://github.com/sfilippone/mld2p4-2) (tested with last version)
+3. [PSBLAS](https://github.com/sfilippone/psblas3) (tested with last version)
 
-**Note:** not necessary (if not asked by the others libraries)
+4. [MLD2P-4](https://github.com/sfilippone/mld2p4-2) (tested with last version)
 
-4. [SCOTCH](https://gitlab.inria.fr/scotch/scotch) (tested with SCOTCH 6.0.4)
 
 **Note:** As a recommendation, you can install all the libraries in a `lib/libs/` directory. This could help for the compilation of the code in the following part. 
 
@@ -78,22 +77,36 @@ Finally you can compile the code with the command `make` in the `lib/` directory
 - DIM: 2D for the 2D version, 3D for 3D version of the code.
 
 ### Examples
+The syntax to run the code is in serial (OpenMP only):
 
-In the `test/` directory you may try (after checking the `param.txt` file):
+```
+    ./executable* mesh* restart
+```
+**Note:** name with a `*` are mandatory.
+
+- The executable name is always of the form `MHDG-[model]-[parallelization]-[dimension]`
+- The mesh name is of the form `mesh_name.h5` in serial or `mesh_name_i_N.h5` in parallel (with `i = 1...N`). You must always put `mesh*` as `mesh_name`.
+- The restart name must always be of the form `Sol[dimension]_mesh-name_DPe[value]_DPai[value]_DPae[value]` (following part, such as the extension must be ignore in the same manner as for the mesh).
+
+In the `test/` directory you can run:
 
 ```
     ./MHDG-NGamma-serial-2D CircLimAlign_Quads_Nel208_P4
 ```
 To start a OpenMP-only 2D N-Gamma simulation on a circular geometry with infinitely thin limiter.
 
-
+For a parallel simulation (MPI/OpenMP), you must create a mesh subdivided in `N = number of task` part (see Additional content). 
+As an example for a 4 part mesh, you can run in the `test/` directory:
 ```
-    mpifort -n 4 ./MHDG-NGammaTiTe-serial-3D CircLimAlign_Quads_Nel208_P4
+    mpiifort -n 4 ./MHDG-NGammaTiTe-serial-3D CircLimAlign_Quads_Nel208_P4
 ```
-To start a OpenMP/MPI 3D N-Gamma-TiTe simulation on 4 processes, on a circular geometry with infinitely thin limiter.
+To start an OpenMP/MPI 3D N-Gamma-TiTe simulation on 4 processes, on a circular geometry with infinitely thin limiter.
 
-**Note:** You can add a second argument after the mesh to do a restart from a former simulation (it is possible to do so from a 2D to a 3D simulation if the model of equations is the same).
+**Note:** This simulation uses the mesh files `CircLimAlign_Quads_Nel208_P4_i_4.h5` with `i = 1...4`.
 
+In the `test/West/` directory, you may run a WEST simulation either in serial or on 16 tasks. Additional files are necessary (and present) such as the magnetic field `WEST_far_465.h5`or the position of the elements in a node (`positionFeketeNodesTri2D.h5`).
+
+**Note:** In the param file, the WEST case is `testcase = 50`.
 
 ## Additional content
 

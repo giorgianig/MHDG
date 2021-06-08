@@ -681,7 +681,7 @@ CONTAINS
       ELSE
         ! Non constant stabilization
         ! Compute tau in the Gauss points
-        IF (numer%stab < 5) THEN
+        IF (numer%stab < 6) THEN
           CALL computeTauGaussPoints(upgf(g,:),ufg(g,:),b(g,:),Bmod(g),n_g(g,:),iel2,ifa,0.,xyf(g,:),tau)
         ELSE
           CALL computeTauGaussPoints_matrix(upgf(g,:),ufg(g,:),b(g,:),n_g(g,:),xyf(g,:),0.,iel2,tau)
@@ -831,7 +831,7 @@ CONTAINS
         ELSE
           ! Non constant stabilization
           ! Compute tau in the Gauss points
-          IF (numer%stab < 5) THEN
+          IF (numer%stab < 6) THEN
             CALL computeTauGaussPoints(upgf(g,:),ufg(g,:),b(g,:),Bmod(g),n_g(g,:),iel2,ifa,0.,xyf(g,:),tau)
           ELSE
             CALL computeTauGaussPoints_matrix(upgf(g,:),ufg(g,:),b(g,:),n_g(g,:),xyf(g,:),0.,iel2,tau)
@@ -988,7 +988,7 @@ CONTAINS
         ELSE
           ! Non constant stabilization
           ! Compute tau in the Gauss points
-          IF (numer%stab < 5) THEN
+          IF (numer%stab < 6) THEN
             CALL computeTauGaussPoints(upgf(g,:),ufg(g,:),b(g,:),Bmod(g),n_g(g,:),iel2,ifa,isext,xyf(g,:),tau)
           ELSE
             CALL computeTauGaussPoints_matrix(upgf(g,:),ufg(g,:),b(g,:),n_g(g,:),xyf(g,:),isext,iel2,tau)
@@ -1448,7 +1448,7 @@ CONTAINS
       ELSE
         ! Non constant stabilization
         ! Compute tau in the Gauss points
-        IF (numer%stab < 5) THEN
+        IF (numer%stab < 6) THEN
           CALL computeTauGaussPoints(upgf(g,:),ufg(g,:),b(g,:),Bmod(g),n_g,iel,ifa,0.,xyf(g,:),tau)
         ELSE
           CALL computeTauGaussPoints_matrix(upgf(g,:),ufg(g,:),b(g,:),n_g,xyf(g,:),0.,iel,tau)
@@ -1590,7 +1590,7 @@ CONTAINS
       ELSE
         ! Non constant stabilization
         ! Compute tau in the Gauss points
-        IF (numer%stab < 5) THEN
+        IF (numer%stab < 6) THEN
           CALL computeTauGaussPoints(upgf(g,:),ufg(g,:),b(g,:),Bmod(g),n_g,iel,ifa,isext,xyf(g,:),tau)
         ELSE
           CALL computeTauGaussPoints_matrix(upgf(g,:),ufg(g,:),b(g,:),n_g,xyf(g,:),isext,iel,tau)
@@ -2303,7 +2303,7 @@ CONTAINS
       END DO  ! i-Loop
 
       ! Assembly stabilization terms
-      IF (numer%stab < 5) THEN
+      IF (numer%stab < 6) THEN
         DO i = 1,Neq
           ind_if = i + ind_asf
           kmult = tau(i,i)*NNif
@@ -2528,7 +2528,7 @@ CONTAINS
       END DO  ! i-Loop
 
       ! Assembly stabilization terms
-      IF (numer%stab < 5) THEN
+      IF (numer%stab < 6) THEN
         DO i = 1,Neq
           ind_if = i + ind_asf
           kmult = tau(i,i)*NNif

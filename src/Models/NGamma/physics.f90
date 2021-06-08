@@ -257,6 +257,7 @@ CONTAINS
       tau_aux = abs((up(2)*bn))
       tau_aux(1) = tau_aux(1) + phys%diff_n
       tau_aux(2) = tau_aux(2) + phys%diff_u
+
     elseif (numer%stab == 5) then
       tau_aux = max(abs((uc(2) + sqrt(phys%a))*bn/up(1)), abs((uc(2) - sqrt(phys%a))*bn/up(1)))
       tau_aux(1) = tau_aux(1) + phys%diff_n

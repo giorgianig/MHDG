@@ -299,7 +299,7 @@ CONTAINS
         !****************** Stabilization part******************************
         IF (numer%stab > 1) THEN
           ! Compute tau in the Gauss points
-          IF (numer%stab < 5) THEN
+          IF (numer%stab < 6) THEN
             CALL computeTauGaussPoints(upg(g,:),ufg(g,:),b(g,:),Bmod(g),n_g(g,:),iel,ifa,1.,xyf(g,:),tau_stab)
           ELSE
             CALL computeTauGaussPoints_matrix(upg(g,:),ufg(g,:),b(g,:),n_g(g,:),xyf(g,:),1.,iel,tau_stab)
@@ -433,7 +433,7 @@ CONTAINS
         !****************** Stabilization part******************************
         IF (numer%stab > 1) THEN
           ! Compute tau in the Gauss points
-          IF (numer%stab < 5) THEN
+          IF (numer%stab < 6) THEN
             CALL computeTauGaussPoints(upg(g,:),ufg(g,:),b(g,:),Bmod(g),n_g(g,:),iel,ifa,1.,xyf(g,:),tau_stab)
           ELSE
             CALL computeTauGaussPoints_matrix(upg(g,:),ufg(g,:),b(g,:),n_g(g,:),xyf(g,:),1.,iel,tau_stab)
@@ -447,12 +447,13 @@ CONTAINS
         END IF
 
         ! Assembly Bohm contribution
-        !            CALL assembly_bohm_bc_new(iel3,ind_asf,ind_ash,ind_ff,ind_fe,ind_fg,NiNi,Ni,qfg(g,:),ufg(g,:),&
-        !                 &b(g,:),n_g(g,:),tau_stab,setval,delta,diff_iso_fac(:,:,g),diff_ani_fac(:,:,g),ntang)
-
-        CALL assembly_bohm_bc_new(iel3,ind_asf,ind_ash,ind_ff,ind_fe,ind_fg,NiNi,Ni,qfg(g,:),&
-          &ufg(g,:),upg(g,:),b(g,:),n_g(g,:),tau_stab,setval,delta,diff_iso_fac(:,:,g),diff_ani_fac(:,:,g),ntang)
-
+        if (numer%bohmtypebc.eq.0) then
+          CALL assembly_bohm_bc(iel3,ind_asf,ind_ash,ind_ff,ind_fe,ind_fg,NiNi,Ni,qfg(g,:),&
+            &ufg(g,:),b(g,:),n_g(g,:),tau_stab,setval,delta,diff_iso_fac(:,:,g),diff_ani_fac(:,:,g),ntang)
+        else
+          CALL assembly_bohm_bc_new(iel3,ind_asf,ind_ash,ind_ff,ind_fe,ind_fg,NiNi,Ni,qfg(g,:),&
+            &ufg(g,:),upg(g,:),b(g,:),n_g(g,:),tau_stab,setval,delta,diff_iso_fac(:,:,g),diff_ani_fac(:,:,g),ntang)
+        endif
 
       END DO
     END DO
@@ -730,7 +731,7 @@ CONTAINS
       !****************** Stabilization part******************************
       IF (numer%stab > 1) THEN
         ! Compute tau in the Gauss points
-        IF (numer%stab < 5) THEN
+        IF (numer%stab < 6) THEN
           CALL computeTauGaussPoints(upg(g,:),ufg(g,:),b(g,1:2),Bmod(g),n_g,iel,ifa,1.,xyg(g,:),tau_stab)
         ELSE
           CALL computeTauGaussPoints_matrix(upg(g,:),ufg(g,:),b(g,1:2),n_g,xyg(g,:),1.,iel,tau_stab)
@@ -779,7 +780,7 @@ CONTAINS
       !****************** Stabilization part******************************
       IF (numer%stab > 1) THEN
         ! Compute tau in the Gauss points
-        IF (numer%stab < 5) THEN
+        IF (numer%stab < 6) THEN
           CALL computeTauGaussPoints(upg(g,:),ufg(g,:),b(g,1:2),Bmod(g),n_g,iel,ifa,1.,xyg(g,:),tau_stab)
         ELSE
           CALL computeTauGaussPoints_matrix(upg(g,:),ufg(g,:),b(g,1:2),n_g,xyg(g,:),1.,iel,tau_stab)
@@ -939,7 +940,7 @@ CONTAINS
       !****************** Stabilization part******************************
       IF (numer%stab > 1) THEN
         ! Compute tau in the Gauss points
-        IF (numer%stab < 5) THEN
+        IF (numer%stab < 6) THEN
           CALL computeTauGaussPoints(upg(g,:),ufg(g,:),b(g,1:2),Bmod(g),n_g,iel,ifa,1.,xyg(g,:),tau_stab)
         ELSE
           CALL computeTauGaussPoints_matrix(upg(g,:),ufg(g,:),b(g,1:2),n_g,xyg(g,:),1.,iel,tau_stab)
@@ -960,13 +961,15 @@ CONTAINS
       !****************** End stabilization part******************************
 
 
-
       ! Assembly Bohm contribution
-      !         CALL assembly_bohm_bc(iel,ind_asf,ind_ash,ind_ff,ind_fe,ind_fg,NiNi,Ni,qfg(g,:),&
-      !              &ufg(g,:),b(g,1:2),n_g,tau_stab,setval,delta,diff_iso_fac(:,:,g),diff_ani_fac(:,:,g),ntang)
+      if (numer%bohmtypebc.eq.0) then
+        CALL assembly_bohm_bc(iel,ind_asf,ind_ash,ind_ff,ind_fe,ind_fg,NiNi,Ni,qfg(g,:),&
+          &ufg(g,:),b(g,1:2),n_g,tau_stab,setval,delta,diff_iso_fac(:,:,g),diff_ani_fac(:,:,g),ntang)
+      else
+        CALL assembly_bohm_bc_new(iel,ind_asf,ind_ash,ind_ff,ind_fe,ind_fg,NiNi,Ni,qfg(g,:),&
+          &ufg(g,:),upg(g,:),b(g,1:2),n_g,tau_stab,setval,delta,diff_iso_fac(:,:,g),diff_ani_fac(:,:,g),ntang)
+      endif
 
-      CALL assembly_bohm_bc_new(iel,ind_asf,ind_ash,ind_ff,ind_fe,ind_fg,NiNi,Ni,qfg(g,:),&
-        &ufg(g,:),upg(g,:),b(g,1:2),n_g,tau_stab,setval,delta,diff_iso_fac(:,:,g),diff_ani_fac(:,:,g),ntang)
     END DO ! END loop in Gauss points
 
   END SUBROUTINE set_Bohm_bc
@@ -1320,7 +1323,7 @@ CONTAINS
     Qpr = reshape(qfg,(/Ndim,Neq/))
 
     ! Case diagonal matrix stabilization
-    IF (numer%stab < 5) THEN
+    IF (numer%stab < 6) THEN
       DO i = 1,Neqstab
         ind = i + ind_asf
         elMat%All(ind_ff(ind),ind_ff(ind),iel) = elMat%All(ind_ff(ind),ind_ff(ind),iel) - tau(i,i)*NiNi
