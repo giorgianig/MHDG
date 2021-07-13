@@ -287,8 +287,8 @@ SUBROUTINE solve_global_system
     call cpu_time(timing%tpe2)
     call system_clock(timing%cke2, timing%clock_rate2)
     timing%runtcom = timing%runtcom + (timing%cke2 - timing%cks2)/real(timing%clock_rate2)
-    timing%cputcom = timing%cputcom + timing%tpe2 - timing%tps2      
-  end if 
+    timing%cputcom = timing%cputcom + timing%tpe2 - timing%tps2
+  end if
 #endif
 
 

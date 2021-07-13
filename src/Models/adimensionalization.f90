@@ -13,28 +13,25 @@ SUBROUTINE adimensionalization()
   ! Parameters
   real*8, parameter :: mi = 3.35e-27         ! Ionic mass [kg]
   real*8, parameter :: me = 9.109e-31        ! Electronic mass [kg]
-  real*8, parameter :: e = 1.60217662e-19   ! Electron charge [C]
+  real*8, parameter :: e = 1.60217662e-19    ! Electron charge [C]
   real*8, parameter :: kB = 1.38064852e-23   ! Boltzmann constant [m^2*kg*s^-2*K^-1]
   real*8, parameter :: eps0 = 8.85e-12       ! Permittivity of free space [F/m]
 
   ! Reference values
-  real*8, parameter :: L0 = 1.901e-3          ! Length scale [m]
-  real*8, parameter :: t0 = 1.374e-07         ! Time scale [s]
-  ! *** Temperature scale [eV]. It corresponds to the background temperature in the isothermal model
-#ifdef TEMPERATURE
-  real*8, parameter :: Tev = 50                ! Temperature scale [eV].
-#else
+  real*8, parameter :: L0 = 1.901e-3         ! Length scale [m]
+  real*8, parameter :: t0 = 1.374e-07        ! Time scale [s]
+  ! *** Temperature scale [eV]. It corresponds to the background temperature
   real*8           :: Tev                    ! Temperature scale [eV].
-#endif
-  real*8, parameter :: n0 = 1e19              ! Reference density [m^-3]
+
+  real*8, parameter :: n0 = 1e19             ! Reference density [m^-3]
 
   ! Derived reference values
-  real*8           :: u0                    ! Reference speed [m*s^-1]
-  real*8           :: B0                    ! Reference magnetic field [kg*C^-1*s^-1]
-  real*8           :: phi0                  ! Reference electric potential [kg*m^2*C^-1*s^-2]
-  real*8           :: W0                    ! Reference vorticity [kg^-1*C]
-  real*8           :: J0                    ! Reference current density [C*s^-1*m^-2]
-  real*8           :: D0                    ! Reference diffusion [m^2*s^-1]
+  real*8           :: u0                     ! Reference speed [m*s^-1]
+  real*8           :: B0                     ! Reference magnetic field [kg*C^-1*s^-1]
+  real*8           :: phi0                   ! Reference electric potential [kg*m^2*C^-1*s^-2]
+  real*8           :: W0                     ! Reference vorticity [kg^-1*C]
+  real*8           :: J0                     ! Reference current density [C*s^-1*m^-2]
+  real*8           :: D0                     ! Reference diffusion [m^2*s^-1]
 
   ! Values from Stengby
   real*8, parameter :: k0 = 2000             ! Stengby
@@ -42,8 +39,10 @@ SUBROUTINE adimensionalization()
   ! Other reals
   real*8           :: k_star, coef, tau_ie
 
-  ! Set the reference temperature to the background one for the isothermal model
-#ifndef TEMPERATURE
+  ! Set the reference temperature to the background one
+#ifdef TEMPERATURE
+  Tev = 50
+#else
   Tev = phys%Tbg
 #endif
 
@@ -52,6 +51,7 @@ SUBROUTINE adimensionalization()
   simpar%refval_time = 1.
   simpar%refval_temperature = 1.
   simpar%refval_density = 1.
+  simpar%refval_neutral = 1.
   simpar%refval_speed = 1.
   simpar%refval_potential = 1.
   simpar%refval_vorticity = 1.
@@ -66,6 +66,7 @@ SUBROUTINE adimensionalization()
   simpar%refval_time_dimensions = '-'
   simpar%refval_temperature_dimensions = '-'
   simpar%refval_density_dimensions = '-'
+  simpar%refval_neutral_dimensions = '-'
   simpar%refval_speed_dimensions = '-'
   simpar%refval_potential_dimensions = '-'
   simpar%refval_vorticity_dimensions = '-'
@@ -136,6 +137,7 @@ SUBROUTINE adimensionalization()
   phys%diff_ee = phys%diff_ee/D0
   phys%diff_vort = phys%diff_vort/D0
   phys%diff_pot = phys%diff_pot/D0
+  phys%diff_nn = phys%diff_nn/D0
 
   ! Curvature drift coefficient
   phys%dfcoef = 2*Tev*t0/(L0**2*B0)
@@ -146,6 +148,7 @@ SUBROUTINE adimensionalization()
   simpar%refval_time = t0
   simpar%refval_temperature = Tev
   simpar%refval_density = n0
+  simpar%refval_neutral = n0
   simpar%refval_speed = u0
   simpar%refval_potential = phi0
   simpar%refval_vorticity = W0

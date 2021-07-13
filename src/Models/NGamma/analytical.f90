@@ -18,9 +18,9 @@ CONTAINS
 #ifdef TOR3D
 
   !***********************************************************************
-  ! 
+  !
   !                            VERSION 3D TOROIDAL
-  ! 
+  !
   !***********************************************************************
 
   !*****************************************
@@ -236,8 +236,8 @@ CONTAINS
           t8 = cos(a*xx)**2*cos(a*yy)**2
           ta = (xm**2 - 2*ym*yy - 2*xm*xx + xx**2 + ym**2 + yy**2 + 1)
 
-          f(ind,1) = (2*D*a**2*sin(a*xx)*sin(a*yy)-2*a*xm*cos(a*xx)*sin(a*yy)*((xm-xx)**2+(ym-yy)**2+1)**(0.5)+2*a*xx*cos(a*xx)*sin(a*yy)*((xm-xx)**2+(ym-yy)**2+1)**(0.5)+2*a*ym*cos(a*yy)*sin(a*xx)*((xm-xx)**2+(ym-yy)**2+1)**(0.5)-2*a*yy*cos(a*yy)*sin(a*xx)*((xm-xx)**2+(ym-yy)**2+1)**(0.5)+D*a**2*xm**2*sin(a*xx)*sin(a*yy)+D*a**2*xx**2*sin(a*xx)*sin(a*yy)+D*a**2*ym**2*sin(a*xx)*sin(a*yy)+D*a**2*yy**2*sin(a*xx)*sin(a*yy)+D*a*xm*cos(a*xx)*sin(a*yy)-D*a*xx*cos(a*xx)*sin(a*yy)+D*a*ym*cos(a*yy)*sin(a*xx)-D*a*yy*cos(a*yy)*sin(a*xx)+a*xm*cos(a*xx)*cos(a*yy)**2*sin(a*xx)*((xm-xx)**2+(ym-yy)**2+1)**(0.5)-a*xx*cos(a*xx)*cos(a*yy)**2*sin(a*xx)*((xm-xx)**2+(ym-yy)**2+1)**(0.5)-a*ym*cos(a*xx)**2*cos(a*yy)*sin(a*yy)*((xm-xx)**2+(ym-yy)**2+1)**(0.5)+a*yy*cos(a*xx)**2*cos(a*yy)*sin(a*yy)*((xm-xx)**2+(ym-yy)**2+1)**(0.5)-a*xm*cos(a*xx)*sin(a*xx)*sin(a*yy)**2*((xm-xx)**2+(ym-yy)**2+1)**(0.5)+a*xx*cos(a*xx)*sin(a*xx)*sin(a*yy)**2*((xm-xx)**2+(ym-yy)**2+1)**(0.5)+a*ym*cos(a*yy)*sin(a*xx)**2*sin(a*yy)*((xm-xx)**2+(ym-yy)**2+1)**(0.5)-a*yy*cos(a*yy)*sin(a*xx)**2*sin(a*yy)*((xm-xx)**2+(ym-yy)**2+1)**(0.5)-2*D*a**2*xm*ym*cos(a*xx)*cos(a*yy)+2*D*a**2*xx*ym*cos(a*xx)*cos(a*yy)+2*D*a**2*xm*yy*cos(a*xx)*cos(a*yy)-2*D*a**2*xx*yy*cos(a*xx)*cos(a*yy)-2*D*a**2*xm*xx*sin(a*xx)*sin(a*yy)-2*D*a**2*ym*yy*sin(a*xx)*sin(a*yy))/((xm-xx)**2+(ym-yy)**2+1); 
-          f(ind,2) = ((a*mu*xx*sin(2*a*yy))/2-(a*mu*xm*sin(2*a*yy))/2-(a*mu*ym*sin(2*a*xx))/2+(a*mu*yy*sin(2*a*xx))/2-2*a**2*mu*xm*ym+2*a**2*mu*xx*ym+2*a**2*mu*xm*yy-2*a**2*mu*xx*yy+4*a**2*mu*cos(a*xx)*cos(a*yy)+4*a**2*mu*xm*ym*cos(a*xx)**2-4*a**2*mu*xx*ym*cos(a*xx)**2-4*a**2*mu*xm*yy*cos(a*xx)**2+4*a**2*mu*xx*yy*cos(a*xx)**2+4*a**2*mu*xm*ym*cos(a*yy)**2-4*a**2*mu*xx*ym*cos(a*yy)**2-4*a**2*mu*xm*yy*cos(a*yy)**2+4*a**2*mu*xx*yy*cos(a*yy)**2+2*a**2*mu*xm**2*cos(a*xx)*cos(a*yy)+2*a**2*mu*xx**2*cos(a*xx)*cos(a*yy)+2*a**2*mu*ym**2*cos(a*xx)*cos(a*yy)+2*a**2*mu*yy**2*cos(a*xx)*cos(a*yy)-2*a*mu*xm*cos(a*yy)*sin(a*xx)+2*a*mu*xx*cos(a*yy)*sin(a*xx)-2*a*mu*ym*cos(a*xx)*sin(a*yy)+2*a*mu*yy*cos(a*xx)*sin(a*yy)+8*a**2*mu*cos(a*xx)*cos(a*yy)*sin(a*xx)*sin(a*yy)-2*a*xm*cos(a*xx)**2*cos(a*yy)*sin(a*xx)*(xm**2-2*ym*yy-2*xm*xx+xx**2+ym**2+yy**2+1)**(0.5)+2*a*xx*cos(a*xx)**2*cos(a*yy)*sin(a*xx)*(xm**2-2*ym*yy-2*xm*xx+xx**2+ym**2+yy**2+1)**(0.5)+4*a*ym*cos(a*xx)*cos(a*yy)**2*sin(a*xx)*(xm**2-2*ym*yy-2*xm*xx+xx**2+ym**2+yy**2+1)**(0.5)-4*a*xm*cos(a*xx)**2*cos(a*yy)*sin(a*yy)*(xm**2-2*ym*yy-2*xm*xx+xx**2+ym**2+yy**2+1)**(0.5)+4*a*xx*cos(a*xx)**2*cos(a*yy)*sin(a*yy)*(xm**2-2*ym*yy-2*xm*xx+xx**2+ym**2+yy**2+1)**(0.5)-4*a*yy*cos(a*xx)*cos(a*yy)**2*sin(a*xx)*(xm**2-2*ym*yy-2*xm*xx+xx**2+ym**2+yy**2+1)**(0.5)+2*a*ym*cos(a*xx)*cos(a*yy)**2*sin(a*yy)*(xm**2-2*ym*yy-2*xm*xx+xx**2+ym**2+yy**2+1)**(0.5)-2*a*yy*cos(a*xx)*cos(a*yy)**2*sin(a*yy)*(xm**2-2*ym*yy-2*xm*xx+xx**2+ym**2+yy**2+1)**(0.5)-8*a**2*mu*xm*ym*cos(a*xx)**2*cos(a*yy)**2+8*a**2*mu*xx*ym*cos(a*xx)**2*cos(a*yy)**2+8*a**2*mu*xm*yy*cos(a*xx)**2*cos(a*yy)**2-8*a**2*mu*xx*yy*cos(a*xx)**2*cos(a*yy)**2+3*a*xm*cos(a*xx)**2*cos(a*yy)**3*sin(a*xx)*(xm**2-2*ym*yy-2*xm*xx+xx**2+ym**2+yy**2+1)**(0.5)-3*a*xx*cos(a*xx)**2*cos(a*yy)**3*sin(a*xx)*(xm**2-2*ym*yy-2*xm*xx+xx**2+ym**2+yy**2+1)**(0.5)-3*a*ym*cos(a*xx)**3*cos(a*yy)**2*sin(a*yy)*(xm**2-2*ym*yy-2*xm*xx+xx**2+ym**2+yy**2+1)**(0.5)+3*a*yy*cos(a*xx)**3*cos(a*yy)**2*sin(a*yy)*(xm**2-2*ym*yy-2*xm*xx+xx**2+ym**2+yy**2+1)**(0.5)+a*k*xm*cos(a*yy)*sin(a*xx)*(xm**2-2*ym*yy-2*xm*xx+xx**2+ym**2+yy**2+1)**(0.5)-a*k*xx*cos(a*yy)*sin(a*xx)*(xm**2-2*ym*yy-2*xm*xx+xx**2+ym**2+yy**2+1)**(0.5)-a*k*ym*cos(a*xx)*sin(a*yy)*(xm**2-2*ym*yy-2*xm*xx+xx**2+ym**2+yy**2+1)**(0.5)+a*k*yy*cos(a*xx)*sin(a*yy)*(xm**2-2*ym*yy-2*xm*xx+xx**2+ym**2+yy**2+1)**(0.5)-4*a**2*mu*xm*xx*cos(a*xx)*cos(a*yy)-4*a**2*mu*ym*yy*cos(a*xx)*cos(a*yy)-4*a**2*mu*xm*ym*sin(a*xx)*sin(a*yy)+4*a**2*mu*xx*ym*sin(a*xx)*sin(a*yy)+4*a**2*mu*xm*yy*sin(a*xx)*sin(a*yy)-4*a**2*mu*xx*yy*sin(a*xx)*sin(a*yy)+2*a*mu*ym*cos(a*xx)*cos(a*yy)**2*sin(a*xx)+2*a*mu*xm*cos(a*xx)**2*cos(a*yy)*sin(a*yy)-2*a*mu*xx*cos(a*xx)**2*cos(a*yy)*sin(a*yy)-2*a*mu*yy*cos(a*xx)*cos(a*yy)**2*sin(a*xx)+4*a**2*mu*xm**2*cos(a*xx)*cos(a*yy)*sin(a*xx)*sin(a*yy)+4*a**2*mu*xx**2*cos(a*xx)*cos(a*yy)*sin(a*xx)*sin(a*yy)+4*a**2*mu*ym**2*cos(a*xx)*cos(a*yy)*sin(a*xx)*sin(a*yy)+4*a**2*mu*yy**2*cos(a*xx)*cos(a*yy)*sin(a*xx)*sin(a*yy)-8*a**2*mu*xm*xx*cos(a*xx)*cos(a*yy)*sin(a*xx)*sin(a*yy)-8*a**2*mu*ym*yy*cos(a*xx)*cos(a*yy)*sin(a*xx)*sin(a*yy))/(xm**2-2*ym*yy-2*xm*xx+xx**2+ym**2+yy**2+1); 
+          f(ind,1) = (2*D*a**2*sin(a*xx)*sin(a*yy)-2*a*xm*cos(a*xx)*sin(a*yy)*((xm-xx)**2+(ym-yy)**2+1)**(0.5)+2*a*xx*cos(a*xx)*sin(a*yy)*((xm-xx)**2+(ym-yy)**2+1)**(0.5)+2*a*ym*cos(a*yy)*sin(a*xx)*((xm-xx)**2+(ym-yy)**2+1)**(0.5)-2*a*yy*cos(a*yy)*sin(a*xx)*((xm-xx)**2+(ym-yy)**2+1)**(0.5)+D*a**2*xm**2*sin(a*xx)*sin(a*yy)+D*a**2*xx**2*sin(a*xx)*sin(a*yy)+D*a**2*ym**2*sin(a*xx)*sin(a*yy)+D*a**2*yy**2*sin(a*xx)*sin(a*yy)+D*a*xm*cos(a*xx)*sin(a*yy)-D*a*xx*cos(a*xx)*sin(a*yy)+D*a*ym*cos(a*yy)*sin(a*xx)-D*a*yy*cos(a*yy)*sin(a*xx)+a*xm*cos(a*xx)*cos(a*yy)**2*sin(a*xx)*((xm-xx)**2+(ym-yy)**2+1)**(0.5)-a*xx*cos(a*xx)*cos(a*yy)**2*sin(a*xx)*((xm-xx)**2+(ym-yy)**2+1)**(0.5)-a*ym*cos(a*xx)**2*cos(a*yy)*sin(a*yy)*((xm-xx)**2+(ym-yy)**2+1)**(0.5)+a*yy*cos(a*xx)**2*cos(a*yy)*sin(a*yy)*((xm-xx)**2+(ym-yy)**2+1)**(0.5)-a*xm*cos(a*xx)*sin(a*xx)*sin(a*yy)**2*((xm-xx)**2+(ym-yy)**2+1)**(0.5)+a*xx*cos(a*xx)*sin(a*xx)*sin(a*yy)**2*((xm-xx)**2+(ym-yy)**2+1)**(0.5)+a*ym*cos(a*yy)*sin(a*xx)**2*sin(a*yy)*((xm-xx)**2+(ym-yy)**2+1)**(0.5)-a*yy*cos(a*yy)*sin(a*xx)**2*sin(a*yy)*((xm-xx)**2+(ym-yy)**2+1)**(0.5)-2*D*a**2*xm*ym*cos(a*xx)*cos(a*yy)+2*D*a**2*xx*ym*cos(a*xx)*cos(a*yy)+2*D*a**2*xm*yy*cos(a*xx)*cos(a*yy)-2*D*a**2*xx*yy*cos(a*xx)*cos(a*yy)-2*D*a**2*xm*xx*sin(a*xx)*sin(a*yy)-2*D*a**2*ym*yy*sin(a*xx)*sin(a*yy))/((xm-xx)**2+(ym-yy)**2+1);
+          f(ind,2) = ((a*mu*xx*sin(2*a*yy))/2-(a*mu*xm*sin(2*a*yy))/2-(a*mu*ym*sin(2*a*xx))/2+(a*mu*yy*sin(2*a*xx))/2-2*a**2*mu*xm*ym+2*a**2*mu*xx*ym+2*a**2*mu*xm*yy-2*a**2*mu*xx*yy+4*a**2*mu*cos(a*xx)*cos(a*yy)+4*a**2*mu*xm*ym*cos(a*xx)**2-4*a**2*mu*xx*ym*cos(a*xx)**2-4*a**2*mu*xm*yy*cos(a*xx)**2+4*a**2*mu*xx*yy*cos(a*xx)**2+4*a**2*mu*xm*ym*cos(a*yy)**2-4*a**2*mu*xx*ym*cos(a*yy)**2-4*a**2*mu*xm*yy*cos(a*yy)**2+4*a**2*mu*xx*yy*cos(a*yy)**2+2*a**2*mu*xm**2*cos(a*xx)*cos(a*yy)+2*a**2*mu*xx**2*cos(a*xx)*cos(a*yy)+2*a**2*mu*ym**2*cos(a*xx)*cos(a*yy)+2*a**2*mu*yy**2*cos(a*xx)*cos(a*yy)-2*a*mu*xm*cos(a*yy)*sin(a*xx)+2*a*mu*xx*cos(a*yy)*sin(a*xx)-2*a*mu*ym*cos(a*xx)*sin(a*yy)+2*a*mu*yy*cos(a*xx)*sin(a*yy)+8*a**2*mu*cos(a*xx)*cos(a*yy)*sin(a*xx)*sin(a*yy)-2*a*xm*cos(a*xx)**2*cos(a*yy)*sin(a*xx)*(xm**2-2*ym*yy-2*xm*xx+xx**2+ym**2+yy**2+1)**(0.5)+2*a*xx*cos(a*xx)**2*cos(a*yy)*sin(a*xx)*(xm**2-2*ym*yy-2*xm*xx+xx**2+ym**2+yy**2+1)**(0.5)+4*a*ym*cos(a*xx)*cos(a*yy)**2*sin(a*xx)*(xm**2-2*ym*yy-2*xm*xx+xx**2+ym**2+yy**2+1)**(0.5)-4*a*xm*cos(a*xx)**2*cos(a*yy)*sin(a*yy)*(xm**2-2*ym*yy-2*xm*xx+xx**2+ym**2+yy**2+1)**(0.5)+4*a*xx*cos(a*xx)**2*cos(a*yy)*sin(a*yy)*(xm**2-2*ym*yy-2*xm*xx+xx**2+ym**2+yy**2+1)**(0.5)-4*a*yy*cos(a*xx)*cos(a*yy)**2*sin(a*xx)*(xm**2-2*ym*yy-2*xm*xx+xx**2+ym**2+yy**2+1)**(0.5)+2*a*ym*cos(a*xx)*cos(a*yy)**2*sin(a*yy)*(xm**2-2*ym*yy-2*xm*xx+xx**2+ym**2+yy**2+1)**(0.5)-2*a*yy*cos(a*xx)*cos(a*yy)**2*sin(a*yy)*(xm**2-2*ym*yy-2*xm*xx+xx**2+ym**2+yy**2+1)**(0.5)-8*a**2*mu*xm*ym*cos(a*xx)**2*cos(a*yy)**2+8*a**2*mu*xx*ym*cos(a*xx)**2*cos(a*yy)**2+8*a**2*mu*xm*yy*cos(a*xx)**2*cos(a*yy)**2-8*a**2*mu*xx*yy*cos(a*xx)**2*cos(a*yy)**2+3*a*xm*cos(a*xx)**2*cos(a*yy)**3*sin(a*xx)*(xm**2-2*ym*yy-2*xm*xx+xx**2+ym**2+yy**2+1)**(0.5)-3*a*xx*cos(a*xx)**2*cos(a*yy)**3*sin(a*xx)*(xm**2-2*ym*yy-2*xm*xx+xx**2+ym**2+yy**2+1)**(0.5)-3*a*ym*cos(a*xx)**3*cos(a*yy)**2*sin(a*yy)*(xm**2-2*ym*yy-2*xm*xx+xx**2+ym**2+yy**2+1)**(0.5)+3*a*yy*cos(a*xx)**3*cos(a*yy)**2*sin(a*yy)*(xm**2-2*ym*yy-2*xm*xx+xx**2+ym**2+yy**2+1)**(0.5)+a*k*xm*cos(a*yy)*sin(a*xx)*(xm**2-2*ym*yy-2*xm*xx+xx**2+ym**2+yy**2+1)**(0.5)-a*k*xx*cos(a*yy)*sin(a*xx)*(xm**2-2*ym*yy-2*xm*xx+xx**2+ym**2+yy**2+1)**(0.5)-a*k*ym*cos(a*xx)*sin(a*yy)*(xm**2-2*ym*yy-2*xm*xx+xx**2+ym**2+yy**2+1)**(0.5)+a*k*yy*cos(a*xx)*sin(a*yy)*(xm**2-2*ym*yy-2*xm*xx+xx**2+ym**2+yy**2+1)**(0.5)-4*a**2*mu*xm*xx*cos(a*xx)*cos(a*yy)-4*a**2*mu*ym*yy*cos(a*xx)*cos(a*yy)-4*a**2*mu*xm*ym*sin(a*xx)*sin(a*yy)+4*a**2*mu*xx*ym*sin(a*xx)*sin(a*yy)+4*a**2*mu*xm*yy*sin(a*xx)*sin(a*yy)-4*a**2*mu*xx*yy*sin(a*xx)*sin(a*yy)+2*a*mu*ym*cos(a*xx)*cos(a*yy)**2*sin(a*xx)+2*a*mu*xm*cos(a*xx)**2*cos(a*yy)*sin(a*yy)-2*a*mu*xx*cos(a*xx)**2*cos(a*yy)*sin(a*yy)-2*a*mu*yy*cos(a*xx)*cos(a*yy)**2*sin(a*xx)+4*a**2*mu*xm**2*cos(a*xx)*cos(a*yy)*sin(a*xx)*sin(a*yy)+4*a**2*mu*xx**2*cos(a*xx)*cos(a*yy)*sin(a*xx)*sin(a*yy)+4*a**2*mu*ym**2*cos(a*xx)*cos(a*yy)*sin(a*xx)*sin(a*yy)+4*a**2*mu*yy**2*cos(a*xx)*cos(a*yy)*sin(a*xx)*sin(a*yy)-8*a**2*mu*xm*xx*cos(a*xx)*cos(a*yy)*sin(a*xx)*sin(a*yy)-8*a**2*mu*ym*yy*cos(a*xx)*cos(a*yy)*sin(a*xx)*sin(a*yy))/(xm**2-2*ym*yy-2*xm*xx+xx**2+ym**2+yy**2+1);
           !                                                                                                                f(ind,1) = (2*D*a**2*t2-2*a*xm*t3*((xm-xx)**2+(ym-yy)**2+1)**(0.5)+2*a*xx*t3*((xm-xx)**2+(ym-yy)**2+1)**(0.5)+2*a*ym*t4*((xm-xx)**2+(ym-yy)**2+1)**(0.5)-2*a*yy*t4*((xm-xx)**2+(ym-yy)**2+1)**(0.5)+D*a**2*xm**2*t2+D*a**2*xx**2*t2+D*a**2*ym**2*t2+D*a**2*yy**2*t2+D*a*xm*t3-D*a*xx*t3+D*a*ym*t4-D*a*yy*t4+a*xm*t1**2*sin(a*xx)*((xm-xx)**2+(ym-yy)**2+1)**(0.5)-a*xx*t1**2*sin(a*xx)*((xm-xx)**2+(ym-yy)**2+1)**(0.5)-a*ym*cos(a*xx)**2*t5*((xm-xx)**2+(ym-yy)**2+1)**(0.5)+a*yy*cos(a*xx)**2*t5*((xm-xx)**2+(ym-yy)**2+1)**(0.5)-a*xm*cos(a*xx)*t2**2*((xm-xx)**2+(ym-yy)**2+1)**(0.5)+a*xx*cos(a*xx)*t2**2*((xm-xx)**2+(ym-yy)**2+1)**(0.5)+a*ym*t4**2*sin(a*yy)*((xm-xx)**2+(ym-yy)**2+1)**(0.5)-a*yy*t4**2*sin(a*yy)*((xm-xx)**2+(ym-yy)**2+1)**(0.5)-2*D*a**2*xm*ym*t1+2*D*a**2*xx*ym*t1+2*D*a**2*xm*yy*t1-2*D*a**2*xx*yy*t1-2*D*a**2*xm*xx*t2-2*D*a**2*ym*yy*t2)/((xm-xx)**2+(ym-yy)**2+1)
           !                                                                                                                f(ind,2) = ((a*mu*xx*sin(2*a*yy))/2-(a*mu*xm*sin(2*a*yy))/2-(a*mu*ym*sin(2*a*xx))/2+(a*mu*yy*sin(2*a*xx))/2-2*a**2*mu*xm*ym+2*a**2*mu*xx*ym+2*a**2*mu*xm*yy-2*a**2*mu*xx*yy+4*a**2*mu*t1+4*a**2*mu*xm*ym*cos(a*xx)**2-4*a**2*mu*xx*ym*cos(a*xx)**2-4*a**2*mu*xm*yy*cos(a*xx)**2+4*a**2*mu*xx*yy*cos(a*xx)**2+4*a**2*mu*xm*ym*cos(a*yy)**2-4*a**2*mu*xx*ym*cos(a*yy)**2-4*a**2*mu*xm*yy*cos(a*yy)**2+4*a**2*mu*xx*yy*cos(a*yy)**2+2*a**2*mu*xm**2*t1+2*a**2*mu*xx**2*t1+2*a**2*mu*ym**2*t1+2*a**2*mu*yy**2*t1-2*a*mu*xm*t4+2*a*mu*xx*t4-2*a*mu*ym*t3+2*a*mu*yy*t3+8*a**2*mu*t1*t2-2*a*xm*cos(a*xx)**2*t4*ta**(0.5)+2*a*xx*cos(a*xx)**2*t4*ta**(0.5)+4*a*ym*t1**2*sin(a*xx)*ta**(0.5)-4*a*xm*cos(a*xx)**2*t5*ta**(0.5)+4*a*xx*cos(a*xx)**2*t5*ta**(0.5)-4*a*yy*t1**2*sin(a*xx)*ta**(0.5)+2*a*ym*t1**2*sin(a*yy)*ta**(0.5)-2*a*yy*t1**2*sin(a*yy)*ta**(0.5)-8*a**2*mu*xm*ym*t8+8*a**2*mu*xx*ym*t8+8*a**2*mu*xm*yy*t8-8*a**2*mu*xx*yy*t8+3*a*xm*cos(a*xx)**2*cos(a*yy)**3*sin(a*xx)*ta**(0.5)-3*a*xx*cos(a*xx)**2*cos(a*yy)**3*sin(a*xx)*ta**(0.5)-3*a*ym*cos(a*xx)**3*cos(a*yy)**2*sin(a*yy)*ta**(0.5)+3*a*yy*cos(a*xx)**3*cos(a*yy)**2*sin(a*yy)*ta**(0.5)+a*k*xm*t4*ta**(0.5)-a*k*xx*t4*ta**(0.5)-a*k*ym*t3*ta**(0.5)+a*k*yy*t3*ta**(0.5)-4*a**2*mu*xm*xx*t1-4*a**2*mu*ym*yy*t1-4*a**2*mu*xm*ym*t2+4*a**2*mu*xx*ym*t2+4*a**2*mu*xm*yy*t2-4*a**2*mu*xx*yy*t2+2*a*mu*ym*t1**2*sin(a*xx)+2*a*mu*xm*cos(a*xx)**2*t5-2*a*mu*xx*cos(a*xx)**2*t5-2*a*mu*yy*t1**2*sin(a*xx)+4*a**2*mu*xm**2*t1*t2+4*a**2*mu*xx**2*t1*t2+4*a**2*mu*ym**2*t1*t2+4*a**2*mu*yy**2*t1*t2-8*a**2*mu*xm*xx*t1*t2-8*a**2*mu*ym*yy*t1*t2)/ta
         CASE (2)
@@ -487,9 +487,9 @@ CONTAINS
   END SUBROUTINE body_force
 #else
   !***********************************************************************
-  ! 
+  !
   !                            VERSION 2D
-  ! 
+  !
   !***********************************************************************
   !*****************************************
   ! Analytical solution
@@ -537,7 +537,7 @@ CONTAINS
         WRITE (6,*) "This is NOT an axisymmetric test case!"
         stop
       END IF
-      ! 
+      !
       smod = 1.
       rs = 0.04/simpar%refval_length
       xsource = xm-0.5*(xmax-xm)
@@ -555,7 +555,7 @@ CONTAINS
         WRITE (6,*) "This is an axisymmetric test case!"
         stop
       END IF
-      ! 
+      !
       smod = 1.
       rs = 0.04/simpar%refval_length
       xsource = xm-0.5*(xmax-xm)
@@ -572,6 +572,9 @@ CONTAINS
     CASE (50:64)
       up(:, 1) = 1.
       up(:, 2) = 0.
+#ifdef NEUTRAL
+      up(:,3)  = 0.
+#endif
     CASE (65)
       up(:, 1) = 1.
       up(:, 2) = 0.
@@ -645,7 +648,7 @@ CONTAINS
     if (switch%logrho) then
       ux(:,1) = upx(:,1)/up(:,1)
       uy(:,1) = upy(:,1)/up(:,1)
-    else 
+    else
       ux(:, 1) = upx(:, 1)
       uy(:, 1) = upy(:, 1)
     end if

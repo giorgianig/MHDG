@@ -197,7 +197,7 @@ SUBROUTINE HDG_assembly()
 
 #ifdef PARALL
       delta = 1 + (itor-1)*((Nel-Nghoste)*blkp + (Nfaces-Ndirf-Nghostf)*blkt) +&
-        &(/ (Easind(iel)-1)*blkp,(Nel-Nghoste)*blkp+(Fasind(Fe)-1)*blkt,(Nel-Nghoste)*blkp+(Nfaces-Ndirf-Nghostf)*blkt+(Easind(iel)-1)*blkp /)        
+        &(/ (Easind(iel)-1)*blkp,(Nel-Nghoste)*blkp+(Fasind(Fe)-1)*blkt,(Nel-Nghoste)*blkp+(Nfaces-Ndirf-Nghostf)*blkt+(Easind(iel)-1)*blkp /)
       shiftGlob3d = 1 + (itorg-1)*(Mesh%Nel_glob*blkp + (Mesh%Nfa_glob-Mesh%Ndir_glob)*blkt) + (/(Mesh%loc2glob_el(iel)-1)*blkp, &
         & Mesh%Nel_glob*blkp+(Mesh%loc2glob_fa(Fe)-1)*blkt, Mesh%Nel_glob*blkp+(Mesh%Nfa_glob-Mesh%Ndir_glob )*blkt+(Mesh%loc2glob_el(iel)-1)*blkp/)
       IF (MPIvar%ntor .gt. 1 .and. MPIvar%itor .ne. MPIvar%ntor) delta = delta-(Nel-Nghoste)*blkp
@@ -1281,17 +1281,17 @@ SUBROUTINE HDG_assembly()
         else
           ieln = Mesh%extfaces(Mesh%periodic_faces(Fi-Nintf),1)
           ifan = Mesh%extfaces(Mesh%periodic_faces(Fi-Nintf),2)
-          Fi_per = Mesh%F(ieln,ifan) 
+          Fi_per = Mesh%F(ieln,ifan)
           !write(6,*) "iel:",iel
           !write(6,*) "ieln:",ieln
           !write(6,*) "Fi:",Fi
           !write(6,*) "Fi_per:",Fi_per
           CALL getindposextperiodic(indpos)
           CALL fill_cols_vals_rowptr_loc2glob()
-          Fe_aux = Fe     
-          call exchange_Fi ! Fi--->Fi_per ; Fi_per--->Fi 
+          Fe_aux = Fe
+          call exchange_Fi ! Fi--->Fi_per ; Fi_per--->Fi
           CALL getindposextperiodic(indpos)
-          CALL fill_cols_vals_rowptr_loc2glob()     
+          CALL fill_cols_vals_rowptr_loc2glob()
           Fe = Fe_aux
           !stop
           CYCLE

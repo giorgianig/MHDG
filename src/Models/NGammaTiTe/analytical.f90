@@ -91,6 +91,9 @@ CONTAINS
           up(ind, 1) = 1.
           up(ind, 3) = 18.
           up(ind, 4) = 18.
+#ifdef NEUTRAL
+          up(ind,11) = 0.
+#endif
         CASE (64)
           up(ind, 1) = 1.
           up(ind, 3) = 18.
@@ -1265,6 +1268,9 @@ CONTAINS
       up(:, 1) = 1.
       up(:, 3) = 18.
       up(:, 4) = 18.
+#ifdef NEUTRAL
+      up(:,11)= 0.
+#endif
 
       !                                      r =         sqrt ( (x*phys%lscale-geom%R0)**2 + (y*phys%lscale)**2 )
       !                                      th = atan(x-geom%R0,y)

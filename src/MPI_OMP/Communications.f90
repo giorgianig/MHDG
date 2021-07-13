@@ -612,7 +612,7 @@ CONTAINS
     ! Storing at the right place
     DO i = 1, Mesh%nghostfaces
       Fi = Mesh%fc2rv(i)
-      ind = (Fi - 1)*Neq*Nfp + aux 
+      ind = (Fi - 1)*Neq*Nfp + aux
       sol%u_tilde(ind) = buffrv(:, i)
     END DO
 

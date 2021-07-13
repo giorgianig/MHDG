@@ -363,7 +363,7 @@ contains
     integer(HSIZE_T), &
       dimension(1)      :: dims, maxdims        ! dataset dimensions
     integer(HID_T)      :: filetype, memtype
-    sdim = 20
+    sdim = 100
     !*** file opening ***
     call H5Dopen_f(file_id, trim(dsetname), dataset, error)
 

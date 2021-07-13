@@ -34,6 +34,7 @@ PROGRAM MHDG
   INTEGER :: code, pr, aux
   INTEGER, PARAMETER :: etiquette = 1000
   INTEGER, DIMENSION(MPI_STATUS_SIZE) :: statut
+  INTEGER             :: switch_save
   write (6, *) "STARTING"
 
   ! Check the number of input arguments
@@ -173,7 +174,7 @@ PROGRAM MHDG
   ! Initialize shock capturing
   if (switch%shockcp.gt.0) then
     CALL initializeShockCapturing()
-  endif	 
+  endif
 
 
   ! Initialize the solution
@@ -214,7 +215,7 @@ PROGRAM MHDG
   sol%u0(:, 1) = sol%u
   uiter = 0.
 
-
+  switch_save = 0
   !*******************************************************
   !                  TIME LOOP
   !*******************************************************
@@ -255,14 +256,18 @@ PROGRAM MHDG
 
       ! Assembly the global matrix
       CALL hdg_Assembly()
-      !call HDF5_save_CSR_matrix('Mat')
-      !call HDF5_save_CSR_vector('rhs')
+      !IF (switch_save.EQ.0) THEN
+      !  WRITE (6, *) "Save matrix"
+      !  call HDF5_save_CSR_matrix('Mat')
+      !  call HDF5_save_CSR_vector('rhs')
+      !  switch_save = 1
       !call displayMatrixInt(Mesh%F)
       !call displayMatrixInt(Mesh%extfaces)
       !call displayVectorInt(Mesh%periodic_faces)
       !stop
       !call print_matrices_hdf5
       !stop
+      !ENDIF
       ! Solve linear system
       CALL solve_global_system()
 
@@ -369,6 +374,9 @@ PROGRAM MHDG
           phys%diff_vort = phys%diff_vort*switch%diffred
           phys%diff_pot = phys%diff_pot*switch%diffred
 #endif
+#ifdef NEUTRAL
+          phys%diff_nn = phys%diff_nn*switch%diffred
+#endif
 
           !**********************************
           !           UPDATE SOLUTION
@@ -455,19 +463,19 @@ PROGRAM MHDG
       WRITE(6, '(" *", 2X,  "Mapping          : ", ES16.3," ("F4.1 "%)",1X,ES14.3," ("F4.1 "%)",8X,F4.1 , 10X, " *")')   &
         &timing%cputmap,timing%cputmap/cputtot*100,timing%runtmap,timing%runtmap/runttot*100,timing%cputmap/timing%runtmap/Nthreads
       WRITE(6, '(" *", 2X,  "Boundary cond.   : ", ES16.3," ("F4.1 "%)",1X,ES14.3," ("F4.1 "%)",8X,F4.1 , 10X, " *")')   &
-        &timing%cputbcd,timing%cputbcd/cputtot*100,timing%runtbcd,timing%runtbcd/runttot*100,timing%cputbcd/timing%runtbcd/Nthreads 
+        &timing%cputbcd,timing%cputbcd/cputtot*100,timing%runtbcd,timing%runtbcd/runttot*100,timing%cputbcd/timing%runtbcd/Nthreads
       WRITE(6, '(" *", 2X,  "Assembly         : ", ES16.3," ("F4.1 "%)",1X,ES14.3," ("F4.1 "%)",8X,F4.1 , 10X, " *")')   &
         &timing%cputass,timing%cputass/cputtot*100,timing%runtass,timing%runtass/runttot*100,timing%cputass/timing%runtass/Nthreads
       WRITE(6, '(" *", 2X,  "Solve glob. syst.: ", ES16.3," ("F4.1 "%)",1X,ES14.3," ("F4.1 "%)",8X,F4.1 , 10X, " *")')   &
-        &timing%cputglb,timing%cputglb/cputtot*100,timing%runtglb,timing%runtglb/runttot*100,timing%cputglb/timing%runtglb/Nthreads 
+        &timing%cputglb,timing%cputglb/cputtot*100,timing%runtglb,timing%runtglb/runttot*100,timing%cputglb/timing%runtglb/Nthreads
       WRITE(6, '(" *", 2X,  "Element solution : ", ES16.3," ("F4.1 "%)",1X,ES14.3," ("F4.1 "%)",8X,F4.1 , 10X, " *")')   &
-        &timing%cputsol,timing%cputsol/cputtot*100,timing%runtsol,timing%runtsol/runttot*100,timing%cputsol/timing%runtsol/Nthreads 
+        &timing%cputsol,timing%cputsol/cputtot*100,timing%runtsol,timing%runtsol/runttot*100,timing%cputsol/timing%runtsol/Nthreads
 #ifdef PARALL
       WRITE(6, '(" *", 2X,  "Communications   : ", ES16.3," ("F4.1 "%)",1X,ES14.3," ("F4.1 "%)",8X,F4.1 , 10X, " *")')   &
         &timing%cputcom,timing%cputcom/cputtot*100,timing%runtcom,timing%runtcom/runttot*100,timing%cputcom/timing%runtcom/Nthreads
 #endif
       WRITE(6, '(" *", 2X, "Total time       : ", ES16.3," ("F5.1 "%)",1X,ES13.3," ("F5.1 "%)",6X,F5.1 , 10X, " *")')   &
-        cputtot,cputtot/cputtot*100,runttot,runttot/runttot*100,cputtot/runttot/Nthreads 
+        cputtot,cputtot/cputtot*100,runttot,runttot/runttot*100,cputtot/runttot/Nthreads
       WRITE(6, '(" *", 90("*"), "**")')
       WRITE(6, *) " "
       WRITE(6, *) " "
@@ -734,4 +742,4 @@ CONTAINS
     END DO
   END SUBROUTINE define_toroidal_discretization
 #endif
-END
+  END

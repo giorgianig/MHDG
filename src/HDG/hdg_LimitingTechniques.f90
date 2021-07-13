@@ -95,7 +95,7 @@ CONTAINS
       END IF
 
     CASE (3)
-      ALLOCATE (refElPol%Nlin(Mesh%Nnodesperelem, refElPol%Nvertices))         
+      ALLOCATE (refElPol%Nlin(Mesh%Nnodesperelem, refElPol%Nvertices))
       Mesh%scdiff_nodes = 0.
       IF (refElPol%Nvertices .eq. 3) THEN
         refElPol%Nlin(:, 1) = -0.5*(refElPol%coord2d(:, 1) + refElPol%coord2d(:, 2))
@@ -822,9 +822,9 @@ CONTAINS
   END SUBROUTINE HDG_AddDiffusionCorner
 
   !****************************************************************************************
-  ! 
+  !
   !                        SHOCK CAPTURING
-  ! 
+  !
   !****************************************************************************************
   SUBROUTINE HDG_ShockCapturing()
     USE reference_element, ONLY: vandermonde_2d, vandermonde_qua

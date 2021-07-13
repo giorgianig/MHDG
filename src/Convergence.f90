@@ -353,8 +353,8 @@ contains
   !**********************************************
   SUBROUTINE define_toroidal_discretization
     integer :: i, ntorloc, itor, itorg, nnodes_toroidal
-    integer :: tel(numer%ptor + 1), ind(numer%ptor + 1)
-    real*8  :: tdiv(numer%ntor + 1), htor
+    integer :: ind(numer%ptor + 1)
+    real*8  :: tdiv(numer%ntor + 1), tel(numer%ptor + 1), htor
 
     ! Toroidal discretization
     htor = numer%tmax/numer%ntor

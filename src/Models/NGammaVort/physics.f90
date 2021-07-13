@@ -150,7 +150,7 @@ CONTAINS
     real*8 :: dens
 
     V = 0.d0
-    V(1) = U(2)*U(1)/Up(1) 
+    V(1) = U(2)*U(1)/Up(1)
     V(2) = (U(1)-1)*(U(2)**2/Up(1) - phys%a*Up(1))
 
   END SUBROUTINE logrhojacobianVector
@@ -215,7 +215,7 @@ CONTAINS
 
     !d_iso(3,1,:) = 0.
     !d_ani(3,1,:) = 0.
-    !   
+    !
     !d_iso(3,4,:) = 0.
     !d_ani(3,4,:) = 0.
 
@@ -303,7 +303,7 @@ CONTAINS
     integer,intent(in)  :: ifa,iel
     real*8,intent(out) :: tau(:,:)
     real*8              :: tau_aux(4),bort(2)
-    real*8 :: xc,yc,rad,h,aux,bn,bnorm,bortn,coef_scale 
+    real*8 :: xc,yc,rad,h,aux,bn,bnorm,bortn,coef_scale
     real*8 :: U1,U2,U3,U4
     integer :: ndim
     U1 = uc(1)

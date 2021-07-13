@@ -350,14 +350,14 @@ CONTAINS
     !      call HDF5_array1D_saving(file_id,sol%time,sol%Nt,'time')
     if (switch%steady .or. switch%psdtime) then
       call HDF5_integer_saving(file_id,0,'it')
-    else     
+    else
       call HDF5_integer_saving(file_id,time%it,'it')
     endif
     !!!      call HDF5_integer_saving(file_id,sol%Nt,'Nt')
     call HDF5_array1D_saving(file_id, sol%q, size(sol%q), 'q')
     ! Save magnetic field
     call HDF5_array2D_saving(file_id, phys%B, size(phys%B, 1), size(phys%B, 2), 'magnetic_field')
-   ! Save magnetic perturbation and related fields
+    ! Save magnetic perturbation and related fields
     if ((switch%rmp).or.(switch%ripple)) then
       call HDF5_array2D_saving(file_id, phys%Bperturb, size(phys%Bperturb, 1), size(phys%Bperturb, 2), 'magnetic_perturbation')
     endif
@@ -404,6 +404,7 @@ CONTAINS
       call HDF5_string_saving(group_id2, simpar%refval_length_dimensions, 'length_scale_dimensions')
       call HDF5_string_saving(group_id2, simpar%refval_temperature_dimensions, 'temperature_scale_dimensions')
       call HDF5_string_saving(group_id2, simpar%refval_density_dimensions, 'density_scale_dimensions')
+      call HDF5_string_saving(group_id2, simpar%refval_neutral_dimensions, 'density_neutral_dimensions')
       call HDF5_string_saving(group_id2, simpar%refval_speed_dimensions, 'speed_scale_dimensions')
       call HDF5_string_saving(group_id2, simpar%refval_potential_dimensions, 'potential_scale_dimensions')
       call HDF5_string_saving(group_id2, simpar%refval_vorticity_dimensions, 'vorticity_scale_dimensions')
@@ -418,6 +419,7 @@ CONTAINS
       call HDF5_real_saving(group_id2, simpar%refval_time, 'time_scale')
       call HDF5_real_saving(group_id2, simpar%refval_temperature, 'temperature_scale')
       call HDF5_real_saving(group_id2, simpar%refval_density, 'density_scale')
+      call HDF5_real_saving(group_id2, simpar%refval_neutral, 'neutral_scale')
       call HDF5_real_saving(group_id2, simpar%refval_speed, 'speed_scale')
       call HDF5_real_saving(group_id2, simpar%refval_potential, 'potential_scale')
       call HDF5_real_saving(group_id2, simpar%refval_vorticity, 'vorticity_scale')
@@ -653,13 +655,13 @@ CONTAINS
       CALL HDF5_group_close(group_id, ierr)
       ! Check if the readed solution corresponds to the right model
       IF (simpar%model .ne. model_string) THEN
-        WRITE (6, *) "Wrong model in loaded solution"
+        WRITE (6, *) "Wrong model in loaded solution | Loaded model: ", model_string, " | Current model: ", simpar%model
         STOP
       ENDIF
 
       CALL HDF5_array1D_reading(file_id, sol%u, 'u')
       CALL HDF5_array1D_reading(file_id, sol%u_tilde, 'u_tilde')
-      CALL HDF5_integer_reading(file_id,time%it,'it')  
+      CALL HDF5_integer_reading(file_id,time%it,'it')
       !      if (.not.switch%steady) then
       !         CALL HDF5_integer_reading(file_id,sol%Nt,'Nt')
       !         allocate(oldtres(sol%Nt))
@@ -708,7 +710,7 @@ CONTAINS
       CALL HDF5_group_close(group_id, ierr)
       ! Check if the readed solution corresponds to the right model
       IF (simpar%model .ne. model_string) THEN
-        WRITE (6, *) "Wrong model in loaded solution"
+        WRITE (6, *) "Wrong model in loaded solution | Loaded model: ", model_string, " | Current model: ", simpar%model
         STOP
       ENDIF
 
@@ -842,13 +844,13 @@ CONTAINS
     CALL HDF5_integer_reading(group_id2, logrho_ptr, 'logrho')
     CALL HDF5_group_close(group_id2, ierr)
 #else
-      logrho_ptr = switch%logrho
+    logrho_ptr = switch%logrho
 #endif
     CALL HDF5_group_close(group_id, ierr)
 
     ! Check if the readed solution corresponds to the right model
     IF (simpar%model .ne. model_string) THEN
-      WRITE (6, *) "Wrong model in loaded solution"
+      WRITE (6, *) "Wrong model in loaded solution | Loaded model: ", model_string, " | Current model: ", simpar%model
       STOP
     ENDIF
     CALL HDF5_array1D_reading(file_id, sol%u, 'u')
@@ -870,7 +872,7 @@ CONTAINS
       qaux(:,1) = qaux(:,1)/uaux(:,1)
       qaux(:,2) = qaux(:,2)/uaux(:,1)
       uaux(:,1) = log(uaux(:,1))
-      utaux(:,1) = log(utaux(:,1))         
+      utaux(:,1) = log(utaux(:,1))
       sol%u = col(transpose(uaux))
       sol%u_tilde = col(transpose(utaux))
       sol%q = col(transpose(qaux))
@@ -885,7 +887,7 @@ CONTAINS
       utaux = transpose(reshape(sol%u_tilde,[phys%neq,size(sol%u_tilde)/phys%neq]))
       qaux = transpose(reshape(sol%q,[phys%neq*Ndim,size(sol%q)/phys%neq/Ndim]))
       uaux(:,1) = exp(uaux(:,1))
-      utaux(:,1) = exp(utaux(:,1))             
+      utaux(:,1) = exp(utaux(:,1))
       qaux(:,1) = qaux(:,1)*uaux(:,1)
       qaux(:,2) = qaux(:,2)*uaux(:,1)
       sol%u = col(transpose(uaux))

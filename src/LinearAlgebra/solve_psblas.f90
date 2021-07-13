@@ -222,10 +222,10 @@ CONTAINS
 
     call matPSBLAS%prec%init(matPSBLAS%ictxt, lssolver%ptype, info)
     select case (lssolver%ptype)
-    case ('NONE', 'NOPREC')
+    case ('NONE')
       ! Do nothing, keep defaults
 
-    case ('JACOBI', 'L1-JACOBI', 'GS', 'FWGS', 'FBGS')
+    case ('DIAG', 'JACOBI', 'GS', 'FBGS')
       ! 1-level sweeps from "outer_sweeps"
       call matPSBLAS%prec%set('smoother_sweeps', lssolver%jsweeps, info)
 
@@ -268,12 +268,26 @@ CONTAINS
       call matPSBLAS%prec%set('aggr_ord', lssolver%aggr_ord, info)
       call matPSBLAS%prec%set('aggr_filter', lssolver%aggr_filter, info)
 
-      call matPSBLAS%prec%set('smoother_type', lssolver%smther, info)
+      if ((psb_toupper(lssolver%smther) /= 'ML').and.(psb_toupper(lssolver%smther) /= 'NONE')) then
+        call matPSBLAS%prec%set('smoother_type', lssolver%smther, info)
+      end if
+
       call matPSBLAS%prec%set('smoother_sweeps', lssolver%jsweeps, info)
 
       select case (psb_toupper(lssolver%smther))
-      case ('GS', 'BWGS', 'FBGS', 'JACOBI', 'L1-JACOBI')
+      case ('NONE', 'DIAG', 'JACOBI', 'GS', 'FBGS', 'ML')
         ! do nothing
+      case ('BJAC')
+        call matPSBLAS%prec%set('sub_solve', lssolver%solve, info)
+        call matPSBLAS%prec%set('sub_fillin', lssolver%fill, info)
+        call matPSBLAS%prec%set('sub_iluthrs', lssolver%thr, info)
+      case ('AS')
+        call matPSBLAS%prec%set('sub_ovr', lssolver%novr, info)
+        call matPSBLAS%prec%set('sub_restr', lssolver%restr, info)
+        call matPSBLAS%prec%set('sub_prol', lssolver%prol, info)
+        call matPSBLAS%prec%set('sub_solve', lssolver%solve, info)
+        call matPSBLAS%prec%set('sub_fillin', lssolver%fill, info)
+        call matPSBLAS%prec%set('sub_iluthrs', lssolver%thr, info)
       case default
         call matPSBLAS%prec%set('sub_ovr', lssolver%novr, info)
         call matPSBLAS%prec%set('sub_restr', lssolver%restr, info)
@@ -283,29 +297,43 @@ CONTAINS
         call matPSBLAS%prec%set('sub_iluthrs', lssolver%thr, info)
       end select
 
-      if (psb_toupper(lssolver%smther2) /= 'NONE') then
+      if ((psb_toupper(lssolver%smther2) /= 'ML').and.(psb_toupper(lssolver%smther2) /= 'NONE')) then
         call matPSBLAS%prec%set('smoother_type', lssolver%smther2, info, pos='post')
-        call matPSBLAS%prec%set('smoother_sweeps', lssolver%jsweeps2, info, pos='post')
-        select case (psb_toupper(lssolver%smther2))
-        case ('GS', 'BWGS', 'FBGS', 'JACOBI', 'L1-JACOBI')
-          ! do nothing
-        case default
-          call matPSBLAS%prec%set('sub_ovr', lssolver%novr2, info, pos='post')
-          call matPSBLAS%prec%set('sub_restr', lssolver%restr2, info, pos='post')
-          call matPSBLAS%prec%set('sub_prol', lssolver%prol2, info, pos='post')
-          call matPSBLAS%prec%set('sub_solve', lssolver%solve2, info, pos='post')
-          call matPSBLAS%prec%set('sub_fillin', lssolver%fill2, info, pos='post')
-          call matPSBLAS%prec%set('sub_iluthrs', lssolver%thr2, info, pos='post')
-        end select
       end if
 
-      call matPSBLAS%prec%set('coarse_solve', lssolver%csolve, info)
-      if (psb_toupper(lssolver%csolve) == 'BJAC') &
-        &  call matPSBLAS%prec%set('coarse_subsolve', lssolver%csbsolve, info)
-      call matPSBLAS%prec%set('coarse_mat', lssolver%cmat, info)
-      call matPSBLAS%prec%set('coarse_fillin', lssolver%cfill, info)
-      call matPSBLAS%prec%set('coarse_iluthrs', lssolver%cthres, info)
-      call matPSBLAS%prec%set('coarse_sweeps', lssolver%cjswp, info)
+      call matPSBLAS%prec%set('smoother_sweeps', lssolver%jsweeps2, info, pos='post')
+
+      select case (psb_toupper(lssolver%smther2))
+      case ('NONE', 'DIAG', 'JACOBI', 'GS', 'FBGS','ML')
+        ! do nothing
+      case ('BJAC')
+        call matPSBLAS%prec%set('sub_solve', lssolver%solve2, info, pos='post')
+        call matPSBLAS%prec%set('sub_fillin', lssolver%fill2, info, pos='post')
+        call matPSBLAS%prec%set('sub_iluthrs', lssolver%thr2, info, pos='post')
+      case ('AS')
+        call matPSBLAS%prec%set('sub_ovr', lssolver%novr2, info, pos='post')
+        call matPSBLAS%prec%set('sub_restr', lssolver%restr2, info, pos='post')
+        call matPSBLAS%prec%set('sub_prol', lssolver%prol2, info, pos='post')
+        call matPSBLAS%prec%set('sub_solve', lssolver%solve2, info, pos='post')
+        call matPSBLAS%prec%set('sub_fillin', lssolver%fill2, info, pos='post')
+        call matPSBLAS%prec%set('sub_iluthrs', lssolver%thr2, info, pos='post')
+      case default
+        call matPSBLAS%prec%set('sub_restr', lssolver%restr2, info, pos='post')
+        call matPSBLAS%prec%set('sub_prol', lssolver%prol2, info, pos='post')
+        call matPSBLAS%prec%set('sub_solve', lssolver%solve2, info, pos='post')
+        call matPSBLAS%prec%set('sub_fillin', lssolver%fill2, info, pos='post')
+        call matPSBLAS%prec%set('sub_iluthrs', lssolver%thr2, info, pos='post')
+      end select
+
+      if (psb_toupper(lssolver%csolve) /= 'NONE') then
+        call matPSBLAS%prec%set('coarse_solve', lssolver%csolve, info)
+        if (psb_toupper(lssolver%csolve) == 'BJAC') &
+          &  call matPSBLAS%prec%set('coarse_subsolve', lssolver%csbsolve, info)
+        call matPSBLAS%prec%set('coarse_mat', lssolver%cmat, info)
+        call matPSBLAS%prec%set('coarse_fillin', lssolver%cfill, info)
+        call matPSBLAS%prec%set('coarse_iluthrs', lssolver%cthres, info)
+        call matPSBLAS%prec%set('coarse_sweeps', lssolver%cjswp, info)
+      endif
 
     end select
 

@@ -17,13 +17,19 @@ dth = 1e-14;
 tpos = linspace(0+dth,theta-dth,ntpos);
 cons_phys = true; % true to plot physical values (N,u_para, T,etc)
 field2plot = 10; % if cons_phys  true [1:N, 2:u_para, 3:Ei, 4:Ee, 5:Pi, 6:Pe, 7:Ti, 8:Te, 9:Cs, 10:M] else [1:N, 2:Gamma_para, 3:NEi, 4:NEe]
-average = true; % true if toroidal average
+average = false; % true if toroidal average
 
 
-matmeshpath = '/home/bluce/MHDG_sim/West10861_P4/3D/NGT/parall/00/ref/ripple/';
-solpath = '/home/bluce/MHDG_sim/West10861_P4/3D/NGT/parall/00/ref/ripple/ntor1ptor4/';
-solution = 'Sol3D_West_YesHole_Nel10861_P4_Ntor1Ptor4_DPe0.100E+01_DPai0.314E+06_DPae0.105E+08';
-meshpath =  '/home/bluce/MHDG_sim/West10861_P4/3D/NGT/parall/00/ref/ripple/';
+% matmeshpath = '/home/bluce/MHDG_sim/West10861_P4/3D/NGT/parall/00/ref/ripple/';
+% solpath = '/home/bluce/MHDG_sim/West10861_P4/3D/NGT/parall/00/ref/ripple/ntor1ptor4/';
+% solution = 'Sol3D_West_YesHole_Nel10861_P4_Ntor1Ptor4_DPe0.100E+01_DPai0.314E+06_DPae0.105E+08';
+% meshpath =  '/home/bluce/MHDG_sim/West10861_P4/3D/NGT/parall/00/ref/ripple/';
+
+matmeshpath = '/home/bluce/MHDG_sim/West10861_P4/2D/NGT/parall/00/div16/';
+solpath = '/home/bluce/MHDG_sim/West10861_P4/2D/NGT/parall/00/div16/';
+solution = 'Sol2D_West_YesHole_Nel10861_P4_DPe0.447E+01_DPai0.314E+06_DPae0.105E+08';
+meshpath =  '/home/bluce/MHDG_sim/West10861_P4/2D/NGT/parall/00/div16/';
+
 
 
 %% start

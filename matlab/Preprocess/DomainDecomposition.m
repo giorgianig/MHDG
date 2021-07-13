@@ -3,31 +3,33 @@ clc
 close all
 mark = {'bo','ko','go','mo','yo','bo','bo','ko','go','mo','yo','bo'};
 % Mesh to load
-path2mesh ='Meshes/';
-meshName  = 'West_YesHole_Nel10861_P4.h5';
 
-% Number of divisions
-ndiv = 8;
-divType = 'rot';
-% divType = 'x';
-% divType = 'y';
-theta0 = 15*pi/180;
-elemType = 1;
-
-% meshName  = 'Circ_InfLIM_Quads_YesHole_Nel909_P5.h5';
-% 
-% % Number of divisions
-% ndiv = 4;
+% meshName  = 'Meshes/West_YesHole_Nel1902_P6.h5';
+% ndiv = 16; % Number of divisions
 % divType = 'rot';
 % % divType = 'x';
 % % divType = 'y';
-% theta0 = 20*pi/180;
-% elemType = 0;
+% theta0 = 15*pi/180;
+% elemType = 1;
+% theta_forb = [280*pi/180]; % forbidden values for theta
 
+meshName  = 'Meshes/CircLimAlign_Quads_Nel360_P4.h5';
+ndiv = 8; % Number of divisions
+divType = 'rot';
+% divType = 'x';
+% divType = 'y';
+theta0 = 2*pi/180;
+elemType = 0;
+theta_forb = [-pi/2]; % forbidden values for theta
 
-% theta0 = pi/180;
-% forbidden values for theta
-theta_forb = [280*pi/180];
+% meshName  = 'Meshes/Circ_HoriLim_Triangs_YesHole_Nel2087_P4.h5';
+% ndiv = 8; % Number of divisions
+% divType = 'rot';
+% % divType = 'x';
+% % divType = 'y';
+% theta0 = 0;
+% elemType = 1;
+% theta_forb = [0.844640680820716; 2.296951972769077]; % forbidden values for theta
 
 if elemType==1 % Triangles
     Nvert =3;
@@ -45,7 +47,7 @@ end
 %% Loading original mesh
 if strcmpi(meshName(end-2:end),'.h5')
     tmp = elemType;
-    HDF5load([path2mesh meshName]);
+    HDF5load([meshName]);
     elemType = tmp;
     if any(boundaryFlag==1)
         mask = boundaryFlag == 1;
@@ -88,7 +90,7 @@ if strcmpi(meshName(end-2:end),'.h5')
         Tb_ULIM = Tb(mask,:);
     end
 else
-    load([path2mesh meshName]);
+    load([meshName]);
 end
 
 NelTot = size(T,1);
@@ -105,7 +107,7 @@ else
     [intFaces_Glob,extFaces_Glob] = GetFaces(T(:,1:Nvert),refEl.faceNodes);
     intfaces = intFaces_Glob;
     extfaces = extFaces_Glob;
-    %save([path2mesh meshName],'intfaces','extfaces','-append')
+    %save([meshName],'intfaces','extfaces','-append')
     clear intfaces extfaces
 end
 Nf = size(intFaces_Glob,1)+size(extFaces_Glob,1);

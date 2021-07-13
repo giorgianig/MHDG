@@ -16,9 +16,9 @@ ne2 = 4;    % number of layers in the open-line zone (SOL)
 elong = 4;   % elongation of the elements in the poloidal direction
 
 % Refinement around the limiter
-nlref = 1;     % refinement on the limiter: number of original layers in the refinement
+nlref = 3;     % refinement on the limiter: number of original layers in the refinement
 lref = 3;       % refinement on the limiter: the number of final layers corresponds to the original one multiplied by this
-factorl = 2;   % refinement on the limiter: intensity
+factorl = 4;   % refinement on the limiter: intensity
 
 % Refinement at the separatrix
 nsref = 1;    % refinement on the separatrix: number of original layers in the refinement
@@ -43,7 +43,7 @@ end
 NNodesLin = elemInfo.nOfNodes;
 refEl = createReferenceElement(elemType,elemInfo.nOfNodes);
 elemInfo.faceNodes1d =  [1 2];
-path2save = '../Meshes/';
+
 
 if elemType==0
     if nonst
@@ -309,7 +309,8 @@ for ic=nsiz
         plot(X(Tb_LIM,1),X(Tb_LIM,2),'ro')
         
         
-        fileName = [path2save nameRoot 'Nel' num2str(size(T,1)) '_P' num2str(ip) '.mat'];
+        fileName = [nameRoot 'Nel' num2str(size(T,1)) '_P' num2str(ip) '.mat'];
+        fileName = fullfile('Meshes',fileName);
         %% Save mesh
         save(fileName,'X','T','Tb_IN','Tb_OUT','Tb_LIM',...
             'elementFaceInfo','elemInfo')

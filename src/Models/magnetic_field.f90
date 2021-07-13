@@ -26,6 +26,9 @@ CONTAINS
     ! Allocate storing space in phys
     ALLOCATE (phys%B(nnodes, 3))
     ALLOCATE (phys%magnetic_flux(nnodes))
+    IF (switch%testcase.eq.54) THEN
+      ALLOCATE (phys%Jtor(nnodes))
+    END IF
     IF ((switch%RMP).or.(switch%Ripple)) THEN
       ALLOCATE (phys%Bperturb(nnodes, 3))
     END IF
@@ -48,6 +51,10 @@ CONTAINS
       ! Magnetic field loaded from file in a cartesian grid
       ! Interpolation is needed
       CALL load_magnetic_field_grid
+      IF (switch%testcase.eq.54) THEN
+        phys%Jtor = 0.
+        CALL loadJtorMap()
+      END IF
 
     CASE (60:69)
 
@@ -60,7 +67,7 @@ CONTAINS
     END SELECT
 #ifdef TOR3D
     ! Magnetic perturbations
-    ! RMP part testcase 60-69. 
+    ! RMP part testcase 60-69.
     ! We need to be here to have refElTor%Nodes1d, refElTor%coord1d and numer%ntor (for tdiv)
     IF ((switch%RMP).or.(switch%Ripple)) THEN
       phys%Bperturb = 0.
@@ -135,7 +142,7 @@ CONTAINS
             WRITE (6, *) "This is NOT an axisymmetric test case!"
             stop
           END IF
-          ! 
+          !
           phys%B(ind, 1) = 0.
           phys%B(ind, 2) = 0.
           phys%B(ind, 3) = 1.
@@ -147,7 +154,7 @@ CONTAINS
           ! Axysimmetric case
           phys%B(ind, 1) = 0.
           phys%B(ind, 2) = 0.
-          phys%B(ind, 3) = 1.+xx               
+          phys%B(ind, 3) = 1.+xx
         CASE (50:59)
           write (6, *) "Error in defineMagneticField: you should not be here!"
           STOP
@@ -352,21 +359,21 @@ CONTAINS
       if (magn%nbRow.eq.2) then
         ! Upper row
         rowNb = 1
-        coilCoord(1,1) = 0.95*xmax ! R coordinate top, upper row 
-        coilCoord(2,1) = ym + 3./4.*(ymax - ym) ! Z coordinate top, upper row 
-        coilCoord(1,2) = 1.05*xmax ! R coordinate bottom, upper row 
-        coilCoord(2,2) = ym + 1./4.*(ymax - ym) ! Z coordinate bottom, upper row 
+        coilCoord(1,1) = 0.95*xmax ! R coordinate top, upper row
+        coilCoord(2,1) = ym + 3./4.*(ymax - ym) ! Z coordinate top, upper row
+        coilCoord(1,2) = 1.05*xmax ! R coordinate bottom, upper row
+        coilCoord(2,2) = ym + 1./4.*(ymax - ym) ! Z coordinate bottom, upper row
         call calcRMPField(brmp, coilCoord, rowNb, elDiscr)
         ! Lower row
         rowNb = 2
-        coilCoord(1,1) = 1.05*xmax ! R coordinate top, lower row 
-        coilCoord(2,1) = ym - 1./4.*(ymax - ym) ! Z coordinate top, lower row 
-        coilCoord(1,2) = 0.95*xmax ! R coordinate bottom, lower row 
-        coilCoord(2,2) = ym - 3./4.*(ymax - ym) ! Z coordinate bottom, lower row 
+        coilCoord(1,1) = 1.05*xmax ! R coordinate top, lower row
+        coilCoord(2,1) = ym - 1./4.*(ymax - ym) ! Z coordinate top, lower row
+        coilCoord(1,2) = 0.95*xmax ! R coordinate bottom, lower row
+        coilCoord(2,2) = ym - 3./4.*(ymax - ym) ! Z coordinate bottom, lower row
         call calcRMPField(brmp, coilCoord, rowNb, elDiscr)
       else
-         WRITE(6, *) 'TODO: not implemented yet'
-         stop
+        WRITE(6, *) 'TODO: not implemented yet'
+        stop
       endif
     endif
 
@@ -423,7 +430,7 @@ CONTAINS
     real*8                                       :: Bx, By, Bz, dBx, dBy, dBz
     integer                                      :: i, j, k, l, N2d, N1d, i2d, i1d, ind, par
     real*8, dimension(magn%nbCoils_RMP, 4)       :: xx, yy, zz
-    character(len=18)                            :: filename 
+    character(len=18)                            :: filename
 
     x = Mesh%X(:,1)
     y = Mesh%X(:,2)
@@ -468,7 +475,7 @@ CONTAINS
     do i=1,magn%nbCoils_rmp
       !Loop on the 4 parts of a coil: 1->2, 2->3, 3->4, 4->1
       do j=1,4
-        if (j.le.3) then 
+        if (j.le.3) then
           k = j + 1
         else
           k = 1
@@ -512,7 +519,7 @@ CONTAINS
           endif
           !Loop on the 4 parts of a coil: 1->2, 2->3, 3->4, 4->1
           do j=1,4
-            if (j.le.3) then 
+            if (j.le.3) then
               k = j + 1
             else
               k = 1
@@ -546,8 +553,8 @@ CONTAINS
           enddo ! end 4 parts of one coil
         enddo ! end loop on coils
         ! Br, Bz, Bt
-        brmp(ind,1) = brmp(ind,1) + magn%amp_rmp*(-Bx*sin(t(i1d)) + By*cos(t(i1d))) 
-        brmp(ind,2) = brmp(ind,2) + magn%amp_rmp*Bz 
+        brmp(ind,1) = brmp(ind,1) + magn%amp_rmp*(-Bx*sin(t(i1d)) + By*cos(t(i1d)))
+        brmp(ind,2) = brmp(ind,2) + magn%amp_rmp*Bz
         brmp(ind,3) = brmp(ind,3) + magn%amp_rmp*(Bx*cos(t(i1d)) + By*sin(t(i1d)))
       enddo
     enddo
@@ -575,7 +582,7 @@ CONTAINS
     real*8                                       :: Bx, By, Bz, dBx, dBy, dBz
     integer                                      :: i, j, k, N2d, N1d, i2d, i1d, ind, loc, par
     real*8, dimension(:,:), allocatable          :: xx, yy, zz
-    character(len=15)                            :: filename 
+    character(len=15)                            :: filename
 
     x = Mesh%X(:,1)
     y = Mesh%X(:,2)
@@ -610,7 +617,7 @@ CONTAINS
     ind = 0
     do i=1,magn%nbCoils_ripple
       do j=1,elDiscr
-        if (j.lt.elDiscr) then 
+        if (j.lt.elDiscr) then
           k = j + 1
         else
           k = 1
@@ -645,7 +652,7 @@ CONTAINS
           ! Loop on elements of coils for writing coils coordinates
           ! rr is the r vector in Biot and Savard
           do j=1,elDiscr
-            if (j.lt.elDiscr) then 
+            if (j.lt.elDiscr) then
               k = j + 1
             else
               k = 1
@@ -672,12 +679,12 @@ CONTAINS
           enddo ! end elements of one coil
         enddo ! end loop on coils
         ! Br, Bz, Bt
-        bripple(ind,1) = bripple(ind,1) + magn%amp_ripple*(-Bx*sin(t(i1d)) + By*cos(t(i1d))) 
-        bripple(ind,2) = bripple(ind,2) + magn%amp_ripple*Bz 
+        bripple(ind,1) = bripple(ind,1) + magn%amp_ripple*(-Bx*sin(t(i1d)) + By*cos(t(i1d)))
+        bripple(ind,2) = bripple(ind,2) + magn%amp_ripple*Bz
         bripple(ind,3) = bripple(ind,3) + magn%amp_ripple*(Bx*cos(t(i1d)) + By*sin(t(i1d)))
       enddo
     enddo
-    ! Compute the ripple average 
+    ! Compute the ripple average
     bripple_av = 0.
     do i2d=1,N2d
       do i1d=1,N1d
@@ -713,5 +720,198 @@ CONTAINS
     deallocate(xx,yy,zz)
   END SUBROUTINE calcRippleField
 #endif
+
+  ! Below are routines from Manuel MHDG v2.1. Copy as it without any check: TODO adapt it to global magnetic field
+
+  SUBROUTINE loadJtorMap()
+    USE interpolation
+    USE HDF5
+    USE HDF5_io_module
+    USE MPI_OMP
+    integer        :: i,ierr,ip,jp
+    integer(HID_T) :: file_id
+!#ifdef MOVINGEQUILIBRIUM
+!    integer              :: k
+!    character(LEN=20)    :: fname = 'WEST_54487_Jtor'
+!    character(10)        :: npr,nid,nit
+!    character(len=1000)  :: fname_complete
+!#endif
+    real*8,pointer,dimension(:,:) :: r2D,z2D,Jtor
+    real*8,allocatable,dimension(:)   :: xvec,yvec
+    real*8                            :: x,y
+
+    WRITE(6,*) "******* Loading Toroidal Current *******"
+    ! Allocate storing space in phys
+    ALLOCATE(phys%Jtor(Mesh%Nnodes))
+
+    ! Dimensions of the file storing the magnetic field for West
+    !ip = 200
+    !jp = 200
+    ip = 457;
+    jp = 457;
+    ALLOCATE(r2D(ip,jp))
+    ALLOCATE(z2D(ip,jp))
+    ALLOCATE(Jtor(ip,jp))
+
+    ! Read file
+!#ifndef MOVINGEQUILIBRIUM
+    CALL HDF5_open('WEST_54487_Jtor_0100.h5',file_id,IERR)
+!#else
+!    ! File name
+!    write(nit, "(i10)") time%it+1
+!    nit = trim(adjustl(nit))
+!    k = INDEX(nit, " ") -1
+!
+!    IF (MPIvar%glob_size.GT.1) THEN
+!      write(nid,*) MPIvar%glob_id+1
+!      write(npr,*) MPIvar%glob_size
+!      fname_complete = trim(adjustl(fname))//'_'//trim(adjustl(nid))//'_'//trim(adjustl(npr))//'_'//REPEAT("0", 4 - k)//trim(ADJUSTL(nit))//'.h5'
+!    ELSE
+!      fname_complete = trim(adjustl(fname))//'_'//REPEAT("0", 4 - k)//trim(ADJUSTL(nit))//'.h5'
+!    END IF
+!
+!    write(6,*) 'Magnetic field loaded from file: ', trim(adjustl(fname_complete))
+!    CALL HDF5_open(fname_complete,file_id,IERR)
+!#endif
+    CALL HDF5_array2D_reading(file_id,r2D,'r2D')
+    CALL HDF5_array2D_reading(file_id,z2D,'z2D')
+    CALL HDF5_array2D_reading(file_id,Jtor,'Jtor')
+    CALL HDF5_close(file_id)
+
+    ! Apply length scale
+    r2D = r2D/phys%lscale
+    z2D = z2D/phys%lscale
+
+    ! Interpolate
+    ALLOCATE(xvec(jp))
+    ALLOCATE(yvec(ip))
+    xvec = r2D(1,:)
+    yvec = z2D(:,1)
+    DO i = 1,Mesh%Nnodes
+      x = Mesh%X(i,1)
+      y = Mesh%X(i,2)
+      ind = i
+#ifdef TOR3D
+      DO j = 1, Mesh%Nnodes_toroidal
+        ind = (j - 1)*Mesh%Nnodes + i
+#endif
+        phys%Jtor(ind) = interpolate(ip, yvec,jp, xvec,Jtor, y,x, 1e-12)
+#ifdef TOR3D
+      END DO
+#endif
+    END DO
+
+    ! Free memory
+    DEALLOCATE(r2D,z2D,Jtor,xvec,yvec)
+
+  END SUBROUTINE loadJtorMap
+
+  SUBROUTINE loadMagneticFieldFromExperimentalData()
+    USE interpolation
+    USE HDF5
+    USE HDF5_io_module
+    USE MPI_OMP
+    integer        :: ierr,k,ip,jp,i
+    real*8,pointer,dimension(:,:) :: r2D,z2D,flux2D,Br2D,Bz2D,Bphi2D
+    real*8,allocatable,dimension(:)   :: xvec,yvec,Bmod
+    real*8                            :: x,y
+    character(LEN=25) :: fname = 'WEST_54487'
+    character(10)  :: npr,nid,nit
+    character(len=1000) :: fname_complete
+    integer(HID_T) :: file_id
+
+    WRITE(6,*) "******* Loading magnetic field *******"
+
+    ! Dimensions of the file storing the magnetic field for West
+    ip = 457
+    jp = 457
+    ALLOCATE(r2D(ip,jp))
+    ALLOCATE(z2D(ip,jp))
+    ALLOCATE(flux2D(ip,jp))
+    ALLOCATE(Br2D(ip,jp))
+    ALLOCATE(Bz2D(ip,jp))
+    ALLOCATE(Bphi2D(ip,jp))
+    ALLOCATE(Bmod(Mesh%Nnodes))
+
+    ! File name
+    write(nit, "(i10)") time%it+1
+    nit = trim(adjustl(nit))
+    k = INDEX(nit, " ") -1
+
+    IF (MPIvar%glob_size.GT.1) THEN
+      write(nid,*) MPIvar%glob_id+1
+      write(npr,*) MPIvar%glob_size
+      fname_complete = trim(adjustl(fname))//'_'//trim(adjustl(nid))//'_'//trim(adjustl(npr))//'_'//REPEAT("0", 4 - k)//trim(ADJUSTL(nit))//'.h5'
+    ELSE
+      fname_complete = trim(adjustl(fname))//'_'//REPEAT("0", 4 - k)//trim(ADJUSTL(nit))//'.h5'
+    END IF
+
+    write(6,*) 'Magnetic field loaded from file: ', trim(adjustl(fname_complete))
+
+    ! Read file
+    CALL HDF5_open(fname_complete,file_id,IERR)
+    CALL HDF5_array2D_reading(file_id,r2D,'r2D')
+    CALL HDF5_array2D_reading(file_id,z2D,'z2D')
+    CALL HDF5_array2D_reading(file_id,flux2D,'flux2D')
+    CALL HDF5_array2D_reading(file_id,Br2D,'Br2D')
+    CALL HDF5_array2D_reading(file_id,Bz2D,'Bz2D')
+    CALL HDF5_array2D_reading(file_id,Bphi2D,'Bphi2D')
+    CALL HDF5_close(file_id)
+
+    ! Apply length scale
+    r2D = r2D/phys%lscale
+    z2D = z2D/phys%lscale
+
+
+
+    ! Interpolate
+    ALLOCATE (xvec(jp))
+    ALLOCATE (yvec(ip))
+    xvec = r2D(1, :)
+    yvec = z2D(:, 1)
+    DO i = 1, Mesh%Nnodes
+      x = Mesh%X(i,1)
+      y = Mesh%X(i,2)
+      Br = interpolate(ip, yvec, jp, xvec, Br2D, y, x, 1e-12)
+      Bz = interpolate(ip, yvec, jp, xvec, Bz2D, y, x, 1e-12)
+      Bt = interpolate(ip, yvec, jp, xvec, Bphi2D, y, x, 1e-12)
+      flux = interpolate(ip, yvec, jp, xvec, flux2D, y, x, 1e-12)
+      ind = i
+#ifdef TOR3D
+      DO j = 1, Mesh%Nnodes_toroidal
+        ind = (j - 1)*Mesh%Nnodes + i
+#endif
+        phys%B(ind, 1) = Br
+        phys%B(ind, 2) = Bz
+        phys%B(ind, 3) = Bt
+        phys%magnetic_flux(ind) = flux
+#ifdef TOR3D
+      END DO
+#endif
+    END DO
+
+    ! Free memory
+    DEALLOCATE(Br2D,Bz2D,Bphi2D,xvec,yvec)
+    DEALLOCATE(r2D,z2D,flux2D)
+
+  END SUBROUTINE loadMagneticFieldFromExperimentalData
+
+
+  SUBROUTINE SetPuff()
+    USE HDF5
+    USE HDF5_io_module
+    integer        :: ierr
+    character(LEN=25) :: fname = 'Puff_54487.h5'
+    integer(HID_T) :: file_id
+
+    ! Allocate storing space in phys
+    ALLOCATE(phys%puff_exp(time%nts+1))
+
+    ! Read file
+    CALL HDF5_open(fname,file_id,IERR)
+    CALL HDF5_array1D_reading(file_id,phys%puff_exp,'puff')
+    CALL HDF5_close(file_id)
+
+  END SUBROUTINE SetPuff
 
 END MODULE Magnetic_field

@@ -1,4 +1,4 @@
-function plotSolution(X,T,u,refEl,nDegRef,cont,logar,plotSuper)
+function plotSolution(X,T,u,refEl,nDegRef,cont,logar,plotSuper,cbaxis)
 
 if size(u,2) >1
     error('Only 1d solutions')
@@ -115,7 +115,7 @@ end
 
 % uplot(abs(uplot)<1e-4) = NaN;
 
-if cont
+if cont ==1 
 %     tricontour(Xplot,tri,uplot,10);
 Prova.Elements = tri;
 Prova.Coordinates = Xplot;
@@ -136,8 +136,6 @@ Prova.Coordinates = Xplot;
     colormap('jet')
     colorbar('location','East');
 else
-    
-    
     %Plot
     if logar
         patch('Faces',tri,'Vertices',Xplot,'FaceVertexCData',log10(uplot),...
@@ -151,6 +149,9 @@ else
     colorbar('location','East','fontname','times new roman',...
         'axislocation','out');
     assi = axis;
+    if cont == 2
+        caxis([cbaxis]);
+    end
 end
 if plotSuper
     C1= tricontour(Xplot,tri,uplot,[1 1]);

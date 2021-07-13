@@ -194,7 +194,7 @@ CONTAINS
           IF (jel .ne. 0) THEN
             ! Inner element
             ii = ii + 1
-            CALL FindFace(nf, Mesh%Tlin(jel, :), Efaces, jfa, node1); 
+            CALL FindFace(nf, Mesh%Tlin(jel, :), Efaces, jfa, node1);
             temp_intFaces(ii, 1) = iel
             temp_intFaces(ii, 2) = ifa
             temp_intFaces(ii, 3) = jel
@@ -351,7 +351,7 @@ CONTAINS
       END DO
 
       IF (iextf == Mesh%Nextfaces + 1) THEN
-        WRITE (6, *) 'Error! Correspondig face in Tb not found'
+        WRITE (6, *) 'Error! Corresponding face in Tb not found'
         STOP
       END IF
 
@@ -431,7 +431,7 @@ CONTAINS
     do ifa = 1, Mesh%Nextfaces
       fl = Mesh%boundaryFlag(ifa)
 #ifdef PARALL
-        IF (fl .eq. 0) CYCLE ! Add by Benjamin
+      IF (fl .eq. 0) CYCLE ! Add by Benjamin
 #endif
       if (phys%bcflags(fl) == bc_periodic) then
         call periodic_faces_preprocess()
@@ -500,7 +500,7 @@ CONTAINS
             xin=Mesh%X(Mesh%T(ieln,nin),1)
             xen=Mesh%X(Mesh%T(ieln,nen),1)
             yin=Mesh%X(Mesh%T(ieln,nin),2)
-            yen=Mesh%X(Mesh%T(ieln,nen),2)              
+            yen=Mesh%X(Mesh%T(ieln,nen),2)
             if ( (xi.ne.xe .and. xi==xen .and. xe==xin) .or. (yi.ne.ye .and. yi==yen .and. ye==yin) ) then
               Mesh%periodic_faces(i)=j
               exit

@@ -22,9 +22,15 @@ CONTAINS
 
     ! number of equation of the problem
     phys%Neq = 4
+#ifdef NEUTRAL
+    phys%Neq = 5
+#endif
 
     ! number of physical variables
     phys%npv = 10
+#ifdef NEUTRAL
+    phys%npv = 11
+#endif
 
     ALLOCATE (phys%phyVarNam(phys%npv))
     ALLOCATE (phys%conVarNam(phys%Neq))
@@ -39,15 +45,24 @@ CONTAINS
     phys%phyVarNam(7) = "Ti"  ! temperature of ions
     phys%phyVarNam(8) = "Te"  ! temperature of electrons
     phys%phyVarNam(9) = "Csi" ! sound speed
-    phys%phyVarNam(10) = "M"   ! Mach
+    phys%phyVarNam(10)= "M"   ! Mach
+#ifdef NEUTRAL
+    phys%phyVarNam(11)= "rhon"   ! density neutral
+#endif
 
     ! Set the name of the conservative variables
     phys%conVarNam(1) = "rho"   ! U1 = rho
     phys%conVarNam(2) = "Gamma" ! U2 = rho*u
     phys%conVarNam(3) = "nEi"   ! U3 = rho*Ei
     phys%conVarNam(4) = "nEe"   ! U4 = rho*Ee
+#ifdef NEUTRAL
+    phys%conVarNam(5) = "rhon"  ! U5 = rhon
+#endif
 
     simpar%model = 'N-Gamma-Ti-Te'
+#ifdef NEUTRAL
+    simpar%model = 'N-Gamma-Ti-Te-Neutral'
+#endif
     simpar%Ndim = 2
 #ifdef TOR3D
     simpar%Ndim = 3
@@ -66,10 +81,16 @@ CONTAINS
     simpar%physvar_refval(8) = simpar%refval_temperature
     simpar%physvar_refval(9) = simpar%refval_speed
     simpar%physvar_refval(10) = 1.
+#ifdef NEUTRAL
+    simpar%physvar_refval(11) = simpar%refval_neutral
+#endif
     simpar%consvar_refval(1) = simpar%refval_density
     simpar%consvar_refval(2) = simpar%refval_momentum
     simpar%consvar_refval(3) = simpar%refval_specenergydens
     simpar%consvar_refval(4) = simpar%refval_specenergydens
+#ifdef NEUTRAL
+    simpar%consvar_refval(5) = simpar%refval_neutral
+#endif
   END SUBROUTINE
 
   !*******************************************
@@ -84,6 +105,9 @@ CONTAINS
     ua(:, 2) = up(:, 1)*up(:, 2)
     ua(:, 3) = up(:, 1)*up(:, 3)
     ua(:, 4) = up(:, 1)*up(:, 4)
+#ifdef NEUTRAL
+    ua(:,5) = up(:,11)
+#endif
 
   END SUBROUTINE phys2cons
 
@@ -96,17 +120,19 @@ CONTAINS
     real*8, dimension(:, :), intent(out) :: up
     integer :: i
 
-    up(:, 1) = abs(ua(:, 1))                                                 ! density
-    up(:, 2) = ua(:, 2)/ua(:, 1)                                         ! u parallel
-    up(:, 3) = ua(:, 3)/ua(:, 1)                                         ! total energy of ions
-    up(:, 4) = ua(:, 4)/ua(:, 1)                                         ! total energy of electrons
+    up(:, 1) = abs(ua(:, 1))                                                ! density
+    up(:, 2) = ua(:, 2)/ua(:, 1)                                            ! u parallel
+    up(:, 3) = ua(:, 3)/ua(:, 1)                                            ! total energy of ions
+    up(:, 4) = ua(:, 4)/ua(:, 1)                                            ! total energy of electrons
     up(:, 5) = abs(2./(3.*phys%Mref)*(ua(:, 3) - 0.5*ua(:, 2)**2/ua(:, 1))) ! pressure of ions
-    up(:, 6) = abs(2./(3.*phys%Mref)*ua(:, 4))                          ! pressure of electrons
-    up(:, 7) = up(:, 5)/up(:, 1)                                         ! temperature of ions
-    up(:, 8) = up(:, 6)/up(:, 1)                                         ! temperature of electrons
-    up(:, 9) = sqrt((up(:, 7) + up(:, 8))*phys%Mref)                     ! sound speed
-    up(:, 10) = up(:, 2)/up(:, 9)                                         ! Mach
-
+    up(:, 6) = abs(2./(3.*phys%Mref)*ua(:, 4))                              ! pressure of electrons
+    up(:, 7) = up(:, 5)/up(:, 1)                                            ! temperature of ions
+    up(:, 8) = up(:, 6)/up(:, 1)                                            ! temperature of electrons
+    up(:, 9) = sqrt((up(:, 7) + up(:, 8))*phys%Mref)                        ! sound speed
+    up(:, 10) = up(:, 2)/up(:, 9)                                           ! Mach
+#ifdef NEUTRAL
+    up(:,11) = abs(ua(:,5))                                                 ! density neutral
+#endif
   END SUBROUTINE cons2phys
 
   !*****************************************
@@ -115,10 +141,10 @@ CONTAINS
   SUBROUTINE jacobianMatrices(U, A)
     real*8, intent(in)  :: U(:)
     real*8, intent(out) :: A(:, :)
-    !                [       0,                                                1,                                    0,              0; ...
-    !     -2/3*U(2)**2/U(1)**2                              4/3*U(2)/U(1)                               2/3,            2/3; ...
-    !     -5/3*U(2)*U(3)/U(1)**2+2/3*U(2)**3/U(1)**3      5/3*U(3)/U(1)-U(2)**2/U(1)**2                5/3*U(2)/U(1),       0 ;   ...
-    !     -5/3*U(4)*U(2)/U(1)**2,                           5/3*U(4)/U(1),                             0,           5/3*U(2)/U(1)]
+    ![ 0,                                           1,                              0,                0; ...
+    ! -2/3*U(2)**2/U(1)**2                          4/3*U(2)/U(1)                   2/3,              2/3; ...
+    ! -5/3*U(2)*U(3)/U(1)**2+2/3*U(2)**3/U(1)**3    5/3*U(3)/U(1)-U(2)**2/U(1)**2   5/3*U(2)/U(1),    0 ;   ...
+    ! -5/3*U(4)*U(2)/U(1)**2,                       5/3*U(4)/U(1),                  0,                5/3*U(2)/U(1)]
 
     A = 0.d0
     if (switch%decoup) then
@@ -220,6 +246,7 @@ CONTAINS
     real*8, intent(in)  :: xy(:, :), Bmod(:)
     real*8, intent(out) :: d_iso(:, :, :), d_ani(:, :, :)
     real*8              :: iperdiff(size(xy, 1))
+
     ! d_iso(Neq,Neq,Ngauss),d_ani(Neq,Neq,Ngauss)
     ! first index corresponds to the equation
     ! second index corresponds to the unknown
@@ -239,11 +266,17 @@ CONTAINS
     d_iso(2, 2, :) = phys%diff_u
     d_iso(3, 3, :) = phys%diff_e
     d_iso(4, 4, :) = phys%diff_ee
+#ifdef NEUTRAL
+    d_iso(5,5,:) = phys%diff_nn
+#endif
 
     d_ani(1, 1, :) = phys%diff_n
     d_ani(2, 2, :) = phys%diff_u
     d_ani(3, 3, :) = phys%diff_e
     d_ani(4, 4, :) = phys%diff_ee
+#ifdef NEUTRAL
+    d_ani(5,5,:) = 0.
+#endif
 
     !*****************************
     ! Non diagonal terms
@@ -378,8 +411,12 @@ CONTAINS
     real*8 :: res, aux
     real, parameter :: tol = 1e-5
     aux = U(3)/U(1) - 0.5*U(2)**2/U(1)**2
-    if (aux < tol) aux = tol
-    res = aux**phys%epn
+    if (2./(3.*phys%Mref)*aux > 1.) then
+      res = (3.*phys%Mref/2)**(phys%epn)
+    else
+      if (aux<tol) aux = tol
+      res = aux**phys%epn
+    endif
   END FUNCTION computeAlphai
 
   FUNCTION computeAlphae(U) RESULT(res)
@@ -387,8 +424,12 @@ CONTAINS
     real*8 :: res, aux
     real, parameter :: tol = 1e-5
     aux = U(4)/U(1)
-    if (aux < tol) aux = tol
-    res = aux**phys%epn
+    if (2./(3.*phys%Mref)*aux > 1.) then
+      res = (3.*phys%Mref/2)**(phys%epn)
+    else
+      if (aux<tol) aux = tol
+      res = aux**phys%epn
+    endif
   END FUNCTION computeAlphae
 
   SUBROUTINE compute_dAlpha_dUi(U, res)
@@ -397,12 +438,16 @@ CONTAINS
     real*8             :: aux
     real, parameter :: tol = 1e-5
     aux = U(3)/U(1) - 0.5*U(2)**2/U(1)**2
-    if (aux < 0) aux = tol
-    res = 0.d0
-    res(1) = -U(3)/U(1)**2 + U(2)**2/U(1)**3
-    res(2) = -U(2)/U(1)**2
-    res(3) = 1./U(1)
-    res = phys%epn*aux**(phys%epn - 1)*res
+    if (2./(3.*phys%Mref)*aux > 1.) then
+      res = 0.d0
+    else
+      if (aux<0) aux = tol
+      res = 0.d0
+      res(1) = -U(3)/U(1)**2+U(2)**2/U(1)**3
+      res(2) = -U(2)/U(1)**2
+      res(3) = 1./U(1)
+      res=phys%epn*aux**(phys%epn-1)*res
+    endif
   END SUBROUTINE compute_dAlpha_dUi
 
   SUBROUTINE compute_dAlpha_dUe(U, res)
@@ -411,11 +456,15 @@ CONTAINS
     real*8             :: aux
     real, parameter :: tol = 1e-5
     aux = U(4)/U(1)
-    if (aux < 0) aux = tol
-    res = 0.d0
-    res(1) = -U(4)/U(1)**2
-    res(4) = 1./U(1)
-    res = phys%epn*aux**(phys%epn - 1)*res
+    if (2./(3.*phys%Mref)*aux > 1.) then
+      res = 0.
+    else
+      if (aux<0) aux = tol
+      res = 0.d0
+      res(1) = -U(4)/U(1)**2
+      res(4) = 1./U(1)
+      res=phys%epn*aux**(phys%epn-1)*res
+    endif
   END SUBROUTINE compute_dAlpha_dUe
 
   ! ******************************
@@ -449,7 +498,12 @@ CONTAINS
     if (U4 < tol) U4 = tol
     if (U1 < tol) U1 = tol
     if (U3 < tol) U3 = tol
-    s = 1./phys%tie*(2./3./phys%Mref)**(-0.5)*(U1**(2.5)/U4**1.5)*(U4 - U3 + 0.5*(U(2)**2/U1))
+    if (phys%diff_ee .gt. 0.0380) then
+      s = 1./(phys%tie*0.0380/phys%diff_ee)*(2./3./phys%Mref)**(-0.5)*(U1**(2.5)/U4**1.5)*(U4-U3+0.5*(U(2)**2/U1))
+    else
+      s = 1./(phys%tie)*(2./3./phys%Mref)**(-0.5)*(U1**(2.5)/U4**1.5)*(U4-U3+0.5*(U(2)**2/U1))
+    endif
+    !s = 1./phys%tie*(2./3./phys%Mref)**(-0.5)*(U1**(2.5)/U4**1.5)*(U4 - U3 + 0.5*(U(2)**2/U1))
   END SUBROUTINE compute_s
 
   SUBROUTINE compute_ds_dU(U, res)
@@ -467,8 +521,389 @@ CONTAINS
     res(2) = U(2)*(U1/U4)**1.5
     res(3) = -U1**2.5/U4**1.5
     res(4) = -1.5*(U1/U4)**2.5*(U4 - U3 + 0.5*U(2)**2/U1) + U1**2.5/U4**1.5
-    res = 1./phys%tie*(2./3./phys%Mref)**(-0.5)*res
+    if (phys%diff_ee .gt. 0.0380) then
+      res = 1./(phys%tie*0.0380/phys%diff_ee)*(2./3./phys%Mref)**(-0.5)*res
+    else
+     res = 1./(phys%tie)*(2./3./phys%Mref)**(-0.5)*res
+    endif
+    !res = 1./phys%tie*(2./3./phys%Mref)**(-0.5)*res
   END SUBROUTINE compute_ds_dU
+
+
+  !*****************************
+  !Ohmic Heating Source
+  !*****************************
+  SUBROUTINE compute_Sohmic(U,Sohmic)
+    real*8, intent(IN) :: U(:)
+    real*8             :: Sohmic,U1,U4
+    real,parameter :: tol = 1e-10
+    U1 = U(1)
+    U4 = U(4)
+    if (U4<tol) U4=tol
+    if (U1<tol) U1=tol
+    Sohmic = phys%Pohmic*(((3*phys%Mref)/2)**1.5)*((U1/U4)**1.5)
+  END SUBROUTINE compute_Sohmic
+
+
+  SUBROUTINE compute_dSohmic_dU(U,res)
+    real*8, intent(IN) :: U(:)
+    real*8             :: res(:),U1,U4
+    real,parameter :: tol = 1e-10
+    U1 = U(1)
+    U4 = U(4)
+    if (U4<tol) U4=tol
+    if (U1<tol) U1=tol
+    res = 0.
+    res(1) = (1.5*U1**0.5)/(U4**1.5)
+    res(4) = -(1.5*U1**1.5)/(U4**2.5)
+    res = phys%Pohmic*(((3*phys%Mref)/2)**1.5)*res
+  END SUBROUTINE compute_dSohmic_dU
+
+
+  ! ******************************
+  ! Neutral Source terms
+  ! ******************************
+#ifdef NEUTRAL
+
+  SUBROUTINE compute_niz(U,niz)
+    real*8, intent(IN) :: U(:)
+    real*8             :: niz,U1,U5
+    real,parameter :: tol = 1e-10
+    U1 = U(1)
+    U5 = U(5)
+    if (U1<tol) U1=tol
+    if (U5<tol) U5=tol
+    niz = U1*U5
+  END SUBROUTINE compute_niz
+
+
+  SUBROUTINE compute_dniz_dU(U,res)
+    real*8, intent(IN) :: U(:)
+    real*8             :: res(:),U1,U5
+    real,parameter :: tol = 1e-10
+    U1 = U(1)
+    U5 = U(5)
+    if (U1<tol) U1=tol
+    if (U5<tol) U5=tol
+    res = 0.
+    res(1) = U5
+    res(5) = U1
+  END SUBROUTINE compute_dniz_dU
+
+
+  SUBROUTINE compute_nrec(U,nrec)
+    real*8, intent(IN) :: U(:)
+    real*8             :: nrec,U1
+    real,parameter :: tol = 1e-10
+    U1 = U(1)
+    if (U1<tol) U1=tol
+    nrec = U1**2
+  END SUBROUTINE compute_nrec
+
+
+  SUBROUTINE compute_dnrec_dU(U,res)
+    real*8, intent(IN) :: U(:)
+    real*8             :: res(:),U1
+    real,parameter :: tol = 1e-10
+    U1 = U(1)
+    if (U1<tol) U1=tol
+    res = 0.
+    res(1) = 2.*U1
+  END SUBROUTINE compute_dnrec_dU
+
+
+  SUBROUTINE compute_fGammacx(U,fGammacx)
+    real*8, intent(IN) :: U(:)
+    real*8             :: fGammacx,U2,U5
+    real,parameter :: tol = 1e-10
+    U2 = U(2)
+    U5 = U(5)
+    if (U5<tol) U5=tol
+    fGammacx = U2*U5
+  END SUBROUTINE compute_fGammacx
+
+
+  SUBROUTINE compute_dfGammacx_dU(U,res)
+    real*8, intent(IN) :: U(:)
+    real*8             :: res(:),U2,U5
+    real,parameter :: tol = 1e-10
+    U2 = U(2)
+    U5 = U(5)
+    if (U5<tol) U5=tol
+    res = 0.
+    res(2) = U5
+    res(5) = U2
+  END SUBROUTINE compute_dfGammacx_dU
+
+
+  SUBROUTINE compute_fGammarec(U,fGammarec)
+    real*8, intent(IN) :: U(:)
+    real*8             :: fGammarec,U1,U2
+    real,parameter :: tol = 1e-10
+    U1 = U(1)
+    U2 = U(2)
+    if (U1<tol) U1=tol
+    fGammarec = U1*U2
+  END SUBROUTINE compute_fGammarec
+
+
+  SUBROUTINE compute_dfGammarec_dU(U,res)
+    real*8, intent(IN) :: U(:)
+    real*8             :: res(:),U1,U2
+    real,parameter :: tol = 1e-10
+    U1 = U(1)
+    U2 = U(2)
+    if (U1<tol) U1=tol
+    res = 0.
+    res(1) = U2
+    res(2) = U1
+  END SUBROUTINE compute_dfGammarec_dU
+
+
+#ifdef TEMPERATURE
+  SUBROUTINE compute_sigmaviz(U,sigmaviz)
+    real*8, intent(IN) :: U(:)
+    real*8             :: sigmaviz,U1,U4,T0,Ery,E0
+    real, parameter    :: tol = 1e-10
+    U1 = U(1)
+    U4 = U(4)
+    T0 = 50.
+    Ery = 13.6
+    if (U1<tol) U1=tol
+    if (U4<tol) U4=tol
+    E0 = (2.*T0*U4)/(3.*phys%Mref*Ery*U1)
+    sigmaviz = 1.e-11*sqrt(E0)*(1./((Ery**1.5)*(6. + E0)))*exp(-1./E0)
+  END SUBROUTINE compute_sigmaviz
+
+
+  SUBROUTINE compute_dsigmaviz_dU(U,res)
+    real*8, intent(IN) :: U(:)
+    real*8             :: res(:),U1,U4,T0,Ery,E0
+    real, parameter    :: tol = 1e-10
+    U1 = U(1)
+    U4 = U(4)
+    T0 = 50.
+    Ery = 13.6
+    if (U1<tol) U1=tol
+    if (U4<tol) U4=tol
+    res = 0.
+    E0 = (2.*T0*U4)/(3.*phys%Mref*Ery*U1)
+    res(1) = (1./U1)*( - 1./2 + 1./((6./E0) + 1)   - 1./E0 )
+    res(4) = 1./(2.*U4) - 1./(6.*(U4/E0) + U4) + 1./(E0*U4)
+    res    = 1.e-11*sqrt(E0)*(1./((Ery**1.5)*(6. + E0)))*exp(-1./E0)*res
+  END SUBROUTINE compute_dsigmaviz_dU
+
+
+  SUBROUTINE compute_sigmavrec(U,sigmavrec)
+    real*8, intent(IN) :: U(:)
+    real*8             :: sigmavrec,U1,U4,T0,Ery,E0
+    real, parameter    :: tol = 1e-10
+    U1 = U(1)
+    U4 = U(4)
+    T0 = 50.
+    Ery = 13.6
+    if (U1<tol) U1=tol
+    if (U4<tol) U4=tol
+    E0 = (Ery*3.*phys%Mref*U1)/(T0*2.*U4)
+    sigmavrec = 5.2e-20*sqrt(E0)*(0.43 + 0.5*log(E0) + 0.469*(E0**(-1./3)))
+  END SUBROUTINE compute_sigmavrec
+
+
+  SUBROUTINE compute_dsigmavrec_dU(U,res)
+    real*8, intent(IN) :: U(:)
+    real*8             :: res(:),U1,U4,T0,Ery,E0
+    real, parameter    :: tol = 1e-10
+    U1 = U(1)
+    U4 = U(4)
+    T0 = 50.
+    Ery = 13.6
+    if (U1<tol) U1=tol
+    if (U4<tol) U4=tol
+    E0 = (Ery*3.*phys%Mref*U1)/(T0*2.*U4)
+    res = 0.
+    res(1) = 5.2e-20*sqrt(E0)*(0.43 + 0.5*log(E0) + 0.469*(E0**(-1./3)))/(2.*U1) + 5.2e-20*sqrt(E0)*(0.5/U1 +&
+      &0.469*(E0**(-1./3))*(-1./(3.*U1)))
+    res(4) = - 5.2e-20*sqrt(E0)*(0.43 + 0.5*log(E0) + 0.469*(E0**(-1./3)))/(2.*U4) + 5.2e-20*sqrt(E0)*( - 0.5/U4 +&
+      &0.469*(E0**(-1./3))*(1./(3.*U4)))
+  END SUBROUTINE compute_dsigmavrec_dU
+
+
+  SUBROUTINE compute_sigmavcx(U,sigmavcx)
+    real*8, intent(IN) :: U(:)
+    real*8             :: sigmavcx,U1,U4,T0,E0
+    real,parameter :: tol = 1e-10
+    U1 = U(1)
+    U4 = U(4)
+    T0 = 50.
+    if (U1<tol) U1=tol
+    if (U4<tol) U4=tol
+    E0 = (0.5*3.*phys%Mref*U1)/(2.*T0*U4)
+    sigmavcx = (2.5e-15/exp(-0.5))*exp(-E0)
+  END SUBROUTINE compute_sigmavcx
+
+
+  SUBROUTINE compute_dsigmavcx_dU(U,res)
+    real*8, intent(IN) :: U(:)
+    real*8             :: res(:),U1,U4,T0,E0
+    real, parameter    :: tol = 1e-10
+    T0 = 50.
+    U1 = U(1)
+    U4 = U(4)
+    if (U1<tol) U1=tol
+    if (U4<tol) U4=tol
+    E0 = (0.5*3.*phys%Mref*U1)/(2.*T0*U4)
+    res = 0.
+    res(1) = -1./U4
+    res(4) = U1/(U4**2)
+    res = (1.5*phys%Mref/(2.*T0))*(2.5e-15/exp(-0.5))*exp(-E0)*res
+  END SUBROUTINE compute_dsigmavcx_dU
+
+
+  SUBROUTINE compute_Tloss(U,Tloss)
+    real*8, intent(IN) :: U(:)
+    real*8             :: Tloss,U1,U4,T0
+    real,parameter :: tol = 1e-10
+    U1 = U(1)
+    U4 = U(4)
+    T0 = 50.
+    if (U1<tol) U1=tol
+    if (U4<tol) U4=tol
+    Tloss = 25. + 170.*exp(-(T0*U4)/(3.*phys%Mref*U1))
+  END SUBROUTINE compute_Tloss
+
+
+  SUBROUTINE compute_dTloss_dU(U,res)
+    real*8, intent(IN) :: U(:)
+    real*8             :: res(:),U1,U4,T0
+    real,parameter :: tol = 1e-10
+    U1 = U(1)
+    U4 = U(4)
+    T0 = 50.
+    if (U1<tol) U1=tol
+    if (U4<tol) U4=tol
+    res = 0.
+    res(1) = U4/(U1**2)
+    res(4) = -1./U1
+    res = 170.*exp(-(T0*U4)/(3.*phys%Mref*U1))*(T0/(3.*phys%Mref))*res
+  END SUBROUTINE compute_dTloss_dU
+
+
+  SUBROUTINE compute_Tlossrec(U,Tlossrec)
+    real*8, intent(IN) :: U(:)
+    real*8             :: Tlossrec,U1,U4,T0
+    real,parameter :: tol = 1e-10
+    U1 = U(1)
+    U4 = U(4)
+    T0 = 50.
+    if (U1<tol) U1=tol
+    if (U4<tol) U4=tol
+    Tlossrec = min(250.,8.*exp((2.*U4*T0)/(3.*phys%Mref*U1*9.)))
+  END SUBROUTINE compute_Tlossrec
+
+
+  SUBROUTINE compute_dTlossrec_dU(U,res)
+    real*8, intent(IN) :: U(:)
+    real*8             :: res(:),U1,U4,T0,Tlossrec
+    real, parameter    :: tol = 1e-10
+    U1 = U(1)
+    U4 = U(4)
+    T0 = 50.
+    if (U1<tol) U1=tol
+    if (U4<tol) U4=tol
+    res = 0.
+    Tlossrec = 8.*exp((2.*U4*T0)/(3.*phys%Mref*U1*9.))
+    if (Tlossrec .le. 250.) then
+      res(1) = -U4/(U1**2)
+      res(4) = 1./U1
+      res = Tlossrec*((2.*T0)/(27.*phys%Mref))*res
+    endif
+  END SUBROUTINE compute_dTlossrec_dU
+
+
+  SUBROUTINE compute_fEiiz(U,fEiiz)
+    real*8, intent(IN) :: U(:)
+    real*8             :: fEiiz,U3,U5
+    real,parameter :: tol = 1e-10
+    U3 = U(3)
+    U5 = U(5)
+    if (U3<tol) U3=tol
+    if (U5<tol) U5=tol
+    fEiiz = U3*U5
+  END SUBROUTINE compute_fEiiz
+
+
+  SUBROUTINE compute_dfEiiz_dU(U,res)
+    real*8, intent(IN) :: U(:)
+    real*8             :: res(:),U3,U5
+    real,parameter :: tol = 1e-10
+    U3 = U(3)
+    U5 = U(5)
+    if (U3<tol) U3=tol
+    if (U5<tol) U5=tol
+    res = 0.
+    res(3) = U5
+    res(5) = U3
+  END SUBROUTINE compute_dfEiiz_dU
+
+
+  SUBROUTINE compute_fEirec(U,fEirec)
+    real*8, intent(IN) :: U(:)
+    real*8             :: fEirec,U1,U3
+    real,parameter :: tol = 1e-10
+    U1 = U(1)
+    U3 = U(3)
+    if (U1<tol) U1=tol
+    if (U3<tol) U3=tol
+    fEirec = U1*U3
+  END SUBROUTINE compute_fEirec
+
+
+  SUBROUTINE compute_dfEirec_dU(U,res)
+    real*8, intent(IN) :: U(:)
+    real*8             :: res(:),U1,U3
+    real,parameter :: tol = 1e-10
+    U1 = U(1)
+    U3 = U(3)
+    if (U1<tol) U1=tol
+    if (U3<tol) U3=tol
+    res = 0.
+    res(1) = U3
+    res(3) = U1
+  END SUBROUTINE compute_dfEirec_dU
+
+
+  SUBROUTINE compute_fEicx(U,fEicx)
+    real*8, intent(IN) :: U(:)
+    real*8             :: fEicx,U1,U2,U5
+    real,parameter :: tol = 1e-10
+    U1 = U(1)
+    U2 = U(2)
+    U5 = U(5)
+    if (U1<tol) U1=tol
+    if (U5<tol) U5=tol
+    fEicx = (U5*U2**2)/U1
+  END SUBROUTINE compute_fEicx
+
+
+  SUBROUTINE compute_dfEicx_dU(U,res)
+    real*8, intent(IN) :: U(:)
+    real*8             :: res(:),U1,U2,U5
+    real,parameter :: tol = 1e-10
+    U1 = U(1)
+    U2 = U(2)
+    U5 = U(5)
+    if (U1<tol) U1=tol
+    if (U5<tol) U5=tol
+    res = 0.
+    res(1) = -U5*(U2/U1)**2
+    res(2) = 2.*U5*U2/U1
+    res(5) = (U2**2)/U1
+  END SUBROUTINE compute_dfEicx_dU
+#endif %TEMPERATURE
+
+#endif %NEUTRAL
+
+
 
   !***********************************************************************
   !
@@ -484,7 +919,11 @@ CONTAINS
     real, intent(in) :: isext
     integer, intent(in)  :: ifa, iel
     real*8, intent(out) :: tau(:, :)
+#ifdef NEUTRAL
+    real*8              :: tau_aux(5)
+#else
     real*8              :: tau_aux(4)
+#endif
     integer             :: ndim
     real*8 :: xc, yc, rad, h, aux, bn, bnorm
     real*8 :: U1, U2, U3, U4
@@ -511,14 +950,20 @@ CONTAINS
         tau_aux(1) = tau_aux(1) + phys%diff_n*refElTor%Ndeg/(numer%tmax*xy(1)/numer%ntor)/phys%lscale
         tau_aux(2) = tau_aux(2) + phys%diff_u*refElTor%Ndeg/(numer%tmax*xy(1)/numer%ntor)/phys%lscale
         tau_aux(3) = tau_aux(3) + (phys%diff_e + abs(bn)*phys%diff_pari*up(7)**2.5*bnorm/uc(1))*refElTor%Ndeg/(numer%tmax*xy(1)/numer%ntor)/phys%lscale
-        tau_aux(4) = tau_aux(4) + (phys%diff_ee + abs(bn)*phys%diff_pare*up(8)**2.5*bnorm/uc(1))*refElTor%Ndeg/(numer%tmax*xy(1)/numer%ntor)/phys%lscale               
+        tau_aux(4) = tau_aux(4) + (phys%diff_ee + abs(bn)*phys%diff_pare*up(8)**2.5*bnorm/uc(1))*refElTor%Ndeg/(numer%tmax*xy(1)/numer%ntor)/phys%lscale
+#ifdef NEUTRAL
+        tau_aux(5) = tau_aux(5) + phys%diff_nn*refElTor%Ndeg/(numer%tmax*xy(1)/numer%ntor)/phys%lscale
+#endif
       else
 #endif
         ! Toroidal face
         tau_aux(1) = tau_aux(1) + phys%diff_n*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
         tau_aux(2) = tau_aux(2) + phys%diff_u*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
         tau_aux(3) = tau_aux(3) + (phys%diff_e + abs(bn)*phys%diff_pari*up(7)**2.5*bnorm/uc(1))*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
-        tau_aux(4) = tau_aux(4) + (phys%diff_ee + abs(bn)*phys%diff_pare*up(8)**2.5*bnorm/uc(1))*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale               
+        tau_aux(4) = tau_aux(4) + (phys%diff_ee + abs(bn)*phys%diff_pare*up(8)**2.5*bnorm/uc(1))*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
+#ifdef NEUTRAL
+        tau_aux(5) = tau_aux(5) + phys%diff_nn*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
+#endif
 #ifdef TOR3D
       endif
 #endif
@@ -539,14 +984,20 @@ CONTAINS
         tau_aux(1) = tau_aux(1) + phys%diff_n*refElTor%Ndeg/(numer%tmax*xy(1)/numer%ntor)/phys%lscale
         tau_aux(2) = tau_aux(2) + phys%diff_u*refElTor%Ndeg/(numer%tmax*xy(1)/numer%ntor)/phys%lscale
         tau_aux(3) = tau_aux(3) + (phys%diff_e + abs(bn)*phys%diff_pari*up(7)**2.5*bnorm/uc(1))*refElTor%Ndeg/(numer%tmax*xy(1)/numer%ntor)/phys%lscale
-        tau_aux(4) = tau_aux(4) + (phys%diff_ee + abs(bn)*phys%diff_pare*up(8)**2.5*bnorm/uc(1))*refElTor%Ndeg/(numer%tmax*xy(1)/numer%ntor)/phys%lscale               
+        tau_aux(4) = tau_aux(4) + (phys%diff_ee + abs(bn)*phys%diff_pare*up(8)**2.5*bnorm/uc(1))*refElTor%Ndeg/(numer%tmax*xy(1)/numer%ntor)/phys%lscale
+#ifdef NEUTRAL
+        tau_aux(5) = tau_aux(5) + phys%diff_nn*refElTor%Ndeg/(numer%tmax*xy(1)/numer%ntor)/phys%lscale
+#endif      
       else
 #endif
         ! Toroidal face
         tau_aux(1) = tau_aux(1) + phys%diff_n*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
         tau_aux(2) = tau_aux(2) + phys%diff_u*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
         tau_aux(3) = tau_aux(3) + (phys%diff_e + abs(bn)*phys%diff_pari*up(7)**2.5*bnorm/uc(1))*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
-        tau_aux(4) = tau_aux(4) + (phys%diff_ee + abs(bn)*phys%diff_pare*up(8)**2.5*bnorm/uc(1))*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale               
+        tau_aux(4) = tau_aux(4) + (phys%diff_ee + abs(bn)*phys%diff_pare*up(8)**2.5*bnorm/uc(1))*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
+#ifdef NEUTRAL
+        tau_aux(5) = tau_aux(5) + phys%diff_nn*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
+#endif
 #ifdef TOR3D
       endif
 #endif
@@ -568,17 +1019,24 @@ CONTAINS
         tau_aux(1) = tau_aux(1) + phys%diff_n
         tau_aux(2) = tau_aux(2) + phys%diff_u
         tau_aux(3) = tau_aux(3) + phys%diff_e + abs(bn)*phys%diff_pari*up(7)**2.5*bnorm/uc(1)*refElTor%Ndeg/(numer%tmax*xy(1)/numer%ntor)/phys%lscale
-        tau_aux(4) = tau_aux(4) + phys%diff_ee + abs(bn)*phys%diff_pare*up(8)**2.5*bnorm/uc(1)*refElTor%Ndeg/(numer%tmax*xy(1)/numer%ntor)/phys%lscale               
+        tau_aux(4) = tau_aux(4) + phys%diff_ee + abs(bn)*phys%diff_pare*up(8)**2.5*bnorm/uc(1)*refElTor%Ndeg/(numer%tmax*xy(1)/numer%ntor)/phys%lscale
+#ifdef NEUTRAL
+        tau_aux(5) = tau_aux(5) + phys%diff_nn
+#endif      
       else
 #endif
         ! Toroidal face
         tau_aux(1) = tau_aux(1) + phys%diff_n
         tau_aux(2) = tau_aux(2) + phys%diff_u
         tau_aux(3) = tau_aux(3) + phys%diff_e + abs(bn)*phys%diff_pari*up(7)**2.5*bnorm/uc(1)*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
-        tau_aux(4) = tau_aux(4) + phys%diff_ee + abs(bn)*phys%diff_pare*up(8)**2.5*bnorm/uc(1)*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale               
+        tau_aux(4) = tau_aux(4) + phys%diff_ee + abs(bn)*phys%diff_pare*up(8)**2.5*bnorm/uc(1)*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
+#ifdef NEUTRAL
+        tau_aux(5) = tau_aux(5) + phys%diff_nn
+#endif
 #ifdef TOR3D
       endif
 #endif
+
     else
       write (6, *) "Wrong stabilization type: ", numer%stab
       stop
@@ -587,6 +1045,9 @@ CONTAINS
     tau(2, 2) = tau_aux(2)
     tau(3, 3) = tau_aux(3)
     tau(4, 4) = tau_aux(4)
+#ifdef NEUTRAL
+    tau(5,5) = tau_aux(5)
+#endif
   END SUBROUTINE computeTauGaussPoints
 
   !!
@@ -750,391 +1211,391 @@ CONTAINS
 
   END SUBROUTINE computeTauGaussPoints_matrix
 
-  !
-  !                !***********************************************************************
-  !                !
-  !                !                           MAGNETIC FIELD
-  !                !
-  !                !***********************************************************************
-  !#ifdef TOR3D
-  !  SUBROUTINE defineMagneticField(x,y,t,b,divb,drift)
-  !  real*8, intent(in)      :: x(:),y(:),t(:)
-  !  real*8, intent(out),optional     :::: b(:,:),divb(:),drift(:,:)
-  !  real*8                  :: R0,q,r
-  !  real*8                  :: xmax,xmin,ymax,ymin,xm,ym,p,divbp
-  !  real*8                  :: xx,yy,tt,Bp,Bt,Br,Bz,BB,dmax,B0,xr,yr
-  !  integer*4               :: i,j,ind,N2D,N1D
-  !
 
-  !  N2d = size(X,1)
-  !  N1d = size(t,1)
-  !  xmax = Mesh%xmax
-  !  xmin = Mesh%xmin
-  !  ymax = Mesh%ymax
-  !  ymin = Mesh%ymin
-  !  xm = 0.5*(xmax+xmin)
-  !  ym = 0.5*(ymax+ymin)
-  !!  xm = -0.5
-  !!  ym = -0.5
-  !  ! Initialization
-  !  ! Initialization
-  !  if (present(b)) then
-  !     b     = 0.
-  !  endif
-  !  if (present(divb)) then
-  !    divb  = 0.
-  !  endif
-  !  if (present(drift)) then
-  !    drift = 0.
-  !  endif
-  !  if (present(Bmod)) then
-  !     Bmod  = 0.
-  !  endif
-
-  !                        DO i=1,N2d
-  !                                                 DO j=1,N1d
-  !                                                     xx = x(i)
-  !                                                     yy = y(i)
-  !                                                     tt = t(j)
-  !                                                     ind = (j-1)*N2d+i
-  !
-  !                                                                                        SELECT CASE(switch%testcase)
-  !                                                                                                        CASE(1)
-  !                                                                                                        IF (switch%axisym) THEN
-  !                                                                                                                                WRITE(6,*) "This is NOT an axisymmetric test case!"
-  !                                                                                                                                stop
-  !                                                                                                 END IF
-  !                                                                                                        ! Cartesian case, circular field centered in [xm, ym] in the poloidal plane, Bt = 1
-  !                           Br = (yy-ym)
-  !                           Bz = (-xx+xm)
-  !                           Bt = 1.
-  !                                                                                                 divbp = 0.
-  !                                                                                                CASE(2)
-  !                                                                                                        IF (.not.switch%axisym) THEN
-  !                                                                                                                                WRITE(6,*) "This is an axisymmetric test case!"
-  !                                                                                                                                stop
-  !                                                                                                 END IF
-  !                                                                                                        ! Axysimmetric case, circular field centered in [xm, ym] in the poloidal plane, Bt = 1
-  !                           Br = (yy-ym)/xx
-  !                           Bz = (-xx+xm)/xx
-  !                           Bt = 1.
-  !                           divbp = (xx**2*yy-xx**2*ym+xm**2*yy-xm**2*ym+3*yy*ym**2-3*yy**2*ym+yy**3-ym**3-2*xx*xm*yy+2*xx*xm*ym)/(xx**4*((xx-xm)**2/xx**2+(yy-ym)**2/xx**2+1)**(1.5))
-  !                                                                                                CASE(3)
-  !                                                                                                        IF (.not.switch%axisym) THEN
-  !                                                                                                                                WRITE(6,*) "This is an axisymmetric test case!"
-  !                                                                                                                                stop
-  !                                                                                                 END IF
-  !                                                                                                        ! Axysimmetric case, circular field centered in [xm, ym] in the poloidal plane, Bt = 1
-  !                           Br = (yy-ym)/xx
-  !                           Bz = (-xx+xm)/xx
-  !                           Bt = 1.
-  !                           divbp = (xx**2*yy-xx**2*ym+xm**2*yy-xm**2*ym+3*yy*ym**2-3*yy**2*ym+yy**3-ym**3-2*xx*xm*yy+2*xx*xm*ym)/(xx**4*((xx-xm)**2/xx**2+(yy-ym)**2/xx**2+1)**(1.5))
-  !
-  !                                                                                                        CASE(50:59)
-  !                                                                                                                  write(6,*) "Error in defineMagneticField: you should not be here!"
-  !                                                                                                                  STOP
-  !                                                                                                        CASE(60:69)
-  !
-  !                                                                                                                                                ! Circular case with limiter
-  !                                                                                                                                                R0 = geom%R0
-  !                                                                                                                                                q  = geom%q
-  !                                                                                                                                                B0 = 2 ! not influential
-  !                                                                                                                                                xr = xx*phys%lscale
-  !                                                                                                                                                yr = yy*phys%lscale
-  !
-  !                                                                                                                                                r  = sqrt((xr-R0)**2+yr**2)
-  !                                                                                                                                                Br = -B0*yr/(xr*q*sqrt(1- (r/R0)**2 ) )
-  !                                                                                                                                                Bz = B0*(xr-R0)/(xr*q*sqrt(1- (r/R0)**2 ) )
-  !                                                                                                                                                Bt = B0*R0/xr
-
-  !                                                                                                                                                if (present(divb)) then
-  !                                                                                                                                                   IF (switch%axisym) THEN
-  !                                                                                                                                                                     divbp = -yy/xx/sqrt(R0**2*q**2+(1-q**2)*r**2)*phys%lscale
-  !                                                                                                                                                   ELSE
-  !                                                                                                                                                                     WRITE(6,*) "Not coded: usually here you should have an axisym simulation"
-  !                                                                                                                                                                     STOP
-  !                                                                                                                                                   END IF
-  !                                                                                                                                                endif
-  !                                                                                                                                  if (present(divb)) then
-  !                                                                                                                                                   IF (switch%driftdia) THEN
-  !                                                                                                                                                                    drift(:,2) =  -1./R0*phys%lscale
-  !                                                                                                                                                   END IF
-  !                                                                                                                                                endif
-  !
-
-  !
-  !
-  !
-  !
-  !                                                                                                        CASE DEFAULT
-  !                                                                                                                                        WRITE(6,*) "Error! Test case not valid"
-  !                                                                                                                                        STOP
-  !                                                                                        END SELECT
-  !
-  !                                                                                        Bp = sqrt(Br**2+Bz**2)
-  !                                                     BB = sqrt(Bp**2+Bt**2)
-  !                                                     b(ind,1) = Br/BB
-  !                                                     b(ind,2) = Bz/BB
-  !                                                     b(ind,3) = Bt/BB
-  !                                                     if (present(divb)) then
-  !                                                        divb(ind) = divbp
-  !                                                     endif
-  !                                                 END DO
-  !                        END DO
-  !  END SUBROUTINE defineMagneticField
-  !#else
-  !  SUBROUTINE defineMagneticField(x,y,b,divb,drift,Bmod)
-  !  real*8, intent(in)      :: x(:),y(:)
-  !  real*8, intent(out)     :: b(:,:)
-  !  real*8, intent(out),optional::divb(:),drift(:,:),Bmod(:)
-  !  real*8                  :: R0,q,r(size(x)),auxdivb(size(x)),auxdrift(size(b,1),size(b,2))
-  !  real*8                  :: xmax,xmin,ymax,ymin,xm,ym,xx,yy
-  !  real*8                  :: Br,Bz,Bt,BB,Bp
-  !  integer :: i
-  !  ! Initialization
-  !  b     = 0.
-  !  auxdivb(:) = 0.
-  !  xmax = Mesh%xmax
-  !  xmin = Mesh%xmin
-  !  ymax = Mesh%ymax
-  !  ymin = Mesh%ymin
-  !  xm = 0.5*(xmax+xmin)
-  !  ym = 0.5*(ymax+ymin)
-  !  if (present(Bmod)) then
-  !     Bmod  = 0.
-  !  endif
-  !!  xm = -0.5
-  !!  ym = -0.5
-  !                                SELECT CASE(switch%testcase)
-  !                                  CASE(1)
-  !      ! Cartesian case with div(b)~=0, n = 2+sin(wx*x )*sin(wy*y),  u = cos(wx*x)*cos(wy*y), Ei = 20+cos(wx*x)*sin(wy*y), Ee = 20+sin(wx*x)*cos(wy*y)
-  !!            b(:,1) = 1./30.*(x-y**2+2)
-  !!            b(:,2) = 1./30.*(x*y+y)
-  !!            auxdivb(:) = 1./15.+(1./30.)*x
-  !      DO i=1,size(x)
-  !             xx = x(i)
-  !             yy = y(i)
-  !                           Br = (yy-ym)
-  !                           Bz = (-xx+xm)
-  !                           Bt = 1.
-  !                                                                                                        Bp = sqrt(Br**2+Bz**2)
-  !                                                                                   BB = sqrt(Bp**2+Bt**2)
-  !                                                                                   b(i,1) = Br/BB
-  !                                                                                   b(i,2) = Bz/BB
-  !             auxdivb(i) = 0.
-  !      END DO
-
-  !      CASE(2)
-  !!      ! Axisymmetric case with div(b)~=0, n = 2+sin(wx*x )*sin(wy*y),  u = cos(wx*x)*cos(wy*y), Ei = 20+cos(wx*x)*sin(wy*y), Ee = 20+sin(wx*x)*cos(wy*y)
-  !!            b(:,1) = 1./30.*(x-y**2+2)
-  !!            b(:,2) = 1./30.*(x*y+y)
-  !!            auxdivb(:) = 1./30.+((1./30.)*x-(1./30.)*y**2+1./15.)/x+1./30.*(x+1)
-  !                                        DO i=1,size(x)
-  !             xx = x(i)
-  !             yy = y(i)
-  !                           Br = (yy-ym)/xx
-  !                           Bz = (-xx+xm)/xx
-  !                           Bt = 1.
-  !                                                                                                        Bp = sqrt(Br**2+Bz**2)
-  !                                                                                   BB = sqrt(Bp**2+Bt**2)
-  !                                                                                   b(i,1) = Br/BB
-  !                                                                                   b(i,2) = Bz/BB
-  !             auxdivb(i) = (xx**2*yy-xx**2*ym+xm**2*yy-xm**2*ym+3*yy*ym**2-3*yy**2*ym+yy**3-ym**3-2*xx*xm*yy+2*xx*xm*ym)/(xx**4*((xx-xm)**2/xx**2+(yy-ym)**2/xx**2+1)**(1.5))
-  !            END DO
-  !      CASE(5)
-  !      ! Cartesian case, square mesh, horizontal field
-  !            b(:,1) = 0.1
-  !            b(:,2) = 0.
-  !      CASE(6)
-  !      ! Cartesian case, square mesh, horizontal field
-  !         DO i=1,size(x)
-  !            IF (y(i).ge.0.5) THEN
-  !               b(i,1) = 0.1
-  !            ELSE
-  !               b(i,1) = -0.1
-  !            END IF
-  !         END DO
-  !      CASE(50:59)
-  !         write(6,*) "Error in defineMagneticField: you should not be here!"
-  !         STOP
-  !                                  CASE(60:69)
-  !
-  !        ! Circular case with limiter
-  !        R0 = geom%R0
-  !        q  = geom%q
-  !        r  = phys%lscale*sqrt((x-R0/phys%lscale)**2+y**2)
-  !        b(:,1) = -phys%lscale*y/sqrt(R0**2*q**2+(1-q**2)*r**2)
-  !        b(:,2) = phys%lscale*(x-R0/phys%lscale)/sqrt(R0**2*q**2+(1-q**2)*r**2)
-
-  !        IF (switch%axisym) THEN
-  !            auxdivb(:) = -y/x/sqrt(R0**2*q**2+(1-q**2)*r**2)*phys%lscale
-  !        ELSE
-  !            WRITE(6,*) "Not coded: usually here you should have an axisym simulation"
-  !            STOP
-  !        END IF
-  !
-  !        IF (switch%driftdia) THEN
-  !           auxdrift(:,2) =  -1./R0*phys%lscale
-  !        END IF
-  !                                  CASE DEFAULT
-  !                                      WRITE(6,*) "Error! Test case not valid"
-  !                                      STOP
-  !                                END SELECT
-
-  !    IF (present(divb)) THEN
-  !       divb = auxdivb
-  !    ENDIF
-  !    IF (present(drift)) THEN
-  !       drift = auxdrift
-  !    ENDIF
-  !  END SUBROUTINE defineMagneticField
-  !#endif
-
-  !  SUBROUTINE loadMagneticField()
-  !                                        USE interpolation
-  !                                 USE HDF5
-  !                                 USE HDF5_io_module
-  !                                        integer        :: i,ierr,ip,jp
-  !                                        integer(HID_T) :: file_id
-  !                                        real*8,pointer,dimension(:,:) :: r2D,z2D,flux2D,Br2D,Bz2D,Bphi2D
-  !                                        real*8,allocatable,dimension(:,:) :: bx,by,bmod,divb,bmodx,bmody,driftx,drifty
-  !                                        real*8,allocatable,dimension(:)   :: xvec,yvec
-  !                                        real*8                            :: x,y
-  !
-  !                                 WRITE(6,*) "******* Loading magnetic field *******"
-  !                                        ! Allocate storing space in phys
-  !                                        ALLOCATE(phys%b(Mesh%Nnodes,Mesh%Ndim))
-  !                                        ALLOCATE(phys%divb(Mesh%Nnodes))
-  !                                        ALLOCATE(phys%drift(Mesh%Nnodes,Mesh%Ndim))
-  !                                        ALLOCATE(phys%flux2d(Mesh%Nnodes))
-  !
-  !                                        ! Dimensions of the file storing the magnetic field for West
-  !                                        ip = 541
-  !                                        jp = 391
-  !                                        ALLOCATE(r2D(ip,jp))
-  !                                        ALLOCATE(z2D(ip,jp))
-  !                                        ALLOCATE(flux2D(ip,jp))
-  !                                        ALLOCATE(Br2D(ip,jp))
-  !                                        ALLOCATE(Bz2D(ip,jp))
-  !                                        ALLOCATE(Bphi2D(ip,jp))
-  !                                        ALLOCATE(bx(ip,jp))
-  !                                        ALLOCATE(by(ip,jp))
-  !                                        ALLOCATE(bmod(ip,jp))
-  !                                        ALLOCATE(bmodx(ip,jp))
-  !                                        ALLOCATE(bmody(ip,jp))
-  !                                        ALLOCATE(divb(ip,jp))
-  !                                        ALLOCATE(driftx(ip,jp))
-  !                                        ALLOCATE(drifty(ip,jp))
-  !
-  !                                        ! Read file
-  !                                        CALL HDF5_open('WEST_far_465.h5',file_id,IERR)
-  !                                        CALL HDF5_array2D_reading(file_id,r2D,'r2D')
-  !                                        CALL HDF5_array2D_reading(file_id,z2D,'z2D')
-  !                                        CALL HDF5_array2D_reading(file_id,flux2D,'flux2D')
-  !                                        CALL HDF5_array2D_reading(file_id,Br2D,'Br2D')
-  !                                        CALL HDF5_array2D_reading(file_id,Bz2D,'Bz2D')
-  !                                        CALL HDF5_array2D_reading(file_id,Bphi2D,'Bphi2D')
-  !                                        CALL HDF5_close(file_id)
-  !
-  !                                 ! Apply length scale
-  !                                 r2D = r2D/phys%lscale
-  !                                 z2D = z2D/phys%lscale
-  !
-  !                                        ! Compute b
-  !                                        bmod = sqrt(Br2D**2+Bz2D**2+Bphi2D**2)
-  !                                        bx = -Br2D/bmod
-  !                                        by = -Bz2D/bmod
-  !
-  !                                        ! Compute divergence of b
-  !                                        divb = 0.
-  !                                        IF (switch%axisym) THEN
-  !                                                ! 1/r*(d r*br/dr)+dbz/dz
-  !                                                  divb(2:ip-1,2:jp-1) = 1./r2D(2:ip-1,2:jp-1)*(r2D(2:ip-1,3:jp)*bx(2:ip-1,3:jp)- &
-  !                                                                     r2D(2:ip-1,1:jp-2)*bx(2:ip-1,1:jp-2))/(r2D(2:ip-1,3:jp)-  &
-  !                                                                     r2D(2:ip-1,1:jp-2))+(by(3:ip,2:jp-1)-by(1:ip-2,2:jp-1))/(z2D(3:ip,2:jp-1)-z2D(1:ip-2,2:jp-1))
-  !
-  !                                        ELSE
-  !                                        ! dbr/dr+dbz/dz
-  !                                                  divb(2:ip-1,2:jp-1) = (bx(2:ip-1,3:jp-1)-bx(2:ip-1,1:jp-2))/(r2D(2:ip-1,3:jp)-r2D(2:ip-1,1:jp-2))+ &
-  !                                                                       (by(3:ip,2:jp-1)-by(1:ip-2,2:jp-1))/(z2D(3:ip,2:jp-1)-z2D(1:ip-2,2:jp-1))
-  !                                        END IF
-  !
-  !                                                ! Compute drift velocity
-  !                                                driftx = 0.
-  !                                                drifty = 0.
-  !                                                IF (switch%driftdia) THEN
-  !                                                                bmodx = (bmod(2:ip-1,3:jp)-bmod(2:ip-1,1:jp-2))/(r2D(2:ip-1,3:jp)-r2D(2:ip-1,1:jp-2))
-  !                                                                bmody = (bmod(3:ip,2:jp-1)-bmod(1:ip-2,2:jp-1))/(z2D(3:ip,2:jp-1)-z2D(1:ip-2,2:jp-1))
-  !                                                                driftx(2:ip-1,2:jp-1) =  -Bphi2D(2:ip-1,2:jp-1)*bmody/bmod(2:ip-1,2:jp-1)**3
-  !                                                                drifty(2:ip-1,2:jp-1) =   Bphi2D(2:ip-1,2:jp-1)*bmodx/bmod(2:ip-1,2:jp-1)**3
-  !                    END IF
-  !
-  !                                                ! Interpolate
-  !                                                ALLOCATE(xvec(jp))
-  !                                                ALLOCATE(yvec(ip))
-  !                                                xvec = r2D(1,:)
-  !                                                yvec = z2D(:,1)
-  !                                                DO i = 1,Mesh%Nnodes
-  !                                                                        x = Mesh%X(i,1)
-  !                                                                        y = Mesh%X(i,2)
-  !                                                                        phys%b(i,1) = interpolate( ip, yvec,jp, xvec, bx, y,x, 1e-12)
-  !                                                                        phys%b(i,2) = interpolate( ip, yvec,jp, xvec, by, y,x, 1e-12)
-  !                                                                        phys%divb(i) = interpolate( ip, yvec,jp, xvec, divb, y,x, 1e-12)
-  !                                                                        phys%drift(i,1) = interpolate( ip, yvec,jp, xvec,driftx, y,x, 1e-12)
-  !                                                                        phys%drift(i,2) = interpolate( ip, yvec,jp, xvec,drifty, y,x, 1e-12)
-  !                                                                        phys%flux2D(i) = interpolate( ip, yvec,jp, xvec,flux2D, y,x, 1e-12)
-  !                                                END DO
-  !
-  !                                        ! Free memory
-  !                                        DEALLOCATE(Br2D,Bz2D,Bphi2D,xvec,yvec)
-  !                                        DEALLOCATE(r2D,z2D,flux2D,bx,by,bmod,bmodx,bmody,divb,driftx,drifty)
-  !
-  !  END SUBROUTINE loadMagneticField
-
-  !
-  !
-  !  SUBROUTINE loadMagneticFieldTemporalEvolution()
-  !                                 USE HDF5
-  !                                 USE HDF5_io_module
-  !                                 USE MPI_OMP
-  !                                        integer        :: ierr,k
-  !                                 character(LEN=20) :: fname = 'Evolving_equilibrium'
-  !                                 character(10)  :: npr,nid,nit
-  !                                 character(len=1000) :: fname_complete
-  !                                        integer(HID_T) :: file_id
-  !
-  !                                 WRITE(6,*) "******* Loading magnetic field *******"
-  !
-  !                                        ! Allocate storing space in phys
-  !                                        ALLOCATE(phys%Br(Mesh%Nnodes))
-  !                                        ALLOCATE(phys%Bz(Mesh%Nnodes))
-  !                                        ALLOCATE(phys%Bt(Mesh%Nnodes))
-  !                                        ALLOCATE(phys%flux2d(Mesh%Nnodes))
-  !
-  !     ! File name
-  !     write(nit, "(i10)") time%it
-  !     nit = trim(adjustl(nit))
-  !     k = INDEX(nit, " ") -1
-  !
-  !                                        IF (MPIvar%glob_size.GT.1) THEN
-  !                                           write(nid,*) MPIvar%glob_id+1
-  !                                           write(npr,*) MPIvar%glob_size
-  !                                           fname_complete = trim(adjustl(fname))//'_'//trim(adjustl(nid))//'_'//trim(adjustl(npr))//'_'//REPEAT("0", 4 - k)//trim(ADJUSTL(nit))//'.h5'
-  !                                        ELSE
-  !                                           fname_complete = trim(adjustl(fname))//'_'//REPEAT("0", 4 - k)//trim(ADJUSTL(nit))//'.h5'
-  !                                        END IF
-  !
-  !     write(6,*) 'Magnetic field loaded from file: ', trim(adjustl(fname_complete))
-  !
-  !                                        ! Read file
-  !                                        CALL HDF5_open(fname_complete,file_id,IERR)
-  !                                        CALL HDF5_array1D_reading(file_id,phys%Br,'Br')
-  !                                        CALL HDF5_array1D_reading(file_id,phys%Bz,'Bz')
-  !                                        CALL HDF5_array1D_reading(file_id,phys%Bt,'Bt')
-  !                                        CALL HDF5_array1D_reading(file_id,phys%flux2D,'flux')
-  !                                        CALL HDF5_close(file_id)
-  !
-  !  END SUBROUTINE loadMagneticFieldTemporalEvolution
-  !
+!  !***********************************************************************
+!  !
+!  !                           MAGNETIC FIELD
+!  !
+!  !***********************************************************************
+!  #ifdef TOR3D
+!  SUBROUTINE defineMagneticField(x,y,t,b,divb,drift)
+!    real*8, intent(in)      :: x(:),y(:),t(:)
+!    real*8, intent(out),optional     :::: b(:,:),divb(:),drift(:,:)
+!    real*8                  :: R0,q,r
+!    real*8                  :: xmax,xmin,ymax,ymin,xm,ym,p,divbp
+!    real*8                  :: xx,yy,tt,Bp,Bt,Br,Bz,BB,dmax,B0,xr,yr
+!    integer*4               :: i,j,ind,N2D,N1D
+!
+!
+!    N2d = size(X,1)
+!    N1d = size(t,1)
+!    xmax = Mesh%xmax
+!    xmin = Mesh%xmin
+!    ymax = Mesh%ymax
+!    ymin = Mesh%ymin
+!    xm = 0.5*(xmax+xmin)
+!    ym = 0.5*(ymax+ymin)
+!    !  xm = -0.5
+!    !  ym = -0.5
+!    ! Initialization
+!    ! Initialization
+!    if (present(b)) then
+!      b     = 0.
+!    endif
+!    if (present(divb)) then
+!      divb  = 0.
+!    endif
+!    if (present(drift)) then
+!      drift = 0.
+!    endif
+!    if (present(Bmod)) then
+!      Bmod  = 0.
+!    endif
+!
+!    DO i=1,N2d
+!      DO j=1,N1d
+!        xx = x(i)
+!        yy = y(i)
+!        tt = t(j)
+!        ind = (j-1)*N2d+i
+!
+!        SELECT CASE(switch%testcase)
+!        CASE(1)
+!          IF (switch%axisym) THEN
+!            WRITE(6,*) "This is NOT an axisymmetric test case!"
+!            stop
+!          END IF
+!          ! Cartesian case, circular field centered in [xm, ym] in the poloidal plane, Bt = 1
+!          Br = (yy-ym)
+!          Bz = (-xx+xm)
+!          Bt = 1.
+!          divbp = 0.
+!        CASE(2)
+!          IF (.not.switch%axisym) THEN
+!            WRITE(6,*) "This is an axisymmetric test case!"
+!            stop
+!          END IF
+!          ! Axysimmetric case, circular field centered in [xm, ym] in the poloidal plane, Bt = 1
+!          Br = (yy-ym)/xx
+!          Bz = (-xx+xm)/xx
+!          Bt = 1.
+!          divbp = (xx**2*yy-xx**2*ym+xm**2*yy-xm**2*ym+3*yy*ym**2-3*yy**2*ym+yy**3-ym**3-2*xx*xm*yy+2*xx*xm*ym)/(xx**4*((xx-xm)**2/xx**2+(yy-ym)**2/xx**2+1)**(1.5))
+!        CASE(3)
+!          IF (.not.switch%axisym) THEN
+!            WRITE(6,*) "This is an axisymmetric test case!"
+!            stop
+!          END IF
+!          ! Axysimmetric case, circular field centered in [xm, ym] in the poloidal plane, Bt = 1
+!          Br = (yy-ym)/xx
+!          Bz = (-xx+xm)/xx
+!          Bt = 1.
+!          divbp = (xx**2*yy-xx**2*ym+xm**2*yy-xm**2*ym+3*yy*ym**2-3*yy**2*ym+yy**3-ym**3-2*xx*xm*yy+2*xx*xm*ym)/(xx**4*((xx-xm)**2/xx**2+(yy-ym)**2/xx**2+1)**(1.5))
+!
+!        CASE(50:59)
+!          write(6,*) "Error in defineMagneticField: you should not be here!"
+!          STOP
+!        CASE(60:69)
+!
+!          ! Circular case with limiter
+!          R0 = geom%R0
+!          q  = geom%q
+!          B0 = 2 ! not influential
+!          xr = xx*phys%lscale
+!          yr = yy*phys%lscale
+!
+!          r  = sqrt((xr-R0)**2+yr**2)
+!          Br = -B0*yr/(xr*q*sqrt(1- (r/R0)**2 ) )
+!          Bz = B0*(xr-R0)/(xr*q*sqrt(1- (r/R0)**2 ) )
+!          Bt = B0*R0/xr
+!
+!          if (present(divb)) then
+!            IF (switch%axisym) THEN
+!              divbp = -yy/xx/sqrt(R0**2*q**2+(1-q**2)*r**2)*phys%lscale
+!            ELSE
+!              WRITE(6,*) "Not coded: usually here you should have an axisym simulation"
+!              STOP
+!            END IF
+!          endif
+!          if (present(divb)) then
+!            IF (switch%driftdia) THEN
+!              drift(:,2) =  -1./R0*phys%lscale
+!            END IF
+!          endif
+!
+!
+!
+!
+!
+!
+!        CASE DEFAULT
+!          WRITE(6,*) "Error! Test case not valid"
+!          STOP
+!        END SELECT
+!
+!        Bp = sqrt(Br**2+Bz**2)
+!        BB = sqrt(Bp**2+Bt**2)
+!        b(ind,1) = Br/BB
+!        b(ind,2) = Bz/BB
+!        b(ind,3) = Bt/BB
+!        if (present(divb)) then
+!          divb(ind) = divbp
+!        endif
+!      END DO
+!    END DO
+!  END SUBROUTINE defineMagneticField
+!  #else
+!  SUBROUTINE defineMagneticField(x,y,b,divb,drift,Bmod)
+!    real*8, intent(in)      :: x(:),y(:)
+!    real*8, intent(out)     :: b(:,:)
+!    real*8, intent(out),optional::divb(:),drift(:,:),Bmod(:)
+!    real*8                  :: R0,q,r(size(x)),auxdivb(size(x)),auxdrift(size(b,1),size(b,2))
+!    real*8                  :: xmax,xmin,ymax,ymin,xm,ym,xx,yy
+!    real*8                  :: Br,Bz,Bt,BB,Bp
+!    integer :: i
+!    ! Initialization
+!    b     = 0.
+!    auxdivb(:) = 0.
+!    xmax = Mesh%xmax
+!    xmin = Mesh%xmin
+!    ymax = Mesh%ymax
+!    ymin = Mesh%ymin
+!    xm = 0.5*(xmax+xmin)
+!    ym = 0.5*(ymax+ymin)
+!    if (present(Bmod)) then
+!      Bmod  = 0.
+!    endif
+!    !  xm = -0.5
+!    !  ym = -0.5
+!    SELECT CASE(switch%testcase)
+!    CASE(1)
+!      ! Cartesian case with div(b)~=0, n = 2+sin(wx*x )*sin(wy*y),  u = cos(wx*x)*cos(wy*y), Ei = 20+cos(wx*x)*sin(wy*y), Ee = 20+sin(wx*x)*cos(wy*y)
+!      !            b(:,1) = 1./30.*(x-y**2+2)
+!      !            b(:,2) = 1./30.*(x*y+y)
+!      !            auxdivb(:) = 1./15.+(1./30.)*x
+!      DO i=1,size(x)
+!        xx = x(i)
+!        yy = y(i)
+!        Br = (yy-ym)
+!        Bz = (-xx+xm)
+!        Bt = 1.
+!        Bp = sqrt(Br**2+Bz**2)
+!        BB = sqrt(Bp**2+Bt**2)
+!        b(i,1) = Br/BB
+!        b(i,2) = Bz/BB
+!        auxdivb(i) = 0.
+!      END DO
+!
+!    CASE(2)
+!      ! Axisymmetric case with div(b)~=0, n = 2+sin(wx*x )*sin(wy*y),  u = cos(wx*x)*cos(wy*y), Ei = 20+cos(wx*x)*sin(wy*y), Ee = 20+sin(wx*x)*cos(wy*y)
+!      !            b(:,1) = 1./30.*(x-y**2+2)
+!      !            b(:,2) = 1./30.*(x*y+y)
+!      !            auxdivb(:) = 1./30.+((1./30.)*x-(1./30.)*y**2+1./15.)/x+1./30.*(x+1)
+!      DO i=1,size(x)
+!        xx = x(i)
+!        yy = y(i)
+!        Br = (yy-ym)/xx
+!        Bz = (-xx+xm)/xx
+!        Bt = 1.
+!        Bp = sqrt(Br**2+Bz**2)
+!        BB = sqrt(Bp**2+Bt**2)
+!        b(i,1) = Br/BB
+!        b(i,2) = Bz/BB
+!        auxdivb(i) = (xx**2*yy-xx**2*ym+xm**2*yy-xm**2*ym+3*yy*ym**2-3*yy**2*ym+yy**3-ym**3-2*xx*xm*yy+2*xx*xm*ym)/(xx**4*((xx-xm)**2/xx**2+(yy-ym)**2/xx**2+1)**(1.5))
+!      END DO
+!    CASE(5)
+!      ! Cartesian case, square mesh, horizontal field
+!      b(:,1) = 0.1
+!      b(:,2) = 0.
+!    CASE(6)
+!      ! Cartesian case, square mesh, horizontal field
+!      DO i=1,size(x)
+!        IF (y(i).ge.0.5) THEN
+!          b(i,1) = 0.1
+!        ELSE
+!          b(i,1) = -0.1
+!        END IF
+!      END DO
+!    CASE(50:59)
+!      write(6,*) "Error in defineMagneticField: you should not be here!"
+!      STOP
+!    CASE(60:69)
+!
+!      ! Circular case with limiter
+!      R0 = geom%R0
+!      q  = geom%q
+!      r  = phys%lscale*sqrt((x-R0/phys%lscale)**2+y**2)
+!      b(:,1) = -phys%lscale*y/sqrt(R0**2*q**2+(1-q**2)*r**2)
+!      b(:,2) = phys%lscale*(x-R0/phys%lscale)/sqrt(R0**2*q**2+(1-q**2)*r**2)
+!
+!      IF (switch%axisym) THEN
+!        auxdivb(:) = -y/x/sqrt(R0**2*q**2+(1-q**2)*r**2)*phys%lscale
+!      ELSE
+!        WRITE(6,*) "Not coded: usually here you should have an axisym simulation"
+!        STOP
+!      END IF
+!
+!      IF (switch%driftdia) THEN
+!        auxdrift(:,2) =  -1./R0*phys%lscale
+!      END IF
+!    CASE DEFAULT
+!      WRITE(6,*) "Error! Test case not valid"
+!      STOP
+!    END SELECT
+!
+!    IF (present(divb)) THEN
+!      divb = auxdivb
+!    ENDIF
+!    IF (present(drift)) THEN
+!      drift = auxdrift
+!    ENDIF
+!  END SUBROUTINE defineMagneticField
+!  #endif
+!
+!  SUBROUTINE loadMagneticField()
+!    USE interpolation
+!    USE HDF5
+!    USE HDF5_io_module
+!    integer        :: i,ierr,ip,jp
+!    integer(HID_T) :: file_id
+!    real*8,pointer,dimension(:,:) :: r2D,z2D,flux2D,Br2D,Bz2D,Bphi2D
+!    real*8,allocatable,dimension(:,:) :: bx,by,bmod,divb,bmodx,bmody,driftx,drifty
+!    real*8,allocatable,dimension(:)   :: xvec,yvec
+!    real*8                            :: x,y
+!
+!    WRITE(6,*) "******* Loading magnetic field *******"
+!    ! Allocate storing space in phys
+!    ALLOCATE(phys%b(Mesh%Nnodes,Mesh%Ndim))
+!    ALLOCATE(phys%divb(Mesh%Nnodes))
+!    ALLOCATE(phys%drift(Mesh%Nnodes,Mesh%Ndim))
+!    ALLOCATE(phys%flux2d(Mesh%Nnodes))
+!
+!    ! Dimensions of the file storing the magnetic field for West
+!    ip = 541
+!    jp = 391
+!    ALLOCATE(r2D(ip,jp))
+!    ALLOCATE(z2D(ip,jp))
+!    ALLOCATE(flux2D(ip,jp))
+!    ALLOCATE(Br2D(ip,jp))
+!    ALLOCATE(Bz2D(ip,jp))
+!    ALLOCATE(Bphi2D(ip,jp))
+!    ALLOCATE(bx(ip,jp))
+!    ALLOCATE(by(ip,jp))
+!    ALLOCATE(bmod(ip,jp))
+!    ALLOCATE(bmodx(ip,jp))
+!    ALLOCATE(bmody(ip,jp))
+!    ALLOCATE(divb(ip,jp))
+!    ALLOCATE(driftx(ip,jp))
+!    ALLOCATE(drifty(ip,jp))
+!
+!    ! Read file
+!    CALL HDF5_open('WEST_far_465.h5',file_id,IERR)
+!    CALL HDF5_array2D_reading(file_id,r2D,'r2D')
+!    CALL HDF5_array2D_reading(file_id,z2D,'z2D')
+!    CALL HDF5_array2D_reading(file_id,flux2D,'flux2D')
+!    CALL HDF5_array2D_reading(file_id,Br2D,'Br2D')
+!    CALL HDF5_array2D_reading(file_id,Bz2D,'Bz2D')
+!    CALL HDF5_array2D_reading(file_id,Bphi2D,'Bphi2D')
+!    CALL HDF5_close(file_id)
+!
+!    ! Apply length scale
+!    r2D = r2D/phys%lscale
+!    z2D = z2D/phys%lscale
+!
+!    ! Compute b
+!    bmod = sqrt(Br2D**2+Bz2D**2+Bphi2D**2)
+!    bx = -Br2D/bmod
+!    by = -Bz2D/bmod
+!
+!    ! Compute divergence of b
+!    divb = 0.
+!    IF (switch%axisym) THEN
+!      ! 1/r*(d r*br/dr)+dbz/dz
+!      divb(2:ip-1,2:jp-1) = 1./r2D(2:ip-1,2:jp-1)*(r2D(2:ip-1,3:jp)*bx(2:ip-1,3:jp)- &
+!        r2D(2:ip-1,1:jp-2)*bx(2:ip-1,1:jp-2))/(r2D(2:ip-1,3:jp)-  &
+!        r2D(2:ip-1,1:jp-2))+(by(3:ip,2:jp-1)-by(1:ip-2,2:jp-1))/(z2D(3:ip,2:jp-1)-z2D(1:ip-2,2:jp-1))
+!
+!    ELSE
+!      ! dbr/dr+dbz/dz
+!      divb(2:ip-1,2:jp-1) = (bx(2:ip-1,3:jp-1)-bx(2:ip-1,1:jp-2))/(r2D(2:ip-1,3:jp)-r2D(2:ip-1,1:jp-2))+ &
+!        (by(3:ip,2:jp-1)-by(1:ip-2,2:jp-1))/(z2D(3:ip,2:jp-1)-z2D(1:ip-2,2:jp-1))
+!    END IF
+!
+!    ! Compute drift velocity
+!    driftx = 0.
+!    drifty = 0.
+!    IF (switch%driftdia) THEN
+!      bmodx = (bmod(2:ip-1,3:jp)-bmod(2:ip-1,1:jp-2))/(r2D(2:ip-1,3:jp)-r2D(2:ip-1,1:jp-2))
+!      bmody = (bmod(3:ip,2:jp-1)-bmod(1:ip-2,2:jp-1))/(z2D(3:ip,2:jp-1)-z2D(1:ip-2,2:jp-1))
+!      driftx(2:ip-1,2:jp-1) =  -Bphi2D(2:ip-1,2:jp-1)*bmody/bmod(2:ip-1,2:jp-1)**3
+!      drifty(2:ip-1,2:jp-1) =   Bphi2D(2:ip-1,2:jp-1)*bmodx/bmod(2:ip-1,2:jp-1)**3
+!    END IF
+!
+!    ! Interpolate
+!    ALLOCATE(xvec(jp))
+!    ALLOCATE(yvec(ip))
+!    xvec = r2D(1,:)
+!    yvec = z2D(:,1)
+!    DO i = 1,Mesh%Nnodes
+!      x = Mesh%X(i,1)
+!      y = Mesh%X(i,2)
+!      phys%b(i,1) = interpolate( ip, yvec,jp, xvec, bx, y,x, 1e-12)
+!      phys%b(i,2) = interpolate( ip, yvec,jp, xvec, by, y,x, 1e-12)
+!      phys%divb(i) = interpolate( ip, yvec,jp, xvec, divb, y,x, 1e-12)
+!      phys%drift(i,1) = interpolate( ip, yvec,jp, xvec,driftx, y,x, 1e-12)
+!      phys%drift(i,2) = interpolate( ip, yvec,jp, xvec,drifty, y,x, 1e-12)
+!      phys%flux2D(i) = interpolate( ip, yvec,jp, xvec,flux2D, y,x, 1e-12)
+!    END DO
+!
+!    ! Free memory
+!    DEALLOCATE(Br2D,Bz2D,Bphi2D,xvec,yvec)
+!    DEALLOCATE(r2D,z2D,flux2D,bx,by,bmod,bmodx,bmody,divb,driftx,drifty)
+!
+!  END SUBROUTINE loadMagneticField
+!
+!
+!
+!  SUBROUTINE loadMagneticFieldTemporalEvolution()
+!    USE HDF5
+!    USE HDF5_io_module
+!    USE MPI_OMP
+!    integer        :: ierr,k
+!    character(LEN=20) :: fname = 'Evolving_equilibrium'
+!    character(10)  :: npr,nid,nit
+!    character(len=1000) :: fname_complete
+!    integer(HID_T) :: file_id
+!
+!    WRITE(6,*) "******* Loading magnetic field *******"
+!
+!    ! Allocate storing space in phys
+!    ALLOCATE(phys%Br(Mesh%Nnodes))
+!    ALLOCATE(phys%Bz(Mesh%Nnodes))
+!    ALLOCATE(phys%Bt(Mesh%Nnodes))
+!    ALLOCATE(phys%flux2d(Mesh%Nnodes))
+!
+!    ! File name
+!    write(nit, "(i10)") time%it
+!    nit = trim(adjustl(nit))
+!    k = INDEX(nit, " ") -1
+!
+!    IF (MPIvar%glob_size.GT.1) THEN
+!      write(nid,*) MPIvar%glob_id+1
+!      write(npr,*) MPIvar%glob_size
+!      fname_complete = trim(adjustl(fname))//'_'//trim(adjustl(nid))//'_'//trim(adjustl(npr))//'_'//REPEAT("0", 4 - k)//trim(ADJUSTL(nit))//'.h5'
+!    ELSE
+!      fname_complete = trim(adjustl(fname))//'_'//REPEAT("0", 4 - k)//trim(ADJUSTL(nit))//'.h5'
+!    END IF
+!
+!    write(6,*) 'Magnetic field loaded from file: ', trim(adjustl(fname_complete))
+!
+!    ! Read file
+!    CALL HDF5_open(fname_complete,file_id,IERR)
+!    CALL HDF5_array1D_reading(file_id,phys%Br,'Br')
+!    CALL HDF5_array1D_reading(file_id,phys%Bz,'Bz')
+!    CALL HDF5_array1D_reading(file_id,phys%Bt,'Bt')
+!    CALL HDF5_array1D_reading(file_id,phys%flux2D,'flux')
+!    CALL HDF5_close(file_id)
+!
+!  END SUBROUTINE loadMagneticFieldTemporalEvolution
+  
 
 END MODULE physics

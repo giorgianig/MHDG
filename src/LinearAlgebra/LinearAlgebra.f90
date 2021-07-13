@@ -190,7 +190,7 @@ CONTAINS
     real*8, intent(in) :: A(:, :)
     real*8, intent(in) :: B(:,:)
     real*8, intent(out):: C(:,:)
-    integer :: a1,a2,b1,b2,c1,c2 
+    integer :: a1,a2,b1,b2,c1,c2
     external DGEMM
 
     a1 = size(A,1)

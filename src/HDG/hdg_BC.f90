@@ -353,7 +353,9 @@ CONTAINS
 
         ! Shaspe functions product
         Ni = Nfi(g,:)*dsurfg
+
         CALL assembly_dirichletstr_bc(iel3,ind_asf,ind_ash,ind_fe,ind_fg,Ni,qfg(g,:),uex(g,:),uexpg(g,:),b(g,:),n_g(g,:))
+
       END DO
     END DO
   END SUBROUTINE set_dirichletstr_bc
@@ -372,7 +374,6 @@ CONTAINS
     real*8                    :: bn
     logical                   :: ntang
     real                      :: tau_stab(Neq,Neq)
-
 
     !*****************************
     ! Loop in face Gauss points
@@ -462,9 +463,9 @@ CONTAINS
 
 #else
   !***********************************************************************
-  ! 
+  !
   !                            VERSION 2D
-  ! 
+  !
   !***********************************************************************
   integer                   :: ifa,ifl,iel,fl,bc,Npfl,Neq,Npel,i,Ndim,Fi,Ng1d
   integer                   :: nod(refElPol%Nfacenodes)
@@ -561,10 +562,10 @@ CONTAINS
     ! Shape function derivatives at Gauss points
     xyDer = matmul(refElPol%Nxi1D,Xf)
 
-    ! Solution at nodes 
+    ! Solution at nodes
     uf = sol%u_tilde(ind_uf)
 
-    ! Solution gradient at nodes 
+    ! Solution gradient at nodes
     qf = transpose(reshape(sol%q(ind_qf),(/Ndim*Neq,Npfl/)))
 
     ! Analytical solution at face Gauss points
@@ -656,12 +657,14 @@ CONTAINS
       END IF
       NiNi = tensorProduct(refElPol%N1D(g,:),refElPol%N1D(g,:))*dline
       Ni = refElPol%N1D(g,:)*dline
+!#ifdef NEUTRAL
+!      CALL assembly_dirichletwf_bc(iel,ind_asf,ind_ff,uex(g,:),NiNi,Ni,xyg(g,:))
+!#else
       CALL assembly_dirichletwf_bc(iel,ind_asf,ind_ff,uex(g,:),NiNi,Ni)
+!#endif
     END DO
 
   END SUBROUTINE set_dirichletwf_bc
-
-
 
 
   !   !****************************
@@ -736,7 +739,7 @@ CONTAINS
         ELSE
           CALL computeTauGaussPoints_matrix(upg(g,:),ufg(g,:),b(g,1:2),n_g,xyg(g,:),1.,iel,tau_stab)
         ENDIF
-      ELSE 
+      ELSE
         tau_stab=0.
         DO i = 1,Neq
           tau_stab(i,i) = numer%tau(i)
@@ -747,7 +750,9 @@ CONTAINS
 
       NiNi = tensorProduct(refElPol%N1D(g,:),refElPol%N1D(g,:))*dline
       Ni = refElPol%N1D(g,:)*dline
+
       CALL assembly_neum_bc(iel,ind_asf,ind_ash,ind_ff,ind_fg,NiNi,n_g,tau_stab)
+
     END DO
 
   END SUBROUTINE set_NeumannH_bc
@@ -785,7 +790,7 @@ CONTAINS
         ELSE
           CALL computeTauGaussPoints_matrix(upg(g,:),ufg(g,:),b(g,1:2),n_g,xyg(g,:),1.,iel,tau_stab)
         ENDIF
-      ELSE 
+      ELSE
         tau_stab=0.
         DO i = 1,Neq
           tau_stab(i,i) = numer%tau(i)
@@ -826,13 +831,12 @@ CONTAINS
 
       ! Shaspe functions product
       Ni = refElPol%N1D(g,:)*dline
+
       CALL assembly_dirichletstr_bc(iel,ind_asf,ind_ash,ind_fe,ind_fg,Ni,qfg(g,:),uex(g,:),uexpg(g,:),b(g,1:2),n_g)
 
     END DO
 
   END SUBROUTINE set_dirichletstr_bc
-
-
 
   !********************************
   ! Transmission boundary condition
@@ -930,10 +934,8 @@ CONTAINS
           delta=1
         endif
       END IF
-
-
-
 #endif
+
       ! Shape functions
       NiNi = tensorProduct(refElPol%N1D(g,:),refElPol%N1D(g,:))*dline
       Ni = refElPol%N1D(g,:)*dline
@@ -952,7 +954,7 @@ CONTAINS
           END DO
           xy_g_save_el(g,:) = xyg(g,:)
         endif
-      ELSE 
+      ELSE
         tau_stab=0.
         DO i = 1,Neq
           tau_stab(i,i) = numer%tau(i)
@@ -974,7 +976,7 @@ CONTAINS
 
   END SUBROUTINE set_Bohm_bc
 
-#endif
+#endif !TOR3D
 
   !*******************************************
   !   AUXILIARY ROUTINES FOR 2D AND 3D
@@ -983,9 +985,68 @@ CONTAINS
   !*********************************
   ! Assembly Dirichlet in weak form
   !*********************************
+!#ifdef NEUTRAL
+!  SUBROUTINE assembly_dirichletwf_bc(iel,ind_asf,ind_ff,ufg,NiNi,Ni,xyfg)
+!    real*8       :: xyfg(:)
+!    real*8       :: kmult_neutral(Npfl)
+!    real*8       :: p1,p2,p3,p4,p5,p6,p7,p8,p9,a1,a2,a3,b1,b2,b3,c1,c2,c3,fit
+!    integer*4    :: iel,ind_asf(:),ind_ff(:)
+!    real*8       :: ufg(:)
+!    real*8       :: NiNi(:,:),Ni(:)
+!    real*8       :: kmult(Neq*Npfl)
+!    integer*4    :: ind(Npfl),i
+!
+!    !xyfg(:) = xyfg(:)*phys%lscale
+!    ! Dirichlet for neutrals
+!    !i=Neq
+!    !ind = i+ind_asf
+!    if ((xyfg(1)*phys%lscale) .le. 3.4 ) then
+!      a1 = 0.002492
+!      b1 = - 0.7678
+!      c1 = 0.03091
+!      a2 = 0.004729
+!      b2 = - 0.7951
+!      c2 = 0.07134
+!      a3 = 0.009261
+!      b3 = - 0.8927
+!      c3 = 0.3785
+!    else
+!      a1 = 0.002138;
+!      b1 = - 0.7698;
+!      c1 = 0.02522;
+!      a2 = 0.004928;
+!      b2 = -0.7942;
+!      c2 = 0.06691;
+!      a3 = 0.009552;
+!      b3 = -0.8594;
+!      c3 = 0.3858;
+!    end if
+!    fit = a1*exp(-((xyfg(2)-b1)/c1)**2) + a2*exp(-((xyfg(2)-b2)/c2)**2) + a3*exp(-((xyfg(2)-b3)/c3)**2)
+!    !fit = p1*xyfg(2)**8 + p2*xyfg(2)**7 + p3*xyfg(2)**6 + p4*xyfg(2)**5 + p5*xyfg(2)**4&
+!    !       &+ p6*xyfg(2)**3 + p7*xyfg(2)**2 + p8*xyfg(2) + p9
+!    kmult_neutral = (fit*Ni)
+!    !elMat%fh(ind_ff(ind),iel) = elMat%fh(ind_ff(ind),iel) - numer%tau(i)*kmult_neutral
+!    kmult = col(tensorProduct(ufg(:),Ni))
+!    DO i = 1,Neq
+!      ind = i + ind_asf
+!      elMat%All(ind_ff(ind),ind_ff(ind),iel) = elMat%All(ind_ff(ind),ind_ff(ind),iel) - numer%tau(i)*NiNi
+!      if (i.eq.Neq) then
+!        elMat%fh(ind_ff(ind),iel) = elMat%fh(ind_ff(ind),iel) - numer%tau(i)*kmult_neutral
+!      else
+!        elMat%fh(ind_ff(ind),iel) = elMat%fh(ind_ff(ind),iel) - numer%tau(i)*kmult(ind)
+!      endif
+!      !         elMat%All(ind_ff(ind),ind_ff(ind),iel) = elMat%All(ind_ff(ind),ind_ff(ind),iel) - NiNi
+!      !         elMat%fh(ind_ff(ind),iel) = elMat%fh(ind_ff(ind),iel) - kmult(ind)
+!    END DO
+!
+!  END SUBROUTINE assembly_dirichletwf_bc
+!
+!#else
+
   SUBROUTINE assembly_dirichletwf_bc(iel,ind_asf,ind_ff,ufg,NiNi,Ni)
     integer*4    :: iel,ind_asf(:),ind_ff(:)
-    real*8       :: NiNi(:,:),Ni(:),ufg(:)
+    real*8       :: ufg(:)
+    real*8       :: NiNi(:,:),Ni(:)
     real*8       :: kmult(Neq*Npfl)
     integer*4    :: ind(Npfl),i
 
@@ -1000,7 +1061,7 @@ CONTAINS
 
   END SUBROUTINE assembly_dirichletwf_bc
 
-
+!#endif !NEUTRAL
 
   !   !*********************************
   !   ! Assembly periodic bc
@@ -1039,22 +1100,20 @@ CONTAINS
       elMat%fh(ind_ff(ind),iel) = elMat%fh(ind_ff(ind),iel) - numer%tau(i)*kmult(ind)
     END DO
 
-
   END SUBROUTINE assembly_trasm_bc
 
 
 
 
-  !*********************************
-  ! Assembly  Neumann
-  !*********************************
+  !**************************
+  ! Assembly  Neumann for all
+  !**************************
   SUBROUTINE assembly_neum_bc(iel,ind_asf,ind_ash,ind_ff,ind_fg,NiNi,ng,tau)
     integer*4    :: iel,ind_asf(:),ind_ash(:),ind_ff(:),ind_fg(:)
     real*8       :: NiNi(:,:),ng(:)
     real*8       :: tau(:,:)
     integer*4    :: i,j,k,idm
     integer*4    :: ind(Npfl),indi(Npfl),indj(Npfl)
-
 
     DO i = 1,Neq
       ind = i + ind_asf
@@ -1068,12 +1127,6 @@ CONTAINS
     END DO
 
   END SUBROUTINE assembly_neum_bc
-
-
-
-
-
-
 
 
   !*********************************
@@ -1100,7 +1153,7 @@ CONTAINS
     !            elMat%Alu(ind_ff(ind),ind_fe(ind),iel) = elMat%Alu(ind_ff(ind),ind_fe(ind),iel) + numer%tau(i)*NiNi
     !         endif
     !      END DO
-    ! 
+    !
     !      ! Neumann part
     !                           DO k = ndir+1,Neq
     !                              DO idm = 1,Ndim
@@ -1113,7 +1166,7 @@ CONTAINS
 #ifndef VORTICITY
     write(6,*) "Wrong bc! Should be used only for vorticity"
     stop
-#endif     
+#endif
     bn = dot_product(bg,ng)
 
     ! Dirichlet values
@@ -1148,14 +1201,11 @@ CONTAINS
         indi = ind_asf + i
         indj = ind_ash + idm + (i - 1)*Ndim
         elMat%Alq(ind_ff(indi),ind_fG(indj),iel) = elMat%Alq(ind_ff(indi),ind_fG(indj),iel) + &
-          &NiNi*(ng(idm)*diffiso(i,i)-bn*bg(idm)*diffani(i,i) ) 
-
+          &NiNi*(ng(idm)*diffiso(i,i)-bn*bg(idm)*diffani(i,i))
 
         !elMat%Alq(ind_ff(indi), ind_fG(indj), iel) = elMat%Alq(ind_ff(indi), ind_fG(indj), iel) + NiNi*ng(idm)
       END DO
     endif
-
-
 
     !if (iel==1) then
     !call hdf5_save_matrix( elMat%Alq(:,:,iel), 'Alq')
@@ -1167,16 +1217,14 @@ CONTAINS
     elMat%All(ind_ff(ind),ind_ff(ind),iel) = elMat%All(ind_ff(ind),ind_ff(ind),iel) - tau(i,i)*NiNi
     elMat%Alu(ind_ff(ind),ind_fe(ind),iel) = elMat%Alu(ind_ff(ind),ind_fe(ind),iel) + tau(i,i)*NiNi
 
-
-    !      elMat%All(ind_ff(ind),ind_ff(ind),iel) = elMat%All(ind_ff(ind),ind_ff(ind),iel) - 0.1*NiNi
-    !      elMat%Alu(ind_ff(ind),ind_fe(ind),iel) = elMat%Alu(ind_ff(ind),ind_fe(ind),iel) + 0.1*NiNi
-
+    !elMat%All(ind_ff(ind),ind_ff(ind),iel) = elMat%All(ind_ff(ind),ind_ff(ind),iel) - 0.1*NiNi
+    !elMat%Alu(ind_ff(ind),ind_fe(ind),iel) = elMat%Alu(ind_ff(ind),ind_fe(ind),iel) + 0.1*NiNi
 
     DO idm = 1,Ndim
       indi = ind_asf + i
       indj = ind_ash + idm + (i - 1)*Ndim
-      !         elMat%Alq(ind_ff(indi),ind_fG(indj),iel) = elMat%Alq(ind_ff(indi),ind_fG(indj),iel) + &
-      !                                                   &NiNi*(ng(idm)*diffiso(i,i)-bn*bg(idm)*diffani(i,i) )
+      !elMat%Alq(ind_ff(indi),ind_fG(indj),iel) = elMat%Alq(ind_ff(indi),ind_fG(indj),iel) + &
+      !  &NiNi*(ng(idm)*diffiso(i,i)-bn*bg(idm)*diffani(i,i) )
 
       elMat%Alq(ind_ff(indi),ind_fG(indj),iel) = elMat%Alq(ind_ff(indi),ind_fG(indj),iel) + &
         &NiNi*ng(idm)
@@ -1189,18 +1237,16 @@ CONTAINS
       elMat%Alq(ind_ff(indi),ind_fG(indj),iel) = elMat%Alq(ind_ff(indi),ind_fG(indj),iel) + NiNi*ng(idm)/ufg(1)*phys%Mref
     END DO
 
-
     !if (iel==1) then
     !call hdf5_save_matrix( elMat%Alq(:,:,iel), 'Alq')
     !stop
     !endif
 
-
   END SUBROUTINE assembly_diric_neum_bc
 
-  !*********************************
+  !**********************************
   ! Assembly Dirichlet in strong form
-  !*********************************
+  !**********************************
   SUBROUTINE assembly_dirichletstr_bc(iel,ind_asf,ind_ash,ind_fe,ind_fg,Ni,qg,ufg,upg,bg,ng)
     integer*4        :: iel,ind_asf(:),ind_ash(:),ind_fe(:),ind_fg(:)
     real*8           :: Ni(:),ufg(:),upg(:),bg(:),ng(:)
@@ -1278,7 +1324,9 @@ CONTAINS
       END DO
     END DO
 #endif
+
   END SUBROUTINE assembly_dirichletstr_bc
+
 
   !*********************************
   ! Assembly Bohm
@@ -1310,7 +1358,6 @@ CONTAINS
     ENDIF
 #endif
 
-
     !if (iel==195) then
     !call hdf5_save_matrix( elMat%Alu(:,:,iel),"Alu")
     !stop
@@ -1333,7 +1380,7 @@ CONTAINS
           !write(6,*) "delta",delta
           !write(6,*) "setval",setval
           !write(6,*) "tau(i,i)",tau(i,i)
-          !endif               
+          !endif
           elMat%Alu(ind_ff(ind),ind_fe(ind),iel) = elMat%Alu(ind_ff(ind),ind_fe(ind),iel) + tau(i,i)*(1 - delta)*NiNi
         ELSE
           elMat%Alu(ind_ff(ind),ind_fe(ind),iel) = elMat%Alu(ind_ff(ind),ind_fe(ind),iel) + tau(i,i)*NiNi
@@ -1358,6 +1405,14 @@ CONTAINS
       END DO
     ENDIF
 
+#ifdef NEUTRAL
+    k = Neq
+    indi = k+ind_asf
+    indj = 2+ind_asf
+    if (ntang) then
+      elMat%Alu(ind_ff(indi),ind_fe(indj),iel) = elMat%Alu(ind_ff(indi),ind_fe(indj),iel) + bn*NiNi*phys%Re
+    endif
+#endif
 
     !if (iel==195) then
     !call hdf5_save_matrix( elMat%Alu(:,:,iel),"Alu")
@@ -1417,42 +1472,50 @@ CONTAINS
                 &coefe*Alphae*Vvece(j)*bg(k)*NiNi*bn
             END DO
           END DO
-          elMat%fh(ind_ff(indi+2),iel) = elMat%fh(ind_ff(indi+2),iel) - coefe*Alphae*( dot_product (matmul(transpose(Taue),bg),ufg)  )*Ni*bn 
+          elMat%fh(ind_ff(indi+2),iel) = elMat%fh(ind_ff(indi+2),iel) - coefe*Alphae*( dot_product (matmul(transpose(Taue),bg),ufg)  )*Ni*bn
         ENDIF
       END DO
     END IF ! tangency
 #endif
 
-    !         ! Perpendicular diffusion
-    !                                                   DO k = 1,Neq
-    !                                                      DO idm = 1,Ndim
-    !                                                         indi = ind_asf+k
-    !               indj = ind_ash+idm+(k-1)*Ndim
-    !                                                         if (ntang) then
-    !                  ! Non-tangent case
-    !                                                            elMat%Alq(ind_ff(indi),ind_fG(indj),iel)=elMat%Alq(ind_ff(indi),ind_fG(indj),iel)-&
-    !                                                               &NiNi*(ng(idm)*diffiso(k,k)-bn*bg(idm)*diffani(k,k) )
-    !                                                         else
-    !                  ! Tangent case
-    !!                                                             elMat%Alq(ind_ff(indi),ind_fG(indj),iel)=elMat%Alq(ind_ff(indi),ind_fG(indj),iel)-NiNi*(ng(idm)-bn*bg(idm))
-    !                   elMat%Alq(ind_ff(indi),ind_fG(indj),iel)=elMat%Alq(ind_ff(indi),ind_fG(indj),iel)-NiNi*ng(idm)
-    !                                                         endif
-    !                                                      END DO
-    !                                                                        END DO
+    !! Perpendicular diffusion
+    !DO k = 1,Neq
+    !  DO idm = 1,Ndim
+    !    indi = ind_asf+k
+    !    indj = ind_ash+idm+(k-1)*Ndim
+    !    if (ntang) then
+    !      ! Non-tangent case
+    !      elMat%Alq(ind_ff(indi),ind_fG(indj),iel)=elMat%Alq(ind_ff(indi),ind_fG(indj),iel)-&
+    !        &NiNi*(ng(idm)*diffiso(k,k)-bn*bg(idm)*diffani(k,k) )
+    !    else
+    !      ! Tangent case
+    !      ! elMat%Alq(ind_ff(indi),ind_fG(indj),iel)=elMat%Alq(ind_ff(indi),ind_fG(indj),iel)-NiNi*(ng(idm)-bn*bg(idm))
+    !      elMat%Alq(ind_ff(indi),ind_fG(indj),iel)=elMat%Alq(ind_ff(indi),ind_fG(indj),iel)-NiNi*ng(idm)
+    !    endif
+    !  END DO
+    !END DO
 
     ! Perpendicular diffusion
     IF (ntang) THEN
+#ifdef NEUTRAL
+      DO k = 1,Neq-1
+#else
       DO k = 1,Neqgrad
+#endif
         DO idm = 1,Ndim
           indi = ind_asf + k
           indj = ind_ash + idm + (k - 1)*Ndim
           ! Non-tangent case
           elMat%Alq(ind_ff(indi),ind_fG(indj),iel)=elMat%Alq(ind_ff(indi),ind_fG(indj),iel)-&
-            &NiNi*(ng(idm)*diffiso(k,k)-bn*bg(idm)*diffani(k,k) ) 
+            &NiNi*(ng(idm)*diffiso(k,k)-bn*bg(idm)*diffani(k,k) )
         END DO
       END DO
     ELSE
+#ifdef NEUTRAL
+      DO k = 1,Neq-1
+#else
       DO k = 1,Neq
+#endif
         DO idm = 1,Ndim
           indi = ind_asf + k
           indj = ind_ash + idm + (k - 1)*Ndim
@@ -1465,7 +1528,7 @@ CONTAINS
 #ifdef VORTICITY
     IF (ntang) THEN
       k = 3
-      ! Vorticity equation         
+      ! Vorticity equation
       if (switch%dirivortlim) then
         ! Dirichlet weak form for the vorticity equation: set vorticity to 0!!!
         indi = k + ind_asf
@@ -1550,18 +1613,31 @@ CONTAINS
     END IF
 
 #endif
+#ifdef NEUTRAL
+    DO idm = 1,Ndim
+      k = Neq
+      indi = ind_asf+k
+      indj = ind_ash+idm+(k-1)*Ndim
+      if (ntang) then
+        elMat%Alq(ind_ff(indi),ind_fG(indj),iel)=elMat%Alq(ind_ff(indi),ind_fG(indj),iel)-NiNi*ng(idm)*phys%diff_nn
+      else
+        elMat%Alq(ind_ff(indi),ind_fG(indj),iel)=elMat%Alq(ind_ff(indi),ind_fG(indj),iel)-NiNi*ng(idm)*phys%diff_nn
+      endif
+    END DO
+    DO idm = 1,Ndim
+      k = phys%Neq
+      j=1
+      indi = ind_asf+k
+      indj = ind_ash+idm+(j-1)*Ndim
+      if (ntang) then
+        elMat%Alq(ind_ff(indi),ind_fG(indj),iel)=elMat%Alq(ind_ff(indi),ind_fG(indj),iel)-NiNi*ng(idm)*phys%diff_n*phys%Re
+      else
+        elMat%Alq(ind_ff(indi),ind_fG(indj),iel)=elMat%Alq(ind_ff(indi),ind_fG(indj),iel)-NiNi*ng(idm)*phys%diff_n*phys%Re
+      endif
+    END DO
+#endif
 
   END SUBROUTINE assembly_bohm_bc
-
-
-
-
-
-
-
-
-
-
 
 
   !*********************************
@@ -1602,7 +1678,7 @@ CONTAINS
     DO idm = 1,Ndim
       indj = ind_ash + idm + (i - 1)*Ndim
       elMat%Alq(ind_ff(indi),ind_fG(indj),iel)=elMat%Alq(ind_ff(indi),ind_fG(indj),iel)-&
-        &NiNi*(ng(idm)*diffiso(i,i)-bn*bg(idm)*diffani(i,i) ) 
+        &NiNi*(ng(idm)*diffiso(i,i)-bn*bg(idm)*diffani(i,i) )
     END DO
 
 
@@ -1613,7 +1689,7 @@ CONTAINS
     i = 2
     indi = i + ind_asf
     if (numer%bohmtypebc.eq.1) then
-      ! Dirichlet type always if non-tangent 
+      ! Dirichlet type always if non-tangent
       IF (ntang) THEN
         ! >>>>>>>> Non tangent case (delta=1) <<<<<<<<<<
         elMat%All(ind_ff(indi),ind_ff(indi),iel) = elMat%All(ind_ff(indi),ind_ff(indi),iel) - numer%tau(i)*NiNi
@@ -1629,7 +1705,7 @@ CONTAINS
         !call displayMatrix(elMat%Alu(ind_ff(indi),ind_fe(indi - 1),iel))
         !write(6,*) "fh: "
         !call displayVector(elMat%fh(ind_ff(indi),iel))
-        !stop      
+        !stop
       ELSE
         ! >>>>>>>> Tangent case (delta=0) <<<<<<<<<<
         ! Stabilization part
@@ -1639,11 +1715,11 @@ CONTAINS
         DO idm = 1,Ndim
           indj = ind_ash + idm + (i - 1)*Ndim
           elMat%Alq(ind_ff(indi),ind_fG(indj),iel)=elMat%Alq(ind_ff(indi),ind_fG(indj),iel)-&
-            &NiNi*(ng(idm)*diffiso(i,i)-bn*bg(idm)*diffani(i,i) ) 
+            &NiNi*(ng(idm)*diffiso(i,i)-bn*bg(idm)*diffani(i,i) )
         END DO
-      END IF   
+      END IF
     elseif (numer%bohmtypebc.eq.2) then
-      ! Dirichlet if u<=soundspeed, Neumann if u>soundspeed if non-tangent 
+      ! Dirichlet if u<=soundspeed, Neumann if u>soundspeed if non-tangent
       IF (ntang) THEN
         ! >>>>>>>> Non tangent case  <<<<<<<<<<
         if (delta==1) then
@@ -1664,7 +1740,7 @@ CONTAINS
           DO idm = 1,Ndim
             indj = ind_ash + idm + (i - 1)*Ndim
             elMat%Alq(ind_ff(indi),ind_fG(indj),iel)=elMat%Alq(ind_ff(indi),ind_fG(indj),iel)-&
-              &NiNi*(ng(idm)*diffiso(i,i)-bn*bg(idm)*diffani(i,i) ) 
+              &NiNi*(ng(idm)*diffiso(i,i)-bn*bg(idm)*diffani(i,i) )
           END DO
         endif
       ELSE
@@ -1676,13 +1752,23 @@ CONTAINS
         DO idm = 1,Ndim
           indj = ind_ash + idm + (i - 1)*Ndim
           elMat%Alq(ind_ff(indi),ind_fG(indj),iel)=elMat%Alq(ind_ff(indi),ind_fG(indj),iel)-&
-            &NiNi*(ng(idm)*diffiso(i,i)-bn*bg(idm)*diffani(i,i) ) 
+            &NiNi*(ng(idm)*diffiso(i,i)-bn*bg(idm)*diffani(i,i) )
         END DO
-      END IF  
-    else 
+      END IF
+    else
       write(6,*) "Wrong type in Bohm bc"
       stop
     endif
+
+#ifdef NEUTRAL
+    k = Neq
+    indi = k+ind_asf
+    indj = 2+ind_asf
+    if (ntang) then
+      elMat%Alu(ind_ff(indi),ind_fe(indj),iel) = elMat%Alu(ind_ff(indi),ind_fe(indj),iel) + bn*NiNi*phys%Re
+    endif
+#endif
+
 
 #ifdef TEMPERATURE
     !*****************************************************
@@ -1740,7 +1826,7 @@ CONTAINS
                 &coefe*Alphae*Vvece(j)*bg(k)*NiNi*bn
             END DO
           END DO
-          elMat%fh(ind_ff(indi+2),iel) = elMat%fh(ind_ff(indi+2),iel) - coefe*Alphae*( dot_product (matmul(transpose(Taue),bg),ufg)  )*Ni*bn 
+          elMat%fh(ind_ff(indi+2),iel) = elMat%fh(ind_ff(indi+2),iel) - coefe*Alphae*( dot_product (matmul(transpose(Taue),bg),ufg)  )*Ni*bn
         ENDIF
       END DO
 
@@ -1768,33 +1854,32 @@ CONTAINS
         indj = ind_ash + idm + (k - 1)*Ndim
         ! Non-tangent case
         elMat%Alq(ind_ff(indi),ind_fG(indj),iel)=elMat%Alq(ind_ff(indi),ind_fG(indj),iel)-&
-          &NiNi*(ng(idm)*diffiso(k,k)-bn*bg(idm)*diffani(k,k) ) 
+          &NiNi*(ng(idm)*diffiso(k,k)-bn*bg(idm)*diffani(k,k) )
       END DO
     END DO
 #endif
 
-
-    !      ! Perpendicular diffusion
-    !      IF (ntang) THEN
-    !         DO k = 1,Neqgrad
-    !            DO idm = 1,Ndim
-    !               indi = ind_asf + k
-    !               indj = ind_ash + idm + (k - 1)*Ndim
-    !               ! Non-tangent case
-    !               elMat%Alq(ind_ff(indi),ind_fG(indj),iel)=elMat%Alq(ind_ff(indi),ind_fG(indj),iel)-&
-    !                                                      &NiNi*(ng(idm)*diffiso(k,k)-bn*bg(idm)*diffani(k,k) ) 
-    !            END DO
-    !         END DO
-    !      ELSE
-    !         DO k = 1,Neq
-    !            DO idm = 1,Ndim
-    !               indi = ind_asf + k
-    !               indj = ind_ash + idm + (k - 1)*Ndim
-    !               ! Tangent case
-    !               elMat%Alq(ind_ff(indi),ind_fG(indj),iel) = elMat%Alq(ind_ff(indi),ind_fG(indj),iel) - NiNi*ng(idm)
-    !            END DO
-    !         END DO
-    !      ENDIF
+    !! Perpendicular diffusion
+    !IF (ntang) THEN
+    !   DO k = 1,Neqgrad
+    !      DO idm = 1,Ndim
+    !         indi = ind_asf + k
+    !         indj = ind_ash + idm + (k - 1)*Ndim
+    !         ! Non-tangent case
+    !         elMat%Alq(ind_ff(indi),ind_fG(indj),iel)=elMat%Alq(ind_ff(indi),ind_fG(indj),iel)-&
+    !                                                &NiNi*(ng(idm)*diffiso(k,k)-bn*bg(idm)*diffani(k,k) )
+    !      END DO
+    !   END DO
+    !ELSE
+    !   DO k = 1,Neq
+    !      DO idm = 1,Ndim
+    !         indi = ind_asf + k
+    !         indj = ind_ash + idm + (k - 1)*Ndim
+    !         ! Tangent case
+    !         elMat%Alq(ind_ff(indi),ind_fG(indj),iel) = elMat%Alq(ind_ff(indi),ind_fG(indj),iel) - NiNi*ng(idm)
+    !      END DO
+    !   END DO
+    !ENDIF
 
 #ifdef VORTICITY
 
@@ -1806,7 +1891,7 @@ CONTAINS
       !! NON-TANGENT CASE FOR VORTICITY
       i = 3
       indi = i + ind_asf
-      ! Vorticity equation         
+      ! Vorticity equation
       if (switch%dirivortlim) then
         ! Dirichlet weak form for the vorticity equation: set vorticity to 0!!!
         elMat%All(ind_ff(indi),ind_ff(indi),iel) = elMat%All(ind_ff(indi),ind_ff(indi),iel) - numer%tau(i)*NiNi
@@ -1820,7 +1905,7 @@ CONTAINS
         DO idm = 1,Ndim
           indj = ind_ash + idm + (i - 1)*Ndim
           elMat%Alq(ind_ff(indi),ind_fG(indj),iel) = elMat%Alq(ind_ff(indi),ind_fG(indj),iel) - &
-            &NiNi*(ng(idm)*diffiso(i,i)-bn*bg(idm)*diffani(i,i) ) 
+            &NiNi*(ng(idm)*diffiso(i,i)-bn*bg(idm)*diffani(i,i) )
         END DO
       end if
     ELSE
@@ -1835,7 +1920,7 @@ CONTAINS
       DO idm = 1,Ndim
         indj = ind_ash + idm + (i - 1)*Ndim
         elMat%Alq(ind_ff(indi),ind_fG(indj),iel) = elMat%Alq(ind_ff(indi),ind_fG(indj),iel) - &
-          &NiNi*(ng(idm)*diffiso(i,i)-bn*bg(idm)*diffani(i,i) ) 
+          &NiNi*(ng(idm)*diffiso(i,i)-bn*bg(idm)*diffani(i,i) )
       END DO
 
     ENDIF
@@ -1908,7 +1993,7 @@ CONTAINS
         elMat%fh(ind_ff(indi),iel) = elMat%fh(ind_ff(indi),iel) - phys%etapar/phys%c2*Ni*ufg(4)*ufg(2)
 
 
-        ! TODO: check if I need stabilization part 
+        ! TODO: check if I need stabilization part
       END IF
     ELSE
       !! TANGENT CASE FOR POTENTIAL
@@ -1922,10 +2007,34 @@ CONTAINS
       DO idm = 1,Ndim
         indj = ind_ash + idm + (i - 1)*Ndim
         elMat%Alq(ind_ff(indi),ind_fG(indj),iel) = elMat%Alq(ind_ff(indi),ind_fG(indj),iel) - &
-          &NiNi*(ng(idm)*diffiso(i,i)-bn*bg(idm)*diffani(i,i) ) 
-      END DO      
+          &NiNi*(ng(idm)*diffiso(i,i)-bn*bg(idm)*diffani(i,i) )
+      END DO
     END IF
 
+#endif
+
+#ifdef NEUTRAL
+    DO idm = 1,Ndim
+      k = Neq
+      indi = ind_asf+k
+      indj = ind_ash+idm+(k-1)*Ndim
+      if (ntang) then
+        elMat%Alq(ind_ff(indi),ind_fG(indj),iel)=elMat%Alq(ind_ff(indi),ind_fG(indj),iel)-NiNi*ng(idm)*phys%diff_nn
+      else
+        elMat%Alq(ind_ff(indi),ind_fG(indj),iel)=elMat%Alq(ind_ff(indi),ind_fG(indj),iel)-NiNi*ng(idm)*phys%diff_nn
+      endif
+    END DO
+    DO idm = 1,Ndim
+      k = phys%Neq
+      j=1
+      indi = ind_asf+k
+      indj = ind_ash+idm+(j-1)*Ndim
+      if (ntang) then
+        elMat%Alq(ind_ff(indi),ind_fG(indj),iel)=elMat%Alq(ind_ff(indi),ind_fG(indj),iel)-NiNi*ng(idm)*phys%diff_n*phys%Re
+      else
+        elMat%Alq(ind_ff(indi),ind_fG(indj),iel)=elMat%Alq(ind_ff(indi),ind_fG(indj),iel)-NiNi*ng(idm)*phys%diff_n*phys%Re
+      endif
+    END DO
 #endif
 
   END SUBROUTINE assembly_bohm_bc_new

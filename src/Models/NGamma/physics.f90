@@ -21,9 +21,15 @@ CONTAINS
 
     ! number of equation of the problem
     phys%Neq = 2
+#ifdef NEUTRAL
+    phys%Neq = 3
+#endif
 
     ! number of physical variables
     phys%npv = 3
+#ifdef NEUTRAL
+    phys%npv = 4
+#endif
 
     ALLOCATE (phys%phyVarNam(phys%npv))
     ALLOCATE (phys%conVarNam(phys%Neq))
@@ -32,6 +38,9 @@ CONTAINS
     phys%phyVarNam(1) = "rho"
     phys%phyVarNam(2) = "u"
     phys%phyVarNam(3) = "Mach"
+#ifdef NEUTRAL
+    phys%phyVarNam(4)= "rhon"   ! density neutral
+#endif
 
     ! Set the name of the conservative variables
     if (switch%logrho) then
@@ -40,8 +49,14 @@ CONTAINS
       phys%conVarNam(1) = "rho"
     endif
     phys%conVarNam(2) = "Gamma"
+#ifdef NEUTRAL
+    phys%conVarNam(3) = "rhon"  ! U3 = rhon
+#endif
 
     simpar%model = 'N-Gamma'
+#ifdef NEUTRAL
+    simpar%model = 'N-Gamma-Neutral'
+#endif
     simpar%Ndim = 2
 #ifdef TOR3D
     simpar%Ndim = 3
@@ -52,13 +67,19 @@ CONTAINS
     simpar%physvar_refval(1) = simpar%refval_density
     simpar%physvar_refval(2) = simpar%refval_speed
     simpar%physvar_refval(3) = 1.
+#ifdef NEUTRAL
+    simpar%physvar_refval(4) = simpar%refval_neutral
+#endif
     if (switch%logrho) then
       simpar%consvar_refval(1) = log(simpar%refval_density)
     else
       simpar%consvar_refval(1) = simpar%refval_density
-    endif      
+    endif
 
     simpar%consvar_refval(2) = simpar%refval_momentum
+#ifdef NEUTRAL
+    simpar%consvar_refval(3) = simpar%refval_neutral
+#endif
 
   END SUBROUTINE
 
@@ -76,6 +97,9 @@ CONTAINS
       ua(:, 1) = up(:, 1)
     endif
     ua(:, 2) = up(:, 1)*up(:, 2)
+#ifdef NEUTRAL
+    ua(:,3) = up(:,4)
+#endif
   END SUBROUTINE phys2cons
 
   !*******************************************
@@ -87,12 +111,15 @@ CONTAINS
     real*8, dimension(:, :), intent(out) :: up
 
     if (switch%logrho) then
-      up(:, 1) = exp(ua(:, 1))
+      up(:, 1) = exp(ua(:, 1))                ! density
     else
-      up(:, 1) = ua(:, 1)
+      up(:, 1) = ua(:, 1)                     ! density
     endif
-    up(:, 2) = ua(:, 2)/up(:, 1)
-    up(:, 3) = ua(:, 2)/up(:, 1)/sqrt(phys%a)
+    up(:, 2) = ua(:, 2)/up(:, 1)              ! u parallel
+    up(:, 3) = ua(:, 2)/up(:, 1)/sqrt(phys%a) ! Mach
+#ifdef NEUTRAL
+    up(:,4) = abs(ua(:,3))                    ! density neutral
+#endif
   END SUBROUTINE cons2phys
 
 
@@ -130,19 +157,16 @@ CONTAINS
   END SUBROUTINE jacobianMatricesFace
 
 
-
-
   SUBROUTINE logrhojacobianVector(U,Up,V)
     real*8, intent(in)  :: U(:),Up(:)
     real*8, intent(out) :: V(:)
     real*8 :: dens
 
     V = 0.d0
-    V(1) = U(2)*U(1)/Up(1) 
+    V(1) = U(2)*U(1)/Up(1)
     V(2) = (U(1)-1)*(U(2)**2/Up(1) - phys%a*Up(1))
 
   END SUBROUTINE logrhojacobianVector
-
 
 
   !*****************************************
@@ -171,9 +195,15 @@ CONTAINS
     !*****************************
     d_iso(1, 1, :) = phys%diff_n
     d_iso(2, 2, :) = phys%diff_u
+#ifdef NEUTRAL
+    d_iso(3,3,:) = phys%diff_nn
+#endif
 
     d_ani(1, 1, :) = phys%diff_n
     d_ani(2, 2, :) = phys%diff_u
+#ifdef NEUTRAL
+    d_ani(3,3,:) = 0.
+#endif
 
     !*****************************
     ! Non diagonal terms
@@ -227,6 +257,110 @@ CONTAINS
 
   END SUBROUTINE computeIperDiffusion
 
+  ! ******************************
+  ! Neutral Source terms
+  ! ******************************
+#ifdef NEUTRAL
+
+  SUBROUTINE compute_niz(U,niz)
+    real*8, intent(IN) :: U(:)
+    real*8             :: niz,U1,U5
+    real,parameter :: tol = 1e-10
+    U1 = U(1)
+    U5 = U(5)
+    if (U1<tol) U1=tol
+    if (U5<tol) U5=tol
+    niz = U1*U5
+  END SUBROUTINE compute_niz
+
+
+  SUBROUTINE compute_dniz_dU(U,res)
+    real*8, intent(IN) :: U(:)
+    real*8             :: res(:),U1,U5
+    real,parameter :: tol = 1e-10
+    U1 = U(1)
+    U5 = U(5)
+    if (U1<tol) U1=tol
+    if (U5<tol) U5=tol
+    res = 0.
+    res(1) = U5
+    res(5) = U1
+  END SUBROUTINE compute_dniz_dU
+
+
+  SUBROUTINE compute_nrec(U,nrec)
+    real*8, intent(IN) :: U(:)
+    real*8             :: nrec,U1
+    real,parameter :: tol = 1e-10
+    U1 = U(1)
+    if (U1<tol) U1=tol
+    nrec = U1**2
+  END SUBROUTINE compute_nrec
+
+
+  SUBROUTINE compute_dnrec_dU(U,res)
+    real*8, intent(IN) :: U(:)
+    real*8             :: res(:),U1
+    real,parameter :: tol = 1e-10
+    U1 = U(1)
+    if (U1<tol) U1=tol
+    res = 0.
+    res(1) = 2.*U1
+  END SUBROUTINE compute_dnrec_dU
+
+
+  SUBROUTINE compute_fGammacx(U,fGammacx)
+    real*8, intent(IN) :: U(:)
+    real*8             :: fGammacx,U2,U5
+    real,parameter :: tol = 1e-10
+    U2 = U(2)
+    U5 = U(5)
+    if (U5<tol) U5=tol
+    fGammacx = U2*U5
+  END SUBROUTINE compute_fGammacx
+
+
+  SUBROUTINE compute_dfGammacx_dU(U,res)
+    real*8, intent(IN) :: U(:)
+    real*8             :: res(:),U2,U5
+    real,parameter :: tol = 1e-10
+    U2 = U(2)
+    U5 = U(5)
+    if (U5<tol) U5=tol
+    res = 0.
+    res(2) = U5
+    res(5) = U2
+  END SUBROUTINE compute_dfGammacx_dU
+
+
+  SUBROUTINE compute_fGammarec(U,fGammarec)
+    real*8, intent(IN) :: U(:)
+    real*8             :: fGammarec,U1,U2
+    real,parameter :: tol = 1e-10
+    U1 = U(1)
+    U2 = U(2)
+    if (U1<tol) U1=tol
+    fGammarec = U1*U2
+  END SUBROUTINE compute_fGammarec
+
+
+  SUBROUTINE compute_dfGammarec_dU(U,res)
+    real*8, intent(IN) :: U(:)
+    real*8             :: res(:),U1,U2
+    real,parameter :: tol = 1e-10
+    U1 = U(1)
+    U2 = U(2)
+    if (U1<tol) U1=tol
+    res = 0.
+    res(1) = U2
+    res(2) = U1
+  END SUBROUTINE compute_dfGammarec_dU
+
+#endif %NEUTRAL
+
+
+
+
   !*******************************************
   ! Compute the stabilization tensor tau
   !*******************************************
@@ -236,7 +370,11 @@ CONTAINS
     integer, intent(in)  :: ifa, iel
     real*8, intent(out) :: tau(:, :)
     integer             :: ndim
+#ifdef NEUTRAL
+    real*8              :: tau_aux(3)
+#else
     real*8              :: tau_aux(2)
+#endif
     real*8 :: xc, yc, rad, h, aux, bn, bnorm
 
     ndim = size(n)
@@ -247,27 +385,43 @@ CONTAINS
       tau_aux = abs(up(2)*bn)
       tau_aux(1) = tau_aux(1) + phys%diff_n*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
       tau_aux(2) = tau_aux(2) + phys%diff_u*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
+#ifdef NEUTRAL
+      tau_aux(3) = tau_aux(3) + phys%diff_nn*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
+#endif
 
     elseif (numer%stab == 3) then
       tau_aux = max(abs((uc(2) + sqrt(phys%a))*bn/up(1)), abs((uc(2) - sqrt(phys%a))*bn/up(1)))
       tau_aux(1) = tau_aux(1) + phys%diff_n*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
       tau_aux(2) = tau_aux(2) + phys%diff_u*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
+#ifdef NEUTRAL
+      tau_aux(3) = tau_aux(3) + phys%diff_nn*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
+#endif
 
     elseif (numer%stab == 4) then
       tau_aux = abs((up(2)*bn))
       tau_aux(1) = tau_aux(1) + phys%diff_n
       tau_aux(2) = tau_aux(2) + phys%diff_u
+#ifdef NEUTRAL
+      tau_aux(3) = tau_aux(5) + phys%diff_nn
+#endif      
 
     elseif (numer%stab == 5) then
       tau_aux = max(abs((uc(2) + sqrt(phys%a))*bn/up(1)), abs((uc(2) - sqrt(phys%a))*bn/up(1)))
       tau_aux(1) = tau_aux(1) + phys%diff_n
       tau_aux(2) = tau_aux(2) + phys%diff_u
+#ifdef NEUTRAL
+      tau_aux(3) = tau_aux(3) + phys%diff_nn
+#endif      
+
     else
       write (6, *) "Wrong stabilization type: ", numer%stab
       stop
     endif
     tau(1, 1) = tau_aux(1)
     tau(2, 2) = tau_aux(2)
+#ifdef NEUTRAL
+    tau(3,3) = tau_aux(3)
+#endif
   END SUBROUTINE computeTauGaussPoints
 
   SUBROUTINE computeTauGaussPoints_matrix(up, uc, b, n, xy, isext, iel, tau)

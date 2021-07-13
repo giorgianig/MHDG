@@ -128,35 +128,35 @@ CONTAINS
   subroutine init_solve_timing
     use globals
     timing%cputpre=1.e-8
-    timing%cputmap=1.e-8 
+    timing%cputmap=1.e-8
     timing%cputass=1.e-8
-    timing%cputbcd=1.e-8 
-    timing%cputsol=1.e-8 
-    timing%cputjac=1.e-8 
-    timing%cputglb=1.e-8 
-    timing%cputcom=1.e-8 
+    timing%cputbcd=1.e-8
+    timing%cputsol=1.e-8
+    timing%cputjac=1.e-8
+    timing%cputglb=1.e-8
+    timing%cputcom=1.e-8
 
-    timing%runtpre=1.e-8 
-    timing%runtmap=1.e-8 
-    timing%runtass=1.e-8 
-    timing%runtbcd=1.e-8 
-    timing%runtsol=1.e-8  
-    timing%runtjac=1.e-8  
-    timing%runtglb=1.e-8 
-    timing%runtcom=1.e-8 
+    timing%runtpre=1.e-8
+    timing%runtmap=1.e-8
+    timing%runtass=1.e-8
+    timing%runtbcd=1.e-8
+    timing%runtsol=1.e-8
+    timing%runtjac=1.e-8
+    timing%runtglb=1.e-8
+    timing%runtcom=1.e-8
 
     timing%clstime1=1.e-8
-    timing%clstime2=1.e-8 
-    timing%clstime3=1.e-8 
-    timing%clstime4=1.e-8 
-    timing%clstime5=1.e-8 
+    timing%clstime2=1.e-8
+    timing%clstime3=1.e-8
+    timing%clstime4=1.e-8
+    timing%clstime5=1.e-8
     timing%clstime6=1.e-8
 
     timing%rlstime1=1.e-8
-    timing%rlstime2=1.e-8 
-    timing%rlstime3=1.e-8 
-    timing%rlstime4=1.e-8 
-    timing%rlstime5=1.e-8 
+    timing%rlstime2=1.e-8
+    timing%rlstime3=1.e-8
+    timing%rlstime4=1.e-8
+    timing%rlstime5=1.e-8
     timing%rlstime6=1.e-8
   end subroutine
 
@@ -239,7 +239,7 @@ CONTAINS
       CALL init_sol_l2proj()
     else
       write(6,*) "Wrong initialization type"
-      stop   
+      stop
     endif
     ! Extract the face solution from the elemental one
     CALL extractFaceSolution()
@@ -526,8 +526,8 @@ CONTAINS
     !!         integer :: neq,Ne,Nf,Nfe,unkF,Np,Nfp,iElem,ifa,iFace,i
     !!         integer :: ind_uf(1:Mesh%Nnodesperface),faceNodes(1:Mesh%Nnodesperface)
     !!         integer :: ind_ue(1:Mesh%Nnodesperelem)
-    !!         logical :: alreadydone(1:Mesh%ukf)         
-    !         
+    !!         logical :: alreadydone(1:Mesh%ukf)
+    !
     !!         real*8,allocatable :: u(:,:)
     !!         real*8              :: tdiv(numer%ntor + 1)
     !!#ifdef TOR3D
@@ -554,19 +554,19 @@ CONTAINS
     !         Np = Mesh%Nnodesperelem
     !         Nfp = Mesh%Nnodesperface
     !         Nut = size(sol%u_tilde)
-    !         
+    !
     !         ALLOCATE (u(Nel*Np,Neq))
     !         ALLOCATE (qx(Nel*Np,Neq))
     !         ALLOCATE (qy(Nel*Np,Neq))
     !         ALLOCATE (auxq(Nel*Np*Neq,Ndim))
     !         ALLOCATE (u_tilde(Nut,neq))
-    !         
+    !
     !         u = transpose(reshape(sol%u,[Neq,Nel*Np]))
     !         u_tilde = transpose(reshape(sol%u_tilde,[Neq,Nut]))
     !         q = transpose(reshape(sol%u,[Neq*Ndim,Nel*Np]))
-    !         
-    !         
-    !         
+    !
+    !
+    !
     !#ifdef TOR3D
     ! write(6,*) "Reset variables error in 3D: Not coded yet"
     ! stop
@@ -585,18 +585,18 @@ CONTAINS
     !                  qx(ind,ieq) = uex
     !                  qy(ind,ieq) = uey
     !                  u(ind,ieq) = ue
-    !                  
+    !
     !               endif
     !            end do
     !         END DO
-    !         
-    !         
+    !
+    !
     !         DO iFace = 1,Mesh%Nintfaces
     !            iel = Mesh%intfaces(iFace,1)
     !            ifa = Mesh%intfaces(iFace,2)
     !            faceNodes = refElPol%Face_nodes(ifa,:)
     !            Xf = Mesh%X(Mesh%T(iel,faceNodes),:)
-    !            CALL analytical_solution(Xf(:,1),Xf(:,2),uf)            
+    !            CALL analytical_solution(Xf(:,1),Xf(:,2),uf)
     !            ind_uf = (iFace - 1)*Nfp + (/(i,i=1,Nfp)/)
     !            do ieq = 1,phys%neq
     !               if (switch%reset_eqs(ieq).ne.0) then
@@ -614,13 +614,13 @@ CONTAINS
     !            IF (.not. Mesh%Fdir(iel,ifa)) THEN
     !               ind_uf = Mesh%Nintfaces*Nfp + (iFace - 1)*Nfp + (/(i,i=1,Nfp)/)
     !               do ieq = 1,phys%neq
-    !                  if (switch%reset_eqs(ieq).ne.0) then               
+    !                  if (switch%reset_eqs(ieq).ne.0) then
     !                     u_tilde(ind_uf,:) = u(ind_ue(faceNodes),:)
     !                  endif
-    !               end do               
+    !               end do
     !            END IF
     !         END DO
-    !                  
+    !
     !#endif
 
     !!         !****************************************
@@ -639,7 +639,7 @@ CONTAINS
     !!         DEALLOCATE (qt)
     !!#endif
     !!         DEALLOCATE (u)
-    !              
+    !
     !     end subroutine reset_variables
 
 
@@ -805,7 +805,7 @@ CONTAINS
   END SUBROUTINE init_sol
 
   SUBROUTINE add_perturbation()
-    integer             :: Np1d,Np2d,Np 
+    integer             :: Np1d,Np2d,Np
     integer             :: itor,itorg,iel,iel2,i,imod,nmod,ieq,indl,iphi,ntorloc,itheta
     integer,allocatable :: ind(:)
     real*8              :: Xe(Mesh%Nnodesperelem,Mesh%Ndim),pertphi,perttheta
@@ -917,7 +917,7 @@ CONTAINS
     ymax = Mesh%ymax
     ymin = Mesh%ymin
     xm = 0.5*(xmax+xmin)
-    ym = 0.5*(ymax+ymin)  
+    ym = 0.5*(ymax+ymin)
 
     DO iel = 1,Mesh%Nelems
       ind = (iel - 1)*refElPol%Nnodes2D + (/(i,i=1,refElPol%Nnodes2D)/)

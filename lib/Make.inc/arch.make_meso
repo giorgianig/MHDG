@@ -3,7 +3,6 @@
 #-------------------------------------------------------------------------------
 SDIR=$(PWD)/../src/
 
-
 #-------------------------------------------------------------------------------
 # Compiling type: optimized - debugging - profiling
 #-------------------------------------------------------------------------------
@@ -30,15 +29,19 @@ FC = mpif90
 #-------------------------------------------------------------------------------
 # Model
 #-------------------------------------------------------------------------------
-# Available models
+MDL_LAPLACE=Laplace
 MDL_NGAMMA=NGamma
+MDL_NGAMMANEUTRAL=NGammaNeutral
 MDL_NGAMMATITE=NGammaTiTe
+MDL_NGAMMATITENEUTRAL=NGammaTiTeNeutral
 MDL_NGAMMAVORT=NGammaVort
-
 # Model chosen
-MDL=$(MDL_NGAMMA)
+#MDL=$(MDL_NGAMMA)
+#MDL=$(MDL_NGAMMANEUTRAL)
 #MDL=$(MDL_NGAMMATITE)
+MDL=$(MDL_NGAMMATITENEUTRAL)
 #MDL=$(MDL_NGAMMAVORT)
+#MDL=$(MDL_LAPLACE)
 
 # Moving equilibrium
 MVEQ_TRUE = true
@@ -69,13 +72,24 @@ PSBLMG=$(LIB_YES)
 
 # MACROS FOR MODEL CHOICE
 ifeq ($(MDL),$(MDL_NGAMMA))
- MACROS+= -DNGAMMA
  RMDL=NGamma
+ MACROS+= -DNGAMMA
+ ADDMOD+=hdg_LimitingTechniques.o
+else ifeq ($(MDL),$(MDL_NGAMMANEUTRAL))
+ RMDL=NGamma
+ MACROS+= -DNGAMMA
+ MACROS+= -DNEUTRAL
  ADDMOD+=hdg_LimitingTechniques.o
 else ifeq ($(MDL),$(MDL_NGAMMATITE))
  RMDL=NGammaTiTe
  MACROS+= -DNGAMMA 
  MACROS+= -DTEMPERATURE
+ ADDMOD+=hdg_LimitingTechniques.o
+else ifeq ($(MDL),$(MDL_NGAMMATITENEUTRAL))
+ RMDL=NGammaTiTe
+ MACROS+= -DNGAMMA 
+ MACROS+= -DTEMPERATURE
+ MACROS+= -DNEUTRAL
  ADDMOD+=hdg_LimitingTechniques.o
 else ifeq ($(MDL),$(MDL_NGAMMAVORT))
  RMDL=NGammaVort
@@ -151,12 +165,13 @@ endif
 
 
 
+#ifort
 ifeq ($(COMPTYPE),$(COMPTYPE_DEB))
  FCFLAGS = -fpp -O0 -r8 -qopenmp -xHOST -g -traceback -check all -free
 else ifeq ($(COMPTYPE),$(COMPTYPE_PRO))
  FCFLAGS = -fpp -O3 -parallel -fpe0 -qopenmp -xHOST -r8 -free -g
 else ifeq ($(COMPTYPE),$(COMPTYPE_OPT))
- FCFLAGS = -fpp -O2 -parallel -fpe0 -qopenmp -xHOST -r8 -free
+ FCFLAGS = -fpp -O3 -parallel -fpe0 -qopenmp -xHOST -r8 -free
 endif
 
 DEF = -DTHREAD_FUNNELED
@@ -245,50 +260,3 @@ FCFLAGS += $(MACROS)
 RM=/bin/rm -f
 CP=/bin/cp -f
 CMP=cmp
-
-
-## MACROS FOR COMPILING OPTIONS
-#ifeq ($(COMPTYPE),$(COMPTYPE_DEB))
-# FCFLAGS = -Og -g -fbounds-check -fbacktrace -fbounds-check -ffpe-trap=zero,overflow,underflow,invalid
-# FCFLAGS += -Wall -Wextra -Wconversion -fcheck=all -Wuninitialized -Wtabs
-#else ifeq ($(COMPTYPE),$(COMPTYPE_PRO))
-# FCFLAGS = -Og -pg
-#else ifeq ($(COMPTYPE),$(COMPTYPE_OPT))
-# FCFLAGS = -Ofast
-#endif
-
-
-#FCFLAGS += -cpp  -fopenmp
-#FCFLAGS += -fdefault-double-8 -fdefault-real-8 
-#FCFLAGS += -ffree-line-length-none -fimplicit-none -ffree-form -Wno-tabs
-
-#DEF = -DTHREAD_FUNNELED
-## Includes
-#FCFLAGS += -I/usr/include
-##FCFLAGS += -I/home/ggiorgiani/2.5.2/linux-x86_64/include/hdf5/include
-#FCFLAGS += -I/usr/include/hdf5/serial/
-#FCFLAGS += -I/usr/include/X11
-#FCFLAGS += -I/home/ggiorgiani/libs/pastix_5.2.3_rep/install
-#FCFLAGS += -I/home/ggiorgiani/libs/scotch_6.0.4/include
-
-## Libraries needed for linking
-#LIB =  -L/usr/lib/libblas/
-#LIB += -L/usr/lib/lapack/
-#LIB += -L/usr/lib/x86_64-linux-gnu/
-#LIB += -L/usr/lib/x86_64-linux-gnu/hdf5/serial/
-#LIB += -lhdf5_fortran -lhdf5 -lz 
-#LIB += -lX11 -lXt 
-#LIB += -L/home/ggiorgiani/libs/pastix_5.2.3_rep/install -lpastix -lm -lrt
-#LIB += -L/home/ggiorgiani/libs/scotch_6.0.4/lib/ -lscotch -lscotcherrexit  -lptscotchparmetis -lptscotch -lpthread -lhwloc
-#LIB += -lblas -llapack
-
-
-## Add macros to the compiling flags
-#FCFLAGS += $(MACROS)
-##-------------------------------------------------------------------------------
-## Utilitaires
-##-------------------------------------------------------------------------------
-
-#RM=/bin/rm -f
-#CP=/bin/cp -f
-#CMP=cmp

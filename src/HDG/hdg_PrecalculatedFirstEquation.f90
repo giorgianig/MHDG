@@ -18,9 +18,9 @@ SUBROUTINE HDG_precalculatedfirstequation()
   IMPLICIT NONE
 
   !*******************************************************************************
-  ! 
+  !
   !    PRECALCULATED MATRICES FOR THE FIRST EQUATION (DEFINITION OF THE GRADIENT)
-  ! 
+  !
   !*******************************************************************************
   integer*4             :: Ndim,Neq,N2D,Npel,Npfl,Ngfl,Ngvo
   integer*4             :: iel,ifa,i,j,iface
@@ -115,7 +115,7 @@ SUBROUTINE HDG_precalculatedfirstequation()
 
       ! First poloidal face
       ifa = 1
-      CALL elemental_matrices_pol_faces(iel3,ifa,Xel)         
+      CALL elemental_matrices_pol_faces(iel3,ifa,Xel)
 
       ! Toroidal faces
       DO ifa=1,refElPol%Nfaces
@@ -131,7 +131,7 @@ SUBROUTINE HDG_precalculatedfirstequation()
 
       ! Second poloidal face
       ifa = refElPol%Nfaces + 2
-      CALL elemental_matrices_pol_faces(iel3,ifa,Xel)  
+      CALL elemental_matrices_pol_faces(iel3,ifa,Xel)
 
     END DO
   END DO
@@ -598,7 +598,7 @@ CONTAINS
           call elemental_matrices_ext_faces(iel,ifa,Xfl)
         else
           ! periodic face
-          call elemental_matrices_int_faces(iel,ifa,Xfl)               
+          call elemental_matrices_int_faces(iel,ifa,Xfl)
         endif
       endif
     END DO
@@ -830,7 +830,7 @@ CONTAINS
     iAqq = 0.
     exAqq = 0.
     DO j = 1,Neq
-      ind_j = j + ind_ass 
+      ind_j = j + ind_ass
       DO k = 1,Ndim
         ind_i = ind_asq + k + (j - 1)*Ndim
         elMat%Aqu(ind_i,ind_j,iel)=elMat%Aqu(ind_i,ind_j,iel)+Aqu(:,:,k)
@@ -840,7 +840,7 @@ CONTAINS
     CALL invert_matrix(exAqq,iAqq)
     elMat%iAqq(:,:,iel)=elMat%iAqq(:,:,iel)+iAqq
     deallocate(iAqq,exAqq)
-  END SUBROUTINE do_assembly 
+  END SUBROUTINE do_assembly
 
   SUBROUTINE assemblyFacesContribution(iel,NiNi,n_g,ind_asf,ind_ash,ind_fG,ind_ff)
     integer*4,intent(in)   :: iel,ind_asf(:),ind_ash(:),ind_fG(:),ind_ff(:)

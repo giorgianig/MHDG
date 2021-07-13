@@ -171,44 +171,48 @@ MODULE types
   ! Physics: type for physical model info
   !*******************************************************
   TYPE Physics_type
-    integer     :: neq            ! Number of equations
-    integer     :: npv            ! Number of physical variables
-    real*8      :: diff_n, diff_u ! Perpendicular diffusion in the continuity and momentum equation
-    real*8      :: a              ! Proportionality constant between pressure and density for isothermal model (p = a*rho)
-    real*8      :: dfcoef         ! Constant related to the diamagnetic drift velocity
-    real*8      :: dexbcoef         ! Constant related to the ExB drift velocity
-    integer*4   :: bcflags(1:10)  ! Set the correspondence between mesh boundary flag (Mesh%boundaryFlag) and the boundary condition
-    real*8      :: diagsource(1:10)     ! Diagonal implicit sources
+    integer         :: neq            ! Number of equations
+    integer         :: npv            ! Number of physical variables
+    real*8          :: diff_n, diff_u ! Perpendicular diffusion in the continuity and momentum equation
+    real*8          :: a              ! Proportionality constant between pressure and density for isothermal model (p = a*rho)
+    real*8          :: dfcoef         ! Constant related to the diamagnetic drift velocity
+    real*8          :: dexbcoef         ! Constant related to the ExB drift velocity
+    integer*4       :: bcflags(1:10)          ! Set the correspondence between mesh boundary flag (Mesh%boundaryFlag) and the boundary condition
+    real*8          :: diagsource(1:10)       ! Diagonal implicit sources
     character(LEN=20), pointer:: phyVarNam(:) => Null() ! Names of the physical variables (set in initPhys)
     character(LEN=20), pointer:: conVarNam(:) => Null() ! Names of the conservative variables (set in initPhys)
-    real*8             :: lscale       ! Length scale for the non-dimensionalization of the equations
+    real*8          :: lscale          ! Length scale for the non-dimensionalization of the equations
     ! Magnetic field defined for each node of the mesh.
     real*8, pointer :: B(:, :)            ! Magnetic field, Br,Bz,Bphi [n of nodes  x 3]
     real*8          :: B0                 ! Reference value for the magnetic field [Tesla]
     real*8, pointer :: magnetic_flux(:)   ! Magnetic flux   [n of nodes]
     real*8, pointer :: Bperturb(:, :)     ! Magnetic perturbation, Br,Bz,Bphi [n of nodes  x 3]
-
-    real*8         :: Tbg          ! Background temperature in the isothermal model
-
-    real*8         :: bohmth       ! Threshold for imposing the Bohm boundary condition
+    real*8          :: Tbg                ! Background temperature in the isothermal model
+    real*8, pointer :: Jtor(:)            ! Toroidal Current
+    real*8          :: bohmth             ! Threshold for imposing the Bohm boundary condition
     ! Energy equation coefficients
-    real*8         :: diff_e       ! Perpendicular diffusion in the energy equation
-    real*8         :: epn          ! Exponential of the parallel diffusion (usually 5/2)
-    real*8         :: Mref         ! Reference Mach number
-    real*8         :: diff_pari     ! Parallel diffusion for the temperature (usually 1e7)
-    real*8         :: Gmbohm       ! gamma for Bohm boundary condition on energy:
+    real*8          :: diff_e             ! Perpendicular diffusion in the energy equation
+    real*8          :: epn                ! Exponential of the parallel diffusion (usually 5/2)
+    real*8          :: Mref               ! Reference Mach number
+    real*8          :: diff_pari          ! Parallel diffusion for the temperature (usually 1e7)
+    real*8          :: Gmbohm             ! gamma for Bohm boundary condition on energy:
     ! Temperature equations coefficients (the ions coefficients are the ones defined previously)
-    real*8         :: diff_ee      ! Perpendicular diffusion in the elcetron energy equation
-    real*8         :: diff_pare    ! Parallel diffusion for the electron temperature
-    real*8         :: tie          ! Temperature exchange coefficient between ions and electrons
-    real*8         :: Gmbohme      ! gamma for Bohm boundary condition on electron energy:
+    real*8          :: diff_ee            ! Perpendicular diffusion in the elcetron energy equation
+    real*8          :: diff_pare          ! Parallel diffusion for the electron temperature
+    real*8          :: tie                ! Temperature exchange coefficient between ions and electrons
+    real*8          :: Gmbohme            ! gamma for Bohm boundary condition on electron energy:
+    real*8          :: Pohmic             ! Ohmic heating power
     ! Coefficients for the vorticity equations
-    real*8         :: diff_vort
-    real*8         :: diff_pot
-    real*8         :: etapar
-    real*8         :: c1, c2 ! coefficients coming from the adimensionalization
-    real*8         :: Potfloat
-
+    real*8          :: diff_vort
+    real*8          :: diff_pot
+    real*8          :: etapar
+    real*8          :: c1, c2             ! coefficients coming from the adimensionalization
+    real*8          :: Potfloat
+    ! Coefficients for the neutral equations
+    real*8          :: diff_nn            ! Diffusion in the neutral equation
+    real*8          :: Re                 ! Recycling for the neutral equation
+    real*8          :: puff               ! Puff coefficient
+    real*8,pointer  :: puff_exp(:)        ! Puff experimental coefficient (only for moving equilibriums)
   END TYPE Physics_type
 
   !*******************************************************
@@ -235,7 +239,7 @@ MODULE types
     real*8          :: ellip              ! ellipticity (1: None)
     real*8, pointer :: coils_rmp(:, :, :) ! Coil coordinates for RMP (nbCoils*4*Discr,start-stop*(xyz)=6,rowNb) (4 for square coils)
     real*8, pointer :: coils_ripple(:, :) ! Coil coordinates for Ripple (nbCoils*Discr,start-stop*(xyz)=6)
-  END TYPE Magnetic_type 
+  END TYPE Magnetic_type
 
   !*******************************************************
   ! Switches: type for main code switches
@@ -304,7 +308,7 @@ MODULE types
     real*8         :: tNR      ! Tolerance of the Newton-Raphson scheme
     real*8         :: tTM      ! Tolerance for the steady state achievement
     real*8         :: div      ! Divergence detector
-    real*8         :: tau(1:4) ! Stabilization parameter for each equation (4 values max for now...)
+    real*8         :: tau(1:5) ! Stabilization parameter for each equation (4 values max for now...)
     real*8         :: sc_coe   ! Shock capturing coefficient
     real*8         :: sc_sen   ! Shock capturing sensibility
     real*8         :: minrho   ! Value of rho to start applying limiting
@@ -409,7 +413,7 @@ MODULE types
   ! Simulation parameters: for saving purpose
   !**********************************************************
   TYPE Simulationparams_type
-    character(len=20) :: model
+    character(len=50) :: model
     integer   :: Ndim
     integer   :: Neq
     real, allocatable :: consvar_refval(:)
@@ -419,6 +423,7 @@ MODULE types
     real*8    :: refval_time
     real*8    :: refval_temperature
     real*8    :: refval_density
+    real*8    :: refval_neutral
     real*8    :: refval_speed
     real*8    :: refval_potential
     real*8    :: refval_vorticity
@@ -437,6 +442,7 @@ MODULE types
     character(len=20)    :: refval_time_dimensions
     character(len=20)    :: refval_temperature_dimensions
     character(len=20)    :: refval_density_dimensions
+    character(len=20)    :: refval_neutral_dimensions
     character(len=20)    :: refval_speed_dimensions
     character(len=20)    :: refval_potential_dimensions
     character(len=20)    :: refval_vorticity_dimensions
