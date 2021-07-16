@@ -356,7 +356,8 @@ CONTAINS
     res(2) = U1
   END SUBROUTINE compute_dfGammarec_dU
 
-#endif %NEUTRAL
+#endif 
+!NEUTRAL
 
 
 

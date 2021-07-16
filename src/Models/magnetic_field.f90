@@ -728,7 +728,7 @@ CONTAINS
     USE HDF5
     USE HDF5_io_module
     USE MPI_OMP
-    integer        :: i,ierr,ip,jp
+    integer        :: i,ierr,ip,jp,ind,j
     integer(HID_T) :: file_id
 !#ifdef MOVINGEQUILIBRIUM
 !    integer              :: k
@@ -811,10 +811,10 @@ CONTAINS
     USE HDF5
     USE HDF5_io_module
     USE MPI_OMP
-    integer        :: ierr,k,ip,jp,i
+    integer        :: ierr,k,ip,jp,i,j,ind
     real*8,pointer,dimension(:,:) :: r2D,z2D,flux2D,Br2D,Bz2D,Bphi2D
     real*8,allocatable,dimension(:)   :: xvec,yvec,Bmod
-    real*8                            :: x,y
+    real*8                            :: x,y, Br, Bz, Bt, flux
     character(LEN=25) :: fname = 'WEST_54487'
     character(10)  :: npr,nid,nit
     character(len=1000) :: fname_complete

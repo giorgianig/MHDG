@@ -976,7 +976,8 @@ CONTAINS
 
   END SUBROUTINE set_Bohm_bc
 
-#endif !TOR3D
+#endif
+!TOR3D
 
   !*******************************************
   !   AUXILIARY ROUTINES FOR 2D AND 3D
@@ -1061,7 +1062,8 @@ CONTAINS
 
   END SUBROUTINE assembly_dirichletwf_bc
 
-!#endif !NEUTRAL
+!#endif
+!NEUTRAL
 
   !   !*********************************
   !   ! Assembly periodic bc

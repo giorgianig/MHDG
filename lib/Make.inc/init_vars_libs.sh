@@ -5,23 +5,27 @@
 # before compiling libraries and MHDG
 # See arch.make for local installation typical path (all commented path with $(HOME)...)
 
-#OpenMP option necessary for parallel to avoid HWLOC warning
-export OMP_NUM_THREADS=1
+#Stuff to add for INTEL (I) lib or OpenMP (OMP) lib
+#export I_MPI_DEBUG=5
+#export I_MPI_PIN_DOMAIN=omp
+#export I_MPI_PIN_ORDER=bunch
+#export KMP_AFFINITY=verbose,compact
+#export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
 
-# HWLOC main directory
-export MHDG_HWLOC_DIR=$HWLOC_DIR
+# HWLOC main directory ($HWLOC_DIR for mesocentre, $HWLOC_HOME for marconi)
+export MHDG_HWLOC_DIR=/usr/lib/x86_64-linux-gnu
 
 # HDF5 main directory ($HDF5_DIR for mesocentre, $HDF5_HOME for marconi)
-export MHDG_DF5_DIR=$HDF5_DIR
+export MHDG_HDF5_DIR=/usr/lib/x86_64-linux-gnu
 
 # Set where the libraries are (if common directory)
-export MHDG_LIB_DIR=$(pwd)/../libs
+export MHDG_LIB_DIR=/usr/local #$(pwd)/../libs
 
 # Set the libraries
-export MHDG_SCOTCH_DIR=$MHDG_LIB_DIR/scotch_6.0.4
-export MHDG_PASTIX_DIR=$MHDG_LIB_DIR/pastix_5.2.3
-export MHDG_PSBLAS_DIR=$MHDG_LIB_DIR/psblas3
-export MHDG_MLD2P4_DIR=$MHDG_LIB_DIR/mld2p4-2
+export MHDG_SCOTCH_DIR=$MHDG_LIB_DIR #/scotch_6.0.4
+export MHDG_PASTIX_DIR=$MHDG_LIB_DIR #/pastix_5.2.3
+export MHDG_PSBLAS_DIR=$MHDG_LIB_DIR #/psblas3
+export MHDG_MLD2P4_DIR=$MHDG_LIB_DIR #/mld2p4-2
 
 echo "Libraries directory: $MHDG_LIB_DIR"
 echo "HWLOC directory: $MHDG_HWLOC_DIR"

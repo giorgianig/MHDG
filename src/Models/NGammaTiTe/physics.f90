@@ -899,9 +899,11 @@ CONTAINS
     res(2) = 2.*U5*U2/U1
     res(5) = (U2**2)/U1
   END SUBROUTINE compute_dfEicx_dU
-#endif %TEMPERATURE
+#endif 
+!TEMPERATURE
 
-#endif %NEUTRAL
+#endif
+!NEUTRAL
 
 
 

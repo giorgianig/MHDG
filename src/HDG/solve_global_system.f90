@@ -109,9 +109,13 @@ SUBROUTINE solve_global_system
 #ifdef PARALL
   ALLOCATE (aux_sol(matK%n))
   IF (lssolver%sollib .eq. 1) THEN
+#ifdef WITH_PASTIX
     aux_sol = matPASTIX%rhs
+#endif
   ELSE
+#ifdef WITH_PSBLAS
     aux_sol = matPSBLAS%x%get_vect()
+#endif
   ENDIF
 #ifdef TOR3D
   ! ********* Parallel 3D ***********

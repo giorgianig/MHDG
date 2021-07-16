@@ -1098,7 +1098,8 @@ CONTAINS
     END DO
   END SUBROUTINE set_permutations
 
-#else !TOR3D
+#else
+!TOR3D
 
   !********************************************
   !
@@ -1781,7 +1782,8 @@ CONTAINS
     perm = reshape(templr,(/n/))
   END SUBROUTINE set_permutations
 
-#endif ! TOR3D
+#endif
+!TOR3D
 
   !********************************************************************************************
   !
@@ -1998,8 +2000,10 @@ CONTAINS
       &dfEiiz_dU,fEirec,dfEirec_dU,fEicx,dfEicx_dU,Tloss,dTloss_dU,Tlossrec,dTlossrec_dU,Sn,Sn0)
 #else
     call assemblyNeutral(ue,niz,dniz_dU,nrec,dnrec_dU,fGammacx,dfGammacx_dU,fGammarec,dfGammarec_dU,Sn,Sn0)
-#endif ! TEMPERATURE
-#endif ! NEUTRAL
+#endif
+!TEMPERATURE
+#endif
+!NEUTRAL
 
     ! Assembly local matrix
     ! Loop in equations

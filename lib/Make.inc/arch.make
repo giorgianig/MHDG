@@ -18,13 +18,14 @@ COMPTYPE = $(COMPTYPE_OPT)
 #-------------------------------------------------------------------------------
 MODE_SERIAL = serial
 MODE_PARALL = parall
-MODE = $(MODE_SERIAL)
-#MODE = $(MODE_PARALL)
+#MODE = $(MODE_SERIAL)
+MODE = $(MODE_PARALL)
 
 #-------------------------------------------------------------------------------
 # The compiler
 #-------------------------------------------------------------------------------
-FC = mpif90
+FC = mpif90 -f90=gfortran
+#FC = mpif90 -f90=ifort
 
 #-------------------------------------------------------------------------------
 # Model
@@ -36,10 +37,10 @@ MDL_NGAMMATITE=NGammaTiTe
 MDL_NGAMMATITENEUTRAL=NGammaTiTeNeutral
 MDL_NGAMMAVORT=NGammaVort
 # Model chosen
-#MDL=$(MDL_NGAMMA)
+MDL=$(MDL_NGAMMA)
 #MDL=$(MDL_NGAMMANEUTRAL)
 #MDL=$(MDL_NGAMMATITE)
-MDL=$(MDL_NGAMMATITENEUTRAL)
+#MDL=$(MDL_NGAMMATITENEUTRAL)
 #MDL=$(MDL_NGAMMAVORT)
 #MDL=$(MDL_LAPLACE)
 
@@ -56,7 +57,7 @@ MDL=$(MDL_NGAMMATITENEUTRAL)
 #-------------------------------------------------------------------------------
 DIM_3D=3D
 DIM_2D=2D
-DIM=$(DIM_2D)
+DIM=$(DIM_3D)
 
 #-------------------------------------------------------------------------------
 # Libraries for linear system solver
@@ -66,10 +67,10 @@ LIB_YES=yes
 LIB_NO=no
 PASTIX=$(LIB_YES)
 #PASTIX=$(LIB_NO)
-PSBLAS=$(LIB_YES)
-#PSBLAS=$(LIB_NO)
-PSBLMG=$(LIB_YES)
-#PSBLMG=$(LIB_NO)
+#PSBLAS=$(LIB_YES)
+PSBLAS=$(LIB_NO)
+#PSBLMG=$(LIB_YES)
+PSBLMG=$(LIB_NO)
 
 
 #-------------------------------------------------------------------------------
@@ -189,33 +190,32 @@ DEF = -DTHREAD_FUNNELED
 #-------------------------------------------------------------------------------
 # Includes
 #-------------------------------------------------------------------------------
-# HDF5/X11
-#FCFLAGS += -I/usr/include
-#FCFLAGS += -I$(HOME)/2.5.2/linux-x86_64/include/hdf5/include
-#FCFLAGS += -I/usr/include/hdf5/serial/
-FCFLAGS += -I$(MHDG_HDF5_DIR)/include
+# HDF5/HWLOC/X11
+#Local
+##FCFLAGS += -I/usr/include
+##FCFLAGS += -I/usr/include/x86_64-linux-gnu
+FCFLAGS += -I/usr/include/hdf5/serial
+FCFLAGS += -I/usr/include/hwloc
 FCFLAGS += -I/usr/include/X11
+#Cluster
+#FCFLAGS += -I$(MHDG_HDF5_DIR)/include
+#FCFLAGS += -I$(MHDG_HWLOC_DIR)/include
+#FCFLAGS += -I/usr/include/X11
 
-# PASTIX/HWLOC
+# PASTIX
 ifeq ($(PASTIX),$(LIB_YES))
-#FCFLAGS += -I$(HOME)/libs/pastix_5.2.3_rep/install
-#FCFLAGS += -I$(HOME)/libs/scotch_6.0.4/include
  FCFLAGS += -I$(MHDG_PASTIX_DIR)/install
  FCFLAGS += -I$(MHDG_SCOTCH_DIR)/include
 endif
 
 # PSBLAS
 ifeq ($(PSBLAS),$(LIB_YES))
-#FCFLAGS += -I$(HOME)/libs/psblas3/include/
-#FCFLAGS += -I$(HOME)/libs/psblas3/modules/
  FCFLAGS += -I$(MHDG_PSBLAS_DIR)/include/
  FCFLAGS += -I$(MHDG_PSBLAS_DIR)/modules/
 endif
 
 # MLD2P4
 ifeq ($(PSBLMG),$(LIB_YES))
-#FCFLAGS += -I$(HOME)/libs/mld2p4-2/modules/
-#FCFLAGS += -I$(HOME)/libs/mld2p4-2/include/
  FCFLAGS += -I$(MHDG_MLD2P4_DIR)/modules/
  FCFLAGS += -I$(MHDG_MLD2P4_DIR)/include/
 endif
@@ -223,48 +223,56 @@ endif
 #-------------------------------------------------------------------------------
 # Libraries needed for linking
 #-------------------------------------------------------------------------------
-# HDF5/X11
-#LIB += -L/usr/lib/x86_64-linux-gnu/
-#LIB += -L/usr/lib/x86_64-linux-gnu/hdf5/serial/
-LIB += -L$(MHDG_HDF5_DIR)/lib
-LIB += -lhdf5_fortran -lhdf5 -lz 
-LIB += -lX11 -lXt 
+# HDF5/HWLOC/X11
+#Local
+LIB += -L/usr/lib/x86_64-linux-gnu -lz -lm -lrt -lpthread
+LIB += -L/usr/lib/x86_64-linux-gnu/hdf5/serial -lhdf5_fortran -lhdf5
+LIB += -L/usr/lib/x86_64-linux-gnu/hwloc -lhwloc
+LIB += -L/usr/lib/x86_64-linux-gnu/caca -lX11
+LIB += -L/usr/lib/x86_64-linux-gnu/xtables -lXt
+#Cluster
+#LIB += -lz  -lm -lrt -lpthread
+#LIB += -L$(MHDG_HDF5_DIR)/lib -lhdf5_fortran -lhdf5
+#LIB += -L$(MHDG_HWLOC_DIR)/lib -lhwloc
+#LIB += -lX11
+#LIB += -lXt
 
-# PASTIX/HWLOC
+
+# PASTIX
 ifeq ($(PASTIX),$(LIB_YES))
-#LIB += -L$(HOME)/libs/pastix_5.2.3_rep/install -lpastix -lm -lrt
-#LIB += -L$(HOME)/libs/scotch_6.0.4/lib/ -lscotch -lscotcherrexit  -lptscotchparmetis -lptscotch -lpthread -lhwloc
- ifeq ($(MODE),$(MODE_SERIAL))
-  LIB += -L$(MHDG_PASTIX_DIR)/install -lpastix -lm -lrt -lifcore
-  LIB += -L$(MHDG_SCOTCH_DIR)/lib -lscotch -lscotcherrexit  -lptscotchparmetis -lptscotch 
-  LIB += -L$(MHDG_HWLOC_DIR)/lib -lpthread -lhwloc
- else
-  LIB += -L$(MHDG_PASTIX_DIR)/install -lpastix -lm -lrt -lifcore
-  LIB += -L$(MHDG_SCOTCH_DIR)/lib -lptscotch -lscotch -lptscotcherr -lmpi -lm
-  LIB += -L$(MHDG_HWLOC_DIR)/lib -lpthread -lhwloc
- endif
+ #former: lifcore is for intel
+ #LIB += -L$(HOME)/libs/scotch_6.0.4/lib/ -lscotch -lscotcherrexit  -lptscotchparmetis -lptscotch -lpthread -lhwloc
+ #LIB += -L$(MHDG_PASTIX_DIR)/install -lpastix -lm -lrt -lifcore
+ #New GNU
+ LIB += -L$(MHDG_SCOTCH_DIR)/lib -lptscotch -lscotch -lptscotcherr -lz -lm -lrt -lpthread
+ LIB += -L$(MHDG_PASTIX_DIR)/install -lpastix -lm -lrt -lgfortran -lpthread -lhwloc -lptscotch -lscotch -lscotcherr
+ #New INTEL
+ #LIB += -L$(MHDG_SCOTCH_DIR)/lib -lptscotch -lscotch -lptscotcherr -lz -lm -lrt -lpthread
+ #LIB += -L$(MHDG_PASTIX_DIR)/install -lpastix -lm -lrt -lifcore -lpthread -lhwloc -lptscotch -lscotch -lscotcherr
 endif
 
 # BLAS/LAPACK
-#LIB += -lblas -llapack
-LIB += -L $(MKLROOT)/lib/intel64 -lmkl_intel_lp64 -lmkl_sequential -lmkl_core
+#Local
+LIB += -L/usr/lib/x86_64-linux-gnu -lblas -llapack
+#Cluster
+#Intel
+#LIB += -L$(MKL_HOME)/lib/intel64 -lmkl_intel_lp64 -lmkl_sequential -lmkl_core
+#GNU
+#LIB += -L$(BLAS_HOME)/lib -lblas -L$(LAPACK_HOME)/lib -llapack
+
 
 # PSBLAS/MLD2P4
 ifeq  ($(PSBLMG),$(LIB_YES)) 
-#LIB += -L/home/giorgio/libs/psblas3/lib/ -L/home/giorgio/libs/mld2p4-2/lib/ 
  LIB += -L$(MHDG_PSBLAS_DIR)/lib/ -L$(MHDG_MLD2P4_DIR)/lib/ 
  LIB += -lpsb_krylov -lmld_prec -lpsb_prec -lpsb_krylov -lpsb_prec -lpsb_util -lpsb_base
 else ifeq ($(PSBLAS),$(LIB_YES)) 
-#LIB += -L/home/giorgio/libs/psblas3/lib/
  LIB += -L$(MHDG_PSBLAS_DIR)/lib/
  LIB += -lpsb_util -lpsb_krylov -lpsb_prec -lpsb_base
 endif
 
 ifeq ($(PSBLMG),$(LIB_YES))
-#include /home/giorgio/libs/mld2p4-2/include/Make.inc.mld2p4
  include $(MHDG_MLD2P4_DIR)/include/Make.inc.mld2p4
 else ifeq ($(PSBLAS),$(LIB_YES))
-#include /home/giorgio/libs/psblas3/include/Make.inc.psblas
  include $(MHDG_PSBLAS_DIR)/include/Make.inc.psblas
 endif
 
