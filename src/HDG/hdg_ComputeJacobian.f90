@@ -199,7 +199,7 @@ SUBROUTINE HDG_computeJacobian()
   !   Loop in elements
   !************************************
   !$OMP PARALLEL DEFAULT(SHARED) &
-  !$OMP PRIVATE(itor,iel,itorg,iel3,Xel,indbe,Bel,fluxel,inde,qe,ue,u0e,ifa,indbp,Bfp,dd,indfp,ufp,indl)&
+  !$OMP PRIVATE(itor,iel,itorg,iel3,tel,Xel,indbe,Bel,fluxel,inde,qe,ue,u0e,ifa,indbp,Bfp,dd,indfp,ufp,indl)&
   !$OMP PRIVATE(uefp,qefp,iface,Xfl,indbt,Bfl,isdir,indft,uft,ueft,qeft,i,Jtorel)
   allocate(Xel(Mesh%Nnodesperelem,2))
   allocate(Xfl(refElPol%Nfacenodes,2))

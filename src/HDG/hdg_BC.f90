@@ -208,6 +208,8 @@ SUBROUTINE HDG_BC()
         CALL set_dirichletwf_bc()
       CASE (bc_dirichlet_and_Neumann)
         CALL set_diric_neum_bc()
+      CASE(bc_Transmission)
+        CALL set_Transmission_bc()
       CASE (bc_Bohm)
         CALL set_Bohm_bc()
       CASE DEFAULT
@@ -264,6 +266,42 @@ CONTAINS
     END DO
 
   END SUBROUTINE set_dirichletwf_bc
+
+  !********************************
+  ! Transmission boundary condition
+  !********************************
+  SUBROUTINE set_Transmission_bc
+    integer                   :: g,igpol,igtor
+    real*8                    :: dsurfg
+    real*8                    :: NiNi(Npfl,Npfl),Ni(Npfl)
+
+    ! Face shape functions
+    Nfi => refElTor%sFTF
+
+    !*****************************
+    ! Loop in face Gauss points
+    !*****************************
+    DO igtor = 1,NGaussTor
+      DO igpol = 1,NGaussPol
+
+        g = (igtor - 1)*NGaussPol + igpol
+
+        ! Calculate the integration weight
+        IF (switch%axisym) THEN
+          dsurfg = dsurf(g)*xyf(igpol,1)
+        ELSE
+          dsurfg = dsurf(g)
+        END IF
+        NiNi = dsurfg*tensorProduct(Nfi(g,:),Nfi(g,:))
+        Ni = Nfi(g,:)*dsurfg
+
+        ! Assembly contribution
+        CALL assembly_trasm_bc(iel3,ind_asf,ind_ff,NiNi,Ni,ufg(g,:))
+
+      END DO
+    END DO
+
+  END SUBROUTINE set_Transmission_bc
 
   !***************************************************************
   ! Dirichlet in weak form in some variables and Neumann in others
@@ -657,11 +695,9 @@ CONTAINS
       END IF
       NiNi = tensorProduct(refElPol%N1D(g,:),refElPol%N1D(g,:))*dline
       Ni = refElPol%N1D(g,:)*dline
-!#ifdef NEUTRAL
-!      CALL assembly_dirichletwf_bc(iel,ind_asf,ind_ff,uex(g,:),NiNi,Ni,xyg(g,:))
-!#else
+
       CALL assembly_dirichletwf_bc(iel,ind_asf,ind_ff,uex(g,:),NiNi,Ni)
-!#endif
+
     END DO
 
   END SUBROUTINE set_dirichletwf_bc

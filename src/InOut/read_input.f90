@@ -367,7 +367,7 @@ SUBROUTINE READ_input()
     PRINT *, '                - number of elements in the toroidal direction:       ', numer%ntor
     PRINT *, '                - polynomial degree in the toroidal direction:        ', numer%ptor
 #ifdef PARALL
-    PRINT *, '                - number of MPI partitions in the toroidal direction :', numer%ptor
+    PRINT *, '                - number of MPI partitions in the toroidal direction :', numer%npartor
 #endif
     PRINT *, '                - max extention in the toroidal direction:            ', numer%tmax
 #endif
