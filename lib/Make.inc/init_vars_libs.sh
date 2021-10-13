@@ -19,13 +19,13 @@ export MHDG_HWLOC_DIR=/usr/lib/x86_64-linux-gnu
 export MHDG_HDF5_DIR=/usr/lib/x86_64-linux-gnu
 
 # Set where the libraries are (if common directory)
-export MHDG_LIB_DIR=/usr/local #$(pwd)/../libs
+export MHDG_LIB_DIR=$HOME/libs/
 
 # Set the libraries
-export MHDG_SCOTCH_DIR=$MHDG_LIB_DIR #/scotch_6.0.4
-export MHDG_PASTIX_DIR=$MHDG_LIB_DIR #/pastix_5.2.3
-export MHDG_PSBLAS_DIR=$MHDG_LIB_DIR #/psblas3
-export MHDG_MLD2P4_DIR=$MHDG_LIB_DIR #/mld2p4-2
+export MHDG_SCOTCH_DIR=$MHDG_LIB_DIR/scotch_6.0.4
+export MHDG_PASTIX_DIR=$MHDG_LIB_DIR/pastix_5.2.3_rep
+export MHDG_PSBLAS_DIR=$MHDG_LIB_DIR/psblas3
+export MHDG_MLD2P4_DIR=$MHDG_LIB_DIR/mld2p4-2
 
 echo "Libraries directory: $MHDG_LIB_DIR"
 echo "HWLOC directory: $MHDG_HWLOC_DIR"
