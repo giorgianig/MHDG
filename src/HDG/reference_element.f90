@@ -147,7 +147,8 @@ CONTAINS
       TYPE(Reference_element_type), intent(INOUT) :: refEl
       integer*4, intent(in), optional :: ngauss_1d
       integer*4 :: i, j
-      integer, allocatable :: aux_coord2d(:, :), perm(:), ind(:)
+      integer, allocatable :: perm(:), ind(:)
+      real*8,allocatable :: aux_coord2d(:,:)
 
       IF (refEl%elemType .eq. 0) THEN
          !*************************************

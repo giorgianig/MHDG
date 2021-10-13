@@ -1,6 +1,6 @@
 % plot Fortran solution
 clear
-close all
+ close all
 
 global theta ntor
 %**********************************
@@ -20,7 +20,7 @@ cons_dimensional_plots = 0; % conservative variables
 phys_dimensional_plots = 0; % physical variables
 nref = 4; % plot order
 varnplot = [];%[2,4]; % I don't plot these variables
-iplot0 = 0;
+iplot0 = 1;
 
 %**********************************
 % 3D stuff
@@ -43,11 +43,12 @@ path2save = '/home/giorgio/Dropbox/PostDoc_Marseille/Latex/NGammaVortPot/';
 % solname = 'Sol2D_Square_Quads_6_P3_DPe0.100E-03_1358';
 solpath = '/home/giorgio/Dropbox/Fortran/MHDG_ref3.0/test/';
 meshpath = solpath;
-meshpath = '/home/giorgio/Dropbox/Fortran/MHDG_ref3.0/matlab/Meshes/';
-% solname = 'Sol3D_CircLimAlign_Quads_Nel480_P4_Ntor2Ptor2_DPe0.390E+00_0013';
-solname = 'Sol2D_CircLimAlign_Quads_Nel480_P4_DPe0.391E+00';
+% meshpath = '/home/giorgio/Dropbox/Fortran/MHDG_ref3.0/matlab/Meshes/';
+% solname = 'Sol3D_CircLimAlign_Quads_Nel480_P4_Ntor2Ptor2_DPe0.390E+00_2210';
+solname = 'Sol2D_CircLimAlign_Quads_Nel208_P4_DPe0.100E+01';
+% solname = 'Sol2D_CircLimAlign_Quads_Nel480_P4_DPe0.753E-01';
 
-% solname = 'Sol2D_CircLimAlign_Quads_Nel208_P4_DPe0.300E+01';
+% solname = 'Sol3D_CircLimAlign_Quads_Nel480_P4_Ntor2Ptor2_DPe0.500E-01_0001';
 
 
 % solpath = '/home/giorgio/Results_MHDG/interchange/sol_9216els_P4/sol1/';

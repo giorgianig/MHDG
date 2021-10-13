@@ -60,20 +60,30 @@ SUBROUTINE solve_global_system
    IF (lssolver%sollib .eq. 1) THEN
 #ifdef WITH_PASTIX
       ! Solver dependent part-->PASTIX
-      IF (matK%start) THEN
-         call displayMatrixInfo()
-         call init_mat_PASTIX(matPASTIX)
-         call check_mat_PASTIX(matPASTIX)
-         call anal_mat_PASTIX(matPASTIX)
-         matK%start = .false.
-      ELSE
-         call build_mat_PASTIX(matPASTIX)
+      IF (matK%updateJac) THEN
+!         matK%updateJac = .false.
+						   IF (matK%start) THEN
+						      call displayMatrixInfo()
+						      call init_mat_PASTIX(matPASTIX)
+						      call check_mat_PASTIX(matPASTIX)
+						      call anal_mat_PASTIX(matPASTIX)
+						      matK%start = .false.
+						   ELSE
+						      call build_mat_PASTIX(matPASTIX)
 !#ifdef PARALL
-         ! This needs to be redone in parallel (who knows why??)
-         call check_mat_PASTIX(matPASTIX)
+						      ! This needs to be redone in parallel (who knows why??)
+						      call check_mat_PASTIX(matPASTIX)
 !#endif
+						   END IF
+						   call LU_mat_pastix(matPASTIX)
+      ELSE 
+         matK%counter = matK%counter + 1
+         matPASTIX%rhs = rhs%vals
+         if (matK%counter==10) then
+            matK%updateJac = .true.
+             matK%counter = 0
+         endif
       END IF
-      call LU_mat_pastix(matPASTIX)
       call solve_mat_PASTIX(matPASTIX)
 #else
       WRITE (6, *) "Trying to use PASTIX but compiled without option -DWITH_PASTIX"
@@ -269,7 +279,7 @@ SUBROUTINE solve_global_system
    !**********************************************
    ! Deallocate matK
    !**********************************************
-   CALL free_mat()
+!   CALL free_mat()
 
    !**********************************************
    ! MPI communications

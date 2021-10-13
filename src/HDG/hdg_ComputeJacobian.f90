@@ -1937,7 +1937,7 @@ real*8 :: kmult(size(Auq,1),size(Auq,2))
 
 #ifdef VORTICITY
              if (i==4) then
-               kmult = kmult/ue(1)
+               kmult = kmult*ue(1)
              endif
 #endif
 
@@ -2161,7 +2161,7 @@ real*8 :: kmult(size(Auq,1),size(Auq,2))
 
 #ifdef VORTICITY
             if (i==4) then
-                kmult=kmult/uf(1)
+                kmult=kmult*uf(1)
             endif
 #endif
 

@@ -32,6 +32,7 @@ n0*u0^3*t0*L0^2/W0/T0
  unitInfo((2*Tev*e/m0)/(L0/t0)^2)
  
  unitInfo(phi0/B0*t0/L0^2)
+ 
  unitInfo( Tev*t0/(L0^2*B0))
 
  

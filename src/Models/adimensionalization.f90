@@ -104,7 +104,7 @@ SUBROUTINE adimensionalization()
    ! Reference values stored in phys
    phys%lscale = L0
    phys%B0 = B0
-   !
+   ! 
    ! Adimesional isothermal compressibility coefficient
    phys%a = 2*Tev*e/mi/(L0/t0)**2
 
@@ -138,7 +138,7 @@ SUBROUTINE adimensionalization()
 
    ! Curvature drift coefficient
    phys%dfcoef = 2*Tev*t0/(L0**2*B0)
-   phys%dexbcoef = phi0/B0*t0/L0^2
+   phys%dexbcoef = phi0/B0*t0/L0**2
 
    ! Store reference values
    simpar%refval_length = L0

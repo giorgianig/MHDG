@@ -36,7 +36,7 @@ MDL_NGAMMAVORT=NGammaVort
 # Model chosen
 MDL=$(MDL_NGAMMA)
 #MDL=$(MDL_NGAMMATITE)
-MDL=$(MDL_NGAMMAVORT)
+#MDL=$(MDL_NGAMMAVORT)
 #MDL=$(MDL_LAPLACE)
 
 #-------------------------------------------------------------------------------

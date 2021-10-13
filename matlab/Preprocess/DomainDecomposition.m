@@ -6,17 +6,17 @@ mark = {'bo','ko','go','mo','yo','bo','bo','ko','go','mo','yo','bo'};
 path2mesh ='../Meshes/';
 % meshName  = 'Circle_ONION_3_P10.mat';
 % meshName  = 'West_Hugo_h0.02_refCorn0.001_refSep0.01_YesHole_P4.mat';
-meshName  = 'CircLimAlign_Quads_Nel480_P4.mat';
+meshName  = 'Circle_LIM_InfThin_h0.1_RefCorn0.02_P4.mat';
 % meshName  = 'CircLimAlign_Quads_Nel128_P3.mat';
 % path2mesh = '/home/giorgio/Dropbox/Matlab/Meshes/Meshes_2D/';
 % meshName  = 'mesh1_P1.mat';
 % Number of divisions
-ndiv = 16;
+ndiv = 4;
 divType = 'rot';
 % divType = 'x';
 % divType = 'y';
 theta0 = 0*pi/180;
-elemType = 0;
+elemType = 1;
 
 % theta0 = pi/180;
 % forbidden values for theta
@@ -182,7 +182,7 @@ while redo
         end
         if i==imax
             disp('Optimal division not found, retrying')
-            redo = 1;
+%             redo = 1;
         end
     end
     if any(theta-theta_forb)<5e-3
@@ -606,40 +606,40 @@ for i = 1:ndiv
 end
 
 % Draw
-% for i=1:ndiv
-%     
-%     figure,title(['Process ',num2str(i)])
-%     plotMesh(XX{i},TT{i},elemType)
-%     for ib = 1:nboundaries
-%         name = boundaryNames{ib};
-%         eval(['Tb = TTb_' name(4:end) '{i};'])
-%         hold on
-%         plot(XX{i}(Tb,1),XX{i}(Tb,2), mark{ib})
-%     end
-%     %     Tb = TTb_CON{i};
-%     %     hold on
-%     %     plot(XX{i}(Tb,1),XX{i}(Tb,2),  'ro')
-%     
-%     % draw ghost faces
-%     ghost = find(GhostFaces{i});
-%     nint = size(intfaces_loc{i},1);
-%     extfacesperm(mapextfa_loc{i},:) = extfaces_loc{i};
-%     for ig=1:numel(ghost)
-%         
-%         gf = ghost(ig);
-%         if gf>nint
-%             iel = extfacesperm(gf-nint,1);
-%             ifa = extfacesperm(gf-nint,2);
-%         else
-%             iel = intfaces_loc{i}(gf,1);
-%             ifa = intfaces_loc{i}(gf,2);
-%         end
-%         hold on
-%         plot(XX{i}(TT{i}(iel,refEl.faceNodes(ifa,:)),1),XX{i}(TT{i}(iel,refEl.faceNodes(ifa,:)),2),'r*')
-%     end
-%     
-%     
-% end
+for i=1:ndiv
+    
+    figure,title(['Process ',num2str(i)])
+    plotMesh(XX{i},TT{i},elemType)
+    for ib = 1:nboundaries
+        name = boundaryNames{ib};
+        eval(['Tb = TTb_' name(4:end) '{i};'])
+        hold on
+        plot(XX{i}(Tb,1),XX{i}(Tb,2), mark{ib})
+    end
+    %     Tb = TTb_CON{i};
+    %     hold on
+    %     plot(XX{i}(Tb,1),XX{i}(Tb,2),  'ro')
+    
+    % draw ghost faces
+    ghost = find(GhostFaces{i});
+    nint = size(intfaces_loc{i},1);
+    extfacesperm(mapextfa_loc{i},:) = extfaces_loc{i};
+    for ig=1:numel(ghost)
+        
+        gf = ghost(ig);
+        if gf>nint
+            iel = extfacesperm(gf-nint,1);
+            ifa = extfacesperm(gf-nint,2);
+        else
+            iel = intfaces_loc{i}(gf,1);
+            ifa = intfaces_loc{i}(gf,2);
+        end
+        hold on
+        plot(XX{i}(TT{i}(iel,refEl.faceNodes(ifa,:)),1),XX{i}(TT{i}(iel,refEl.faceNodes(ifa,:)),2),'r*')
+    end
+    
+    
+end
 
 GenerateHDF5_meshes_Parallel
 % test

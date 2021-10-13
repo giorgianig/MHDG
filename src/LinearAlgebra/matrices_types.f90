@@ -2,6 +2,8 @@ MODULE matrices_types
 
    TYPE MAT_CSR_TYP ! A type to store matrices in CSR format
       logical                        :: start  ! keeps track if it is the first solve
+      logical                        :: updateJac  ! trying to reuse Jacobian
+      integer                        :: counter
       integer :: n ! Number of (locally owned) columns in the matrix
       integer :: nnz ! Number of (locally owned) non-zeros
       integer, dimension(:), pointer :: rowptr => null() ! Index of first element of each row in cols and vals

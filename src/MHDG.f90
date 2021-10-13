@@ -17,6 +17,7 @@ PROGRAM MHDG
    USE Communications
 #endif
    USE HDG_LimitingTechniques
+   USE matrices_tools
    IMPLICIT NONE
 
    integer             :: Neq, Np, Nel, Ndim, Nfp, Nf, ntorloc
@@ -25,7 +26,7 @@ PROGRAM MHDG
    integer, allocatable :: faceNodes1d(:)
    logical, allocatable :: mkelms(:)
    real*8              :: dt, errNR, errlstime
-   real*8, allocatable :: uiter(:), L2err(:)
+   real*8, allocatable :: uiter(:), L2err(:), aux_utilde(:)
    character(LEN=1024) :: mesh_name, namemat, save_name
    real*8              :: cputtot, runttot
    integer             ::  OMP_GET_MAX_THREADS
@@ -34,8 +35,14 @@ PROGRAM MHDG
    INTEGER :: code, pr, aux
    INTEGER, PARAMETER :: etiquette = 1000
    INTEGER, DIMENSION(MPI_STATUS_SIZE) :: statut
-   write (6, *) "STARTING"
+   logical ::  incremental_strategy
 
+   write (6, *) "STARTING"
+   
+   incremental_strategy = .true.
+
+
+   
    ! Check the number of input arguments
    nb_args = iargc()
 
@@ -84,6 +91,8 @@ PROGRAM MHDG
 
    ! Linear solver: set the start to true
    matK%start = .true.
+   matK%updateJac = .true.
+    matK%counter = 0
    if (lssolver%timing) then
       call init_solve_timing
    endif
@@ -209,6 +218,7 @@ call mpi_barrier(mpi_comm_world,ierr)
 
    ! Allocate and initialize uiter and u0
    ALLOCATE (uiter(nu))
+   allocate(aux_utilde(nut))
    ALLOCATE (sol%u0(nu, time%tis))
    sol%u0 = 0.
    sol%u0(:, 1) = sol%u
@@ -255,6 +265,12 @@ call mpi_barrier(mpi_comm_world,ierr)
 
          ! Assembly the global matrix
          CALL hdg_Assembly()
+         
+         if (incremental_strategy) then
+            call amux(Matk, sol%u_tilde, aux_utilde)
+            rhs%vals = rhs%vals-aux_utilde
+            aux_utilde = sol%u_tilde
+         endif
 !call HDF5_save_CSR_matrix('Mat')
 !call HDF5_save_CSR_vector('rhs')
 !call displayMatrixInt(Mesh%F)
@@ -265,6 +281,10 @@ call mpi_barrier(mpi_comm_world,ierr)
 !stop
          ! Solve linear system
          CALL solve_global_system()
+         
+         if (incremental_strategy) then
+            sol%u_tilde=sol%u_tilde+aux_utilde
+         endif
 
          ! Compute element-by-element solution
          CALL compute_element_solution()
