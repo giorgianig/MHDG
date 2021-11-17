@@ -28,11 +28,15 @@ MODULE types
   INTEGER, PARAMETER, PUBLIC :: bc_Bohm = 50
   INTEGER, PARAMETER, PUBLIC :: bc_BohmNM = 51
   INTEGER, PARAMETER, PUBLIC :: bc_BohmSimp = 52
+  INTEGER, PARAMETER, PUBLIC :: bc_BohmPump = 55 ! bohm for plasma, pump for neutrals
+  INTEGER, PARAMETER, PUBLIC :: bc_BohmPuff = 56 ! bohm for plasma, puff for neutrals
+  
   ! 60-.. Slip wall type
   INTEGER, PARAMETER, PUBLIC :: bc_slip_wall = 60
   ! 70-.. Periodic
   INTEGER, PARAMETER, PUBLIC :: bc_periodic = 70
 
+   
   ! Boundary conditions flags and names
   CHARACTER(100) ::  bc_flag_type(10), bc_flag_name(max_num_diff_bc)
 
@@ -133,7 +137,7 @@ MODULE types
     real*8, allocatable     :: diff_elems(:)          ! Diffusion to limit rho in the flagged elements[Number of elements]
     real*8, allocatable     :: scdiff_nodes(:, :)      ! Shock capturing diffusion in each node [Number of elements,Number of nodes per element]
     real*8                 :: xmax, xmin, ymax, ymin    ! Limit of the GLOBAL matrix, across mpi partitions
-
+    real*8                  :: puff_area         ! area of the puff bounday condition
 #ifdef PARALL
     integer, pointer       :: loc2glob_fa(:)     ! mapping number of the faces for creating the global matrix [number of faces in the mesh]
     integer, pointer       :: loc2glob_el(:)     ! mapping number of the elements from local to global [number of elements in the mesh]
@@ -563,6 +567,8 @@ CONTAINS
     bc_flag_name(50) = 'Bohm'
     bc_flag_name(51) = 'Bohm for the velocity, Neumann homogeneous for the other variables'
     bc_flag_name(52) = 'Simplified Bohm bc: normal Bohm for the velocity, Grad//T=0 for Ti, Te'
+    bc_flag_name(55) = 'Bohm for plasma, pump for neutrals'
+    bc_flag_name(56) = 'Bohm for plasma, puff for neutrals'
     bc_flag_name(60) = 'Slip wall'
     bc_flag_name(70) = 'Periodic'
 

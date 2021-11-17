@@ -242,8 +242,9 @@ CONTAINS
   !*****************************************
   ! Set the perpendicular diffusion
   !****************************************
-  SUBROUTINE setLocalDiff(xy, d_iso, d_ani, Bmod)
+  SUBROUTINE setLocalDiff(xy,u, d_iso, d_ani, Bmod)
     real*8, intent(in)  :: xy(:, :), Bmod(:)
+    real*8, intent(in)  :: u(:,:)
     real*8, intent(out) :: d_iso(:, :, :), d_ani(:, :, :)
     real*8              :: iperdiff(size(xy, 1))
 

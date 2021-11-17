@@ -122,6 +122,21 @@ CONTAINS
       END IF
     ENDIF
 
+    !*****************************************
+    ! Compute puff area
+    !*****************************************
+    IF (MPIvar%glob_id .eq. 0) THEN
+      IF (utils%printint > 0) THEN
+        WRITE (6, *) "Computing puff area"
+      END IF
+    ENDIF
+    CALL computePuffArea()
+    IF (MPIvar%glob_id .eq. 0) THEN
+      IF (utils%printint > 0) THEN
+        WRITE (6, *) "Puff area:  ", Mesh%puff_area*phys%lscale*phys%lscale, " m^2"
+        WRITE (6, *) "Done! "
+      END IF
+    ENDIF
   END SUBROUTINE mesh_preprocess
 
   !********************
@@ -377,6 +392,8 @@ CONTAINS
     ! boundary conditions) and how many Dirichlet faces are used
     DO ifa = 1, Mesh%Nextfaces
       fl = Mesh%boundaryFlag(ifa) ! boundary flag of the current face
+  
+      
 #ifdef PARALL
       IF (fl .eq. 0) CYCLE
 #endif
@@ -388,6 +405,7 @@ CONTAINS
         ndir = ndir + 1
       END IF
     END DO
+
 
     ! Here I place Dirichlet boundary faces at the bottom of Tb: I change
     ! the order of the faces only in case that at least 1 Dirichlet
@@ -628,4 +646,40 @@ CONTAINS
     END IF
 
   END SUBROUTINE computeElementSize
+  
+  
+  SUBROUTINE computePuffArea()
+  real*8   :: Xf(refElPol%Nfacenodes,2),xyg(refElPol%NGauss1D,2),xyg_d(refElPol%NGauss1D,2),dline
+  integer  :: i,el,fa,fl,g
+  real*8   :: xyDerNorm_g
+  
+  
+  Mesh%puff_area = 0.
+  
+		DO i = 1, Mesh%Nextfaces
+		
+			  fl = Mesh%boundaryFlag(i) 
+			  
+					IF (phys%bcflags(fl) .ne. bc_BohmPuff) THEN
+					  CYCLE
+					END IF
+					
+					el = Mesh%extfaces(i,1)
+					fa = Mesh%extfaces(i,2)
+					Xf = Mesh%X(Mesh%T(el,refElPol%face_nodes(fa,:)),:)
+					xyg = matmul(refElPol%N1D,Xf)
+					xyg_d = matmul(refElPol%Nxi1D,Xf)
+					DO g = 1, refElPol%NGauss1D
+					
+						  xyDerNorm_g = norm2(xyg_d(g,:))
+						  dline = refElPol%gauss_weights1D(g)*xyDerNorm_g
+						  dline = dline*xyg(g,1)
+						  Mesh%puff_area = Mesh%puff_area + 2*pi*dline
+					
+					END DO
+					
+		END DO
+
+  END SUBROUTINE computePuffArea
+  
 END MODULE preprocess

@@ -64,6 +64,13 @@ CONTAINS
     CASE (70:79)
       ! Magnetic field loaded from file in the mesh nodes
       CALL load_magnetic_field_nodes
+     
+    CASE (80:89)
+      ! Magnetic field loaded from file in a cartesian grid
+      ! Interpolation is needed
+      CALL load_magnetic_field_grid
+
+            
     END SELECT
 #ifdef TOR3D
     ! Magnetic perturbations
@@ -198,18 +205,28 @@ CONTAINS
 
     WRITE (6, *) "******* Loading magnetic field *******"
 
-    ! Dimensions of the file storing the magnetic field for West
-    ip = 541
-    jp = 391
+
+
+    ! Read file
+    if (switch%testcase>=50 .and. switch%testcase<60) then
+    ! WEST case
+						 ! Dimensions of the file storing the magnetic field for West
+						 ip = 541
+						 jp = 391
+       CALL HDF5_open('WEST_far_465.h5', file_id, IERR)
+    elseif (switch%testcase>=80 .and. switch%testcase<90) then
+    ! ITER case
+    			! Dimensions of the file storing the magnetic field for ITER
+						 ip = 513
+						 jp = 257
+       CALL HDF5_open('ITER_2008_MagField.h5', file_id, IERR)
+    endif
     ALLOCATE (r2D(ip, jp))
     ALLOCATE (z2D(ip, jp))
     ALLOCATE (flux2D(ip, jp))
     ALLOCATE (Br2D(ip, jp))
     ALLOCATE (Bz2D(ip, jp))
     ALLOCATE (Bphi2D(ip, jp))
-
-    ! Read file
-    CALL HDF5_open('WEST_far_465.h5', file_id, IERR)
     CALL HDF5_array2D_reading(file_id, r2D, 'r2D')
     CALL HDF5_array2D_reading(file_id, z2D, 'z2D')
     CALL HDF5_array2D_reading(file_id, flux2D, 'flux2D')

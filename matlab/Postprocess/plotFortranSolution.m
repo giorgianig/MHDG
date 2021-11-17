@@ -7,7 +7,7 @@ global ntor theta
 %**********************************
 % Parallel/serial
 %**********************************
-parallel=1; % true=1
+parallel=0; % true=1
 nproc=8; % number of MPI task for parallel (mesh separation)
 
 %**********************************
@@ -18,9 +18,9 @@ plotCons = 0; % Plot conservative variables
 % Dimensional (1) or non-dimensional (0) plots
 phys_dimensional_plots = 0; % physical variables
 cons_dimensional_plots = 0; % conservative variables
-nref = 2; % plot order
+nref = 3; % plot order
 startPlot = 1; %default: 1 Starting number for plot (useful if no close all)
-gatherplot = 1; %True to gather everything in one figure
+gatherplot = 0; %True to gather everything in one figure
 cbound = 0; %True: bound colorbar axis (to adapt the boundaries see below)
 
 %**********************************
@@ -41,7 +41,7 @@ path2save = 'Img_MHDG/';
 %**********************************
 % Solution
 %**********************************
-% HOME = '/path/to/sim/dir/';
+HOME = '/home/giorgio/Dropbox/Fortran/MHDG_ref3.0/test/';
 
 % solpath = [HOME, 'West10861_P4/2D/NGT/parall/00/div16/2021_06_08_old_Bohmbc_02/'];
 % meshpath = [HOME, 'West10861_P4/2D/NGT/parall/00/div16/'];
@@ -79,9 +79,9 @@ path2save = 'Img_MHDG/';
 % meshpath = [HOME, 'West1902_P6/2021_07_06_NGTN2D/'];
 % solname = 'Sol2D_West_YesHole_Nel1902_P6_DPe0.100E+01_DPai0.314E+06_DPae0.105E+08';
 
-solpath = [HOME, 'HoriLim2087_P4/2021_07_08_NGTN2D/stab5_BC1_bth01/'];
-meshpath = [HOME, 'HoriLim2087_P4/2021_07_08_NGTN2D/'];
-solname = 'Sol2D_Circ_HoriLim_Triangs_YesHole_Nel2087_P4_DPe0.100E+01_DPai0.314E+06_DPae0.105E+08';
+solpath = [HOME];
+meshpath = [HOME];
+solname = 'Sol2D_ITER_YesHoleSmooth_Quads_Nel17611_P4_DPe0.308E+01_DPai0.314E+06_DPae0.105E+08_NR0005';
 
 
 
@@ -212,8 +212,13 @@ for iproc = 1:nproc
                 else
                     iplot = iplot +1; figure(iplot)
                 end
-                hold on, plotSolution(Mesh.X/Mesh.lscale,Mesh.T,uplot,refEl,nref,cont,0,0,ccaxis(ii,:));axis off
                 name = simulation_parameters.physics.conservative_variable_names{ii};
+                if strcmpi(name,'rhon')
+                    hold on, plotSolution(Mesh.X/Mesh.lscale,Mesh.T,uplot,refEl,nref,cont,1,0,ccaxis(ii,:));axis off
+                else
+                    hold on, plotSolution(Mesh.X/Mesh.lscale,Mesh.T,uplot,refEl,nref,cont,0,0,ccaxis(ii,:));axis off
+                end
+                
                 title(name), axis equal
                 if printout && ~gatherplot
                     readyforprintjpeg([8 6],16,[],[],1,[],[],path2save,[name,num2str(testnumber)])
@@ -231,7 +236,13 @@ for iproc = 1:nproc
                 else
                     iplot = iplot +1; figure(iplot)
                 end
+                name = simulation_parameters.physics.physical_variable_names{ii};
+                if strcmpi(name(1:4),'rhon')
+                hold on, plotSolution(Mesh.X/Mesh.lscale,Mesh.T,abs(uplot)+1e-9,refEl,nref,cont,1,0,cpaxis(ii,:));axis off
+                caxis([-4 0])
+                else
                 hold on, plotSolution(Mesh.X/Mesh.lscale,Mesh.T,uplot,refEl,nref,cont,0,0,cpaxis(ii,:));axis off
+                end
                 name = simulation_parameters.physics.physical_variable_names{ii};
                 title(name), axis equal
                 if printout && ~gatherplot

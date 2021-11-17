@@ -29,7 +29,7 @@ CONTAINS
   SUBROUTINE analytical_solution(x, y, t, u)
     real*8, dimension(:), intent(IN)        :: x, y, t
     real*8, dimension(:, :), intent(OUT)     :: u
-    real*8, dimension(size(u, 1), size(u, 2))  :: up
+    real*8, dimension(size(u, 1), phys%npv)  :: up
     integer:: i, j, ind, N2D, N1D
     real*8 :: a, b, r, xx, yy, tt, xmax, xmin, ymax, ymin, xm, ym
     real*8 :: aux
@@ -80,6 +80,9 @@ CONTAINS
           IF (r .le. 0.05) THEN
             up(ind, 2) = 1.
           END IF
+        CASE (80:89)
+          up(ind, 1) = 1.
+          up(ind, 2) = 0.
         CASE DEFAULT
           WRITE (6, *) "Error! Test case not valid"
           STOP
@@ -97,7 +100,7 @@ CONTAINS
     real*8, dimension(:), intent(IN)        :: x, y, t
     real*8, dimension(:, :), intent(IN)      :: u
     real*8, dimension(:, :), intent(OUT)     :: ux, uy, ut
-    real*8, dimension(size(u, 1), size(u, 2))  :: upx, upy, upt
+    real*8, dimension(size(u, 1), phys%npv)  :: upx, upy, upt
     real*8, dimension(size(u, 1), phys%npv)   :: up
     integer:: i, j, ind, N1D, N2D
     real*8 :: a, b, r, xx, yy, tt, xmax, xmin, ymax, ymin, xm, ym
@@ -497,7 +500,7 @@ CONTAINS
   SUBROUTINE analytical_solution(x, y, u)
     real*8, dimension(:), intent(IN)        :: x, y
     real*8, dimension(:, :), intent(OUT)     :: u
-    real*8, dimension(size(u, 1), size(u, 2))  :: up
+    real*8, dimension(size(u, 1), phys%npv)  :: up
     real*8 :: a,b,xx,yy,tt,xmax,xmin,ymax,ymin,xm,ym
     real*8 :: dsource(size(x)),aux(size(x)),xsource,ysource,smod
     integer:: np,i
@@ -514,6 +517,8 @@ CONTAINS
     up = 0.
     u = 0.
     a = 2*pi
+    
+    
     SELECT CASE (switch%testcase)
     CASE (1)
       IF (switch%axisym) THEN
@@ -537,7 +542,6 @@ CONTAINS
         WRITE (6,*) "This is NOT an axisymmetric test case!"
         stop
       END IF
-      !
       smod = 1.
       rs = 0.04/simpar%refval_length
       xsource = xm-0.5*(xmax-xm)
@@ -570,10 +574,12 @@ CONTAINS
       END DO
 
     CASE (50:64)
+    
+    
       up(:, 1) = 1.
       up(:, 2) = 0.
 #ifdef NEUTRAL
-      up(:,3)  = 0.
+      up(:,4)  = 0.
 #endif
     CASE (65)
       up(:, 1) = 1.
@@ -584,12 +590,22 @@ CONTAINS
           up(i, 2) = 1.
         END IF
       END DO
+    CASE (80:89)
+      up(:, 1) = 1.
+      up(:, 2) = 0.
+#ifdef NEUTRAL
+      up(:,4)  = 0.
+#endif
+      
     CASE DEFAULT
       WRITE (6, *) "Error! Test case not valid"
       STOP
     END SELECT
     ! Convert physical variables to conservative variables
     CALL phys2cons(up, u)
+    
+    
+    
   END SUBROUTINE analytical_solution
 
   !*****************************************
@@ -599,12 +615,14 @@ CONTAINS
     real*8, dimension(:), intent(IN)        :: x, y
     real*8, dimension(:, :), intent(IN)      :: u
     real*8, dimension(:, :), intent(OUT)     :: ux, uy
-    real*8, dimension(size(u, 1), size(u, 2))  :: upx, upy
+    real*8, dimension(size(u, 1), phys%npv)  :: upx, upy
     real*8, dimension(size(u, 1), phys%npv)  :: up
     real*8 :: a
 
     upx = 0.
     upy = 0.
+    ux = 0.
+    uy = 0.
     CALL cons2phys(u, up)
     a = 2*pi
     SELECT CASE (switch%testcase)

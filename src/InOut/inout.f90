@@ -253,7 +253,7 @@ CONTAINS
     CALL MPI_ALLREDUCE(MPI_IN_PLACE, xmin, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD, ierr)
 #endif
     ! Apply shift if axisymmetric case
-    IF ((switch%axisym .and. switch%testcase .ge. 60) .or. (switch%axisym .and. xmin < tol)) THEN
+    IF ((switch%axisym .and. switch%testcase .ge. 60 .and. switch%testcase .lt. 80) .or. (switch%axisym .and. xmin < tol)) THEN
       IF (MPIvar%glob_id .eq. 0) THEN
         WRITE (6, *) "*** Applying translation in axisymmetric case!"
       ENDIF
@@ -452,6 +452,7 @@ CONTAINS
       call HDF5_real_saving(group_id2, phys%diff_ee, 'diff_ee')
       call HDF5_real_saving(group_id2, phys%diff_vort, 'diff_vort')
       call HDF5_real_saving(group_id2, phys%diff_pot, 'diff_pot')
+      call HDF5_real_saving(group_id2, phys%diff_nn, 'diff_nn')
       call HDF5_real_saving(group_id2, phys%tie, 'tau_ie')
       call HDF5_real_saving(group_id2, phys%dfcoef, 'dfcoef')
       call HDF5_real_saving(group_id2, phys%dexbcoef, 'dexbcoef')

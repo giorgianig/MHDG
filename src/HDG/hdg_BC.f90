@@ -191,7 +191,7 @@ SUBROUTINE HDG_BC()
       CALL cons2phys(ufg,upg)
 
       ! Compute diffusion at faces Gauss points
-      CALL setLocalDiff(xyf,diff_iso_fac,diff_ani_fac,Bmod)
+      CALL setLocalDiff(xyf,ufg,diff_iso_fac,diff_ani_fac,Bmod)
 
       ! Type of boundary
       fl = Mesh%boundaryFlag(ifa)
@@ -620,7 +620,7 @@ CONTAINS
     b = matmul(refElPol%N1d,b_nod)
 
     ! Compute diffusion at faces Gauss points
-    CALL setLocalDiff(xyg,diff_iso_fac,diff_ani_fac,Bmod)
+    CALL setLocalDiff(xyg,ufg,diff_iso_fac,diff_ani_fac,Bmod)
 
     ! Physical variables at Gauss points
     CALL cons2phys(ufg,upg)
@@ -659,6 +659,10 @@ CONTAINS
         xy_g_save(indtausave,:) = xy_g_save_el
       endif
 
+    CASE (bc_BohmPump)
+       CALL set_Bohm_bc(tau_save_el,xy_g_save_el)
+    CASE (bc_BohmPuff) 
+       CALL set_Bohm_bc(tau_save_el,xy_g_save_el)
     CASE DEFAULT
       WRITE (6,*) "Error: wrong boundary type"
       STOP
@@ -1370,7 +1374,7 @@ CONTAINS
   ! Assembly Bohm
   !*********************************
   SUBROUTINE assembly_bohm_bc(iel,ind_asf,ind_ash,ind_ff,ind_fe,ind_fg,NiNi,Ni,qfg,ufg,bg,ng,tau,setval,delta,diffiso,diffani,ntang)
-    integer*4        :: iel,ind_asf(:),ind_ash(:),ind_ff(:),ind_fe(:),ind_fg(:)
+    integer*4        :: iel,ind_asf(:),ind_ash(:),ind_ff(:),ind_fe(:),ind_fg(:),bc
     real*8           :: NiNi(:,:),Ni(:),ufg(:),bg(:),ng(:),tau(:,:),setval,delta
     real*8           :: diffiso(:,:),diffani(:,:)
     logical          :: ntang
@@ -1378,7 +1382,7 @@ CONTAINS
     real*8           :: bn,Abohm(Neq,Neq)
     integer          :: i,j,k,idm,Neqstab,Neqgrad
     integer*4        :: ind(Npfl),indi(Npfl),indj(Npfl),indk(Npfl)
-    real*8           :: Qpr(Ndim,Neq),kcoeff
+    real*8           :: Qpr(Ndim,Neq),kcoeff, recycling_coeff,  puff_coeff
 #ifdef TEMPERATURE
     real*8           :: Vveci(Neq),Alphai,taui(Ndim,Neq),dV_dUi(Neq,Neq),gmi,dAlpha_dUi(Neq)
     real*8           :: Vvece(Neq),Alphae,taue(Ndim,Neq),dV_dUe(Neq,Neq),gme,dAlpha_dUe(Neq)
@@ -1443,19 +1447,6 @@ CONTAINS
       END DO
     ENDIF
 
-#ifdef NEUTRAL
-    k = Neq
-    indi = k+ind_asf
-    indj = 2+ind_asf
-    if (ntang) then
-      elMat%Alu(ind_ff(indi),ind_fe(indj),iel) = elMat%Alu(ind_ff(indi),ind_fe(indj),iel) + bn*NiNi*phys%Re
-    endif
-#endif
-
-    !if (iel==195) then
-    !call hdf5_save_matrix( elMat%Alu(:,:,iel),"Alu")
-    !stop
-    !endif
 
 #ifdef TEMPERATURE
     IF (ntang) THEN
@@ -1515,23 +1506,6 @@ CONTAINS
       END DO
     END IF ! tangency
 #endif
-
-    !! Perpendicular diffusion
-    !DO k = 1,Neq
-    !  DO idm = 1,Ndim
-    !    indi = ind_asf+k
-    !    indj = ind_ash+idm+(k-1)*Ndim
-    !    if (ntang) then
-    !      ! Non-tangent case
-    !      elMat%Alq(ind_ff(indi),ind_fG(indj),iel)=elMat%Alq(ind_ff(indi),ind_fG(indj),iel)-&
-    !        &NiNi*(ng(idm)*diffiso(k,k)-bn*bg(idm)*diffani(k,k) )
-    !    else
-    !      ! Tangent case
-    !      ! elMat%Alq(ind_ff(indi),ind_fG(indj),iel)=elMat%Alq(ind_ff(indi),ind_fG(indj),iel)-NiNi*(ng(idm)-bn*bg(idm))
-    !      elMat%Alq(ind_ff(indi),ind_fG(indj),iel)=elMat%Alq(ind_ff(indi),ind_fG(indj),iel)-NiNi*ng(idm)
-    !    endif
-    !  END DO
-    !END DO
 
     ! Perpendicular diffusion
     IF (ntang) THEN
@@ -1651,7 +1625,40 @@ CONTAINS
     END IF
 
 #endif
+
+
+
 #ifdef NEUTRAL
+
+
+
+    bc = phys%bcflags(fl)
+
+    SELECT CASE (bc)
+
+    CASE (bc_Bohm)
+       recycling_coeff =  phys%Re
+       puff_coeff = 0.
+    CASE (bc_BohmPump)
+       recycling_coeff =  0.9928
+       puff_coeff = 0.
+    CASE (bc_BohmPuff) 
+       recycling_coeff =  0.
+       puff_coeff = phys%puff/simpar%refval_density/(Mesh%puff_area*phys%lscale**2)/(simpar%refval_diffusion)*phys%lscale
+    CASE DEFAULT
+      WRITE (6,*) "Error: wrong boundary type"
+      STOP
+    END SELECT
+    
+    ! convective part
+    k = Neq
+    indi = k+ind_asf
+    indj = 2+ind_asf
+    if (ntang) then
+      elMat%Alu(ind_ff(indi),ind_fe(indj),iel) = elMat%Alu(ind_ff(indi),ind_fe(indj),iel) + bn*NiNi*recycling_coeff
+    endif
+    
+    ! diffusive diagonal part 
     DO idm = 1,Ndim
       k = Neq
       indi = ind_asf+k
@@ -1662,15 +1669,18 @@ CONTAINS
         elMat%Alq(ind_ff(indi),ind_fG(indj),iel)=elMat%Alq(ind_ff(indi),ind_fG(indj),iel)-NiNi*ng(idm)*phys%diff_nn
       endif
     END DO
+    elMat%fh(ind_ff(indi),iel) = elMat%fh(ind_ff(indi),iel) - puff_coeff*Ni
+    
+    ! diffusive non-diagonal part 
     DO idm = 1,Ndim
       k = phys%Neq
       j=1
       indi = ind_asf+k
       indj = ind_ash+idm+(j-1)*Ndim
       if (ntang) then
-        elMat%Alq(ind_ff(indi),ind_fG(indj),iel)=elMat%Alq(ind_ff(indi),ind_fG(indj),iel)-NiNi*ng(idm)*phys%diff_n*phys%Re
+        elMat%Alq(ind_ff(indi),ind_fG(indj),iel)=elMat%Alq(ind_ff(indi),ind_fG(indj),iel)-NiNi*ng(idm)*phys%diff_n*recycling_coeff
       else
-        elMat%Alq(ind_ff(indi),ind_fG(indj),iel)=elMat%Alq(ind_ff(indi),ind_fG(indj),iel)-NiNi*ng(idm)*phys%diff_n*phys%Re
+        elMat%Alq(ind_ff(indi),ind_fG(indj),iel)=elMat%Alq(ind_ff(indi),ind_fG(indj),iel)-NiNi*ng(idm)*phys%diff_n*recycling_coeff
       endif
     END DO
 #endif
@@ -1691,7 +1701,7 @@ CONTAINS
     real*8           :: bn,Abohm(Neq,Neq)
     integer          :: i,j,k,idm,Neqstab,Neqgrad
     integer*4        :: ind(Npfl),indi(Npfl),indj(Npfl),indk(Npfl)
-    real*8           :: Qpr(Ndim,Neq),kcoeff
+    real*8           :: Qpr(Ndim,Neq),kcoeff, recycling_coeff,  puff_coeff
 #ifdef TEMPERATURE
     real*8           :: Vveci(Neq),Alphai,taui(Ndim,Neq),dV_dUi(Neq,Neq),gmi,dAlpha_dUi(Neq)
     real*8           :: Vvece(Neq),Alphae,taue(Ndim,Neq),dV_dUe(Neq,Neq),gme,dAlpha_dUe(Neq)
@@ -1798,14 +1808,6 @@ CONTAINS
       stop
     endif
 
-#ifdef NEUTRAL
-    k = Neq
-    indi = k+ind_asf
-    indj = 2+ind_asf
-    if (ntang) then
-      elMat%Alu(ind_ff(indi),ind_fe(indj),iel) = elMat%Alu(ind_ff(indi),ind_fe(indj),iel) + bn*NiNi*phys%Re
-    endif
-#endif
 
 
 #ifdef TEMPERATURE
@@ -2052,6 +2054,38 @@ CONTAINS
 #endif
 
 #ifdef NEUTRAL
+
+
+
+    bc = phys%bcflags(fl)
+
+    SELECT CASE (bc)
+
+    CASE (bc_Bohm)
+       recycling_coeff =  phys%Re
+       puff_coeff = 0.
+    CASE (bc_BohmPump)
+       recycling_coeff =  0.9928
+       puff_coeff = 0.
+    CASE (bc_BohmPuff) 
+       recycling_coeff =  0.
+       puff_coeff = phys%puff/simpar%refval_density/(Mesh%puff_area*phys%lscale**2)/(simpar%refval_diffusion)*phys%lscale
+!       write(6,*) "puff coeff " , puff_coeff
+!       stop
+    CASE DEFAULT
+      WRITE (6,*) "Error: wrong boundary type"
+      STOP
+    END SELECT
+    
+    ! convective part
+    k = Neq
+    indi = k+ind_asf
+    indj = 2+ind_asf
+    if (ntang) then
+      elMat%Alu(ind_ff(indi),ind_fe(indj),iel) = elMat%Alu(ind_ff(indi),ind_fe(indj),iel) + bn*NiNi*recycling_coeff
+    endif
+    
+    ! diffusive diagonal part 
     DO idm = 1,Ndim
       k = Neq
       indi = ind_asf+k
@@ -2062,15 +2096,18 @@ CONTAINS
         elMat%Alq(ind_ff(indi),ind_fG(indj),iel)=elMat%Alq(ind_ff(indi),ind_fG(indj),iel)-NiNi*ng(idm)*phys%diff_nn
       endif
     END DO
+    elMat%fh(ind_ff(indi),iel) = elMat%fh(ind_ff(indi),iel) - puff_coeff*Ni    
+    
+    ! diffusive non-diagonal part 
     DO idm = 1,Ndim
       k = phys%Neq
       j=1
       indi = ind_asf+k
       indj = ind_ash+idm+(j-1)*Ndim
       if (ntang) then
-        elMat%Alq(ind_ff(indi),ind_fG(indj),iel)=elMat%Alq(ind_ff(indi),ind_fG(indj),iel)-NiNi*ng(idm)*phys%diff_n*phys%Re
+        elMat%Alq(ind_ff(indi),ind_fG(indj),iel)=elMat%Alq(ind_ff(indi),ind_fG(indj),iel)-NiNi*ng(idm)*phys%diff_n*recycling_coeff
       else
-        elMat%Alq(ind_ff(indi),ind_fG(indj),iel)=elMat%Alq(ind_ff(indi),ind_fG(indj),iel)-NiNi*ng(idm)*phys%diff_n*phys%Re
+        elMat%Alq(ind_ff(indi),ind_fG(indj),iel)=elMat%Alq(ind_ff(indi),ind_fG(indj),iel)-NiNi*ng(idm)*phys%diff_n*recycling_coeff
       endif
     END DO
 #endif

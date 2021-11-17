@@ -126,7 +126,7 @@ CONTAINS
     real*8, dimension(:), intent(IN)        :: x, y, t
     real*8, dimension(:, :), intent(IN)      :: u
     real*8, dimension(:, :), intent(OUT)     :: ux, uy, ut
-    real*8, dimension(size(u, 1), size(u, 2))  :: upx, upy, upt
+    real*8, dimension(size(u, 1), phys%npv)  :: upx, upy, upt
     real*8, dimension(size(u, 1), phys%npv)   :: up
     integer:: i, j, ind, N1D, N2D
     real*8 :: a, b, r, xx, yy, tt, xmax, xmin, ymax, ymin, xm, ym
@@ -1287,6 +1287,13 @@ CONTAINS
           up(i, 2) = 1.
         END IF
       END DO
+    CASE (80:89)
+      up(:, 1) = 1.
+      up(:, 3) = 37.
+      up(:, 4) = 37.
+#ifdef NEUTRAL
+      up(:,11)= 0.
+#endif     
     CASE DEFAULT
       WRITE (6, *) "Error! Test case not valid"
       STOP
@@ -1302,12 +1309,14 @@ CONTAINS
     real*8, dimension(:), intent(IN)        :: x, y
     real*8, dimension(:, :), intent(IN)      :: u
     real*8, dimension(:, :), intent(OUT)     :: ux, uy
-    real*8, dimension(size(u, 1), size(u, 2))  :: upx, upy
+    real*8, dimension(size(u, 1), phys%npv)  :: upx, upy
     real*8, dimension(size(u, 1), phys%npv)  :: up
     real*8 :: a
 
     upx = 0.
     upy = 0.
+    ux = 0.
+    uy = 0.
     CALL cons2phys(u, up)
     a = 2*pi
     SELECT CASE (switch%testcase)

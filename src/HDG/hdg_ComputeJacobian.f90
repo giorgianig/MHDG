@@ -441,13 +441,13 @@ CONTAINS
       Jtor = 0.
     END IF
 
-    ! Compute diffusion at Gauss points
-    CALL setLocalDiff(xy,diff_iso_vol,diff_ani_vol,Bmod)
-
     ! Solution at Gauss points
     ueg = matmul(refElTor%N3D,ue)
     qeg = matmul(refElTor%N3D,qe)
 
+    ! Compute diffusion at Gauss points
+    CALL setLocalDiff(xy,ueg,diff_iso_vol,diff_ani_vol,Bmod)
+    
     ! Solution at previous time steps,at Gauss points
     do i = 1,time%tis
       u0eg(:,:,i) = matmul(refElTor%N3D,u0e(:,:,i))
@@ -461,26 +461,26 @@ CONTAINS
     CALL body_force(xy(:,1),xy(:,2),teg,force)
 
 #ifdef NEUTRAL
-    ! Some neutral for WEST
-    IF (switch%testcase .ge. 50 .and. switch%testcase .le. 59) THEN
-      DO g = 1,Ng2d
-        DO igtor =1,Ng1Dtor
-          !IF (xy(g,1)*phys%lscale .gt. 2.36 .and. xy(g,2)*phys%lscale .lt. -0.69 ) THEN
-          IF (xy(g,1)*phys%lscale .gt. 2.446 .and. xy(g,1)*phys%lscale .lt. 2.59 .and. xy(g,2)*phys%lscale .gt. -0.7964 .and. xy(g,2)*phys%lscale .lt. -0.7304 ) THEN
-            ! Case moving equilibrium
-            ! force(g,5) = phys%puff_exp(time%it+1)
-            i = (igtor-1)*Ng2d+g
-            force(i,5) = phys%puff
-          ENDIF
-          !x0 = 2.213
-          !y0 = -0.6968
-          !sigmax = 0.02
-          !sigmay = 0.01
-          !A = phys%lscale**2/(pi*sigmax*sigmay)
-          !force(g,5) = phys%puff*A*exp(-((xy(g,1)*phys%lscale - x0)**2)/(2*sigmax**2) - ((xy(g,2)*phys%lscale - y0)**2)/(2*sigmay**2))
-        ENDDO
-      ENDDO
-    ENDIF
+!    ! Some neutral for WEST
+!    IF (switch%testcase .ge. 50 .and. switch%testcase .le. 59) THEN
+!      DO g = 1,Ng2d
+!        DO igtor =1,Ng1Dtor
+!          !IF (xy(g,1)*phys%lscale .gt. 2.36 .and. xy(g,2)*phys%lscale .lt. -0.69 ) THEN
+!          IF (xy(g,1)*phys%lscale .gt. 2.446 .and. xy(g,1)*phys%lscale .lt. 2.59 .and. xy(g,2)*phys%lscale .gt. -0.7964 .and. xy(g,2)*phys%lscale .lt. -0.7304 ) THEN
+!            ! Case moving equilibrium
+!            ! force(g,5) = phys%puff_exp(time%it+1)
+!            i = (igtor-1)*Ng2d+g
+!            force(i,5) = phys%puff
+!          ENDIF
+!          !x0 = 2.213
+!          !y0 = -0.6968
+!          !sigmax = 0.02
+!          !sigmay = 0.01
+!          !A = phys%lscale**2/(pi*sigmax*sigmay)
+!          !force(g,5) = phys%puff*A*exp(-((xy(g,1)*phys%lscale - x0)**2)/(2*sigmax**2) - ((xy(g,2)*phys%lscale - y0)**2)/(2*sigmay**2))
+!        ENDDO
+!      ENDDO
+!    ENDIF
 #endif
     ! Some sources for West cases
     IF (switch%testcase .ge. 51 .and. switch%testcase .le. 55) THEN
@@ -679,14 +679,14 @@ CONTAINS
     Bmod = matmul(refElPol%N2D,Bmod_nod)
     b = matmul(refElPol%N2D,b_nod)
 
+    ! Trace solution at face Gauss points
+    ufg = matmul(refElPol%N2D,uf)
+    
     ! Compute diffusion at Gauss points
-    CALL setLocalDiff(xyf,diff_iso_fac,diff_ani_fac,Bmod)
+    CALL setLocalDiff(xyf,ufg,diff_iso_fac,diff_ani_fac,Bmod)
 
     ! Loop in 2D Gauss points
     Ngauss = Ng2d
-
-    ! Trace solution at face Gauss points
-    ufg = matmul(refElPol%N2D,uf)
 
     ! Physical variables related to the trace solution
     CALL cons2phys(ufg,upgf)
@@ -841,7 +841,7 @@ CONTAINS
     ! Gradient solution at face gauss points
     qfg = matmul(refElTor%sFTF,qef)
     ! Compute diffusion at faces Gauss points
-    CALL setLocalDiff(xyf,diff_iso_fac,diff_ani_fac,Bmod)
+    CALL setLocalDiff(xyf,uefg,diff_iso_fac,diff_ani_fac,Bmod)
 
     ! Physical variables at face Gauss points
     CALL cons2phys(ufg,upgf)
@@ -992,7 +992,7 @@ CONTAINS
     qfg = matmul(refElTor%sFTF,qef)
 
     ! Compute diffusion at faces Gauss points
-    CALL setLocalDiff(xyf,diff_iso_fac,diff_ani_fac,Bmod)
+    CALL setLocalDiff(xyf,uefg,diff_iso_fac,diff_ani_fac,Bmod)
 
     ! Physical variables at face Gauss points
     CALL cons2phys(ufg,upgf)
@@ -1277,8 +1277,12 @@ CONTAINS
       Jtor = 0.
     END IF
 
+    ! Solution at Gauss points
+    ueg = matmul(refElPol%N2D,ue)
+    qeg = matmul(refElPol%N2D,qe)
+    
     ! Compute diffusion at Gauss points
-    CALL setLocalDiff(xy,diff_iso_vol,diff_ani_vol,Bmod)
+    CALL setLocalDiff(xy,ueg,diff_iso_vol,diff_ani_vol,Bmod)
 
     if (switch%shockcp.gt.0) then
       auxdiffsc = matmul(refElPol%N2D,Mesh%scdiff_nodes(iel,:))
@@ -1286,10 +1290,6 @@ CONTAINS
         diff_iso_vol(i,i,:) = diff_iso_vol(i,i,:)+auxdiffsc
       end do
     endif
-
-    ! Solution at Gauss points
-    ueg = matmul(refElPol%N2D,ue)
-    qeg = matmul(refElPol%N2D,qe)
 
     ! Solution at previous time steps,at Gauss points
     do i = 1,time%tis
@@ -1304,24 +1304,24 @@ CONTAINS
     CALL body_force(xy(:,1),xy(:,2),force)
 
 #ifdef NEUTRAL
-    ! Some neutral for WEST
-    IF (switch%testcase .ge. 50 .and. switch%testcase .le. 59) THEN
-      DO g = 1,Ng2d
-        !IF (xy(g,1)*phys%lscale .gt. 2.36 .and. xy(g,2)*phys%lscale .lt. -0.69 ) THEN
-        IF (xy(g,1)*phys%lscale .gt. 2.446 .and. xy(g,1)*phys%lscale .lt. 2.59 .and. xy(g,2)*phys%lscale .gt. -0.7964 .and. xy(g,2)*phys%lscale .lt. -0.7304 ) THEN
-          ! Case moving equilibrium
-          ! force(g,5) = phys%puff_exp(time%it+1)
+!    ! Some neutral for WEST
+!    IF (switch%testcase .ge. 50 .and. switch%testcase .le. 59) THEN
+!      DO g = 1,Ng2d
+!        !IF (xy(g,1)*phys%lscale .gt. 2.36 .and. xy(g,2)*phys%lscale .lt. -0.69 ) THEN
+!        IF (xy(g,1)*phys%lscale .gt. 2.446 .and. xy(g,1)*phys%lscale .lt. 2.59 .and. xy(g,2)*phys%lscale .gt. -0.7964 .and. xy(g,2)*phys%lscale .lt. -0.7304 ) THEN
+!          ! Case moving equilibrium
+!          ! force(g,5) = phys%puff_exp(time%it+1)
 
-          force(g,5) = phys%puff
-        ENDIF
-        !x0 = 2.213
-        !y0 = -0.6968
-        !sigmax = 0.02
-        !sigmay = 0.01
-        !A = phys%lscale**2/(pi*sigmax*sigmay)
-        !force(g,5) = phys%puff*A*exp(-((xy(g,1)*phys%lscale - x0)**2)/(2*sigmax**2) - ((xy(g,2)*phys%lscale - y0)**2)/(2*sigmay**2))
-      ENDDO
-    ENDIF
+!          force(g,5) = phys%puff
+!        ENDIF
+!        !x0 = 2.213
+!        !y0 = -0.6968
+!        !sigmax = 0.02
+!        !sigmay = 0.01
+!        !A = phys%lscale**2/(pi*sigmax*sigmay)
+!        !force(g,5) = phys%puff*A*exp(-((xy(g,1)*phys%lscale - x0)**2)/(2*sigmax**2) - ((xy(g,2)*phys%lscale - y0)**2)/(2*sigmay**2))
+!      ENDDO
+!    ENDIF
 #endif
     ! Some sources for West cases
     IF (switch%testcase .ge. 51 .and. switch%testcase .le. 55) THEN
@@ -1528,7 +1528,7 @@ CONTAINS
     qfg = matmul(refElPol%N1D,qef)
 
     ! Compute diffusion at faces Gauss points
-    CALL setLocalDiff(xyf,diff_iso_fac,diff_ani_fac,Bmod)
+    CALL setLocalDiff(xyf,uefg,diff_iso_fac,diff_ani_fac,Bmod)
 
     if (switch%shockcp.gt.0) then
       auxdiffsc = matmul(refElPol%N1D,Mesh%scdiff_nodes(iel,refElPol%face_nodes(ifa,:)))
@@ -1577,6 +1577,9 @@ CONTAINS
         ENDIF
       END IF
 
+
+
+
       ! Assembly local contributions
       CALL assemblyIntFacesContribution(iel,ind_asf,ind_ash,ind_ff,ind_fe,ind_fg,b(g,:),Bmod(g),&
         n_g,diff_iso_fac(:,:,g),diff_ani_fac(:,:,g),NNif,Nif,Nfbn,ufg(g,:),upgf(g,:),qfg(g,:),tau)
@@ -1589,6 +1592,10 @@ CONTAINS
       endif
 
     END DO ! Gauss points
+
+
+!stop
+
 
   END SUBROUTINE elemental_matrices_faces_int
 
@@ -1669,7 +1676,7 @@ CONTAINS
     qfg = matmul(refElPol%N1D,qef)
 
     ! Compute diffusion at faces Gauss points
-    CALL setLocalDiff(xyf,diff_iso_fac,diff_ani_fac,Bmod)
+    CALL setLocalDiff(xyf,uefg,diff_iso_fac,diff_ani_fac,Bmod)
     if (switch%shockcp.gt.0) then
       auxdiffsc = matmul(refElPol%N1D,Mesh%scdiff_nodes(iel,refElPol%face_nodes(ifa,:)))
       do i=1,Neq

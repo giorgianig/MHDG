@@ -442,7 +442,7 @@ contains
     !*** Create and initialize dataspaces for datasets ***
     dim(1) = dim1
     dim(2) = dim2
-    rank = 1
+    rank = 2
     call H5Screate_simple_f(rank, dim, dataspace, error)
 
     !*** Create real dataset ***

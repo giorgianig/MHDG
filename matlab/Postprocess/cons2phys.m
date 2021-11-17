@@ -12,10 +12,11 @@ if strcmpi(simulation_parameters.model,'N-Gamma')
     up(:,2) = uc(:,2)./uc(:,1)/sqrt(a);                       % Mach
 elseif strcmpi(simulation_parameters.model,'N-Gamma-Neutral')
     a = simulation_parameters.physics.a;
-    up = zeros(size(uc,1),2);
+    up = zeros(size(uc,1),4);
     up(:,1) = uc(:,1);                                        % density
-    up(:,2) = uc(:,2)./uc(:,1)/sqrt(a);                       % Mach
-    up(:,3) = uc(:,3);                                        % neutral
+    up(:,2) = uc(:,2)./uc(:,1);                               % u
+    up(:,3) = uc(:,2)./uc(:,1)/sqrt(a);                       % Mach
+    up(:,4) = uc(:,3);                                        % neutral
 elseif strcmpi(simulation_parameters.model,'N-Gamma-Ti-Te')
     Mref = simulation_parameters.physics.Mref;
     up = zeros(size(uc,1),10);

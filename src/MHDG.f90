@@ -109,13 +109,10 @@ PROGRAM MHDG
   ! used in the HDG scheme
   CALL mesh_preprocess()
 
-
 #ifdef TOR3D
   ! Define toroidal discretization
   CALL define_toroidal_discretization
 #endif
-
-
 
   ! Initialization of the simulation parameters !TODO check if I need to pass dt to init_sim
   CALL init_sim(nts, dt)
@@ -247,13 +244,10 @@ PROGRAM MHDG
 
       ! Compute Jacobian
       CALL HDG_computeJacobian()
-
       ! Set boundary conditions
       CALL hdg_BC()
-
       ! Compute elemental mapping
       CAlL hdg_Mapping()
-
       ! Assembly the global matrix
       CALL hdg_Assembly()
       !IF (switch_save.EQ.0) THEN
@@ -270,10 +264,8 @@ PROGRAM MHDG
       !ENDIF
       ! Solve linear system
       CALL solve_global_system()
-
       ! Compute element-by-element solution
       CALL compute_element_solution()
-
       ! Check for NaN (doesn't work with optimization flags)
       DO i = 1, nu
         IF (sol%u(i) /= sol%u(i)) THEN
@@ -283,10 +275,10 @@ PROGRAM MHDG
       END DO
 
       ! Apply threshold
-      CALL HDG_applyThreshold(mkelms)
+!      CALL HDG_applyThreshold(mkelms)
 
       ! Apply filtering
-      CALL HDG_FilterSolution()
+!      CALL HDG_FilterSolution()
 
       ! Save solution
       IF (switch%saveNR) THEN
@@ -362,7 +354,11 @@ PROGRAM MHDG
           IF (MPIvar%glob_id .eq. 0) THEN
             WRITE (6, *) "************************************************"
             WRITE (6, *) "Reducing diffusion: ", phys%diff_n*switch%diffred*simpar%refval_diffusion
-            WRITE (6, *) "************************************************"
+            
+#ifdef NEUTRAL
+            WRITE (6, *) "Neutrals diffusion: ", phys%diff_nn*switch%diffred*simpar%refval_diffusion
+#endif  
+            WRITE (6, *) "************************************************"         
           END IF
           phys%diff_n = phys%diff_n*switch%diffred
           phys%diff_u = phys%diff_u*switch%diffred

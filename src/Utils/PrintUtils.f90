@@ -53,7 +53,7 @@ CONTAINS
 
     DO i = 1, di
       DO j = 1, dj
-        WRITE (6, '(I4)', advance="no") Mat(i, j)
+        WRITE (6, '(I5)', advance="no") Mat(i, j)
       END DO  ! end j
       WRITE (6, *)
     END DO   ! end i

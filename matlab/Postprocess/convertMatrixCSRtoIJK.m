@@ -1,4 +1,4 @@
-function MatIJK = convertMatrixCSRtoIJK(MatCSR)
+Iter_YesHole_Nel5249_P4function MatIJK = convertMatrixCSRtoIJK(MatCSR)
 
 % Conversion
 I = zeros(MatCSR.nnz,1);
