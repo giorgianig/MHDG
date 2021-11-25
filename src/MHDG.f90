@@ -25,8 +25,8 @@ PROGRAM MHDG
   integer, allocatable :: faceNodes1d(:)
   logical, allocatable :: mkelms(:)
   real*8              :: dt, errNR, errlstime
-  real*8, allocatable :: uiter(:), L2err(:)
-  character(LEN=1024) :: mesh_name, namemat, save_name
+  real*8, allocatable :: uiter(:), L2err(:), xs(:,:)
+  character(LEN=1024) :: mesh_name,mesh_name_proj, namemat, save_name
   real*8              :: cputtot, runttot
   integer             ::  OMP_GET_MAX_THREADS
   integer             :: cks, clock_rate, cke, clock_start, clock_end
@@ -54,7 +54,16 @@ PROGRAM MHDG
     PRINT *, " Restart simulation with solution: ", save_name
   END IF
 
+
   IF (nb_args .gt. 2) THEN
+    CALL getarg(3, mesh_name_proj)
+    save_name = Adjustl(Trim(mesh_name_proj))
+    PRINT *, " Projecting solution from: ", mesh_name_proj
+  END IF
+  
+  
+  
+  IF (nb_args .gt. 3) THEN
     PRINT *, " Too many arguments "
     stop
   END IF
@@ -78,6 +87,16 @@ PROGRAM MHDG
   call set_divisions()
 #endif
 #endif
+
+
+
+  if (nb_args .eq. 3) then
+     CALL load_mesh(mesh_name_proj)
+     allocate(xs(Mesh%nnodes,2))
+     xs = Mesh%X
+     call free_mesh()
+  endif
+  
 
   ! Load the mesh file
   CALL load_mesh(mesh_name)
@@ -175,7 +194,10 @@ PROGRAM MHDG
 
 
   ! Initialize the solution
-  IF (nb_args .eq. 2) THEN
+  IF (nb_args .eq. 3) THEN
+     call projectSolutionDifferentMeshes(xs)
+     deallocate(xs)
+  ELSE IF (nb_args .eq. 2) THEN
     ! restart simulation: load solution from file (the name is given in argument)
     CALL HDF5_load_solution(save_name)
   ELSE

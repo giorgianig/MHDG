@@ -349,7 +349,66 @@ CONTAINS
     END IF
 
   END SUBROUTINE free_all
-
+  
+  SUBROUTINE free_mesh
+    ! Mesh
+    IF (ASSOCIATED(Mesh%T)) THEN
+      DEALLOCATE (Mesh%T)
+    END IF
+    IF (ASSOCIATED(Mesh%Tlin)) THEN
+      DEALLOCATE (Mesh%Tlin)
+    END IF
+    IF (ASSOCIATED(Mesh%Tb)) THEN
+      DEALLOCATE (Mesh%Tb)
+    END IF
+    IF (ASSOCIATED(Mesh%boundaryFlag)) THEN
+      DEALLOCATE (Mesh%boundaryFlag)
+    END IF
+    IF (ALLOCATED(Mesh%F)) THEN
+      DEALLOCATE (Mesh%F)
+    END IF
+    IF (ALLOCATED(Mesh%N)) THEN
+      DEALLOCATE (Mesh%N)
+    END IF
+    IF (ALLOCATED(Mesh%faces)) THEN
+      DEALLOCATE (Mesh%faces)
+    END IF
+    IF (ALLOCATED(Mesh%extfaces)) THEN
+      DEALLOCATE (Mesh%extfaces)
+    END IF
+    IF (ALLOCATED(Mesh%intfaces)) THEN
+      DEALLOCATE (Mesh%intfaces)
+    END IF
+    IF (ALLOCATED(Mesh%flipFace)) THEN
+      DEALLOCATE (Mesh%flipface)
+    END IF
+    IF (ALLOCATED(Mesh%Fdir)) THEN
+      DEALLOCATE (Mesh%Fdir)
+    END IF
+    IF (ALLOCATED(Mesh%Diric)) THEN
+      DEALLOCATE (Mesh%Diric)
+    END IF
+    IF (ALLOCATED(Mesh%numberbcs)) THEN
+      DEALLOCATE (Mesh%numberbcs)
+    END IF
+    IF (ASSOCIATED(Mesh%X)) THEN
+      DEALLOCATE (Mesh%X)
+    END IF
+    IF (ALLOCATED(Mesh%elemSize)) THEN
+      DEALLOCATE (Mesh%elemSize)
+    END IF
+    IF (ALLOCATED(Mesh%scdiff_nodes)) THEN
+      DEALLOCATE (Mesh%scdiff_nodes)
+    END IF
+    IF (ASSOCIATED(Mesh%toroidal)) THEN
+      DEALLOCATE (Mesh%toroidal)
+    END IF
+    IF (ALLOCATED(Mesh%periodic_faces)) THEN
+      DEALLOCATE (Mesh%periodic_faces)
+    END IF  
+  END SUBROUTINE free_mesh
+  
+  
   SUBROUTINE free_mat
     DEALLOCATE (MatK%cols)
     DEALLOCATE (MatK%rowptr)

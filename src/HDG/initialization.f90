@@ -940,4 +940,19 @@ CONTAINS
   END SUBROUTINE add_blob
 
 
+ SUBROUTINE projectSolutionDifferentMeshes(xs)
+ real*8, intent(in)  :: xs(:,:)
+ real*8, allocatable:: u(:,:)
+ integer :: np,neq
+ 
+ 
+ np = size(xs,1)
+ neq = phys%Neq
+ 
+ allocate(u(np,neq))
+ 
+ 
+ END SUBROUTINE projectSolutionDifferentMeshes
+
+
 END MODULE initialization

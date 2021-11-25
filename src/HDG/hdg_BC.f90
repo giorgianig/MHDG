@@ -1387,7 +1387,7 @@ CONTAINS
         &NiNi*ng(idm)*phys%diff_nn
     END DO      
     ! flux rhs-part
-    elMat%fh(ind_ff(indi),iel) = elMat%fh(ind_ff(indi),iel) + source_dens_coeff*Ni 
+    elMat%fh(ind_ff(indi),iel) = elMat%fh(ind_ff(indi),iel) - source_dens_coeff*Ni 
 
 
 

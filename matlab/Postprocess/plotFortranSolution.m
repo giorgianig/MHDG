@@ -81,7 +81,7 @@ HOME = '/home/giorgio/Dropbox/Fortran/MHDG_ref3.0/test/';
 
 solpath = [HOME];
 meshpath = [HOME];
-solname = 'Sol2D_ITER_YesHole_Nel7788_P4_DPe0.200E+02_DPai0.314E+06_DPae0.105E+08_NR0001';
+solname = 'Sol2D_ITER_YesHole_Nel7788_P4_DPe0.200E+02_DPai0.314E+06_DPae0.105E+08_NR0005';
 
 
 
