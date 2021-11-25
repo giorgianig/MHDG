@@ -33,8 +33,8 @@ SUBROUTINE READ_input()
   character(len=20) :: smther, smther2, prol, restr, solve, restr2, prol2, solve2, mlcycle
   character(len=20) :: aggr_prol, par_aggr_alg, aggr_ord, aggr_filter, csolve, csbsolve, cmat
   integer           :: jsweeps, novr, fill, jsweeps2, novr2, fill2, outer_sweeps, maxlevs, csize, cfill, cjswp
-  real              :: thrsol, thrsol2, mncrratio, athres, cthres
-  real              :: exbdump
+  real*8            :: thrsol, thrsol2, mncrratio, athres, cthres
+  real*8            :: exbdump, part_source,ener_source
 
   ! RMP and Ripple
   logical     :: RMP, Ripple
@@ -52,7 +52,7 @@ SUBROUTINE READ_input()
   NAMELIST /GEOM_LST/ R0, q
   NAMELIST /MAGN_LST/ amp_rmp,nbCoils_rmp,torElongCoils_rmp,parite,nbRow,amp_ripple,nbCoils_ripple,triang,ellip ! RMP and Ripple
   NAMELIST /TIME_LST/ dt0, nts, tfi, tsw, tis
-  NAMELIST /PHYS_LST/ diff_n, diff_u, diff_e, diff_ee, diff_vort, diff_nn, Re, puff, Pohmic, Tbg, bcflags, bohmth,&
+  NAMELIST /PHYS_LST/ diff_n, diff_u, diff_e, diff_ee, diff_vort, diff_nn, Re, puff, part_source,ener_source,Pohmic, Tbg, bcflags, bohmth,&
     &Gmbohm, Gmbohme, a, Mref, tie, diff_pari, diff_pare, diff_pot, epn, etapar, Potfloat,diagsource
   NAMELIST /UTILS_LST/ PRINTint, dotiming, freqdisp, freqsave
   NAMELIST /LSSOLV_LST/ sollib, lstiming, itmax, itrace, rest, istop, tol, kmethd, ptype,&
@@ -148,6 +148,8 @@ SUBROUTINE READ_input()
   phys%diff_nn            = diff_nn
   phys%Re                 = Re
   phys%puff               = puff
+  phys%part_source        = part_source
+  phys%ener_source        = ener_source
   phys%Pohmic             = Pohmic
   phys%Tbg                = Tbg
   phys%bcflags            = bcflags
@@ -304,6 +306,8 @@ SUBROUTINE READ_input()
     PRINT *, '                - diffusion in the neutral equation:                  ', phys%diff_nn
     PRINT *, '                - recycling coefficient in the neutral equation:      ', phys%Re
     PRINT *, '                - puff coefficient in the neutral equation:           ', phys%puff
+    PRINT *, '                - particle source at core:                            ', part_source
+    PRINT *, '                - energy source at core:                              ', ener_source
 #endif
     PRINT *, '                - constant for the momentum equation (isoth)          ', phys%a
     PRINT *, '                - diagonal implicit sources                           ', phys%diagsource

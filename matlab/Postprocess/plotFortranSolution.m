@@ -16,7 +16,7 @@ nproc=8; % number of MPI task for parallel (mesh separation)
 plotPhys = 1; % Plot physical values (true=1)
 plotCons = 0; % Plot conservative variables
 % Dimensional (1) or non-dimensional (0) plots
-phys_dimensional_plots = 0; % physical variables
+phys_dimensional_plots = 1; % physical variables
 cons_dimensional_plots = 0; % conservative variables
 nref = 3; % plot order
 startPlot = 1; %default: 1 Starting number for plot (useful if no close all)
@@ -81,7 +81,7 @@ HOME = '/home/giorgio/Dropbox/Fortran/MHDG_ref3.0/test/';
 
 solpath = [HOME];
 meshpath = [HOME];
-solname = 'Sol2D_ITER_YesHoleSmooth_Quads_Nel17611_P4_DPe0.308E+01_DPai0.314E+06_DPae0.105E+08_NR0005';
+solname = 'Sol2D_ITER_YesHole_Nel7788_P4_DPe0.200E+02_DPai0.314E+06_DPae0.105E+08_NR0001';
 
 
 
@@ -238,10 +238,12 @@ for iproc = 1:nproc
                 end
                 name = simulation_parameters.physics.physical_variable_names{ii};
                 if strcmpi(name(1:4),'rhon')
-                hold on, plotSolution(Mesh.X/Mesh.lscale,Mesh.T,abs(uplot)+1e-9,refEl,nref,cont,1,0,cpaxis(ii,:));axis off
-                caxis([-4 0])
+                    hold on, plotSolution(Mesh.X/Mesh.lscale,Mesh.T,abs(uplot)+1e-9,refEl,nref,cont,1,0,cpaxis(ii,:));axis off
+                    if ~phys_dimensional_plots
+                        caxis([-4 0])
+                    end
                 else
-                hold on, plotSolution(Mesh.X/Mesh.lscale,Mesh.T,uplot,refEl,nref,cont,0,0,cpaxis(ii,:));axis off
+                    hold on, plotSolution(Mesh.X/Mesh.lscale,Mesh.T,uplot,refEl,nref,cont,0,0,cpaxis(ii,:));axis off
                 end
                 name = simulation_parameters.physics.physical_variable_names{ii};
                 title(name), axis equal

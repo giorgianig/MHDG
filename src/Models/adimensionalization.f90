@@ -144,6 +144,7 @@ SUBROUTINE adimensionalization()
   phys%dexbcoef = phi0/B0*t0/L0**2
 
   ! Store reference values
+  simpar%refval_mass = mi
   simpar%refval_length = L0
   simpar%refval_time = t0
   simpar%refval_temperature = Tev
@@ -162,6 +163,7 @@ SUBROUTINE adimensionalization()
   simpar%refval_length_dimensions = 'm'
   simpar%refval_time_dimensions = 's'
   simpar%refval_temperature_dimensions = 'eV'
+  simpar%refval_mass_dimensions = 'kg'
   simpar%refval_density_dimensions = 'm^-3'
   simpar%refval_speed_dimensions = 'm*s^-1'
   simpar%refval_potential_dimensions = 'kg*m^2*A^-1*s^-3'

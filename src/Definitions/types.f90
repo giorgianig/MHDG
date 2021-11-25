@@ -20,6 +20,7 @@ MODULE types
   INTEGER, PARAMETER, PUBLIC :: bc_dirichlet_weak_form_oldvalues = 3
   INTEGER, PARAMETER, PUBLIC :: bc_Transmission = 4
   INTEGER, PARAMETER, PUBLIC :: bc_dirichlet_and_Neumann = 5
+   INTEGER, PARAMETER, PUBLIC :: bc_iter_core = 6 
   ! 20-.. In out type
   INTEGER, PARAMETER, PUBLIC :: bc_inout = 20
   ! 30-.. Neumann type
@@ -138,6 +139,7 @@ MODULE types
     real*8, allocatable     :: scdiff_nodes(:, :)      ! Shock capturing diffusion in each node [Number of elements,Number of nodes per element]
     real*8                 :: xmax, xmin, ymax, ymin    ! Limit of the GLOBAL matrix, across mpi partitions
     real*8                  :: puff_area         ! area of the puff bounday condition
+    real*8                  :: core_area         ! area of the puff bounday condition
 #ifdef PARALL
     integer, pointer       :: loc2glob_fa(:)     ! mapping number of the faces for creating the global matrix [number of faces in the mesh]
     integer, pointer       :: loc2glob_el(:)     ! mapping number of the elements from local to global [number of elements in the mesh]
@@ -217,6 +219,8 @@ MODULE types
     real*8          :: Re                 ! Recycling for the neutral equation
     real*8          :: puff               ! Puff coefficient
     real*8,pointer  :: puff_exp(:)        ! Puff experimental coefficient (only for moving equilibriums)
+    real*8          :: part_source
+    real*8          :: ener_source
   END TYPE Physics_type
 
   !*******************************************************
@@ -424,6 +428,7 @@ MODULE types
     real, allocatable :: physvar_refval(:)
     ! Reference values
     real*8    :: refval_length
+    real*8    :: refval_mass
     real*8    :: refval_time
     real*8    :: refval_temperature
     real*8    :: refval_density
@@ -443,6 +448,7 @@ MODULE types
 
     ! Dimensions used in the simulation
     character(len=20)    :: refval_length_dimensions
+    character(len=20)    :: refval_mass_dimensions
     character(len=20)    :: refval_time_dimensions
     character(len=20)    :: refval_temperature_dimensions
     character(len=20)    :: refval_density_dimensions
@@ -562,6 +568,7 @@ CONTAINS
     bc_flag_name(3) = 'Dirichlet weak form using old values of the variables'
     bc_flag_name(4) = 'Transmission boundary conditions'
     bc_flag_name(5) = 'Dirichlet in some equations and Neumann in others '
+    bc_flag_name(6) = 'ITER core BC: plasma flux = plasma flux, energy flux imposed '
     bc_flag_name(20) = 'Inlet-Outlet'
     bc_flag_name(30) = 'Neumann homogeneus'
     bc_flag_name(50) = 'Bohm'

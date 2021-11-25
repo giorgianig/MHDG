@@ -401,6 +401,7 @@ CONTAINS
       CALL HDF5_group_create('adimensionalization', group_id1, group_id2, ierr)
       ! Save adimensionalization
       call HDF5_string_saving(group_id2, simpar%refval_time_dimensions, 'time_scale_dimensions')
+      call HDF5_string_saving(group_id2, simpar%refval_mass_dimensions, 'mass_scale_dimensions')
       call HDF5_string_saving(group_id2, simpar%refval_length_dimensions, 'length_scale_dimensions')
       call HDF5_string_saving(group_id2, simpar%refval_temperature_dimensions, 'temperature_scale_dimensions')
       call HDF5_string_saving(group_id2, simpar%refval_density_dimensions, 'density_scale_dimensions')
@@ -417,6 +418,7 @@ CONTAINS
       call HDF5_string_saving(group_id2, simpar%refval_specenergydens_dimensions, 'specific_energy_density_scale_dimensions')
       call HDF5_real_saving(group_id2, simpar%refval_length, 'length_scale')
       call HDF5_real_saving(group_id2, simpar%refval_time, 'time_scale')
+      call HDF5_real_saving(group_id2, simpar%refval_mass, 'mass_scale')
       call HDF5_real_saving(group_id2, simpar%refval_temperature, 'temperature_scale')
       call HDF5_real_saving(group_id2, simpar%refval_density, 'density_scale')
       call HDF5_real_saving(group_id2, simpar%refval_neutral, 'neutral_scale')
