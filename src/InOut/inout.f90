@@ -832,6 +832,7 @@ CONTAINS
     !*************************************
     !              2D case
     !*************************************
+    
     IF (MPIvar%glob_size .GT. 1) THEN
       write (nid, *) MPIvar%glob_id + 1
       write (npr, *) MPIvar%glob_size
@@ -851,6 +852,7 @@ CONTAINS
 #endif
     CALL HDF5_group_close(group_id, ierr)
 
+
     ! Check if the readed solution corresponds to the right model
     IF (simpar%model .ne. model_string) THEN
       WRITE (6, *) "Wrong model in loaded solution | Loaded model: ", model_string, " | Current model: ", simpar%model
@@ -861,7 +863,6 @@ CONTAINS
     CALL HDF5_array1D_reading(file_id, sol%q, 'q')
     CALL HDF5_close(file_id)
 #endif
-
 
     if (switch%logrho .and. logrho_ptr.eq.0 ) then
       write(6,*) "Readed solution without logrho but switch logrho set to true: "

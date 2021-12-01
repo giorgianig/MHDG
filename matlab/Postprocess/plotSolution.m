@@ -138,6 +138,7 @@ Prova.Coordinates = Xplot;
 else
     %Plot
     if logar
+        uplot(uplot<0) = 1e-15;
         patch('Faces',tri,'Vertices',Xplot,'FaceVertexCData',log10(uplot),...
             'FaceColor','interp','EdgeAlpha',0);
     else

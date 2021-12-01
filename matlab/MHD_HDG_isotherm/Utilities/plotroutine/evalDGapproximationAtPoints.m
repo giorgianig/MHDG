@@ -3,6 +3,14 @@ function up = evalDGapproximationAtPoints(xs,u,X,T,refEl)
 % Evaluates the DG approximation given by the nodal values in u. u may have
 % several columns (several field components)
 
+X = X/1.901e-3;
+xs = xs/1.901e-3;
+
+
+
+
+
+
 np = size(T,2);
 up = zeros(size(xs,1),size(u,2));
 npoints = size(xs,1);

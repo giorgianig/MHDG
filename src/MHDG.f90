@@ -25,12 +25,13 @@ PROGRAM MHDG
   integer, allocatable :: faceNodes1d(:)
   logical, allocatable :: mkelms(:)
   real*8              :: dt, errNR, errlstime
-  real*8, allocatable :: uiter(:), L2err(:), xs(:,:)
+  real*8, allocatable :: uiter(:), L2err(:)
   character(LEN=1024) :: mesh_name,mesh_name_proj, namemat, save_name
   real*8              :: cputtot, runttot
   integer             ::  OMP_GET_MAX_THREADS
   integer             :: cks, clock_rate, cke, clock_start, clock_end
   real*8              :: time_start, time_finish, tps, tpe
+  real*8,allocatable  :: u_proj(:),q_proj(:),u_tilde_proj(:), xs(:,:)
   INTEGER :: code, pr, aux
   INTEGER, PARAMETER :: etiquette = 1000
   INTEGER, DIMENSION(MPI_STATUS_SIZE) :: statut
@@ -57,7 +58,7 @@ PROGRAM MHDG
 
   IF (nb_args .gt. 2) THEN
     CALL getarg(3, mesh_name_proj)
-    save_name = Adjustl(Trim(mesh_name_proj))
+    mesh_name_proj = Adjustl(Trim(mesh_name_proj))
     PRINT *, " Projecting solution from: ", mesh_name_proj
   END IF
   
@@ -89,12 +90,29 @@ PROGRAM MHDG
 #endif
 
 
-
+  ! Initialization of the simulation parameters !TODO check if I need to pass dt to init_sim
+  CALL init_sim(nts, dt)
+  
+  
+  
   if (nb_args .eq. 3) then
-     CALL load_mesh(mesh_name_proj)
-     allocate(xs(Mesh%nnodes,2))
-     xs = Mesh%X
+     ! find projection points
+     CALL load_mesh(mesh_name)
+     allocate(xs(size(Mesh%T,1)*size(Mesh%T,2),2))
+     xs = Mesh%X(colint(transpose(Mesh%T)),:)
      call free_mesh()
+     
+     ! Load solution to project
+     CALL load_mesh(mesh_name_proj)
+     CALL create_reference_element(refElPol, 2)
+     CALL mesh_preprocess()
+     CALL HDF5_load_solution(save_name)
+     
+     ! Project the solution
+     call projectSolutionDifferentMeshes(xs)
+     deallocate(xs)
+     call free_mesh()
+     call free_reference_element()
   endif
   
 
@@ -132,9 +150,6 @@ PROGRAM MHDG
   ! Define toroidal discretization
   CALL define_toroidal_discretization
 #endif
-
-  ! Initialization of the simulation parameters !TODO check if I need to pass dt to init_sim
-  CALL init_sim(nts, dt)
 
   ! Initialize magnetic field (the Mesh is needed)
   CALL initialize_magnetic_field()
@@ -195,8 +210,8 @@ PROGRAM MHDG
 
   ! Initialize the solution
   IF (nb_args .eq. 3) THEN
-     call projectSolutionDifferentMeshes(xs)
-     deallocate(xs)
+     allocate(sol%u_tilde(phys%neq*Mesh%Nfaces*Mesh%Nnodesperface))
+     CALL extractFaceSolution()
   ELSE IF (nb_args .eq. 2) THEN
     ! restart simulation: load solution from file (the name is given in argument)
     CALL HDF5_load_solution(save_name)

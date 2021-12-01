@@ -1376,14 +1376,14 @@ CONTAINS
     j = 1
     DO idm = 1,Ndim
       indj = ind_ash + idm + (j - 1)*Ndim
-      elMat%Alq(ind_ff(indi),ind_fG(indj),iel) = elMat%Alq(ind_ff(indi),ind_fG(indj),iel) + &
+      elMat%Alq(ind_ff(indi),ind_fG(indj),iel) = elMat%Alq(ind_ff(indi),ind_fG(indj),iel) - &
         &NiNi*ng(idm)*phys%diff_n
     END DO
    ! flux non-diagonal part
     j = phys%Neq
     DO idm = 1,Ndim
       indj = ind_ash + idm + (j - 1)*Ndim
-      elMat%Alq(ind_ff(indi),ind_fG(indj),iel) = elMat%Alq(ind_ff(indi),ind_fG(indj),iel) + &
+      elMat%Alq(ind_ff(indi),ind_fG(indj),iel) = elMat%Alq(ind_ff(indi),ind_fG(indj),iel) - &
         &NiNi*ng(idm)*phys%diff_nn
     END DO      
     ! flux rhs-part
@@ -1408,7 +1408,7 @@ CONTAINS
     j = 3
     DO idm = 1,Ndim
       indj = ind_ash + idm + (j - 1)*Ndim
-      elMat%Alq(ind_ff(indi),ind_fG(indj),iel) = elMat%Alq(ind_ff(indi),ind_fG(indj),iel) + &
+      elMat%Alq(ind_ff(indi),ind_fG(indj),iel) = elMat%Alq(ind_ff(indi),ind_fG(indj),iel) - &
         &NiNi*ng(idm)*phys%diff_e
     END DO 
     ! flux rhs-part
@@ -1425,7 +1425,7 @@ CONTAINS
     j = 4
     DO idm = 1,Ndim
       indj = ind_ash + idm + (j - 1)*Ndim
-      elMat%Alq(ind_ff(indi),ind_fG(indj),iel) = elMat%Alq(ind_ff(indi),ind_fG(indj),iel) + &
+      elMat%Alq(ind_ff(indi),ind_fG(indj),iel) = elMat%Alq(ind_ff(indi),ind_fG(indj),iel) - &
         &NiNi*ng(idm)*phys%diff_ee
     END DO 
     ! flux rhs-part
@@ -1443,14 +1443,14 @@ CONTAINS
     j = phys%Neq
     DO idm = 1,Ndim
       indj = ind_ash + idm + (j - 1)*Ndim
-      elMat%Alq(ind_ff(indi),ind_fG(indj),iel) = elMat%Alq(ind_ff(indi),ind_fG(indj),iel) + &
+      elMat%Alq(ind_ff(indi),ind_fG(indj),iel) = elMat%Alq(ind_ff(indi),ind_fG(indj),iel) - &
         &NiNi*ng(idm)*phys%diff_nn
     END DO
    ! flux non-diagonal part
     j = 1
     DO idm = 1,Ndim
       indj = ind_ash + idm + (j - 1)*Ndim
-      elMat%Alq(ind_ff(indi),ind_fG(indj),iel) = elMat%Alq(ind_ff(indi),ind_fG(indj),iel) + &
+      elMat%Alq(ind_ff(indi),ind_fG(indj),iel) = elMat%Alq(ind_ff(indi),ind_fG(indj),iel) - &
         &NiNi*ng(idm)*phys%diff_n
     END DO      
     ! flux rhs-part

@@ -81,7 +81,7 @@ HOME = '/home/giorgio/Dropbox/Fortran/MHDG_ref3.0/test/';
 
 solpath = [HOME];
 meshpath = [HOME];
-solname = 'Sol2D_ITER_YesHole_Nel7788_P4_DPe0.200E+02_DPai0.314E+06_DPae0.105E+08_NR0005';
+solname = 'Sol2D_ITER_YesHoleSmooth_Quads_Nel4934_P4_DPe0.100E+03_DPai0.314E+06_DPae0.105E+08_NR0003';
 
 
 
@@ -214,6 +214,7 @@ for iproc = 1:nproc
                 end
                 name = simulation_parameters.physics.conservative_variable_names{ii};
                 if strcmpi(name,'rhon')
+                    uplot(uplot<0) = 1e-15;
                     hold on, plotSolution(Mesh.X/Mesh.lscale,Mesh.T,uplot,refEl,nref,cont,1,0,ccaxis(ii,:));axis off
                 else
                     hold on, plotSolution(Mesh.X/Mesh.lscale,Mesh.T,uplot,refEl,nref,cont,0,0,ccaxis(ii,:));axis off
@@ -238,7 +239,8 @@ for iproc = 1:nproc
                 end
                 name = simulation_parameters.physics.physical_variable_names{ii};
                 if strcmpi(name(1:4),'rhon')
-                    hold on, plotSolution(Mesh.X/Mesh.lscale,Mesh.T,abs(uplot)+1e-9,refEl,nref,cont,1,0,cpaxis(ii,:));axis off
+                    uplot(uplot<0) = 1e-15;
+                    hold on, plotSolution(Mesh.X/Mesh.lscale,Mesh.T,abs(uplot),refEl,nref,cont,1,0,cpaxis(ii,:));axis off
                     if ~phys_dimensional_plots
                         caxis([-4 0])
                     end

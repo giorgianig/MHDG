@@ -57,7 +57,7 @@
     tau(3)              = 1.E+0         ! Stabilization parameter 3rd equation
     tau(4)              = 1.E+0         ! Stabilization parameter 4th equation
     tau(5)              = 1.E-0         ! Stabilization parameter 5th equation
-    nrp                 = 1000            ! Max number of Newton-Raphson iterations
+    nrp                 = 100            ! Max number of Newton-Raphson iterations
     tNR                 = 1e-4          ! Tolerance of the Newton-Raphson scheme
     tTM                 = 1e-8          ! Tolerance for the steady state achievement
     div                 = 1e5           ! Divergence of Newton-Raphon iteration
@@ -70,7 +70,7 @@
     thr                 = 1.e-7         ! Min value of density allowed (works only if the switch is activated)
     thrpre              = 1.e-9         ! Min value of pressure allowed (works only if the switch is activated)
     stab                = 5             ! Stabilization type (from 1 to 4 (5), 2 is good, 5 is better (simplified 2, only for N-Gamma(-T))
-    dumpnr              = 0.001             ! Dumping factor for Newton-Raphson (0<dumpnr<1, first parameter to decrease if NR fail)
+    dumpnr              = 0.01             ! Dumping factor for Newton-Raphson (0<dumpnr<1, first parameter to decrease if NR fail)
     ntor                = 3             ! Number of elements in the toroidal direction
     ptor                = 4             ! Polynomial degree in the toroidal direction
     tmax                = 1.5708        ! Max extention in the toroidal direction
@@ -111,12 +111,12 @@
 
 &PHYS_LST
     ! ****** Diffusion parameters in m^2/s (start at 20*diff_x if psdtime = true)
-    diff_n = 20 ! diffusion in the continuity equation
-    diff_u = 20 ! diffusion in the momentum equation
-    diff_e = 20 ! perpendicular diffusion for the energy equation
-    diff_ee = 20 ! perpendicular diffusion in the electron temperature equation (for the TiTe model)
-    diff_vort = 20 ! diffusion in the vorticity equation
-    diff_nn = 20e3 ! diffusion for neutral equation (TODO: check adimensionalization)
+    diff_n = 100 ! diffusion in the continuity equation
+    diff_u = 100 ! diffusion in the momentum equation
+    diff_e = 100 ! perpendicular diffusion for the energy equation
+    diff_ee = 100 ! perpendicular diffusion in the electron temperature equation (for the TiTe model)
+    diff_vort = 100 ! diffusion in the vorticity equation
+    diff_nn = 100e3 ! diffusion for neutral equation (TODO: check adimensionalization)
     ! ****** Option for neutral equation (available only if compile with NEUTRAL)
     Re                  = 0.5         ! recycling coefficient
     puff                =  6.8e22         ! puff coefficient (particles per second in the whole puff area)
@@ -134,7 +134,7 @@
     bcflags(5)          = 55            ! Pump
     bcflags(6)          = 56            ! Puff
     bcflags(7)          = 50            ! Limiter
-    bcflags(8)          = 6             ! In
+    bcflags(8)          = 2             ! In
     bcflags(9)          = 50            ! Out
     bcflags(10)         = 50            ! Upper Limiter
     ! ****** Boundary threshold for Bohm

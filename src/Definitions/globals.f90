@@ -408,6 +408,143 @@ CONTAINS
     END IF  
   END SUBROUTINE free_mesh
   
+  SUBROUTINE free_reference_element
+     ! Reference element
+    IF (ALLOCATED(refElPol%Face_nodes)) THEN
+      DEALLOCATE (refElPol%Face_nodes)
+    END IF
+    IF (ALLOCATED(refElPol%Bord_nodes)) THEN
+      DEALLOCATE (refElPol%Bord_nodes)
+    END IF
+    IF (ALLOCATED(refElPol%inner_nodes)) THEN
+      DEALLOCATE (refElPol%inner_nodes)
+    END IF
+    IF (ALLOCATED(refElPol%inner_nodes_face)) THEN
+      DEALLOCATE (refElPol%inner_nodes_face)
+    END IF
+    IF (ASSOCIATED(refElPol%coord3D)) THEN
+      DEALLOCATE (refElPol%coord3D)
+    END IF
+    IF (ASSOCIATED(refElPol%coord2D)) THEN
+      DEALLOCATE (refElPol%coord2D)
+    END IF
+    IF (ASSOCIATED(refElPol%coord1D)) THEN
+      DEALLOCATE (refElPol%coord1D)
+    END IF
+    IF (ALLOCATED(refElPol%gauss_points3D)) THEN
+      DEALLOCATE (refElPol%gauss_points3D)
+    END IF
+    IF (ALLOCATED(refElPol%gauss_points2D)) THEN
+      DEALLOCATE (refElPol%gauss_points2D)
+    END IF
+    IF (ALLOCATED(refElPol%gauss_points1D)) THEN
+      DEALLOCATE (refElPol%gauss_points1D)
+    END IF
+    IF (ALLOCATED(refElPol%gauss_weights3D)) THEN
+      DEALLOCATE (refElPol%gauss_weights3D)
+    END IF
+    IF (ALLOCATED(refElPol%gauss_weights2D)) THEN
+      DEALLOCATE (refElPol%gauss_weights2D)
+    END IF
+    IF (ALLOCATED(refElPol%gauss_weights1D)) THEN
+      DEALLOCATE (refElPol%gauss_weights1D)
+    END IF
+    IF (ALLOCATED(refElPol%N3D)) THEN
+      DEALLOCATE (refElPol%N3D)
+    END IF
+    IF (ALLOCATED(refElPol%Nxi3D)) THEN
+      DEALLOCATE (refElPol%Nxi3D)
+    END IF
+    IF (ALLOCATED(refElPol%Neta3D)) THEN
+      DEALLOCATE (refElPol%Neta3D)
+    END IF
+    IF (ALLOCATED(refElPol%Nzeta3D)) THEN
+      DEALLOCATE (refElPol%Nzeta3D)
+    END IF
+    IF (ALLOCATED(refElPol%N2D)) THEN
+      DEALLOCATE (refElPol%N2D)
+    END IF
+    IF (ALLOCATED(refElPol%Nxi2D)) THEN
+      DEALLOCATE (refElPol%Nxi2D)
+    END IF
+    IF (ALLOCATED(refElPol%Neta2D)) THEN
+      DEALLOCATE (refElPol%Neta2D)
+    END IF
+    IF (ALLOCATED(refElPol%N1D)) THEN
+      DEALLOCATE (refElPol%N1D)
+    END IF
+    IF (ALLOCATED(refElPol%Nxi1D)) THEN
+      DEALLOCATE (refElPol%Nxi1D)
+    END IF
+
+    ! Reference element
+    IF (ALLOCATED(refElTor%Face_nodes)) THEN
+      DEALLOCATE (refElTor%Face_nodes)
+    END IF
+    IF (ALLOCATED(refElTor%Bord_nodes)) THEN
+      DEALLOCATE (refElTor%Bord_nodes)
+    END IF
+    IF (ALLOCATED(refElTor%inner_nodes)) THEN
+      DEALLOCATE (refElTor%inner_nodes)
+    END IF
+    IF (ALLOCATED(refElTor%inner_nodes_face)) THEN
+      DEALLOCATE (refElTor%inner_nodes_face)
+    END IF
+    IF (ASSOCIATED(refElTor%coord3D)) THEN
+      DEALLOCATE (refElTor%coord3D)
+    END IF
+    IF (ASSOCIATED(refElTor%coord2D)) THEN
+      DEALLOCATE (refElTor%coord2D)
+    END IF
+    IF (ASSOCIATED(refElTor%coord1D)) THEN
+      DEALLOCATE (refElTor%coord1D)
+    END IF
+    IF (ALLOCATED(refElTor%gauss_points3D)) THEN
+      DEALLOCATE (refElTor%gauss_points3D)
+    END IF
+    IF (ALLOCATED(refElTor%gauss_points2D)) THEN
+      DEALLOCATE (refElTor%gauss_points2D)
+    END IF
+    IF (ALLOCATED(refElTor%gauss_points1D)) THEN
+      DEALLOCATE (refElTor%gauss_points1D)
+    END IF
+    IF (ALLOCATED(refElTor%gauss_weights3D)) THEN
+      DEALLOCATE (refElTor%gauss_weights3D)
+    END IF
+    IF (ALLOCATED(refElTor%gauss_weights2D)) THEN
+      DEALLOCATE (refElTor%gauss_weights2D)
+    END IF
+    IF (ALLOCATED(refElTor%gauss_weights1D)) THEN
+      DEALLOCATE (refElTor%gauss_weights1D)
+    END IF
+    IF (ALLOCATED(refElTor%N3D)) THEN
+      DEALLOCATE (refElTor%N3D)
+    END IF
+    IF (ALLOCATED(refElTor%Nxi3D)) THEN
+      DEALLOCATE (refElTor%Nxi3D)
+    END IF
+    IF (ALLOCATED(refElTor%Neta3D)) THEN
+      DEALLOCATE (refElTor%Neta3D)
+    END IF
+    IF (ALLOCATED(refElTor%Nzeta3D)) THEN
+      DEALLOCATE (refElTor%Nzeta3D)
+    END IF
+    IF (ALLOCATED(refElTor%N2D)) THEN
+      DEALLOCATE (refElTor%N2D)
+    END IF
+    IF (ALLOCATED(refElTor%Nxi2D)) THEN
+      DEALLOCATE (refElTor%Nxi2D)
+    END IF
+    IF (ALLOCATED(refElTor%Neta2D)) THEN
+      DEALLOCATE (refElTor%Neta2D)
+    END IF
+    IF (ALLOCATED(refElTor%N1D)) THEN
+      DEALLOCATE (refElTor%N1D)
+    END IF
+    IF (ALLOCATED(refElTor%Nxi1D)) THEN
+      DEALLOCATE (refElTor%Nxi1D)
+    ENDIF 
+  END SUBROUTINE free_reference_element  
   
   SUBROUTINE free_mat
     DEALLOCATE (MatK%cols)
