@@ -71,6 +71,7 @@ PROGRAM MHDG
 
   ! Number of threads
   Nthreads = OMP_GET_MAX_THREADS()
+  write(6,*) "Using ", Nthreads, " threads" 
 
   ! Start timing the code
   call cpu_time(time_start)
@@ -247,8 +248,6 @@ PROGRAM MHDG
   ALLOCATE (sol%u0(nu, time%tis))
   sol%u0 = 0.
   sol%u0(:, 1) = sol%u
-  uiter = 0.
-
   switch_save = 0
   !*******************************************************
   !                  TIME LOOP
@@ -289,13 +288,13 @@ PROGRAM MHDG
       CALL hdg_Assembly()
       !IF (switch_save.EQ.0) THEN
       !  WRITE (6, *) "Save matrix"
-      !  call HDF5_save_CSR_matrix('Mat')
+!        call HDF5_save_CSR_matrix('Mat')
       !  call HDF5_save_CSR_vector('rhs')
       !  switch_save = 1
       !call displayMatrixInt(Mesh%F)
       !call displayMatrixInt(Mesh%extfaces)
       !call displayVectorInt(Mesh%periodic_faces)
-      !stop
+!      stop
       !call print_matrices_hdf5
       !stop
       !ENDIF

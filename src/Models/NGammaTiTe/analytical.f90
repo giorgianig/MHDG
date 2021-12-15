@@ -1289,8 +1289,8 @@ CONTAINS
       END DO
     CASE (80:89)
       up(:, 1) = 1.
-      up(:, 3) = 37.
-      up(:, 4) = 37.
+      up(:, 3) = 18.
+      up(:, 4) = 18.
 #ifdef NEUTRAL
       up(:,11)= 0.
 #endif     

@@ -8,7 +8,7 @@
     init                = 1             ! Initialization type: 1-analytical at nodes; 2-L2 projection
     driftdia            = .false.       ! Set to FALSE to ignore diamagnetic drifts terms
     driftexb            = .false.       ! Set to FALSE to ignore ExB drifts terms
-    testcase            = 80            ! Determine the analytical solution and the body forces
+    testcase            = 60            ! Determine the analytical solution and the body forces
     RMP                 = .false.       ! True to set RMP (non-axisymetrical perturbation)
     Ripple              = .false.       ! True to set Ripple (non-axisymetrical perturbation)
     psdtime             = .true.        ! Reduce the diffusion every time we reach the steady state
@@ -70,7 +70,7 @@
     thr                 = 1.e-7         ! Min value of density allowed (works only if the switch is activated)
     thrpre              = 1.e-9         ! Min value of pressure allowed (works only if the switch is activated)
     stab                = 5             ! Stabilization type (from 1 to 4 (5), 2 is good, 5 is better (simplified 2, only for N-Gamma(-T))
-    dumpnr              = 0.01             ! Dumping factor for Newton-Raphson (0<dumpnr<1, first parameter to decrease if NR fail)
+    dumpnr              = 0.1             ! Dumping factor for Newton-Raphson (0<dumpnr<1, first parameter to decrease if NR fail)
     ntor                = 3             ! Number of elements in the toroidal direction
     ptor                = 4             ! Polynomial degree in the toroidal direction
     tmax                = 1.5708        ! Max extention in the toroidal direction
@@ -100,7 +100,7 @@
 
 
 &TIME_LST
-    dt0                 = 1.e9          ! Initial time step
+    dt0                 = 1.e2          ! Initial time step
     nts                 = 10000         ! Max number of time iterations to do in the current session (only for transient simulations)
     tfi                 = 1e5           ! Final time: the simulation stops when this time is reached
     tsw                 = 0             ! Switch to modify the time step
@@ -111,16 +111,16 @@
 
 &PHYS_LST
     ! ****** Diffusion parameters in m^2/s (start at 20*diff_x if psdtime = true)
-    diff_n = 100 ! diffusion in the continuity equation
-    diff_u = 100 ! diffusion in the momentum equation
-    diff_e = 100 ! perpendicular diffusion for the energy equation
-    diff_ee = 100 ! perpendicular diffusion in the electron temperature equation (for the TiTe model)
-    diff_vort = 100 ! diffusion in the vorticity equation
-    diff_nn = 100e3 ! diffusion for neutral equation (TODO: check adimensionalization)
+    diff_n = 2 ! diffusion in the continuity equation
+    diff_u = 2 ! diffusion in the momentum equation
+    diff_e = 2 ! perpendicular diffusion for the energy equation
+    diff_ee = 2 ! perpendicular diffusion in the electron temperature equation (for the TiTe model)
+    diff_vort = 2 ! diffusion in the vorticity equation
+    diff_nn = 2e3 ! diffusion for neutral equation (TODO: check adimensionalization)
     ! ****** Option for neutral equation (available only if compile with NEUTRAL)
-    Re                  = 0.5         ! recycling coefficient
-    puff                =  6.8e22         ! puff coefficient (particles per second in the whole puff area)
-    part_source         = 8.1e20        ! source coefficient (particles per second in the whole core area [ONLY BC 6])
+    Re                  = 0.99         ! recycling coefficient
+    puff                = 0! 6.8e22         ! puff coefficient (particles per second in the whole puff area)
+    part_source         = 1.e20!8.1e20        ! source coefficient (particles per second in the whole core area [ONLY BC 6])
     ener_source         = 2e6        ! source coefficient (Watt in the whole core area [ONLY BC 6])
     ! ****** Ohmic heating: only for testcase 54 with core (not tested)
     Pohmic              = 4.8e-14       ! Ohmic Heating
@@ -138,7 +138,7 @@
     bcflags(9)          = 50            ! Out
     bcflags(10)         = 50            ! Upper Limiter
     ! ****** Boundary threshold for Bohm
-    bohmth              = 0.0           ! threshold for imposing the bohm boundary condition
+    bohmth              = 0.01           ! threshold for imposing the bohm boundary condition
     ! ****** Boundary coefficients for the Bohm boundary condition of the temperature equations:
     Gmbohm              = 2.5           ! gamma for Bohm boundary condition for energy equation (usually 7) and for ions energy equation (usually 2.5)
     Gmbohme             = 4.5           ! gamma for Bohm boundary condition for electron energy equation (usually 4.5)

@@ -300,9 +300,9 @@ CONTAINS
 						       if (opt.eq.1) then
 						          dref = maxamp * d/numer%minrho  ! 0 < dref < maxamp
 !			            ipdiff(g) = exp(dref) ! 1 < ipdiff(g) < exp(maxamp)
-						          ipdiff(g) = exp(dref) - 1 ! 0 < ipdiff(g) < exp(maxamp)-1
+						          ipdiff(g) = ipdiff(g) + exp(dref) - 1 ! 0 < ipdiff(g) < exp(maxamp)-1
 						       else if (opt==2) then
-						          ipdiff(g) = 1./((1.-d/numer%minrho)*2+1./50.) - 1.
+						          ipdiff(g) = ipdiff(g) +  1./((1.-d/numer%minrho)*2+1./50.) - 1.
 						       endif
           endif
        end do

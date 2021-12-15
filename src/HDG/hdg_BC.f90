@@ -1028,7 +1028,10 @@ CONTAINS
         endif
       END IF
 #endif
+     
 
+ 
+      
       ! Shape functions
       NiNi = tensorProduct(refElPol%N1D(g,:),refElPol%N1D(g,:))*dline
       Ni = refElPol%N1D(g,:)*dline
@@ -1446,15 +1449,15 @@ CONTAINS
       elMat%Alq(ind_ff(indi),ind_fG(indj),iel) = elMat%Alq(ind_ff(indi),ind_fG(indj),iel) - &
         &NiNi*ng(idm)*phys%diff_nn
     END DO
-   ! flux non-diagonal part
-    j = 1
-    DO idm = 1,Ndim
-      indj = ind_ash + idm + (j - 1)*Ndim
-      elMat%Alq(ind_ff(indi),ind_fG(indj),iel) = elMat%Alq(ind_ff(indi),ind_fG(indj),iel) - &
-        &NiNi*ng(idm)*phys%diff_n
-    END DO      
-    ! flux rhs-part
-    elMat%fh(ind_ff(indi),iel) = elMat%fh(ind_ff(indi),iel) - source_dens_coeff*Ni 
+!   ! flux non-diagonal part
+!    j = 1
+!    DO idm = 1,Ndim
+!      indj = ind_ash + idm + (j - 1)*Ndim
+!      elMat%Alq(ind_ff(indi),ind_fG(indj),iel) = elMat%Alq(ind_ff(indi),ind_fG(indj),iel) - &
+!        &NiNi*ng(idm)*phys%diff_n
+!    END DO      
+!    ! flux rhs-part
+!    elMat%fh(ind_ff(indi),iel) = elMat%fh(ind_ff(indi),iel) - source_dens_coeff*Ni 
     
     
     

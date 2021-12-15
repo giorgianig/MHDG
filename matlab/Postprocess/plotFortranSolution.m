@@ -1,6 +1,6 @@
 % plot Fortran solution
 clear
-close all
+% close all
 
 global ntor theta
 
@@ -19,7 +19,7 @@ plotCons = 0; % Plot conservative variables
 phys_dimensional_plots = 1; % physical variables
 cons_dimensional_plots = 0; % conservative variables
 nref = 3; % plot order
-startPlot = 1; %default: 1 Starting number for plot (useful if no close all)
+startPlot = 100; %default: 1 Starting number for plot (useful if no close all)
 gatherplot = 0; %True to gather everything in one figure
 cbound = 0; %True: bound colorbar axis (to adapt the boundaries see below)
 
@@ -42,47 +42,14 @@ path2save = 'Img_MHDG/';
 % Solution
 %**********************************
 HOME = '/home/giorgio/Dropbox/Fortran/MHDG_ref3.0/test/';
-
-% solpath = [HOME, 'West10861_P4/2D/NGT/parall/00/div16/2021_06_08_old_Bohmbc_02/'];
-% meshpath = [HOME, 'West10861_P4/2D/NGT/parall/00/div16/'];
-% solname = 'Sol2D_West_YesHole_Nel10861_P4_DPe0.100E+01_DPai0.314E+06_DPae0.105E+08';
-
-% solpath = [HOME, 'West10861_P4/2D/NGT/parall/00/div16/2021_07_06_Neutral/'];
-% meshpath = [HOME, 'West10861_P4/2D/NGT/parall/00/div16/'];
-% solname = 'Sol2D_West_YesHole_Nel10861_P4_DPe0.100E+01_DPai0.314E+06_DPae0.105E+08';
-
-% solpath =[HOME, 'test/NGT3D_div8/'];
-% meshpath = [HOME, 'test/NGT3D_div8/'];
-% solname = 'Sol3D_CircLimAlign_Quads_Nel208_P4_Ntor1Ptor5_DPe0.100E+01_DPai0.314E+06_DPae0.105E+08';
-
-% solpath = [HOME, 'West3541_P4/2D/NGT/parall/00/div16/2021_06_21_NGT/'];
-% meshpath = [HOME, 'West3541_P4/2D/NGT/parall/00/div16/'];
-% solname = 'Sol2D_West_YesHole_Nel3541_P4_DPe0.200E+02_DPai0.314E+06_DPae0.105E+08';
-
-% solpath = [HOME, 'West3541_P4/3D/NGT/parall/00/ref/ripple/div16/'];
-% meshpath = [HOME, 'West3541_P4/3D/NGT/parall/00/ref/ripple/div16/'];
-% solname = 'Sol3D_West_YesHole_Nel3541_P4_Ntor1Ptor4_DPe0.138E+02_DPai0.314E+06_DPae0.105E+08_NR0006';
-
-% solpath = [HOME, 'InfLim909_P5/2D/NGT/parall/00/'];
-% meshpath = [HOME, 'InfLim909_P5/2D/NGT/parall/00/';
-% solname = 'Sol2D_Circ_InfLIM_Quads_YesHole_Nel909_P5_DPe0.100E+01_DPai0.314E+06_DPae0.105E+08';
-
-% solpath = [HOME, 'test/NGT3D_div8/'];
-% meshpath = [HOME, 'test/NGT3D_div8/'];
-% solname = 'Sol3D_CircLimAlign_Quads_Nel208_P4_Ntor1Ptor5_DPe0.100E+01_DPai0.314E+06_DPae0.105E+08';
-
-% solpath = [HOME, 'test/NGTN2D_div8/'];
-% meshpath = [HOME, 'test/NGTN2D_div8/'];
-% solname = 'Sol2D_CircLimAlign_Quads_Nel208_P4_DPe0.100E+01_DPai0.314E+06_DPae0.105E+08';
-
-% solpath = [HOME, 'West1902_P6/2021_07_06_NGTN2D/'];
-% meshpath = [HOME, 'West1902_P6/2021_07_06_NGTN2D/'];
-% solname = 'Sol2D_West_YesHole_Nel1902_P6_DPe0.100E+01_DPai0.314E+06_DPae0.105E+08';
-
 solpath = [HOME];
 meshpath = [HOME];
-solname = 'Sol2D_ITER_YesHoleSmooth_Quads_Nel4934_P4_DPe0.100E+03_DPai0.314E+06_DPae0.105E+08_NR0003';
+solname = 'Sol2D_ITER_YesHoleSmooth_Quads_Nel4934_P4_DPe0.100E+01_DPai0.314E+06_DPae0.105E+08_NR0007';
+% solname = 'Sol2D_CircLimAlign_Quads_Nel208_P4_DPe0.100E+02_DPai0.314E+06_DPae0.105E+08_REF_IterCond';
 
+
+
+solname='Sol2D_CircLimAlign_Quads_Nel208_P4_DPe0.200E+01_DPai0.314E+06_DPae0.105E+08_NR0006'
 
 
 %**********************************

@@ -284,53 +284,102 @@ CONTAINS
     !*****************************
     ! No non-diagonal terms defined for this model
 
-    if (switch%difcor .gt. 0) then
-      call computeIperDiffusion(xy, iperdiff)
-      d_iso(1, 1, :) = d_iso(1, 1, :)*iperdiff
-      d_iso(2, 2, :) = d_iso(2, 2, :)*iperdiff
-      d_iso(3, 3, :) = d_iso(3, 3, :)*iperdiff
-      d_iso(4, 4, :) = d_iso(4, 4, :)*iperdiff
-    endif
+
+      call computeIperDiffusion(xy,u, iperdiff)
+      d_iso(1, 1, :) = d_iso(1, 1, :)+iperdiff
+      d_iso(2, 2, :) = d_iso(2, 2, :)+iperdiff
+      d_iso(3, 3, :) = d_iso(3, 3, :)+iperdiff
+      d_iso(4, 4, :) = d_iso(4, 4, :)+iperdiff
+
 
   END SUBROUTINE setLocalDiff
 
   !*******************************************
   ! Compute local diffusion in points
   !*******************************************
-  SUBROUTINE computeIperDiffusion(X, ipdiff)
-    real*8, intent(IN)  :: X(:, :)
+  SUBROUTINE computeIperDiffusion(X, u, ipdiff)
+    real*8, intent(IN)  :: X(:, :), u(:,:)
     real*8, intent(OUT) :: ipdiff(:)
-    real*8             :: xcorn, ycorn
+    real*8             :: d,dref,maxamp
+    real*8,allocatable :: xcorn(:), ycorn(:)
     real*8             :: rad(size(X, 1))
-    real*8             :: h
+    real*8             :: h,rhog
     real*8, parameter   :: tol = 1.e-6
-    integer            :: i
+    integer            :: i,g, opt
 
-    SELECT CASE (switch%difcor)
-    CASE (1)
-      ! Circular case with infinitely small limiter
-      xcorn = geom%R0
-      ycorn = -0.75
-    CASE (2)
-      ! Circular case with infinitely small limiter
-      xcorn = geom%R0
-      ycorn = -0.287
-    CASE (3)
-      ! West
-      xcorn = 2.7977
-      ycorn = -0.5128
-    CASE DEFAULT
-      WRITE (6, *) "Case not valid"
-      STOP
-    END SELECT
+    ipdiff = 0.
+    
+    if (switch%difcor .gt. 0) then
+    
+						 SELECT CASE (switch%difcor)
+										CASE (1)
+												! Circular case with infinitely small limiter
+												allocate(xcorn(1),ycorn(1))
+												xcorn = geom%R0
+												ycorn = -0.75
+										CASE (2)
+												! Circular case with infinitely small limiter
+												allocate(xcorn(1),ycorn(1))
+												xcorn = geom%R0
+												ycorn = -0.287
+										CASE (3)
+												! West
+												allocate(xcorn(1),ycorn(1))
+												xcorn = 2.7977
+												ycorn = -0.5128
+										case(4) 
+										 ! ITER
+										 allocate(xcorn(4),ycorn(4))
+												xcorn(1) =  4.023150000000000
+												ycorn(1) = -2.544840000000000
+												xcorn(2) =  6.23648
+												ycorn(2) = -3.23689
+												xcorn(3) =  4.02837
+												ycorn(3) =  3.588		
+												xcorn(4) =  5.74627
+												ycorn(4) =  4.51401																						
+										CASE DEFAULT
+												WRITE (6, *) "Case not valid"
+												STOP
+						 END SELECT
 
-    !!**********************************************************
-    !! Gaussian around the corner
-    !!**********************************************************
-    h = 10e-3
-    rad = sqrt((X(:, 1)*phys%lscale - xcorn)**2 + (X(:, 2)*phys%lscale - ycorn)**2)
-    ipdiff = 1 + numer%dc_coe*exp(-(2*rad/h)**2)
+						 !!**********************************************************
+						 !! Gaussian around the corner
+						 !!**********************************************************
+						 h = 1e-1
+						 do i=1,size(xcorn)
+										rad = sqrt((X(:, 1)*phys%lscale - xcorn(i))**2 + (X(:, 2)*phys%lscale - ycorn(i))**2)
+										ipdiff = ipdiff + numer%dc_coe*exp(-(2*rad/h)**2)
+										
+       end do
+       do i=1,size(ipdiff)
+          if (ipdiff(i)<1e-5) ipdiff(i)=0.
+       end do
+       deallocate(xcorn,ycorn)
+    end if
 
+
+
+    maxamp = 4.
+    opt = 2
+    if (switch%limrho .eq. 2 .and. minval(u(:,1)) .lt. numer%minrho    ) then
+       do g = 1,size(u,1)
+          rhog = u(g,1)
+          if (rhog<0.) rhog=0.
+          if (rhog<numer%minrho) then
+						       d = numer%minrho-rhog ! 0 < d < minrho
+						       if (opt.eq.1) then
+						          dref = maxamp * d/numer%minrho  ! 0 < dref < maxamp
+!			            ipdiff(g) = exp(dref) ! 1 < ipdiff(g) < exp(maxamp)
+						          ipdiff(g) = ipdiff(g) + exp(dref) - 1 ! 0 < ipdiff(g) < exp(maxamp)-1
+						       else if (opt==2) then
+						          ipdiff(g) = ipdiff(g) +  1./((1.-d/numer%minrho)*2+1./50.) - 1.
+						       endif
+          endif
+       end do
+    endif
+    
+    
   END SUBROUTINE computeIperDiffusion
 
   !*****************************************
@@ -923,12 +972,12 @@ CONTAINS
     integer, intent(in)  :: ifa, iel
     real*8, intent(out) :: tau(:, :)
 #ifdef NEUTRAL
-    real*8              :: tau_aux(5)
+    real*8              :: tau_aux(5),diff_iso(5,5,1),diff_ani(5,5,1)
 #else
-    real*8              :: tau_aux(4)
+    real*8              :: tau_aux(4),diff_iso(4,4,1),diff_ani(4,4,1)
 #endif
     integer             :: ndim
-    real*8 :: xc, yc, rad, h, aux, bn, bnorm
+    real*8 :: xc, yc, rad, h, aux, bn, bnorm,xyd(1,size(xy)),uu(1,size(uc)),bmod_d(1)
     real*8 :: U1, U2, U3, U4
     U1 = uc(1)
     U2 = uc(2)
@@ -939,7 +988,12 @@ CONTAINS
     ndim = size(n)
     bn = dot_product(b(1:ndim), n)
     bnorm = norm2(b(1:ndim))
-
+    xyd(1,:) = xy(:)
+    uu(1,:) = uc(:)
+    bmod_d = bmod
+    
+    call setLocalDiff(xyd, uu, diff_iso, diff_ani, bmod_d)
+    
     if (numer%stab == 2) then
       if (abs(isext - 1.) .lt. 1e-12) then
         ! exterior faces
@@ -1028,13 +1082,21 @@ CONTAINS
 #endif      
       else
 #endif
+!        ! Toroidal face
+!        tau_aux(1) = tau_aux(1) + phys%diff_n
+!        tau_aux(2) = tau_aux(2) + phys%diff_u
+!        tau_aux(3) = tau_aux(3) + phys%diff_e + abs(bn)*phys%diff_pari*up(7)**2.5*bnorm/uc(1)*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
+!        tau_aux(4) = tau_aux(4) + phys%diff_ee + abs(bn)*phys%diff_pare*up(8)**2.5*bnorm/uc(1)*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
+!#ifdef NEUTRAL
+!        tau_aux(5) = tau_aux(5) + phys%diff_nn
+!#endif
         ! Toroidal face
-        tau_aux(1) = tau_aux(1) + phys%diff_n
-        tau_aux(2) = tau_aux(2) + phys%diff_u
-        tau_aux(3) = tau_aux(3) + phys%diff_e + abs(bn)*phys%diff_pari*up(7)**2.5*bnorm/uc(1)*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
-        tau_aux(4) = tau_aux(4) + phys%diff_ee + abs(bn)*phys%diff_pare*up(8)**2.5*bnorm/uc(1)*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
+        tau_aux(1) = tau_aux(1) +  diff_iso(1,1,1)
+        tau_aux(2) = tau_aux(2) +  diff_iso(2,2,1)
+        tau_aux(3) = tau_aux(3) +  diff_iso(3,3,1) + abs(bn)*phys%diff_pari*up(7)**2.5*bnorm/uc(1)*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
+        tau_aux(4) = tau_aux(4) +  diff_iso(4,4,1) + abs(bn)*phys%diff_pare*up(8)**2.5*bnorm/uc(1)*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
 #ifdef NEUTRAL
-        tau_aux(5) = tau_aux(5) + phys%diff_nn
+        tau_aux(5) = tau_aux(5) +  diff_iso(5,5,1)
 #endif
 #ifdef TOR3D
       endif

@@ -51,7 +51,7 @@ for iproc = 1:nproc
 end
 if ~save
     Matrix = sparse(I(I~=0),J(I~=0),K(I~=0));
-    disp(['Error in global matrix: ', num2str(condest(Matrix),'%e')])
+    disp(['Condition number: ', num2str(condest(Matrix),'%e')])
 end
 
 end
