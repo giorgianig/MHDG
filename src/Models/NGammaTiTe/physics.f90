@@ -120,18 +120,28 @@ CONTAINS
     real*8, dimension(:, :), intent(out) :: up
     integer :: i
 
-    up(:, 1) = abs(ua(:, 1))                                                ! density
-    up(:, 2) = ua(:, 2)/ua(:, 1)                                            ! u parallel
-    up(:, 3) = ua(:, 3)/ua(:, 1)                                            ! total energy of ions
-    up(:, 4) = ua(:, 4)/ua(:, 1)                                            ! total energy of electrons
-    up(:, 5) = abs(2./(3.*phys%Mref)*(ua(:, 3) - 0.5*ua(:, 2)**2/ua(:, 1))) ! pressure of ions
+    real*8             :: U1,U5
+    real,parameter :: tol = 1e-6
+    U1 = ua(:,1)
+    if (U1<tol) U1=tol    
+#ifdef NEUTRAL    
+    U5 = ua(:,5)
+    if (U5<tol) U5=tol 
+#endif    
+   
+
+    up(:, 1) = U1                                                           ! density
+    up(:, 2) = ua(:, 2)/U1                                            ! u parallel
+    up(:, 3) = ua(:, 3)/U1                                            ! total energy of ions
+    up(:, 4) = ua(:, 4)/U1                                            ! total energy of electrons
+    up(:, 5) = abs(2./(3.*phys%Mref)*(ua(:, 3) - 0.5*ua(:, 2)**2/U1)) ! pressure of ions
     up(:, 6) = abs(2./(3.*phys%Mref)*ua(:, 4))                              ! pressure of electrons
-    up(:, 7) = up(:, 5)/up(:, 1)                                            ! temperature of ions
-    up(:, 8) = up(:, 6)/up(:, 1)                                            ! temperature of electrons
+    up(:, 7) = up(:, 5)/U1                                            ! temperature of ions
+    up(:, 8) = up(:, 6)/U1                                            ! temperature of electrons
     up(:, 9) = sqrt((up(:, 7) + up(:, 8))*phys%Mref)                        ! sound speed
     up(:, 10) = up(:, 2)/up(:, 9)                                           ! Mach
 #ifdef NEUTRAL
-    up(:,11) = abs(ua(:,5))                                                 ! density neutral
+    up(:,11) = U5                                                 ! density neutral
 #endif
   END SUBROUTINE cons2phys
 

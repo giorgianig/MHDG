@@ -1,4 +1,4 @@
-function HDF5readCSRmat(hdf5_file_gen,nproc,save)
+function Matrix = HDF5readCSRmat(hdf5_file_gen,nproc,save)
 if nargin == 2
     save = 0;
 end

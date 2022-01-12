@@ -228,6 +228,7 @@ PROGRAM MHDG
     write(6,*) "Adding density blob to initial solution"
   ENDIF
 
+
   ! Save solution
   CALL setSolName(save_name, mesh_name, 0, .true., .false.)
   CALL HDF5_save_solution(save_name)
@@ -289,14 +290,18 @@ PROGRAM MHDG
       !IF (switch_save.EQ.0) THEN
       !  WRITE (6, *) "Save matrix"
 !        call HDF5_save_CSR_matrix('Mat')
-      !  call HDF5_save_CSR_vector('rhs')
+!        call HDF5_save_CSR_vector('rhs')
+!        
+!        stop
       !  switch_save = 1
       !call displayMatrixInt(Mesh%F)
       !call displayMatrixInt(Mesh%extfaces)
       !call displayVectorInt(Mesh%periodic_faces)
 !      stop
-      !call print_matrices_hdf5
-      !stop
+!      if (ir==10) then
+!      call print_matrices_hdf5
+!      stop
+!      endif
       !ENDIF
       ! Solve linear system
       CALL solve_global_system()

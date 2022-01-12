@@ -13,7 +13,7 @@ mark = {'bo','ko','go','mo','yo','bo','bo','ko','go','mo','yo','bo'};
 % elemType = 1;
 % theta_forb = [280*pi/180]; % forbidden values for theta
 
-meshName  = 'Meshes/CircLimAlign_Quads_Nel360_P4.h5';
+meshName  = '../../test/ITER_YesHoleSmooth_Quads_Nel34566_P4.h5';
 ndiv = 8; % Number of divisions
 divType = 'rot';
 % divType = 'x';

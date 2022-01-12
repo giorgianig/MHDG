@@ -1,6 +1,6 @@
 % plot Fortran solution
 clear
-% close all
+close all
 
 global ntor theta
 
@@ -19,7 +19,7 @@ plotCons = 0; % Plot conservative variables
 phys_dimensional_plots = 1; % physical variables
 cons_dimensional_plots = 0; % conservative variables
 nref = 3; % plot order
-startPlot = 100; %default: 1 Starting number for plot (useful if no close all)
+startPlot = 50; %default: 1 Starting number for plot (useful if no close all)
 gatherplot = 0; %True to gather everything in one figure
 cbound = 0; %True: bound colorbar axis (to adapt the boundaries see below)
 
@@ -44,12 +44,12 @@ path2save = 'Img_MHDG/';
 HOME = '/home/giorgio/Dropbox/Fortran/MHDG_ref3.0/test/';
 solpath = [HOME];
 meshpath = [HOME];
-solname = 'Sol2D_ITER_YesHoleSmooth_Quads_Nel4934_P4_DPe0.100E+01_DPai0.314E+06_DPae0.105E+08_NR0007';
+solname = 'Sol2D_ITER_YesHoleSmooth_Quads_Nel17611_P4_DPe0.100E+01_DPai0.314E+06_DPae0.105E+08_0003';
 % solname = 'Sol2D_CircLimAlign_Quads_Nel208_P4_DPe0.100E+02_DPai0.314E+06_DPae0.105E+08_REF_IterCond';
 
 
 
-solname='Sol2D_CircLimAlign_Quads_Nel208_P4_DPe0.200E+01_DPai0.314E+06_DPae0.105E+08_NR0006'
+% solname='Sol2D_CircLimAlign_Quads_Nel208_P4_DPe0.200E+01_NR0001'
 
 
 %**********************************
@@ -206,7 +206,6 @@ for iproc = 1:nproc
                 end
                 name = simulation_parameters.physics.physical_variable_names{ii};
                 if strcmpi(name(1:4),'rhon')
-                    uplot(uplot<0) = 1e-15;
                     hold on, plotSolution(Mesh.X/Mesh.lscale,Mesh.T,abs(uplot),refEl,nref,cont,1,0,cpaxis(ii,:));axis off
                     if ~phys_dimensional_plots
                         caxis([-4 0])
