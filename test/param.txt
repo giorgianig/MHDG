@@ -145,6 +145,7 @@
     ! ****** Coefficients used only for testcase < 10 (otherwise computed internally)
     a                   = 25            ! Isothermal compressibility constant (p = a*rho)
     Mref                = 12.4926       ! Non-isothermal compressibility constant
+    !Mref = 12.5 			! used for convergence test only
     tie                 = -579.6657     ! temperature interchange coefficient ions-electrons
     diff_pari           = 10            ! (3.1475e5) parallel diffusion for the ions temperature
     diff_pare           = 20            ! (1.0492e7) parallel diffusion for the electron temperature

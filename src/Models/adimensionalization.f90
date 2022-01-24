@@ -84,7 +84,6 @@ SUBROUTINE adimensionalization()
   phys%dfcoef = 1.
   phys%c1 = 1.
   phys%c2 = 1.
-  phys%Mref = 1.
   phys%dexbcoef = 1.
 
 

@@ -623,7 +623,7 @@ CONTAINS
     CALL setLocalDiff(xyg,ufg,diff_iso_fac,diff_ani_fac,Bmod)
 
     ! Physical variables at Gauss points (division by 0 during convergence test!!!)
-    if ( switch%testcase .neqv. 2 ) then
+    if ( switch%testcase .ne. 2 ) then
     CALL cons2phys(ufg,upg)
     end if
 
