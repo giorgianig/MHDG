@@ -681,10 +681,32 @@ CONTAINS
     real*8, dimension(:, :), intent(OUT) :: f
     integer                            :: i, n
     real*8  :: a, b, xc, yc, D, mu, k
+    real*8  :: csii, csie, kpari, kpare, Mref, epn, tie, pcourr
+    integer:: j, ind, N1D, N2D
+    real*8 :: r, xx, yy, tt, xmax, xmin, ymax, ymin, xm, ym
+    real*8 :: aux
+    real*8 :: t1, t2, t3, t4, t5, t6, t7, t8, t9, t10
+    real*8 :: t11, t12, t13, t14, t15, t16, t17, t18, t19, t20
+    real*8 :: t21, t22, t23, t24, t25, t26, t27, t28, t29, t30
+    real*8 :: t31, t32, t33, t34, t35, t36, t37, t38, t39, t40
+    real*8 :: t41, t42, t43, t44, t45, t46, t47, t48, t49, t50
+    real*8 :: t51, t52, t53, t54, t55, t56, t57, t58, t59, t60
+    real*8 :: t61, t62, t63, t64, t65, t66, t67, t68, t69, t70
+    real*8 :: cx, cy, sx, sy, cx2, sx2, cy2, sy2, r2, cc, ss, ct, st
 
     n = size(x)
 
     f = 0.
+    a = 2*pi
+
+    xmax = Mesh%xmax
+    xmin = Mesh%xmin
+    ymax = Mesh%ymax
+    ymin = Mesh%ymin
+    xm = 0.5*(xmax + xmin)
+    ym = 0.5*(ymax + ymin)
+
+
     SELECT CASE (switch%testcase)
     CASE (1)
       ! Circular field centered in [xc, yc], n = 2+sin(2*pi*x)*sin(2*pi*y),  u = cos(2*pi*x)*cos(2*pi*y)
@@ -719,8 +741,375 @@ CONTAINS
       D = phys%diff_n
       mu = phys%diff_u
       k = phys%a
-      f(:, 1) = 0.
-      f(:, 2) = 0.
+      Mref = phys%Mref
+      DO i=1,size(x)
+      xx = x(i)
+      yy = y(i)
+      f(i, 1) = (1.0D0/(xm*xx*(-2.0D0) - ym*yy*2.0D0 + xm**2 + xx**2*2.0D0 + ym**2 + yy&
+     &**2)**2*(-D*a*xm**4*cos(a*xx)*sin(a*yy)-D*a*xx**4*cos(a*xx)*sin(a*&
+     &yy)*6.0D0+a*xx**5*cos(a*xx)*sin(a*yy)*(1.0D0/xx**2*(xm-xx)**2+1.0D&
+     &0/xx**2*(ym-yy)**2+1.0D0)**(3.0D0/2.0D0)*2.0D0-xx*ym**3*cos(a*xx)*&
+     &cos(a*yy)*sqrt(1.0D0/xx**2*(xm-xx)**2+1.0D0/xx**2*(ym-yy)**2+1.0D0&
+     &)*2.0D0-xx**3*ym*cos(a*xx)*cos(a*yy)*sqrt(1.0D0/xx**2*(xm-xx)**2+1&
+     &.0D0/xx**2*(ym-yy)**2+1.0D0)*2.0D0+xx*yy**3*cos(a*xx)*cos(a*yy)*sq&
+     &rt(1.0D0/xx**2*(xm-xx)**2+1.0D0/xx**2*(ym-yy)**2+1.0D0)*2.0D0+xx**&
+     &3*yy*cos(a*xx)*cos(a*yy)*sqrt(1.0D0/xx**2*(xm-xx)**2+1.0D0/xx**2*(&
+     &ym-yy)**2+1.0D0)*2.0D0+D*a**2*xx**5*sin(a*xx)*sin(a*yy)*6.0D0-D*a*&
+     &*2*xm*xx**4*sin(a*xx)*sin(a*yy)*1.0D+1+D*a**2*xm**4*xx*sin(a*xx)*s&
+     &in(a*yy)+D*a**2*xx*ym**4*sin(a*xx)*sin(a*yy)+D*a**2*xx*yy**4*sin(a&
+     &*xx)*sin(a*yy)-a*xx**5*cos(a*xx)*cos(a*yy)**2*sin(a*xx)*(1.0D0/xx*&
+     &*2*(xm-xx)**2+1.0D0/xx**2*(ym-yy)**2+1.0D0)**(3.0D0/2.0D0)+a*xx**5&
+     &*cos(a*xx)*sin(a*xx)*sin(a*yy)**2*(1.0D0/xx**2*(xm-xx)**2+1.0D0/xx&
+     &**2*(ym-yy)**2+1.0D0)**(3.0D0/2.0D0)+D*a**2*xx**2*ym**3*cos(a*xx)*&
+     &cos(a*yy)*2.0D0-D*a**2*xx**2*yy**3*cos(a*xx)*cos(a*yy)*2.0D0+D*a**&
+     &2*xm**2*xx**3*sin(a*xx)*sin(a*yy)*9.0D0-D*a**2*xm**3*xx**2*sin(a*x&
+     &x)*sin(a*yy)*4.0D0+D*a**2*xx**3*ym**2*sin(a*xx)*sin(a*yy)*5.0D0+D*&
+     &a**2*xx**3*yy**2*sin(a*xx)*sin(a*yy)*5.0D0+D*a*xm*xx**3*cos(a*xx)*&
+     &sin(a*yy)*1.2D+1+D*a*xm**3*xx*cos(a*xx)*sin(a*yy)*5.0D0-D*a*xm*ym*&
+     &*3*cos(a*yy)*sin(a*xx)-D*a*xm**3*ym*cos(a*yy)*sin(a*xx)+D*a*xx*ym*&
+     &*3*cos(a*yy)*sin(a*xx)*2.0D0+D*a*xx**3*ym*cos(a*yy)*sin(a*xx)*2.0D&
+     &0+D*a*xm*yy**3*cos(a*yy)*sin(a*xx)+D*a*xm**3*yy*cos(a*yy)*sin(a*xx&
+     &)-D*a*xx*yy**3*cos(a*yy)*sin(a*xx)*2.0D0-D*a*xx**3*yy*cos(a*yy)*si&
+     &n(a*xx)*2.0D0-a*xm*xx**4*cos(a*xx)*sin(a*yy)*(1.0D0/xx**2*(xm-xx)*&
+     &*2+1.0D0/xx**2*(ym-yy)**2+1.0D0)**(3.0D0/2.0D0)*2.0D0+a*xx**4*ym*c&
+     &os(a*yy)*sin(a*xx)*(1.0D0/xx**2*(xm-xx)**2+1.0D0/xx**2*(ym-yy)**2+&
+     &1.0D0)**(3.0D0/2.0D0)*2.0D0-a*xx**4*yy*cos(a*yy)*sin(a*xx)*(1.0D0/&
+     &xx**2*(xm-xx)**2+1.0D0/xx**2*(ym-yy)**2+1.0D0)**(3.0D0/2.0D0)*2.0D&
+     &0+xm*xx**2*ym*cos(a*xx)*cos(a*yy)*sqrt(1.0D0/xx**2*(xm-xx)**2+1.0D&
+     &0/xx**2*(ym-yy)**2+1.0D0)*4.0D0-xm**2*xx*ym*cos(a*xx)*cos(a*yy)*sq&
+     &rt(1.0D0/xx**2*(xm-xx)**2+1.0D0/xx**2*(ym-yy)**2+1.0D0)*2.0D0-xm*x&
+     &x**2*yy*cos(a*xx)*cos(a*yy)*sqrt(1.0D0/xx**2*(xm-xx)**2+1.0D0/xx**&
+     &2*(ym-yy)**2+1.0D0)*4.0D0+xm**2*xx*yy*cos(a*xx)*cos(a*yy)*sqrt(1.0&
+     &D0/xx**2*(xm-xx)**2+1.0D0/xx**2*(ym-yy)**2+1.0D0)*2.0D0-xx*ym*yy**&
+     &2*cos(a*xx)*cos(a*yy)*sqrt(1.0D0/xx**2*(xm-xx)**2+1.0D0/xx**2*(ym-&
+     &yy)**2+1.0D0)*6.0D0+xx*ym**2*yy*cos(a*xx)*cos(a*yy)*sqrt(1.0D0/xx*&
+     &*2*(xm-xx)**2+1.0D0/xx**2*(ym-yy)**2+1.0D0)*6.0D0+D*a**2*xx**4*ym*&
+     &cos(a*xx)*cos(a*yy)*4.0D0-D*a**2*xx**4*yy*cos(a*xx)*cos(a*yy)*4.0D&
+     &0-D*a*xm**2*xx**2*cos(a*xx)*sin(a*yy)*1.1D+1-D*a*xm**2*ym**2*cos(a&
+     &*xx)*sin(a*yy)-D*a*xx**2*ym**2*cos(a*xx)*sin(a*yy)*5.0D0-D*a*xm**2&
+     &*yy**2*cos(a*xx)*sin(a*yy)-D*a*xx**2*yy**2*cos(a*xx)*sin(a*yy)*5.0&
+     &D0+D*a*xm*xx*ym**2*cos(a*xx)*sin(a*yy)*3.0D0-D*a*xm*xx**2*ym*cos(a&
+     &*yy)*sin(a*xx)*4.0D0+D*a*xm**2*xx*ym*cos(a*yy)*sin(a*xx)*4.0D0+D*a&
+     &*xm*xx*yy**2*cos(a*xx)*sin(a*yy)*3.0D0+D*a*xm*xx**2*yy*cos(a*yy)*s&
+     &in(a*xx)*4.0D0-D*a*xm**2*xx*yy*cos(a*yy)*sin(a*xx)*4.0D0-D*a*xm*ym&
+     &*yy**2*cos(a*yy)*sin(a*xx)*3.0D0+D*a*xm*ym**2*yy*cos(a*yy)*sin(a*x&
+     &x)*3.0D0+D*a*xm**2*ym*yy*cos(a*xx)*sin(a*yy)*2.0D0+D*a*xx*ym*yy**2&
+     &*cos(a*yy)*sin(a*xx)*6.0D0-D*a*xx*ym**2*yy*cos(a*yy)*sin(a*xx)*6.0&
+     &D0+D*a*xx**2*ym*yy*cos(a*xx)*sin(a*yy)*1.0D+1-D*a**2*xm*xx*ym**3*c&
+     &os(a*xx)*cos(a*yy)*2.0D0-D*a**2*xm*xx**3*ym*cos(a*xx)*cos(a*yy)*8.&
+     &0D0-D*a**2*xm**3*xx*ym*cos(a*xx)*cos(a*yy)*2.0D0+D*a**2*xm*xx*yy**&
+     &3*cos(a*xx)*cos(a*yy)*2.0D0+D*a**2*xm*xx**3*yy*cos(a*xx)*cos(a*yy)&
+     &*8.0D0+D*a**2*xm**3*xx*yy*cos(a*xx)*cos(a*yy)*2.0D0-D*a**2*xx*ym*y&
+     &y**3*sin(a*xx)*sin(a*yy)*4.0D0-D*a**2*xx*ym**3*yy*sin(a*xx)*sin(a*&
+     &yy)*4.0D0-D*a**2*xx**3*ym*yy*sin(a*xx)*sin(a*yy)*1.0D+1-xx*ym**3*c&
+     &os(a*xx)*cos(a*yy)*sin(a*xx)*sin(a*yy)*sqrt(1.0D0/xx**2*(xm-xx)**2&
+     &+1.0D0/xx**2*(ym-yy)**2+1.0D0)-xx**3*ym*cos(a*xx)*cos(a*yy)*sin(a*&
+     &xx)*sin(a*yy)*sqrt(1.0D0/xx**2*(xm-xx)**2+1.0D0/xx**2*(ym-yy)**2+1&
+     &.0D0)+xx*yy**3*cos(a*xx)*cos(a*yy)*sin(a*xx)*sin(a*yy)*sqrt(1.0D0/&
+     &xx**2*(xm-xx)**2+1.0D0/xx**2*(ym-yy)**2+1.0D0)+xx**3*yy*cos(a*xx)*&
+     &cos(a*yy)*sin(a*xx)*sin(a*yy)*sqrt(1.0D0/xx**2*(xm-xx)**2+1.0D0/xx&
+     &**2*(ym-yy)**2+1.0D0)+a*xm*xx**4*cos(a*xx)*cos(a*yy)**2*sin(a*xx)*&
+     &(1.0D0/xx**2*(xm-xx)**2+1.0D0/xx**2*(ym-yy)**2+1.0D0)**(3.0D0/2.0D&
+     &0)-a*xx**4*ym*cos(a*xx)**2*cos(a*yy)*sin(a*yy)*(1.0D0/xx**2*(xm-xx&
+     &)**2+1.0D0/xx**2*(ym-yy)**2+1.0D0)**(3.0D0/2.0D0)+a*xx**4*yy*cos(a&
+     &*xx)**2*cos(a*yy)*sin(a*yy)*(1.0D0/xx**2*(xm-xx)**2+1.0D0/xx**2*(y&
+     &m-yy)**2+1.0D0)**(3.0D0/2.0D0)-a*xm*xx**4*cos(a*xx)*sin(a*xx)*sin(&
+     &a*yy)**2*(1.0D0/xx**2*(xm-xx)**2+1.0D0/xx**2*(ym-yy)**2+1.0D0)**(3&
+     &.0D0/2.0D0)+a*xx**4*ym*cos(a*yy)*sin(a*xx)**2*sin(a*yy)*(1.0D0/xx*&
+     &*2*(xm-xx)**2+1.0D0/xx**2*(ym-yy)**2+1.0D0)**(3.0D0/2.0D0)-a*xx**4&
+     &*yy*cos(a*yy)*sin(a*xx)**2*sin(a*yy)*(1.0D0/xx**2*(xm-xx)**2+1.0D0&
+     &/xx**2*(ym-yy)**2+1.0D0)**(3.0D0/2.0D0)+D*a**2*xm**2*xx**2*ym*cos(&
+     &a*xx)*cos(a*yy)*6.0D0-D*a**2*xm**2*xx**2*yy*cos(a*xx)*cos(a*yy)*6.&
+     &0D0+D*a**2*xx**2*ym*yy**2*cos(a*xx)*cos(a*yy)*6.0D0-D*a**2*xx**2*y&
+     &m**2*yy*cos(a*xx)*cos(a*yy)*6.0D0-D*a**2*xm*xx**2*ym**2*sin(a*xx)*&
+     &sin(a*yy)*4.0D0+D*a**2*xm**2*xx*ym**2*sin(a*xx)*sin(a*yy)*2.0D0-D*&
+     &a**2*xm*xx**2*yy**2*sin(a*xx)*sin(a*yy)*4.0D0+D*a**2*xm**2*xx*yy**&
+     &2*sin(a*xx)*sin(a*yy)*2.0D0+D*a**2*xx*ym**2*yy**2*sin(a*xx)*sin(a*&
+     &yy)*6.0D0+D*a**2*xm*xx**2*ym*yy*sin(a*xx)*sin(a*yy)*8.0D0-D*a**2*x&
+     &m**2*xx*ym*yy*sin(a*xx)*sin(a*yy)*4.0D0+xm*xx**2*ym*cos(a*xx)*cos(&
+     &a*yy)*sin(a*xx)*sin(a*yy)*sqrt(1.0D0/xx**2*(xm-xx)**2+1.0D0/xx**2*&
+     &(ym-yy)**2+1.0D0)*2.0D0-xm**2*xx*ym*cos(a*xx)*cos(a*yy)*sin(a*xx)*&
+     &sin(a*yy)*sqrt(1.0D0/xx**2*(xm-xx)**2+1.0D0/xx**2*(ym-yy)**2+1.0D0&
+     &)-xm*xx**2*yy*cos(a*xx)*cos(a*yy)*sin(a*xx)*sin(a*yy)*sqrt(1.0D0/x&
+     &x**2*(xm-xx)**2+1.0D0/xx**2*(ym-yy)**2+1.0D0)*2.0D0+xm**2*xx*yy*co&
+     &s(a*xx)*cos(a*yy)*sin(a*xx)*sin(a*yy)*sqrt(1.0D0/xx**2*(xm-xx)**2+&
+     &1.0D0/xx**2*(ym-yy)**2+1.0D0)-xx*ym*yy**2*cos(a*xx)*cos(a*yy)*sin(&
+     &a*xx)*sin(a*yy)*sqrt(1.0D0/xx**2*(xm-xx)**2+1.0D0/xx**2*(ym-yy)**2&
+     &+1.0D0)*3.0D0+xx*ym**2*yy*cos(a*xx)*cos(a*yy)*sin(a*xx)*sin(a*yy)*&
+     &sqrt(1.0D0/xx**2*(xm-xx)**2+1.0D0/xx**2*(ym-yy)**2+1.0D0)*3.0D0-D*&
+     &a*xm*xx*ym*yy*cos(a*xx)*sin(a*yy)*6.0D0-D*a**2*xm*xx*ym*yy**2*cos(&
+     &a*xx)*cos(a*yy)*6.0D0+D*a**2*xm*xx*ym**2*yy*cos(a*xx)*cos(a*yy)*6.&
+     &0D0))/xx
+
+     f(i,2) = (1.0D0/(xm*xx*(-2.0D0)-ym*yy*2.0D0+xm**2+xx**2*2.0D0+ym**2+yy&
+     &**2)**2*(a*mu*xm**4*cos(a*yy)*sin(a*xx)*2.0D0+a*mu*xx**4*cos(a*yy)&
+     &*sin(a*xx)*1.2D+1+a**2*mu*xx**5*cos(a*xx)*cos(a*yy)*1.2D+1-xx*ym**&
+     &3*cos(a*xx)**2*cos(a*yy)**2*sqrt(1.0D0/xx**2*(xm-xx)**2+1.0D0/xx**&
+     &2*(ym-yy)**2+1.0D0)*2.0D0-xx**3*ym*cos(a*xx)**2*cos(a*yy)**2*sqrt(&
+     &1.0D0/xx**2*(xm-xx)**2+1.0D0/xx**2*(ym-yy)**2+1.0D0)*2.0D0+xx*yy**&
+     &3*cos(a*xx)**2*cos(a*yy)**2*sqrt(1.0D0/xx**2*(xm-xx)**2+1.0D0/xx**&
+     &2*(ym-yy)**2+1.0D0)*2.0D0+xx**3*yy*cos(a*xx)**2*cos(a*yy)**2*sqrt(&
+     &1.0D0/xx**2*(xm-xx)**2+1.0D0/xx**2*(ym-yy)**2+1.0D0)*2.0D0+D*a**2*&
+     &xx**2*ym**3*cos(a*xx)**2*cos(a*yy)**2*2.0D0-D*a**2*xx**2*yy**3*cos&
+     &(a*xx)**2*cos(a*yy)**2*2.0D0-a**2*mu*xm*xx**4*cos(a*xx)*cos(a*yy)*&
+     &2.0D+1+a**2*mu*xm**4*xx*cos(a*xx)*cos(a*yy)*2.0D0+a**2*mu*xx*ym**4&
+     &*cos(a*xx)*cos(a*yy)*2.0D0+a**2*mu*xx*yy**4*cos(a*xx)*cos(a*yy)*2.&
+     &0D0-D*a**2*xx**2*ym**3*cos(a*xx)**2*sin(a*yy)**2-D*a**2*xx**2*ym**&
+     &3*cos(a*yy)**2*sin(a*xx)**2+D*a**2*xx**2*yy**3*cos(a*xx)**2*sin(a*&
+     &yy)**2+D*a**2*xx**2*yy**3*cos(a*yy)**2*sin(a*xx)**2-D*a*xm**4*cos(&
+     &a*xx)**2*cos(a*yy)*sin(a*yy)-D*a*xx**4*cos(a*xx)**2*cos(a*yy)*sin(&
+     &a*yy)*6.0D0+a*mu*xm**2*xx**2*cos(a*yy)*sin(a*xx)*2.2D+1+a*mu*xm**2&
+     &*ym**2*cos(a*yy)*sin(a*xx)*2.0D0+a*mu*xx**2*ym**2*cos(a*yy)*sin(a*&
+     &xx)*1.0D+1+a*mu*xm**2*yy**2*cos(a*yy)*sin(a*xx)*2.0D0+a*mu*xx**2*y&
+     &y**2*cos(a*yy)*sin(a*xx)*1.0D+1+a*xx**5*cos(a*xx)**2*cos(a*yy)*sin&
+     &(a*yy)*(1.0D0/xx**2*(xm-xx)**2+1.0D0/xx**2*(ym-yy)**2+1.0D0)**(3.0&
+     &D0/2.0D0)*4.0D0+a**2*mu*xx**4*ym*sin(a*xx)*sin(a*yy)*8.0D0-a**2*mu&
+     &*xx**4*yy*sin(a*xx)*sin(a*yy)*8.0D0-a**2*mu*xx**2*ym**3*cos(a*xx)*&
+     &*2*sin(a*yy)**2-a**2*mu*xx**2*ym**3*cos(a*yy)**2*sin(a*xx)**2+a**2&
+     &*mu*xx**2*yy**3*cos(a*xx)**2*sin(a*yy)**2+a**2*mu*xx**2*yy**3*cos(&
+     &a*yy)**2*sin(a*xx)**2+a**2*mu*xx**2*ym**3*sin(a*xx)**2*sin(a*yy)**&
+     &2*2.0D0-a**2*mu*xx**2*yy**3*sin(a*xx)**2*sin(a*yy)**2*2.0D0+a*mu*x&
+     &m**4*cos(a*yy)*sin(a*xx)**2*sin(a*yy)+a*mu*xx**4*cos(a*yy)*sin(a*x&
+     &x)**2*sin(a*yy)*6.0D0+xm*xx**2*ym*cos(a*xx)**2*cos(a*yy)**2*sqrt(1&
+     &.0D0/xx**2*(xm-xx)**2+1.0D0/xx**2*(ym-yy)**2+1.0D0)*4.0D0-xm**2*xx&
+     &*ym*cos(a*xx)**2*cos(a*yy)**2*sqrt(1.0D0/xx**2*(xm-xx)**2+1.0D0/xx&
+     &**2*(ym-yy)**2+1.0D0)*2.0D0-xm*xx**2*yy*cos(a*xx)**2*cos(a*yy)**2*&
+     &sqrt(1.0D0/xx**2*(xm-xx)**2+1.0D0/xx**2*(ym-yy)**2+1.0D0)*4.0D0+xm&
+     &**2*xx*yy*cos(a*xx)**2*cos(a*yy)**2*sqrt(1.0D0/xx**2*(xm-xx)**2+1.&
+     &0D0/xx**2*(ym-yy)**2+1.0D0)*2.0D0-xx*ym*yy**2*cos(a*xx)**2*cos(a*y&
+     &y)**2*sqrt(1.0D0/xx**2*(xm-xx)**2+1.0D0/xx**2*(ym-yy)**2+1.0D0)*6.&
+     &0D0+xx*ym**2*yy*cos(a*xx)**2*cos(a*yy)**2*sqrt(1.0D0/xx**2*(xm-xx)&
+     &**2+1.0D0/xx**2*(ym-yy)**2+1.0D0)*6.0D0+a**2*mu*xm**2*xx**3*cos(a*&
+     &xx)*cos(a*yy)*1.8D+1-a**2*mu*xm**3*xx**2*cos(a*xx)*cos(a*yy)*8.0D0&
+     &+a**2*mu*xx**3*ym**2*cos(a*xx)*cos(a*yy)*1.0D+1+a**2*mu*xx**3*yy**&
+     &2*cos(a*xx)*cos(a*yy)*1.0D+1-Mref*a*xx**5*cos(a*yy)*sin(a*xx)*(1.0&
+     &D0/xx**2*(xm-xx)**2+1.0D0/xx**2*(ym-yy)**2+1.0D0)**(3.0D0/2.0D0)*2&
+     &.0D0-a*xx**5*cos(a*xx)**2*cos(a*yy)**3*sin(a*xx)*(1.0D0/xx**2*(xm-&
+     &xx)**2+1.0D0/xx**2*(ym-yy)**2+1.0D0)**(3.0D0/2.0D0)+a**2*mu*xx**2*&
+     &ym**3*sin(a*xx)*sin(a*yy)*4.0D0-a**2*mu*xx**2*yy**3*sin(a*xx)*sin(&
+     &a*yy)*4.0D0+D*a**2*xx**4*ym*cos(a*xx)**2*cos(a*yy)**2*4.0D0-D*a**2&
+     &*xx**4*yy*cos(a*xx)**2*cos(a*yy)**2*4.0D0-D*a**2*xx**4*ym*cos(a*xx&
+     &)**2*sin(a*yy)**2*2.0D0-D*a**2*xx**4*ym*cos(a*yy)**2*sin(a*xx)**2*&
+     &2.0D0+D*a**2*xx**4*yy*cos(a*xx)**2*sin(a*yy)**2*2.0D0+D*a**2*xx**4&
+     &*yy*cos(a*yy)**2*sin(a*xx)**2*2.0D0-a*mu*xm*xx**3*cos(a*yy)*sin(a*&
+     &xx)*2.4D+1-a*mu*xm**3*xx*cos(a*yy)*sin(a*xx)*1.0D+1+a*mu*xm*ym**3*&
+     &cos(a*xx)*sin(a*yy)*2.0D0+a*mu*xm**3*ym*cos(a*xx)*sin(a*yy)*2.0D0-&
+     &a*mu*xx*ym**3*cos(a*xx)*sin(a*yy)*4.0D0-a*mu*xx**3*ym*cos(a*xx)*si&
+     &n(a*yy)*4.0D0-a*mu*xm*yy**3*cos(a*xx)*sin(a*yy)*2.0D0-a*mu*xm**3*y&
+     &y*cos(a*xx)*sin(a*yy)*2.0D0+a*mu*xx*yy**3*cos(a*xx)*sin(a*yy)*4.0D&
+     &0+a*mu*xx**3*yy*cos(a*xx)*sin(a*yy)*4.0D0-a**2*mu*xx**4*ym*cos(a*x&
+     &x)**2*sin(a*yy)**2*2.0D0-a**2*mu*xx**4*ym*cos(a*yy)**2*sin(a*xx)**&
+     &2*2.0D0+a**2*mu*xx**4*yy*cos(a*xx)**2*sin(a*yy)**2*2.0D0+a**2*mu*x&
+     &x**4*yy*cos(a*yy)**2*sin(a*xx)**2*2.0D0+a**2*mu*xx**4*ym*sin(a*xx)&
+     &**2*sin(a*yy)**2*4.0D0-a**2*mu*xx**4*yy*sin(a*xx)**2*sin(a*yy)**2*&
+     &4.0D0+a*xm*xx**4*cos(a*xx)**2*cos(a*yy)**3*sin(a*xx)*(1.0D0/xx**2*&
+     &(xm-xx)**2+1.0D0/xx**2*(ym-yy)**2+1.0D0)**(3.0D0/2.0D0)-a*xx**4*ym&
+     &*cos(a*xx)**3*cos(a*yy)**2*sin(a*yy)*(1.0D0/xx**2*(xm-xx)**2+1.0D0&
+     &/xx**2*(ym-yy)**2+1.0D0)**(3.0D0/2.0D0)+a*xx**4*yy*cos(a*xx)**3*co&
+     &s(a*yy)**2*sin(a*yy)*(1.0D0/xx**2*(xm-xx)**2+1.0D0/xx**2*(ym-yy)**&
+     &2+1.0D0)**(3.0D0/2.0D0)+a**2*mu*xm**2*xx**2*ym*sin(a*xx)*sin(a*yy)&
+     &*1.2D+1-a**2*mu*xm**2*xx**2*yy*sin(a*xx)*sin(a*yy)*1.2D+1+a**2*mu*&
+     &xx**2*ym*yy**2*sin(a*xx)*sin(a*yy)*1.2D+1-a**2*mu*xx**2*ym**2*yy*s&
+     &in(a*xx)*sin(a*yy)*1.2D+1-D*a**2*xm*xx*ym**3*cos(a*xx)**2*cos(a*yy&
+     &)**2*2.0D0-D*a**2*xm*xx**3*ym*cos(a*xx)**2*cos(a*yy)**2*8.0D0-D*a*&
+     &*2*xm**3*xx*ym*cos(a*xx)**2*cos(a*yy)**2*2.0D0+D*a**2*xm*xx*yy**3*&
+     &cos(a*xx)**2*cos(a*yy)**2*2.0D0+D*a**2*xm*xx**3*yy*cos(a*xx)**2*co&
+     &s(a*yy)**2*8.0D0+D*a**2*xm**3*xx*yy*cos(a*xx)**2*cos(a*yy)**2*2.0D&
+     &0+a*mu*xm**2*xx**2*cos(a*yy)*sin(a*xx)**2*sin(a*yy)*1.1D+1+a*mu*xm&
+     &**2*ym**2*cos(a*yy)*sin(a*xx)**2*sin(a*yy)+a*mu*xx**2*ym**2*cos(a*&
+     &yy)*sin(a*xx)**2*sin(a*yy)*5.0D0+a*mu*xm**2*yy**2*cos(a*yy)*sin(a*&
+     &xx)**2*sin(a*yy)+a*mu*xx**2*yy**2*cos(a*yy)*sin(a*xx)**2*sin(a*yy)&
+     &*5.0D0+D*a**2*xm*xx*ym**3*cos(a*xx)**2*sin(a*yy)**2+D*a**2*xm*xx*y&
+     &m**3*cos(a*yy)**2*sin(a*xx)**2+D*a**2*xm*xx**3*ym*cos(a*xx)**2*sin&
+     &(a*yy)**2*4.0D0+D*a**2*xm*xx**3*ym*cos(a*yy)**2*sin(a*xx)**2*4.0D0&
+     &+D*a**2*xm**3*xx*ym*cos(a*xx)**2*sin(a*yy)**2+D*a**2*xm**3*xx*ym*c&
+     &os(a*yy)**2*sin(a*xx)**2-D*a**2*xm*xx*yy**3*cos(a*xx)**2*sin(a*yy)&
+     &**2-D*a**2*xm*xx*yy**3*cos(a*yy)**2*sin(a*xx)**2-D*a**2*xm*xx**3*y&
+     &y*cos(a*xx)**2*sin(a*yy)**2*4.0D0-D*a**2*xm*xx**3*yy*cos(a*yy)**2*&
+     &sin(a*xx)**2*4.0D0-D*a**2*xm**3*xx*yy*cos(a*xx)**2*sin(a*yy)**2-D*&
+     &a**2*xm**3*xx*yy*cos(a*yy)**2*sin(a*xx)**2+a*xx**5*cos(a*xx)**2*co&
+     &s(a*yy)*sin(a*xx)*sin(a*yy)**2*(1.0D0/xx**2*(xm-xx)**2+1.0D0/xx**2&
+     &*(ym-yy)**2+1.0D0)**(3.0D0/2.0D0)*2.0D0-a*mu*xm*xx*ym**2*cos(a*yy)&
+     &*sin(a*xx)*6.0D0+a*mu*xm*xx**2*ym*cos(a*xx)*sin(a*yy)*8.0D0-a*mu*x&
+     &m**2*xx*ym*cos(a*xx)*sin(a*yy)*8.0D0-a*mu*xm*xx*yy**2*cos(a*yy)*si&
+     &n(a*xx)*6.0D0-a*mu*xm*xx**2*yy*cos(a*xx)*sin(a*yy)*8.0D0+a*mu*xm**&
+     &2*xx*yy*cos(a*xx)*sin(a*yy)*8.0D0+a*mu*xm*ym*yy**2*cos(a*xx)*sin(a&
+     &*yy)*6.0D0-a*mu*xm*ym**2*yy*cos(a*xx)*sin(a*yy)*6.0D0-a*mu*xm**2*y&
+     &m*yy*cos(a*yy)*sin(a*xx)*4.0D0-a*mu*xx*ym*yy**2*cos(a*xx)*sin(a*yy&
+     &)*1.2D+1+a*mu*xx*ym**2*yy*cos(a*xx)*sin(a*yy)*1.2D+1-a*mu*xx**2*ym&
+     &*yy*cos(a*yy)*sin(a*xx)*2.0D+1-xx*ym**3*cos(a*xx)**2*cos(a*yy)**2*&
+     &sin(a*xx)*sin(a*yy)*sqrt(1.0D0/xx**2*(xm-xx)**2+1.0D0/xx**2*(ym-yy&
+     &)**2+1.0D0)-xx**3*ym*cos(a*xx)**2*cos(a*yy)**2*sin(a*xx)*sin(a*yy)&
+     &*sqrt(1.0D0/xx**2*(xm-xx)**2+1.0D0/xx**2*(ym-yy)**2+1.0D0)+xx*yy**&
+     &3*cos(a*xx)**2*cos(a*yy)**2*sin(a*xx)*sin(a*yy)*sqrt(1.0D0/xx**2*(&
+     &xm-xx)**2+1.0D0/xx**2*(ym-yy)**2+1.0D0)+xx**3*yy*cos(a*xx)**2*cos(&
+     &a*yy)**2*sin(a*xx)*sin(a*yy)*sqrt(1.0D0/xx**2*(xm-xx)**2+1.0D0/xx*&
+     &*2*(ym-yy)**2+1.0D0)+a**2*mu*xm*xx*ym**3*cos(a*xx)**2*sin(a*yy)**2&
+     &+a**2*mu*xm*xx*ym**3*cos(a*yy)**2*sin(a*xx)**2+a**2*mu*xm*xx**3*ym&
+     &*cos(a*xx)**2*sin(a*yy)**2*4.0D0+a**2*mu*xm*xx**3*ym*cos(a*yy)**2*&
+     &sin(a*xx)**2*4.0D0+a**2*mu*xm**3*xx*ym*cos(a*xx)**2*sin(a*yy)**2+a&
+     &**2*mu*xm**3*xx*ym*cos(a*yy)**2*sin(a*xx)**2-a**2*mu*xm*xx*yy**3*c&
+     &os(a*xx)**2*sin(a*yy)**2-a**2*mu*xm*xx*yy**3*cos(a*yy)**2*sin(a*xx&
+     &)**2-a**2*mu*xm*xx**3*yy*cos(a*xx)**2*sin(a*yy)**2*4.0D0-a**2*mu*x&
+     &m*xx**3*yy*cos(a*yy)**2*sin(a*xx)**2*4.0D0-a**2*mu*xm**3*xx*yy*cos&
+     &(a*xx)**2*sin(a*yy)**2-a**2*mu*xm**3*xx*yy*cos(a*yy)**2*sin(a*xx)*&
+     &*2-a**2*mu*xm*xx*ym**3*sin(a*xx)**2*sin(a*yy)**2*2.0D0-a**2*mu*xm*&
+     &xx**3*ym*sin(a*xx)**2*sin(a*yy)**2*8.0D0-a**2*mu*xm**3*xx*ym*sin(a&
+     &*xx)**2*sin(a*yy)**2*2.0D0+a**2*mu*xm*xx*yy**3*sin(a*xx)**2*sin(a*&
+     &yy)**2*2.0D0+a**2*mu*xm*xx**3*yy*sin(a*xx)**2*sin(a*yy)**2*8.0D0+a&
+     &**2*mu*xm**3*xx*yy*sin(a*xx)**2*sin(a*yy)**2*2.0D0+D*a**2*xm**2*xx&
+     &**2*ym*cos(a*xx)**2*cos(a*yy)**2*6.0D0-D*a**2*xm**2*xx**2*yy*cos(a&
+     &*xx)**2*cos(a*yy)**2*6.0D0+D*a**2*xx**2*ym*yy**2*cos(a*xx)**2*cos(&
+     &a*yy)**2*6.0D0-D*a**2*xx**2*ym**2*yy*cos(a*xx)**2*cos(a*yy)**2*6.0&
+     &D0-a**2*mu*xx*ym*yy**3*cos(a*xx)*cos(a*yy)*8.0D0-a**2*mu*xx*ym**3*&
+     &yy*cos(a*xx)*cos(a*yy)*8.0D0-a**2*mu*xx**3*ym*yy*cos(a*xx)*cos(a*y&
+     &y)*2.0D+1-D*a**2*xm**2*xx**2*ym*cos(a*xx)**2*sin(a*yy)**2*3.0D0-D*&
+     &a**2*xm**2*xx**2*ym*cos(a*yy)**2*sin(a*xx)**2*3.0D0+D*a**2*xm**2*x&
+     &x**2*yy*cos(a*xx)**2*sin(a*yy)**2*3.0D0+D*a**2*xm**2*xx**2*yy*cos(&
+     &a*yy)**2*sin(a*xx)**2*3.0D0-D*a**2*xx**2*ym*yy**2*cos(a*xx)**2*sin&
+     &(a*yy)**2*3.0D0-D*a**2*xx**2*ym*yy**2*cos(a*yy)**2*sin(a*xx)**2*3.&
+     &0D0+D*a**2*xx**2*ym**2*yy*cos(a*xx)**2*sin(a*yy)**2*3.0D0+D*a**2*x&
+     &x**2*ym**2*yy*cos(a*yy)**2*sin(a*xx)**2*3.0D0-D*a*xm*ym**3*cos(a*x&
+     &x)*cos(a*yy)**2*sin(a*xx)-D*a*xm**3*ym*cos(a*xx)*cos(a*yy)**2*sin(&
+     &a*xx)+D*a*xx*ym**3*cos(a*xx)*cos(a*yy)**2*sin(a*xx)*2.0D0+D*a*xx**&
+     &3*ym*cos(a*xx)*cos(a*yy)**2*sin(a*xx)*2.0D0+D*a*xm*xx**3*cos(a*xx)&
+     &**2*cos(a*yy)*sin(a*yy)*1.2D+1+D*a*xm*yy**3*cos(a*xx)*cos(a*yy)**2&
+     &*sin(a*xx)+D*a*xm**3*xx*cos(a*xx)**2*cos(a*yy)*sin(a*yy)*5.0D0+D*a&
+     &*xm**3*yy*cos(a*xx)*cos(a*yy)**2*sin(a*xx)-D*a*xx*yy**3*cos(a*xx)*&
+     &cos(a*yy)**2*sin(a*xx)*2.0D0-D*a*xx**3*yy*cos(a*xx)*cos(a*yy)**2*s&
+     &in(a*xx)*2.0D0+a*xx**4*ym*cos(a*xx)*cos(a*yy)**2*sin(a*xx)*(1.0D0/&
+     &xx**2*(xm-xx)**2+1.0D0/xx**2*(ym-yy)**2+1.0D0)**(3.0D0/2.0D0)*4.0D&
+     &0-a*xm*xx**4*cos(a*xx)**2*cos(a*yy)*sin(a*yy)*(1.0D0/xx**2*(xm-xx)&
+     &**2+1.0D0/xx**2*(ym-yy)**2+1.0D0)**(3.0D0/2.0D0)*4.0D0-a*xx**4*yy*&
+     &cos(a*xx)*cos(a*yy)**2*sin(a*xx)*(1.0D0/xx**2*(xm-xx)**2+1.0D0/xx*&
+     &*2*(ym-yy)**2+1.0D0)**(3.0D0/2.0D0)*4.0D0-a**2*mu*xm*xx*ym**3*sin(&
+     &a*xx)*sin(a*yy)*4.0D0-a**2*mu*xm*xx**3*ym*sin(a*xx)*sin(a*yy)*1.6D&
+     &+1-a**2*mu*xm**3*xx*ym*sin(a*xx)*sin(a*yy)*4.0D0+a**2*mu*xm*xx*yy*&
+     &*3*sin(a*xx)*sin(a*yy)*4.0D0+a**2*mu*xm*xx**3*yy*sin(a*xx)*sin(a*y&
+     &y)*1.6D+1+a**2*mu*xm**3*xx*yy*sin(a*xx)*sin(a*yy)*4.0D0-a**2*mu*xm&
+     &**2*xx**2*ym*cos(a*xx)**2*sin(a*yy)**2*3.0D0-a**2*mu*xm**2*xx**2*y&
+     &m*cos(a*yy)**2*sin(a*xx)**2*3.0D0+a**2*mu*xm**2*xx**2*yy*cos(a*xx)&
+     &**2*sin(a*yy)**2*3.0D0+a**2*mu*xm**2*xx**2*yy*cos(a*yy)**2*sin(a*x&
+     &x)**2*3.0D0-a**2*mu*xx**2*ym*yy**2*cos(a*xx)**2*sin(a*yy)**2*3.0D0&
+     &-a**2*mu*xx**2*ym*yy**2*cos(a*yy)**2*sin(a*xx)**2*3.0D0+a**2*mu*xx&
+     &**2*ym**2*yy*cos(a*xx)**2*sin(a*yy)**2*3.0D0+a**2*mu*xx**2*ym**2*y&
+     &y*cos(a*yy)**2*sin(a*xx)**2*3.0D0+a**2*mu*xm**2*xx**2*ym*sin(a*xx)&
+     &**2*sin(a*yy)**2*6.0D0-a**2*mu*xm**2*xx**2*yy*sin(a*xx)**2*sin(a*y&
+     &y)**2*6.0D0+D*a**2*xx**5*cos(a*xx)*cos(a*yy)*sin(a*xx)*sin(a*yy)*1&
+     &.2D+1+a**2*mu*xx**2*ym*yy**2*sin(a*xx)**2*sin(a*yy)**2*6.0D0-a**2*&
+     &mu*xx**2*ym**2*yy*sin(a*xx)**2*sin(a*yy)**2*6.0D0+a*mu*xm*ym**3*co&
+     &s(a*xx)*sin(a*xx)*sin(a*yy)**2+a*mu*xm**3*ym*cos(a*xx)*sin(a*xx)*s&
+     &in(a*yy)**2-a*mu*xx*ym**3*cos(a*xx)*sin(a*xx)*sin(a*yy)**2*2.0D0-a&
+     &*mu*xx**3*ym*cos(a*xx)*sin(a*xx)*sin(a*yy)**2*2.0D0-a*mu*xm*xx**3*&
+     &cos(a*yy)*sin(a*xx)**2*sin(a*yy)*1.2D+1-a*mu*xm*yy**3*cos(a*xx)*si&
+     &n(a*xx)*sin(a*yy)**2-a*mu*xm**3*xx*cos(a*yy)*sin(a*xx)**2*sin(a*yy&
+     &)*5.0D0-a*mu*xm**3*yy*cos(a*xx)*sin(a*xx)*sin(a*yy)**2+a*mu*xx*yy*&
+     &*3*cos(a*xx)*sin(a*xx)*sin(a*yy)**2*2.0D0+a*mu*xx**3*yy*cos(a*xx)*&
+     &sin(a*xx)*sin(a*yy)**2*2.0D0-a**2*mu*xm*xx**2*ym**2*cos(a*xx)*cos(&
+     &a*yy)*8.0D0+a**2*mu*xm**2*xx*ym**2*cos(a*xx)*cos(a*yy)*4.0D0-a**2*&
+     &mu*xm*xx**2*yy**2*cos(a*xx)*cos(a*yy)*8.0D0+a**2*mu*xm**2*xx*yy**2&
+     &*cos(a*xx)*cos(a*yy)*4.0D0+a**2*mu*xx*ym**2*yy**2*cos(a*xx)*cos(a*&
+     &yy)*1.2D+1+Mref*a*xm*xx**4*cos(a*yy)*sin(a*xx)*(1.0D0/xx**2*(xm-xx&
+     &)**2+1.0D0/xx**2*(ym-yy)**2+1.0D0)**(3.0D0/2.0D0)*2.0D0-Mref*a*xx*&
+     &*4*ym*cos(a*xx)*sin(a*yy)*(1.0D0/xx**2*(xm-xx)**2+1.0D0/xx**2*(ym-&
+     &yy)**2+1.0D0)**(3.0D0/2.0D0)*2.0D0+Mref*a*xx**4*yy*cos(a*xx)*sin(a&
+     &*yy)*(1.0D0/xx**2*(xm-xx)**2+1.0D0/xx**2*(ym-yy)**2+1.0D0)**(3.0D0&
+     &/2.0D0)*2.0D0+a**2*mu*xx**5*cos(a*xx)*cos(a*yy)*sin(a*xx)*sin(a*yy&
+     &)*1.2D+1-D*a*xm**2*xx**2*cos(a*xx)**2*cos(a*yy)*sin(a*yy)*1.1D+1-D&
+     &*a*xm**2*ym**2*cos(a*xx)**2*cos(a*yy)*sin(a*yy)-D*a*xx**2*ym**2*co&
+     &s(a*xx)**2*cos(a*yy)*sin(a*yy)*5.0D0-D*a*xm**2*yy**2*cos(a*xx)**2*&
+     &cos(a*yy)*sin(a*yy)-D*a*xx**2*yy**2*cos(a*xx)**2*cos(a*yy)*sin(a*y&
+     &y)*5.0D0+a**2*mu*xm*xx**2*ym*yy*cos(a*xx)*cos(a*yy)*1.6D+1-a**2*mu&
+     &*xm**2*xx*ym*yy*cos(a*xx)*cos(a*yy)*8.0D0-D*a*xm*xx**2*ym*cos(a*xx&
+     &)*cos(a*yy)**2*sin(a*xx)*4.0D0+D*a*xm**2*xx*ym*cos(a*xx)*cos(a*yy)&
+     &**2*sin(a*xx)*4.0D0+D*a*xm*xx**2*yy*cos(a*xx)*cos(a*yy)**2*sin(a*x&
+     &x)*4.0D0-D*a*xm**2*xx*yy*cos(a*xx)*cos(a*yy)**2*sin(a*xx)*4.0D0+D*&
+     &a*xm*xx*ym**2*cos(a*xx)**2*cos(a*yy)*sin(a*yy)*3.0D0-D*a*xm*ym*yy*&
+     &*2*cos(a*xx)*cos(a*yy)**2*sin(a*xx)*3.0D0+D*a*xm*ym**2*yy*cos(a*xx&
+     &)*cos(a*yy)**2*sin(a*xx)*3.0D0+D*a*xx*ym*yy**2*cos(a*xx)*cos(a*yy)&
+     &**2*sin(a*xx)*6.0D0-D*a*xx*ym**2*yy*cos(a*xx)*cos(a*yy)**2*sin(a*x&
+     &x)*6.0D0+D*a*xm*xx*yy**2*cos(a*xx)**2*cos(a*yy)*sin(a*yy)*3.0D0+D*&
+     &a*xm**2*ym*yy*cos(a*xx)**2*cos(a*yy)*sin(a*yy)*2.0D0+D*a*xx**2*ym*&
+     &yy*cos(a*xx)**2*cos(a*yy)*sin(a*yy)*1.0D+1-a**2*mu*xm*xx*ym*yy**2*&
+     &sin(a*xx)*sin(a*yy)*1.2D+1+a**2*mu*xm*xx*ym**2*yy*sin(a*xx)*sin(a*&
+     &yy)*1.2D+1-D*a**2*xm*xx**4*cos(a*xx)*cos(a*yy)*sin(a*xx)*sin(a*yy)&
+     &*2.0D+1+D*a**2*xm**4*xx*cos(a*xx)*cos(a*yy)*sin(a*xx)*sin(a*yy)*2.&
+     &0D0+D*a**2*xx*ym**4*cos(a*xx)*cos(a*yy)*sin(a*xx)*sin(a*yy)*2.0D0+&
+     &D*a**2*xx*yy**4*cos(a*xx)*cos(a*yy)*sin(a*xx)*sin(a*yy)*2.0D0+a*mu&
+     &*xm*xx**2*ym*cos(a*xx)*sin(a*xx)*sin(a*yy)**2*4.0D0-a*mu*xm**2*xx*&
+     &ym*cos(a*xx)*sin(a*xx)*sin(a*yy)**2*4.0D0-a*mu*xm*xx**2*yy*cos(a*x&
+     &x)*sin(a*xx)*sin(a*yy)**2*4.0D0+a*mu*xm**2*xx*yy*cos(a*xx)*sin(a*x&
+     &x)*sin(a*yy)**2*4.0D0-a*mu*xm*xx*ym**2*cos(a*yy)*sin(a*xx)**2*sin(&
+     &a*yy)*3.0D0+a*mu*xm*ym*yy**2*cos(a*xx)*sin(a*xx)*sin(a*yy)**2*3.0D&
+     &0-a*mu*xm*ym**2*yy*cos(a*xx)*sin(a*xx)*sin(a*yy)**2*3.0D0-a*mu*xx*&
+     &ym*yy**2*cos(a*xx)*sin(a*xx)*sin(a*yy)**2*6.0D0+a*mu*xx*ym**2*yy*c&
+     &os(a*xx)*sin(a*xx)*sin(a*yy)**2*6.0D0-a*mu*xm*xx*yy**2*cos(a*yy)*s&
+     &in(a*xx)**2*sin(a*yy)*3.0D0-a*mu*xm**2*ym*yy*cos(a*yy)*sin(a*xx)**&
+     &2*sin(a*yy)*2.0D0-a*mu*xx**2*ym*yy*cos(a*yy)*sin(a*xx)**2*sin(a*yy&
+     &)*1.0D+1+a*mu*xm*xx*ym*yy*cos(a*yy)*sin(a*xx)*1.2D+1-a**2*mu*xm*xx&
+     &**4*cos(a*xx)*cos(a*yy)*sin(a*xx)*sin(a*yy)*2.0D+1+a**2*mu*xm**4*x&
+     &x*cos(a*xx)*cos(a*yy)*sin(a*xx)*sin(a*yy)*2.0D0+a**2*mu*xx*ym**4*c&
+     &os(a*xx)*cos(a*yy)*sin(a*xx)*sin(a*yy)*2.0D0+a**2*mu*xx*yy**4*cos(&
+     &a*xx)*cos(a*yy)*sin(a*xx)*sin(a*yy)*2.0D0-D*a**2*xm*xx*ym*yy**2*co&
+     &s(a*xx)**2*cos(a*yy)**2*6.0D0+D*a**2*xm*xx*ym**2*yy*cos(a*xx)**2*c&
+     &os(a*yy)**2*6.0D0+D*a**2*xm**2*xx**3*cos(a*xx)*cos(a*yy)*sin(a*xx)&
+     &*sin(a*yy)*1.8D+1-D*a**2*xm**3*xx**2*cos(a*xx)*cos(a*yy)*sin(a*xx)&
+     &*sin(a*yy)*8.0D0+D*a**2*xx**3*ym**2*cos(a*xx)*cos(a*yy)*sin(a*xx)*&
+     &sin(a*yy)*1.0D+1+D*a**2*xx**3*yy**2*cos(a*xx)*cos(a*yy)*sin(a*xx)*&
+     &sin(a*yy)*1.0D+1+D*a**2*xm*xx*ym*yy**2*cos(a*xx)**2*sin(a*yy)**2*3&
+     &.0D0+D*a**2*xm*xx*ym*yy**2*cos(a*yy)**2*sin(a*xx)**2*3.0D0-D*a**2*&
+     &xm*xx*ym**2*yy*cos(a*xx)**2*sin(a*yy)**2*3.0D0-D*a**2*xm*xx*ym**2*&
+     &yy*cos(a*yy)**2*sin(a*xx)**2*3.0D0-a*xm*xx**4*cos(a*xx)**2*cos(a*y&
+     &y)*sin(a*xx)*sin(a*yy)**2*(1.0D0/xx**2*(xm-xx)**2+1.0D0/xx**2*(ym-&
+     &yy)**2+1.0D0)**(3.0D0/2.0D0)*2.0D0+a*xx**4*ym*cos(a*xx)*cos(a*yy)*&
+     &*2*sin(a*xx)**2*sin(a*yy)*(1.0D0/xx**2*(xm-xx)**2+1.0D0/xx**2*(ym-&
+     &yy)**2+1.0D0)**(3.0D0/2.0D0)*2.0D0-a*xx**4*yy*cos(a*xx)*cos(a*yy)*&
+     &*2*sin(a*xx)**2*sin(a*yy)*(1.0D0/xx**2*(xm-xx)**2+1.0D0/xx**2*(ym-&
+     &yy)**2+1.0D0)**(3.0D0/2.0D0)*2.0D0+xm*xx**2*ym*cos(a*xx)**2*cos(a*&
+     &yy)**2*sin(a*xx)*sin(a*yy)*sqrt(1.0D0/xx**2*(xm-xx)**2+1.0D0/xx**2&
+     &*(ym-yy)**2+1.0D0)*2.0D0-xm**2*xx*ym*cos(a*xx)**2*cos(a*yy)**2*sin&
+     &(a*xx)*sin(a*yy)*sqrt(1.0D0/xx**2*(xm-xx)**2+1.0D0/xx**2*(ym-yy)**&
+     &2+1.0D0)-xm*xx**2*yy*cos(a*xx)**2*cos(a*yy)**2*sin(a*xx)*sin(a*yy)&
+     &*sqrt(1.0D0/xx**2*(xm-xx)**2+1.0D0/xx**2*(ym-yy)**2+1.0D0)*2.0D0+x&
+     &m**2*xx*yy*cos(a*xx)**2*cos(a*yy)**2*sin(a*xx)*sin(a*yy)*sqrt(1.0D&
+     &0/xx**2*(xm-xx)**2+1.0D0/xx**2*(ym-yy)**2+1.0D0)-xx*ym*yy**2*cos(a&
+     &*xx)**2*cos(a*yy)**2*sin(a*xx)*sin(a*yy)*sqrt(1.0D0/xx**2*(xm-xx)*&
+     &*2+1.0D0/xx**2*(ym-yy)**2+1.0D0)*3.0D0+xx*ym**2*yy*cos(a*xx)**2*co&
+     &s(a*yy)**2*sin(a*xx)*sin(a*yy)*sqrt(1.0D0/xx**2*(xm-xx)**2+1.0D0/x&
+     &x**2*(ym-yy)**2+1.0D0)*3.0D0+a**2*mu*xm**2*xx**3*cos(a*xx)*cos(a*y&
+     &y)*sin(a*xx)*sin(a*yy)*1.8D+1-a**2*mu*xm**3*xx**2*cos(a*xx)*cos(a*&
+     &yy)*sin(a*xx)*sin(a*yy)*8.0D0+a**2*mu*xx**3*ym**2*cos(a*xx)*cos(a*&
+     &yy)*sin(a*xx)*sin(a*yy)*1.0D+1+a**2*mu*xx**3*yy**2*cos(a*xx)*cos(a&
+     &*yy)*sin(a*xx)*sin(a*yy)*1.0D+1+a**2*mu*xm*xx*ym*yy**2*cos(a*xx)**&
+     &2*sin(a*yy)**2*3.0D0+a**2*mu*xm*xx*ym*yy**2*cos(a*yy)**2*sin(a*xx)&
+     &**2*3.0D0-a**2*mu*xm*xx*ym**2*yy*cos(a*xx)**2*sin(a*yy)**2*3.0D0-a&
+     &**2*mu*xm*xx*ym**2*yy*cos(a*yy)**2*sin(a*xx)**2*3.0D0-a**2*mu*xm*x&
+     &x*ym*yy**2*sin(a*xx)**2*sin(a*yy)**2*6.0D0+a**2*mu*xm*xx*ym**2*yy*&
+     &sin(a*xx)**2*sin(a*yy)**2*6.0D0-D*a**2*xm*xx**2*ym**2*cos(a*xx)*co&
+     &s(a*yy)*sin(a*xx)*sin(a*yy)*8.0D0+D*a**2*xm**2*xx*ym**2*cos(a*xx)*&
+     &cos(a*yy)*sin(a*xx)*sin(a*yy)*4.0D0-D*a**2*xm*xx**2*yy**2*cos(a*xx&
+     &)*cos(a*yy)*sin(a*xx)*sin(a*yy)*8.0D0+D*a**2*xm**2*xx*yy**2*cos(a*&
+     &xx)*cos(a*yy)*sin(a*xx)*sin(a*yy)*4.0D0+D*a**2*xx*ym**2*yy**2*cos(&
+     &a*xx)*cos(a*yy)*sin(a*xx)*sin(a*yy)*1.2D+1-D*a*xm*xx*ym*yy*cos(a*x&
+     &x)**2*cos(a*yy)*sin(a*yy)*6.0D0-a**2*mu*xm*xx**2*ym**2*cos(a*xx)*c&
+     &os(a*yy)*sin(a*xx)*sin(a*yy)*8.0D0+a**2*mu*xm**2*xx*ym**2*cos(a*xx&
+     &)*cos(a*yy)*sin(a*xx)*sin(a*yy)*4.0D0-a**2*mu*xm*xx**2*yy**2*cos(a&
+     &*xx)*cos(a*yy)*sin(a*xx)*sin(a*yy)*8.0D0+a**2*mu*xm**2*xx*yy**2*co&
+     &s(a*xx)*cos(a*yy)*sin(a*xx)*sin(a*yy)*4.0D0+a**2*mu*xx*ym**2*yy**2&
+     &*cos(a*xx)*cos(a*yy)*sin(a*xx)*sin(a*yy)*1.2D+1+a*mu*xm*xx*ym*yy*c&
+     &os(a*yy)*sin(a*xx)**2*sin(a*yy)*6.0D0-D*a**2*xx*ym*yy**3*cos(a*xx)&
+     &*cos(a*yy)*sin(a*xx)*sin(a*yy)*8.0D0-D*a**2*xx*ym**3*yy*cos(a*xx)*&
+     &cos(a*yy)*sin(a*xx)*sin(a*yy)*8.0D0-D*a**2*xx**3*ym*yy*cos(a*xx)*c&
+     &os(a*yy)*sin(a*xx)*sin(a*yy)*2.0D+1-a**2*mu*xx*ym*yy**3*cos(a*xx)*&
+     &cos(a*yy)*sin(a*xx)*sin(a*yy)*8.0D0-a**2*mu*xx*ym**3*yy*cos(a*xx)*&
+     &cos(a*yy)*sin(a*xx)*sin(a*yy)*8.0D0-a**2*mu*xx**3*ym*yy*cos(a*xx)*&
+     &cos(a*yy)*sin(a*xx)*sin(a*yy)*2.0D+1+D*a**2*xm*xx**2*ym*yy*cos(a*x&
+     &x)*cos(a*yy)*sin(a*xx)*sin(a*yy)*1.6D+1-D*a**2*xm**2*xx*ym*yy*cos(&
+     &a*xx)*cos(a*yy)*sin(a*xx)*sin(a*yy)*8.0D0+a**2*mu*xm*xx**2*ym*yy*c&
+     &os(a*xx)*cos(a*yy)*sin(a*xx)*sin(a*yy)*1.6D+1-a**2*mu*xm**2*xx*ym*&
+     &yy*cos(a*xx)*cos(a*yy)*sin(a*xx)*sin(a*yy)*8.0D0))/xx
+
+      END DO
     CASE(5:6)
       ! Do nothing
     CASE (50:)

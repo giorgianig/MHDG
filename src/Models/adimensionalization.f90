@@ -87,12 +87,15 @@ SUBROUTINE adimensionalization()
   phys%Mref = 1.
   phys%dexbcoef = 1.
 
+
   IF (switch%testcase < 10) THEN
     WRITE (6, *) "No adimensionalization needed"
     RETURN
+  ELSE
+    phys%Mref = 1.
   ENDIF
 
-  WRITE (6, *) "Adimensionalizing inpout values"
+  WRITE (6, *) "Adimensionalizing input values"
 
   ! Computing derived reference values
   u0 = L0/t0

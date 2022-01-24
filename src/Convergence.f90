@@ -203,11 +203,12 @@ PROGRAM Convergence
       CALL init_sol()
 
       ! Allocate and initialize uiter and u0
-      ALLOCATE (uiter(nu))
+      ALLOCATE(uiter(nu),u0(nu))
       ALLOCATE (sol%u0(nu, time%tis))
       sol%u0 = 0.
       sol%u0(:, 1) = sol%u
       uiter = 0.
+      !u0 = 0.
       !*******************************************************
       !                  TIME LOOP
       !*******************************************************

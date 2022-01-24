@@ -118,17 +118,18 @@ CONTAINS
   SUBROUTINE cons2phys(ua, up)
     real*8, dimension(:, :), intent(in)  :: ua
     real*8, dimension(:, :), intent(out) :: up
+    real*8,  dimension(size(ua,1))  :: U1,U5
+    real, parameter :: tol = 1e-6
     integer :: i
 
-    real*8             :: U1,U5
-    real,parameter :: tol = 1e-6
-    U1 = ua(:,1)
-    if (U1<tol) U1=tol    
+    U1 = abs(ua(:,1))
+    do i = 1, size(ua,1)
+      if (U1(i)<tol) U1(i)=tol
 #ifdef NEUTRAL    
     U5 = ua(:,5)
-    if (U5<tol) U5=tol 
+        if (U5(i))<tol) U5(i)=tol
 #endif    
-   
+    end do
 
     up(:, 1) = U1                                                           ! density
     up(:, 2) = ua(:, 2)/U1                                            ! u parallel
@@ -144,6 +145,77 @@ CONTAINS
     up(:,11) = U5                                                 ! density neutral
 #endif
   END SUBROUTINE cons2phys
+
+    ! ******************************
+    ! Split diffusion terms
+    ! ******************************
+    SUBROUTINE compute_W2(U,W2)
+      real*8, intent(IN) :: U(:)
+      real*8             :: W2(:)
+      W2 = 0.
+      W2(1) = (phys%diff_n-phys%diff_u)*U(2)/U(1)
+    END SUBROUTINE compute_W2
+
+    SUBROUTINE compute_W3(U,W3)
+      real*8, intent(IN) :: U(:)
+      real*8             :: W3(:)
+      real*8 		:: rhovar
+      real*8 		:: sigmavar
+
+      rhovar = (phys%diff_e-phys%diff_u)
+      sigmavar = (phys%diff_n-phys%diff_e)
+
+      W3 = 0.
+      W3(1) = sigmavar*U(3)/U(1) + rhovar*(U(2)/U(1))**2
+      W3(2) = -rhovar*U(2)/U(1)
+    END SUBROUTINE compute_W3
+
+    SUBROUTINE compute_W4(U,W4)
+      real*8, intent(IN) :: U(:)
+      real*8             :: W4(:)
+
+      W4 = 0.
+      W4(1) = (phys%diff_n-phys%diff_ee)*U(4)/U(1)
+    END SUBROUTINE compute_W4
+
+
+
+    SUBROUTINE compute_dW2_dU(U,dW2_dU)
+      real*8, intent(IN) :: U(:)
+      real*8             :: dW2_dU(:,:)
+      dW2_dU = 0.
+      dW2_dU(1,1) = -U(2)/(U(1)**2)
+      dW2_dU(1,2) = 1./U(1)
+
+      dW2_dU = (phys%diff_n-phys%diff_u)*dW2_dU
+    END SUBROUTINE compute_dW2_dU
+
+    SUBROUTINE compute_dW3_dU(U,res)
+      real*8, intent(IN) :: U(:)
+      real*8             :: res(:,:)
+      real*8 		:: rhovar
+      real*8 		:: sigmavar
+
+      rhovar = (phys%diff_e-phys%diff_u)
+      sigmavar = (phys%diff_n-phys%diff_e)
+
+      res = 0.
+      res(1,1) = -sigmavar*U(3)/(U(1)**2)-2*rhovar*(U(2)**2)/(U(1)**3)
+      res(1,2) = 2*rhovar*U(2)/(U(1)**2)
+      res(1,3) = sigmavar*1./U(1)
+
+      res(2,1) = rhovar*U(2)/(U(1)**2)
+      res(2,2) = -rhovar*1./U(1)
+    END SUBROUTINE compute_dW3_dU
+
+    SUBROUTINE compute_dW4_dU(U,res)
+    real*8, intent(IN) :: U(:)
+    real*8             :: res(:,:)
+    res = 0.
+    res(1,1) = -U(4)*(phys%diff_n-phys%diff_ee)/(U(1)**2)
+    res(1,4) = 1.*(phys%diff_n-phys%diff_ee)/U(1)
+     END SUBROUTINE compute_dW4_dU
+
 
   !*****************************************
   ! Jacobian matrices
@@ -471,7 +543,7 @@ CONTAINS
     real*8 :: res, aux
     real, parameter :: tol = 1e-5
     aux = U(3)/U(1) - 0.5*U(2)**2/U(1)**2
-    if (2./(3.*phys%Mref)*aux > 1.) then
+    if ((2./(3.*phys%Mref)*aux > 1.) .and. (switch%testcase .ne. 2)) then
       res = (3.*phys%Mref/2)**(phys%epn)
     else
       if (aux<tol) aux = tol
@@ -484,7 +556,7 @@ CONTAINS
     real*8 :: res, aux
     real, parameter :: tol = 1e-5
     aux = U(4)/U(1)
-    if (2./(3.*phys%Mref)*aux > 1.) then
+    if ((2./(3.*phys%Mref)*aux > 1.) .and. (switch%testcase .ne. 2)) then
       res = (3.*phys%Mref/2)**(phys%epn)
     else
       if (aux<tol) aux = tol
@@ -498,8 +570,8 @@ CONTAINS
     real*8             :: aux
     real, parameter :: tol = 1e-5
     aux = U(3)/U(1) - 0.5*U(2)**2/U(1)**2
-    if (2./(3.*phys%Mref)*aux > 1.) then
-      res = 0.d0
+    if ((2./(3.*phys%Mref)*aux > 1.) .and. (switch%testcase .ne. 2)) then !! don't apply flux limiter if it is a convergence test
+      res = 0.
     else
       if (aux<0) aux = tol
       res = 0.d0
@@ -516,7 +588,7 @@ CONTAINS
     real*8             :: aux
     real, parameter :: tol = 1e-5
     aux = U(4)/U(1)
-    if (2./(3.*phys%Mref)*aux > 1.) then
+    if ((2./(3.*phys%Mref)*aux > 1.) .and. (switch%testcase .ne. 2)) then !! don't apply flux limiter if it is a convergence test
       res = 0.
     else
       if (aux<0) aux = tol
@@ -558,7 +630,7 @@ CONTAINS
     if (U4 < tol) U4 = tol
     if (U1 < tol) U1 = tol
     if (U3 < tol) U3 = tol
-    if (phys%diff_ee .gt. 0.0380) then
+    if ((phys%diff_ee .gt. 0.0380) .and. (switch%testcase .ne. 2)) then
       s = 1./(phys%tie*0.0380/phys%diff_ee)*(2./3./phys%Mref)**(-0.5)*(U1**(2.5)/U4**1.5)*(U4-U3+0.5*(U(2)**2/U1))
     else
       s = 1./(phys%tie)*(2./3./phys%Mref)**(-0.5)*(U1**(2.5)/U4**1.5)*(U4-U3+0.5*(U(2)**2/U1))
@@ -581,7 +653,7 @@ CONTAINS
     res(2) = U(2)*(U1/U4)**1.5
     res(3) = -U1**2.5/U4**1.5
     res(4) = -1.5*(U1/U4)**2.5*(U4 - U3 + 0.5*U(2)**2/U1) + U1**2.5/U4**1.5
-    if (phys%diff_ee .gt. 0.0380) then
+    if ((phys%diff_ee .gt. 0.0380) .and. (switch%testcase .ne. 2)) then
       res = 1./(phys%tie*0.0380/phys%diff_ee)*(2./3./phys%Mref)**(-0.5)*res
     else
      res = 1./(phys%tie)*(2./3./phys%Mref)**(-0.5)*res

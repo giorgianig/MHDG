@@ -622,8 +622,10 @@ CONTAINS
     ! Compute diffusion at faces Gauss points
     CALL setLocalDiff(xyg,ufg,diff_iso_fac,diff_ani_fac,Bmod)
 
-    ! Physical variables at Gauss points
+    ! Physical variables at Gauss points (division by 0 during convergence test!!!)
+    if ( switch%testcase .neqv. 2 ) then
     CALL cons2phys(ufg,upg)
+    end if
 
     ! Physical variables at Gauss points with analytical sol
     CALL cons2phys(uex,uexpg)
@@ -871,7 +873,7 @@ CONTAINS
       t_g = xyDer(g,:)/xyDerNorm_g
       n_g = [t_g(2),-t_g(1)]
 
-      ! Shaspe functions product
+      ! Shape functions product
       Ni = refElPol%N1D(g,:)*dline
 
       CALL assembly_dirichletstr_bc(iel,ind_asf,ind_ash,ind_fe,ind_fg,Ni,qfg(g,:),uex(g,:),uexpg(g,:),b(g,1:2),n_g)
@@ -1561,11 +1563,15 @@ CONTAINS
     real*8           :: qfg(:)
     real*8           :: bn,Abohm(Neq,Neq)
     integer          :: i,j,k,idm,Neqstab,Neqgrad
-    integer*4        :: ind(Npfl),indi(Npfl),indj(Npfl),indk(Npfl)
+    integer*4        :: ind(Npfl),indi(Npfl),indj(Npfl),indk(Npfl),ind_jf(Npfl),ind_kf(Npfl)
     real*8           :: Qpr(Ndim,Neq),kcoeff, recycling_coeff,  puff_coeff
+    real*8           :: W2(Neq), dW2_dU(Neq,Neq), QdW2(Ndim,Neq)
+    real*8           :: kmult(Npfl,Npfl)
 #ifdef TEMPERATURE
     real*8           :: Vveci(Neq),Alphai,taui(Ndim,Neq),dV_dUi(Neq,Neq),gmi,dAlpha_dUi(Neq)
     real*8           :: Vvece(Neq),Alphae,taue(Ndim,Neq),dV_dUe(Neq,Neq),gme,dAlpha_dUe(Neq)
+    real*8           :: W3(Neq), dW3_dU(Neq,Neq), QdW3(Ndim,Neq)
+    real*8           :: W4(Neq), dW4_dU(Neq,Neq), QdW4(Ndim,Neq)
 #endif
 
     Neqstab = Neq
@@ -1590,6 +1596,11 @@ CONTAINS
 
     ! Compute Q^T^(k-1)
     Qpr = reshape(qfg,(/Ndim,Neq/))
+
+    ! Split diffusion matrices/vectors for the momentum equation
+    CALL compute_W2(uf,W2)
+    CALL compute_dW2_dU(uf,dW2_dU)
+    QdW2 = matmul(Qpr,dW2_dU)
 
     ! Case diagonal matrix stabilization
     IF (numer%stab < 6) THEN
@@ -1638,6 +1649,15 @@ CONTAINS
       ! Compute dV_dU (k-1)
       call compute_dV_dUi(ufg,dV_dUi)
       call compute_dV_dUe(ufg,dV_dUe)
+
+      ! Split diffusion matrices/vectors for the energies equations
+      CALL compute_W3(uf,W3)
+      CALL compute_dW3_dU(uf,dW3_dU)
+      QdW3 = matmul(Qpr,dW3_dU)
+
+      CALL compute_W4(uf,W4)
+      CALL compute_dW4_dU(uf,dW4_dU)
+      QdW4 = matmul(Qpr,dW4_dU)
 
       ! Compute Alpha(U^(k-1))
       Alphai = computeAlphai(ufg)
@@ -1700,6 +1720,46 @@ CONTAINS
           ! Non-tangent case
           elMat%Alq(ind_ff(indi),ind_fG(indj),iel)=elMat%Alq(ind_ff(indi),ind_fG(indj),iel)-&
             &NiNi*(ng(idm)*diffiso(k,k)-bn*bg(idm)*diffani(k,k) )
+            IF(k == 2) THEN
+              ! Assembly LQ
+              j = 1 ! all other terms are 0 anyway in vector W2
+              ind_kf = ind_ash + idm + (j - 1)*Ndim
+               kmult = NiNi*W2(j)*(ng(idm) - bn*bg(idm))
+               elMat%Alq(ind_ff(indi),ind_fG(ind_kf),iel) = elMat%Alq(ind_ff(indi),ind_fG(ind_kf),iel) - kmult
+            ! Assembly LU
+               DO j=1,Neq
+                 ind_jf = ind_asf+j
+                   kmult = QdW2(idm,j)*NiNi*(ng(idm)-bn*bg(idm))
+                  elMat%All(ind_ff(indi),ind_ff(ind_jf),iel)  = elMat%All(ind_ff(indi),ind_ff(ind_jf),iel) - kmult
+               END DO
+#ifdef TEMPERATURE
+            ELSEIF (k ==3) THEN
+                ! Assembly LQ
+                DO j=1,Neq ! here there are non-zero values in vector W3
+                ind_kf = ind_ash + idm + (j - 1)*Ndim
+                 kmult = NiNi*W3(j)*(ng(idm) - bn*bg(idm))
+                 elMat%Alq(ind_ff(indi),ind_fG(ind_kf),iel) = elMat%Alq(ind_ff(indi),ind_fG(ind_kf),iel) - kmult
+               END DO
+              ! Assembly LU
+                 DO j=1,Neq
+                   ind_jf = ind_asf+j
+                     kmult = QdW3(idm,j)*NiNi*(ng(idm)-bn*bg(idm))
+                    elMat%All(ind_ff(indi),ind_ff(ind_jf),iel)  = elMat%All(ind_ff(indi),ind_ff(ind_jf),iel) - kmult
+                 END DO
+            ELSEIF (k ==4) THEN
+                ! Assembly LQ
+                j = 1 ! all other terms are zero anyway in vector W4
+                ind_kf = ind_ash + idm + (j - 1)*Ndim
+                 kmult = NiNi*W4(j)*(ng(idm) - bn*bg(idm))
+                 elMat%Alq(ind_ff(indi),ind_fG(ind_kf),iel) = elMat%Alq(ind_ff(indi),ind_fG(ind_kf),iel) - kmult
+              ! Assembly LU
+                 DO j=1,Neq
+                   ind_jf = ind_asf+j
+                     kmult = QdW4(idm,j)*NiNi*(ng(idm)-bn*bg(idm))
+                    elMat%All(ind_ff(indi),ind_ff(ind_jf),iel)  = elMat%All(ind_ff(indi),ind_ff(ind_jf),iel) - kmult
+                 END DO
+#endif
+              END IF
         END DO
       END DO
     ELSE
