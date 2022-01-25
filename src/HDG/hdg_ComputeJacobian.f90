@@ -2682,6 +2682,7 @@ CONTAINS
       ! Split diffusion vector/matrix for the momentum equation
       CALL compute_W2(uf,W2)
       CALL compute_dW2_dU(uf,dW2_dU)
+      QdW2 = matmul(Qpr,dW2_dU)
 
       nn = 0.
       qq = 0.
