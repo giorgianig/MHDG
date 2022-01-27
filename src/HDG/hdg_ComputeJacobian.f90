@@ -1234,7 +1234,7 @@ CONTAINS
     real*8                        :: detJ(Ng2d)
     real*8                        :: iJ11(Ng2d),iJ12(Ng2d)
     real*8                        :: iJ21(Ng2d),iJ22(Ng2d)
-    real*8                        :: fluxg(Ng2d)
+    real*8                      :: fluxg(Ng2d),max_flux2D,min_flux2D
     integer*4,dimension(Npel)     :: ind_ass,ind_asq
     real*8                        :: ktis(time%tis + 1)
     real*8,dimension(Npel)        :: Ni,Nxg,Nyg,NNbb,Nx_ax
@@ -1247,10 +1247,12 @@ CONTAINS
     real*8,allocatable            :: Auq(:,:,:),Auu(:,:,:),rhs(:,:)
     real*8                        :: auxdiffsc(Ng2d)
     real*8                      :: Pi,sigma,sigmax,sigmay,x0,y0,A,r
+    real*8                      :: th_n = 1.e-14
 
     ind_ass = (/(i,i=0,Neq*(Npel - 1),Neq)/)
     ind_asq = (/(i,i=0,Neq*(Npel - 1)*Ndim,Neq*Ndim)/)
 
+    force = 0.
     !***********************************
     !    Volume computation
     !***********************************
@@ -1324,9 +1326,12 @@ CONTAINS
 !      ENDDO
 !    ENDIF
 #endif
-    ! Some sources for West cases
-    IF (switch%testcase .ge. 51 .and. switch%testcase .le. 55) THEN
-      fluxg = matmul(refElPol%N2D,fluxel)
+!! Some sources for West cases
+IF (switch%testcase	.ge.50 .and. switch%testcase	.le.54) THEN
+    fluxg = matmul(refElPol%N2D,phys%magnetic_flux(Mesh%T(iel,:)))
+    max_flux2D = maxval(phys%magnetic_flux)
+    min_flux2D = minval(phys%magnetic_flux)
+    fluxg = (fluxg - min_flux2D)/(max_flux2D - min_flux2D)
       DO g = 1,Ng2d
         IF (switch%testcase == 51) THEN
           IF (fluxg(g) .le. -0.88 .and. fluxg(g) .ge. -0.90) THEN
@@ -1334,15 +1339,19 @@ CONTAINS
             force(g,1) = 4.782676673609557e-05
           END IF
         ELSE IF (switch%testcase == 52) THEN
-          sigma = 0.1
+          Pi = 3.1415926535
+          sigma = 0.15
           x0 = 0.
-          A = (phys%lscale**2)/(2*PI*sigma**2)
+          A = (phys%lscale**2)/(2*Pi*sigma**2)
 #ifndef NEUTRAL
-          force(g,1) = 0.4*A*exp(-((fluxg(g) - x0)**2)/(2*sigma**2))
-#endif
-#ifdef TEMPERATURE
-          force(g,3) = 0.
-          force(g,4) = 30.*A*exp(-((fluxg(g) - x0)**2)/(2*sigma**2))
+	  if(fluxg(g).le.0.32) then
+          	force(g,1) = 0.5*A*exp(-((fluxg(g) - x0)**2)/(2*sigma**2))
+          	force(g,4) = 30.*A*exp(-((fluxg(g) - x0)**2)/(2*sigma**2))
+	  else
+		force(g,1) = 0.
+	        force(g,4) = 0.
+
+	  end if
 #endif
           !IF (fluxg(g) .le. -0.90 .and. fluxg(g) .ge. -1.) THEN
           !  force(g,1) = 9.45155008295538e-06
