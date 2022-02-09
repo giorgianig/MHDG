@@ -285,7 +285,7 @@ CONTAINS
           WRITE (str, '(A)') 'thetra'
         ELSEIF (elemType == 3) then
           WRITE (str, '(A)') 'hexa'
-        end IF
+        END IF
         WRITE (6, *) '*************************************************'
         WRITE (6, *) '*                    MESH                       *'
         WRITE (6, *) '*************************************************'
@@ -562,7 +562,7 @@ CONTAINS
     USE LinearAlgebra, ONLY: tensorsumint, colint,col
     implicit none
 
-    character(LEN=100) :: fname
+    character(LEN=1000) :: fname
     character(len=100), pointer :: mod_ptr
     character(len=100), target :: model_string
 

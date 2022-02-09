@@ -4,10 +4,9 @@
 ! date: 21/04/2020
 ! Adimensionalization of the inputs
 !**********************************
-
 SUBROUTINE adimensionalization()
   USE globals
-
+  USE MPI_OMP
   IMPLICIT NONE
 
   ! Parameters
@@ -88,14 +87,16 @@ SUBROUTINE adimensionalization()
 
 
   IF (switch%testcase < 10) THEN
+    IF (MPIvar%glob_id .eq. 0) THEN
     WRITE (6, *) "No adimensionalization needed"
+    ENDIF
     RETURN
   ELSE
     phys%Mref = 1.
   ENDIF
-
+  IF (MPIvar%glob_id .eq. 0) THEN
   WRITE (6, *) "Adimensionalizing input values"
-
+  ENDIF
   ! Computing derived reference values
   u0 = L0/t0
   D0 = L0**2/t0
@@ -179,4 +180,3 @@ SUBROUTINE adimensionalization()
   simpar%refval_specenergydens_dimensions = 'm^-1*s^-2'
 
 END SUBROUTINE adimensionalization
-

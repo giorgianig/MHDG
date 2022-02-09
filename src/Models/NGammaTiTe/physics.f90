@@ -127,7 +127,7 @@ CONTAINS
       if (U1(i)<tol) U1(i)=tol
 #ifdef NEUTRAL    
     U5 = ua(:,5)
-        if (U5(i))<tol) U5(i)=tol
+        if (U5(i)<tol) U5(i)=tol
 #endif    
     end do
 
@@ -1357,7 +1357,6 @@ CONTAINS
     tau(4, 4) = tau(4, 4) + (phys%diff_ee + abs(bn)*phys%diff_pare*up(8)**2.5*bnorm/uc(1))*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
 
   END SUBROUTINE computeTauGaussPoints_matrix
-
 
 !  !***********************************************************************
 !  !

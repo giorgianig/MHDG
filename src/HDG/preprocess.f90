@@ -130,13 +130,19 @@ CONTAINS
         WRITE (6, *) "Computing puff area"
       END IF
     ENDIF
+! It does not work in parallel (TODO)
+#ifndef PARALL
     CALL computePuffArea()
+#endif
     IF (MPIvar%glob_id .eq. 0) THEN
       IF (utils%printint > 0) THEN
         WRITE (6, *) "Puff area:  ", Mesh%puff_area*phys%lscale*phys%lscale, " m^2"
       END IF
     ENDIF
+! It does not work in parallel (TODO)
+#ifndef PARALL
     CALL computeCoreArea()
+#endif
     IF (MPIvar%glob_id .eq. 0) THEN
       IF (utils%printint > 0) THEN
         WRITE (6, *) "Core area:  ", Mesh%core_area*phys%lscale*phys%lscale, " m^2"
@@ -680,10 +686,8 @@ CONTAINS
 						  xyDerNorm_g = norm2(xyg_d(g,:))
 						  dline = refElPol%gauss_weights1D(g)*xyDerNorm_g
 						  dline = dline*xyg(g,1)
-						  Mesh%puff_area = Mesh%puff_area + 2*pi*dline
-					
+						  Mesh%puff_area = Mesh%puff_area + 2*pi*dline	
 					END DO
-					
 		END DO
 
   END SUBROUTINE computePuffArea

@@ -36,8 +36,8 @@ PROGRAM MHDG
   INTEGER, PARAMETER :: etiquette = 1000
   INTEGER, DIMENSION(MPI_STATUS_SIZE) :: statut
   INTEGER             :: switch_save
-  write (6, *) "STARTING"
 
+  write (6, *) "STARTING"
   ! Check the number of input arguments
   nb_args = iargc()
 
@@ -71,7 +71,6 @@ PROGRAM MHDG
 
   ! Number of threads
   Nthreads = OMP_GET_MAX_THREADS()
-  write(6,*) "Using ", Nthreads, " threads" 
 
   ! Start timing the code
   call cpu_time(time_start)
@@ -79,6 +78,10 @@ PROGRAM MHDG
 
   ! Initialize MPI
   CALL init_MPI_OMP()
+
+  IF (MPIvar%glob_id .eq. 0) THEN
+    write(6,*) "Using ", Nthreads, " threads"
+  ENDIF
 
   ! Read input file param.txt
   CALL read_input()
@@ -155,8 +158,40 @@ PROGRAM MHDG
   ! Initialize magnetic field (the Mesh is needed)
   CALL initialize_magnetic_field()
 
-  ! Load magnetic field
+  ! Load magnetic field and, if case is 54 or 59, also Jtor
   CALL load_magnetic_field()
+
+
+        IF (switch%testcase .eq. 54) THEN
+          CALL loadJtorMap()
+#ifdef NEUTRAL
+          WRITE(6,*) 'Puff is analytical'
+#else
+          WRITE(6,*) 'This test case should be ran with neutrals'
+          STOP
+#endif
+        ENDIF
+        IF (switch%testcase .eq. 59) THEN
+          CALL loadJtorMap()
+#ifdef NEUTRAL
+          IF(switch%time_init) THEN
+            IF (MPIvar%glob_id .eq. 0) THEN
+              WRITE(6,*) 'Puff is analytical'
+            ENDIF
+          ELSE
+            IF (MPIvar%glob_id .eq. 0) THEN
+              WRITE(6,*) 'Puff is experimental'
+            ENDIF
+              CALL SetPuff()
+          ENDIF
+#else
+          IF (MPIvar%glob_id .eq. 0) THEN
+            WRITE(6,*) 'This test case should be ran with neutrals'
+          ENDIF
+          STOP
+#endif
+        ENDIF
+
 
 #ifdef TOR3D
   Ndim = 3                                               ! Number of dimensions
@@ -232,13 +267,6 @@ PROGRAM MHDG
   ! Save solution
   CALL setSolName(save_name, mesh_name, 0, .true., .false.)
   CALL HDF5_save_solution(save_name)
-
-
-
-
-
-
-
 
   call mpi_barrier(mpi_comm_world,ierr)
 
@@ -460,8 +488,62 @@ PROGRAM MHDG
         END IF
         sol%u0(:, 1) = sol%u
 
+        ! if moving equilibrium case then update the magnetic field, otherwise just continue
+        if((switch%testcase .eq. 59) .and. (.not. switch%time_init)) then
+          ! ReLoad magnetic field and Jtor
+          CALL load_magnetic_field()
+        endif
+
         ! compute dt
         ! CALL compute_dt(errlstime)
+      END IF
+    ELSE
+      IF (switch%psdtime) THEN
+        ! Save solution
+        CALL setSolName(save_name, mesh_name, it, .true., .true.)
+        CALL HDF5_save_solution(save_name)
+
+        ! Update the diffusion, the elemental matrices and the solution
+        IF (MPIvar%glob_id .eq. 0) THEN
+          WRITE (6, *) "************************************************"
+          WRITE (6, *) "Reducing diffusion: ", phys%diff_n*switch%diffred*simpar%refval_diffusion
+
+#ifdef NEUTRAL
+          WRITE (6, *) "Neutrals diffusion: ", phys%diff_nn*switch%diffred*simpar%refval_diffusion
+#endif
+          WRITE (6, *) "************************************************"
+        END IF
+        phys%diff_n = phys%diff_n*switch%diffred
+        phys%diff_u = phys%diff_u*switch%diffred
+#ifdef TEMPERATURE
+        phys%diff_e = phys%diff_e*switch%diffred
+        phys%diff_ee = phys%diff_ee*switch%diffred
+#endif
+#ifdef VORTICITY
+        phys%diff_vort = phys%diff_vort*switch%diffred
+        phys%diff_pot = phys%diff_pot*switch%diffred
+#endif
+#ifdef NEUTRAL
+        phys%diff_nn = phys%diff_nn*switch%diffred
+#endif
+
+        !**********************************
+        !           UPDATE SOLUTION
+        !**********************************
+        ! Update u0
+        IF (time%tis .gt. 1 .and. it .lt. time%tis) THEN
+          DO is = it, 1, -1
+            sol%u0(:, is + 1) = sol%u0(:, is)
+          END DO
+        ELSEIF (time%tis > 1) THEN
+          DO is = time%tis, 2, -1
+            sol%u0(:, is) = sol%u0(:, is - 1)
+          END DO
+        END IF
+        sol%u0(:, 1) = sol%u
+        time%it = 0
+      ELSE
+        EXIT
       END IF
     END IF
 

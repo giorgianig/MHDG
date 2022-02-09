@@ -14,7 +14,7 @@ SUBROUTINE READ_input()
   USE MPI_OMP
   IMPLICIT NONE
 
-  logical :: driftdia,driftexb, axisym, restart,steady,dotiming,psdtime,decoup,bxgradb
+  logical :: driftdia,driftexb, axisym, restart,steady,time_init, dotiming,psdtime,decoup,bxgradb
   logical :: ckeramp,saveNR,filter,saveTau,lstiming,fixdPotLim,dirivortcore,dirivortlim,convvort,logrho
   integer :: thresh, difcor, tis, stab,pertini,init
   integer :: itmax, itrace, rest, istop, sollib
@@ -34,7 +34,7 @@ SUBROUTINE READ_input()
   character(len=20) :: aggr_prol, par_aggr_alg, aggr_ord, aggr_filter, csolve, csbsolve, cmat
   integer           :: jsweeps, novr, fill, jsweeps2, novr2, fill2, outer_sweeps, maxlevs, csize, cfill, cjswp
   real*8            :: thrsol, thrsol2, mncrratio, athres, cthres
-  real*8            :: exbdump, part_source,ener_source
+  real*8            :: exbdump, part_source,ener_source, density_source, ener_source_e, ener_source_ee, sigma_source, fluxg_trunc
 
   ! RMP and Ripple
   logical     :: RMP, Ripple
@@ -45,14 +45,14 @@ SUBROUTINE READ_input()
   real*8  :: Pohmic,diff_nn,Re,puff
 
   ! Defining the variables to READ from the file
-  NAMELIST /SWITCH_LST/ steady, axisym, init, driftdia, driftexb, testcase, RMP, Ripple, psdtime, diffred, diffmin, &
+  NAMELIST /SWITCH_LST/ steady, time_init, axisym, init, driftdia, driftexb, testcase, RMP, Ripple, psdtime, diffred, diffmin, &
     & shockcp, limrho, difcor, thresh, filter, decoup, ckeramp, saveNR, saveTau, fixdPotLim, dirivortcore,dirivortlim, convvort,pertini,&
     & logrho,bxgradb
   NAMELIST /NUMER_LST/ tau,nrp,tNR,tTM,div,sc_coe,sc_sen,minrho,so_coe,df_coe,dc_coe,thr,thrpre,stab,dumpnr,ntor,ptor,tmax,npartor,bohmtypebc,exbdump
   NAMELIST /GEOM_LST/ R0, q
   NAMELIST /MAGN_LST/ amp_rmp,nbCoils_rmp,torElongCoils_rmp,parite,nbRow,amp_ripple,nbCoils_ripple,triang,ellip ! RMP and Ripple
   NAMELIST /TIME_LST/ dt0, nts, tfi, tsw, tis
-  NAMELIST /PHYS_LST/ diff_n, diff_u, diff_e, diff_ee, diff_vort, diff_nn, Re, puff, part_source,ener_source,Pohmic, Tbg, bcflags, bohmth,&
+  NAMELIST /PHYS_LST/ diff_n, diff_u, diff_e, diff_ee, diff_vort, diff_nn, Re, puff,density_source, ener_source_e, ener_source_ee, sigma_source, fluxg_trunc, part_source,ener_source, Pohmic, Tbg, bcflags, bohmth,&
     &Gmbohm, Gmbohme, a, Mref, tie, diff_pari, diff_pare, diff_pot, epn, etapar, Potfloat,diagsource
   NAMELIST /UTILS_LST/ PRINTint, dotiming, freqdisp, freqsave
   NAMELIST /LSSOLV_LST/ sollib, lstiming, itmax, itrace, rest, istop, tol, kmethd, ptype,&
@@ -77,6 +77,7 @@ SUBROUTINE READ_input()
 
   ! Storing at the right place
   switch%steady           = steady
+  switch%time_init        = time_init
   switch%axisym           = axisym
   switch%init             = init
   switch%driftdia         = driftdia
@@ -148,6 +149,11 @@ SUBROUTINE READ_input()
   phys%diff_nn            = diff_nn
   phys%Re                 = Re
   phys%puff               = puff
+  phys%density_source     = density_source
+  phys%ener_source_e      = ener_source_e
+  phys%ener_source_ee     = ener_source_ee
+  phys%sigma_source       = sigma_source
+  phys%fluxg_trunc        = fluxg_trunc
   phys%part_source        = part_source
   phys%ener_source        = ener_source
   phys%Pohmic             = Pohmic
@@ -391,4 +397,3 @@ SUBROUTINE READ_input()
     PRINT *, '        '
   end if
 END SUBROUTINE READ_input
-

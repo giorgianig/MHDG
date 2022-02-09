@@ -243,7 +243,7 @@ SUBROUTINE HDG_computeJacobian()
       fluxel = phys%magnetic_flux(indbe)
       
       ! Ohmic heating (toroidal current)
-      IF (switch%testcase .EQ. 54) THEN
+      IF ((switch%testcase .EQ. 54 .or. switch%testcase .EQ. 59) THEN
         Jtorel = phys%Jtor(indbe)
       ELSE
         Jtorel = 0.
@@ -436,7 +436,7 @@ CONTAINS
     b = matmul(refElTor%N3D,b_nod)
 
     ! toroidal current at Gauss points
-    IF (switch%testcase .EQ. 54) THEN
+    IF ((switch%testcase .EQ. 54) .or. (switch%testcase .EQ. 59)) THEN
       Jtor = matmul(refElPol%N3D,Jtorel)
     ELSE
       Jtor = 0.
@@ -1126,7 +1126,7 @@ CONTAINS
     fluxel = phys%magnetic_flux(Mesh%T(iel,:))
 
     ! Ohmic heating (toroidal current)
-    IF (switch%testcase .EQ. 54) THEN
+    IF ((switch%testcase .EQ. 54) .or. (switch%testcase .EQ. 59)) THEN
       Jtorel = phys%Jtor(Mesh%T(iel,:))
     ELSE
       Jtorel = 0.
@@ -1253,6 +1253,7 @@ CONTAINS
     ind_asq = (/(i,i=0,Neq*(Npel - 1)*Ndim,Neq*Ndim)/)
 
     force = 0.
+    Pi = 3.1415926535
     !***********************************
     !    Volume computation
     !***********************************
@@ -1274,7 +1275,7 @@ CONTAINS
     b = matmul(refElPol%N2D,b_nod)
 
     ! toroidal current at Gauss points
-    IF (switch%testcase .EQ. 54) THEN
+    IF ((switch%testcase .EQ. 54) .or. (switch%testcase .EQ. 59)) THEN
       Jtor = matmul(refElPol%N2D,Jtorel)
     ELSE
       Jtor = 0.
@@ -1306,85 +1307,50 @@ CONTAINS
     ! Body force at the integration points
     CALL body_force(xy(:,1),xy(:,2),force)
 
-#ifdef NEUTRAL
-!    ! Some neutral for WEST
-!    IF (switch%testcase .ge. 50 .and. switch%testcase .le. 59) THEN
-!      DO g = 1,Ng2d
-!        !IF (xy(g,1)*phys%lscale .gt. 2.36 .and. xy(g,2)*phys%lscale .lt. -0.69 ) THEN
-!        IF (xy(g,1)*phys%lscale .gt. 2.446 .and. xy(g,1)*phys%lscale .lt. 2.59 .and. xy(g,2)*phys%lscale .gt. -0.7964 .and. xy(g,2)*phys%lscale .lt. -0.7304 ) THEN
-!          ! Case moving equilibrium
-!          ! force(g,5) = phys%puff_exp(time%it+1)
-
-!          force(g,5) = phys%puff
-!        ENDIF
-!        !x0 = 2.213
-!        !y0 = -0.6968
-!        !sigmax = 0.02
-!        !sigmay = 0.01
-!        !A = phys%lscale**2/(pi*sigmax*sigmay)
-!        !force(g,5) = phys%puff*A*exp(-((xy(g,1)*phys%lscale - x0)**2)/(2*sigmax**2) - ((xy(g,2)*phys%lscale - y0)**2)/(2*sigmay**2))
-!      ENDDO
-!    ENDIF
-#endif
-!! Some sources for West cases
-IF (switch%testcase	.ge.50 .and. switch%testcase	.le.54) THEN
-    fluxg = matmul(refElPol%N2D,phys%magnetic_flux(Mesh%T(iel,:)))
-    max_flux2D = maxval(phys%magnetic_flux)
-    min_flux2D = minval(phys%magnetic_flux)
-    fluxg = (fluxg - min_flux2D)/(max_flux2D - min_flux2D)
+    ! Some sources for West cases
+    IF (switch%testcase .ge. 50 .and. switch%testcase .le. 59) THEN
+      ! Compute flux surfaces and normalise them
+      fluxg = matmul(refElPol%N2D,fluxel)
+      max_flux2D = maxval(phys%magnetic_flux)
+      min_flux2D = minval(phys%magnetic_flux)
+      fluxg = (fluxg - min_flux2D)/(max_flux2D - min_flux2D)
       DO g = 1,Ng2d
-        IF (switch%testcase == 51) THEN
-          IF (fluxg(g) .le. -0.88 .and. fluxg(g) .ge. -0.90) THEN
-            !force(g,1) = 3.20119388718018e-05
-            force(g,1) = 4.782676673609557e-05
-          END IF
-        ELSE IF (switch%testcase == 52) THEN
-          Pi = 3.1415926535
-          sigma = 0.15
+        IF (ueg(g,1) .lt. th_n) THEN
+          force(g,1) = th_n - ueg(g,1)
+        ENDIF
+        ! WEST CASE with analytical Gaussian sources on density and energies, no puff.
+        IF (switch%testcase == 52) THEN
+          sigma = phys%sigma_source
           x0 = 0.
-          A = (phys%lscale**2)/(2*Pi*sigma**2)
-#ifndef NEUTRAL
-	  if(fluxg(g).le.0.32) then
-          	force(g,1) = 0.5*A*exp(-((fluxg(g) - x0)**2)/(2*sigma**2))
-          	force(g,4) = 30.*A*exp(-((fluxg(g) - x0)**2)/(2*sigma**2))
-	  else
-		force(g,1) = 0.
-	        force(g,4) = 0.
-
-	  end if
-#endif
-          !IF (fluxg(g) .le. -0.90 .and. fluxg(g) .ge. -1.) THEN
-          !  force(g,1) = 9.45155008295538e-06
-          !END IF
-        ELSE IF (switch%testcase == 53) THEN
-          IF (fluxg(g) .le. -0.90) THEN
-            force(g,1) = 7.24032211339971e-06
-          END IF
+          A = (phys%lscale**2)/sqrt((2*Pi*sigma**2))
+          IF (fluxg(g) .le. phys%fluxg_trunc) THEN
+            force(g,1) = phys%density_source*A*exp(-((fluxg(g) - x0)**2)/(2*sigma**2))
 #ifdef TEMPERATURE
-          force(g,3) = 18*force(g,1)
-          force(g,4) = force(g,3)
+            force(g,3) = phys%ener_source_e*A*exp(-((fluxg(g) - x0)**2)/(2*sigma**2))
+            force(g,4) = phys%ener_source_ee*A*exp(-((fluxg(g) - x0)**2)/(2*sigma**2))
 #endif
-        ELSE IF (switch%testcase == 54) THEN
-#ifndef NEUTRAL
-          sigma = 0.22
-          x0 = 0.
-          A = (phys%lscale**2)/(2*PI*sigma**2)
-          IF (fluxg(g) .le. 0.35) THEN
-            force(g,1) = 1.*A*exp(-((fluxg(g) - x0)**2)/(2*sigma**2))
           ENDIF
-          !IF (fluxg(g) .le. -1.03) THEN
-          !  force(g,1) = 0.000115575293741846
-          !END IF
+#ifdef NEUTRAL
+        ! WEST CASE only with analytical puff. Energy source is given by JTOR.
+        ELSE IF (switch%testcase == 54) THEN
+          ! location of the buffer differs for the mesh 3895_P4 and for the mesh 26830_P4
+          IF (xy(g,1)*phys%lscale .gt. 2.36 .and. xy(g,2)*phys%lscale .lt. -0.69 ) THEN
+          !IF (xy(g,1)*phys%lscale .gt. 2.446 .and. xy(g,1)*phys%lscale .lt. 2.59 .and. xy(g,2)*phys%lscale .gt. -0.7964 .and. xy(g,2)*phys%lscale .lt. -0.7304 ) THEN
+            force(g,5) = phys%puff
+          ENDIF
+        ELSE IF(switch%testcase .eq. 59) THEN
+          ! location of the buffer differs for the mesh 3895_P4 and for the mesh 26830_P4
+          !IF (xy(g,1)*phys%lscale .gt. 2.36 .and. xy(g,2)*phys%lscale .lt. -0.69 ) THEN
+          IF (xy(g,1)*phys%lscale .gt. 2.446 .and. xy(g,1)*phys%lscale .lt. 2.59 .and. xy(g,2)*phys%lscale .gt. -0.7964 .and. xy(g,2)*phys%lscale .lt. -0.7304 ) THEN
+            ! If it is a time initialization simulation, the puff is analytical (from param.txt) otherwise experimental
+            IF(switch%time_init) THEN
+              force(g,5) = phys%puff
+            ELSE
+              force(g,5) = phys%puff_exp(time%it+1)
+            ENDIF
+          ENDIF
 #endif
-        ELSE IF (switch%testcase == 55) THEN
-          IF (fluxg(g) .le. -0.88 .and. fluxg(g) .ge. -0.90) THEN
-            force(g,1) = 10
-          END IF
-#ifdef TEMPERATURE
-          force(g,3) = 18*force(g,1)
-          force(g,4) = force(g,3)
-#endif
-        END IF
+        ENDIF
       END DO
     END IF
     !! end sources
@@ -1392,12 +1358,6 @@ IF (switch%testcase	.ge.50 .and. switch%testcase	.le.54) THEN
     !!Some sources for Circular cases
     IF (switch%testcase .ge. 60) THEN
       DO g=1,Ng2D
-!#ifdef NEUTRAL
-!             IF (iel .eq. 104 .or. iel .eq. 251) THEN
-!                force(g,5) = 1.e-05
-!             END IF
-!#endif
-								  !DO g=1,Ng2D
 			IF (switch%testcase==61) THEN
 			     r =   sqrt ( (xy(g,1)*phys%lscale-geom%R0)**2 +(xy(g,2)*phys%lscale)**2 )
 					 IF (r .le. 0.4) THEN
@@ -1418,10 +1378,6 @@ IF (switch%testcase	.ge.50 .and. switch%testcase	.le.54) THEN
             force(g,4) = force(g,3)
 #endif
 			END IF
-!#ifdef TEMPERATURE
-!             force(g,3) = 18.*2.838272668283863e-06 !force(g,1)
-!             force(g,4) = force(g,3)
-!#endif
 			END DO
 		END IF
 		!! end sources
@@ -1963,7 +1919,6 @@ IF (switch%testcase	.ge.50 .and. switch%testcase	.le.54) THEN
     ! Split diffusion matrices/vectors for the momentum equation
     CALL compute_W2(ue,W2)
     CALL compute_dW2_dU(ue,dW2_dU)
-
     QdW2 = matmul(Qpr,dW2_dU)
 
     qq = 0.
@@ -2020,7 +1975,7 @@ IF (switch%testcase	.ge.50 .and. switch%testcase	.le.54) THEN
     call compute_dS_dU(ue,ds_dU)
 
     !Ohmic Heating
-    IF (switch%testcase .EQ. 54) THEN
+    IF ((switch%testcase .EQ. 54) .or. (switch%testcase .EQ. 59)) THEN
       !Compute Sohmic(U^(k-1))
       call compute_Sohmic(ue,Sohmic)
       !Compute dSohmic_dU(U^(k-1))
@@ -2166,7 +2121,7 @@ IF (switch%testcase	.ge.50 .and. switch%testcase	.le.54) THEN
           DO j = 1,4
             z = i+(j-1)*Neq
             Auu(:,:,z)=Auu(:,:,z)+coefe*(gme*dAlpha_dUe(j) + Alphae*(dot_product(Taue(:,j),b)))*NNxy - (dot_product(Zet(:,j),b) + ds_dU(j))*NNi
-            IF (switch%testcase .EQ. 54) THEN
+            IF ((switch%testcase .EQ. 54) .or. (switch%testcase .EQ. 59)) THEN
               Auu(:,:,z) = Auu(:,:,z) - dSohmic_dU(j)*(Jtor**2)*NNi
             ENDIF
             DO k = 1,Ndim
@@ -2184,7 +2139,7 @@ IF (switch%testcase	.ge.50 .and. switch%testcase	.le.54) THEN
             Auu(:,:,z) = Auu(:,:,z) - (dot_product(QdW4(:,j),b))*NNxy
           END DO
           rhs(:,i) = rhs(:,i)+coefe*Alphae*(dot_product(matmul(transpose(Taue),b),ue))*NNbb - s*Ni
-          IF (switch%testcase .EQ. 54) THEN
+          IF ((switch%testcase .EQ. 54) .or. (switch%testcase .EQ. 59)) THEN
             rhs(:,i) = rhs(:,i) + Sohmic*(Jtor**2)*Ni
           ENDIF
         END IF
@@ -3038,4 +2993,3 @@ END IF
 
 
   END SUBROUTINE HDG_computeJacobian
-

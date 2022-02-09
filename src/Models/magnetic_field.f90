@@ -51,10 +51,6 @@ CONTAINS
       ! Magnetic field loaded from file in a cartesian grid
       ! Interpolation is needed
       CALL load_magnetic_field_grid
-      IF (switch%testcase.eq.54) THEN
-        phys%Jtor = 0.
-        CALL loadJtorMap()
-      END IF
 
     CASE (60:69)
 
@@ -196,24 +192,53 @@ CONTAINS
     USE interpolation
     USE HDF5
     USE HDF5_io_module
-    integer        :: i, j, ierr, ip, jp, ind
+
+    integer        :: i, j, ierr, ip, jp, ind, k
     integer(HID_T) :: file_id
     real*8, pointer, dimension(:, :) :: r2D, z2D, flux2D, Br2D, Bz2D, Bphi2D
     real*8, allocatable, dimension(:)   :: xvec, yvec
     real*8                            :: x, y, t
     real*8                            :: Br, Bz, Bt, flux
 
-    WRITE (6, *) "******* Loading magnetic field *******"
+    character(LEN=1000) :: fname
+    character(50)  :: npr,nid,nit
 
-
-
+    IF (MPIvar%glob_id .eq. 0) THEN
+      WRITE (6, *) "******* Loading magnetic field *******"
+    ENDIF
     ! Read file
     if (switch%testcase>=50 .and. switch%testcase<60) then
     ! WEST case
 						 ! Dimensions of the file storing the magnetic field for West
+
+        if(switch%testcase .ne. 59) then !if not a moving equilibrium simulation
 						 ip = 541
 						 jp = 391
-       CALL HDF5_open('WEST_far_465.h5', file_id, IERR)
+          fname = 'WEST_far_465.h5'
+        else
+          ip = 457
+          jp = 457
+          fname = 'B_field_exp/WEST_54487'
+
+          write(nit, "(i10)") int(time%it)
+          nit = trim(adjustl(nit))
+          k = INDEX(nit, " ") -1
+          ! I don't think this is actually needed for parallel read of the magnetic files
+          !IF (MPIvar%glob_size.GT.1) THEN
+          !   write(nid,*) MPIvar%glob_id+1
+          !   write(npr,*) MPIvar%glob_size
+          !   fname = trim(adjustl(fname))//'_'//trim(adjustl(nid))//'_'//trim(adjustl(npr))//'_'//REPEAT("0", 4 - k)//trim(ADJUSTL(nit))//'.h5'
+          !ELSE
+             fname = trim(adjustl(fname))//'_'//REPEAT("0", 4 - k)//trim(ADJUSTL(nit))//'.h5'
+          !END IF
+
+        endif
+        IF (MPIvar%glob_id .eq. 0) THEN
+          write(6,*) 'Magnetic field loaded from file: ', trim(adjustl(fname))
+        ENDIF
+        CALL HDF5_open(fname, file_id, IERR)
+
+
     elseif (switch%testcase>=80 .and. switch%testcase<90) then
     ! ITER case
     			! Dimensions of the file storing the magnetic field for ITER
@@ -281,7 +306,7 @@ CONTAINS
     integer        :: i, ierr, k
     character(LEN=20) :: fname = 'Evolving_equilibrium'
     character(10)  :: npr, nid, nit
-    character(len=1000) :: fname_complete
+    character(len=500) :: fname_complete
     integer(HID_T) :: file_id
     real*8, pointer, dimension(:) :: Br, Bz, Bt, flux
     INTEGER  :: nnodes
@@ -309,9 +334,9 @@ CONTAINS
     ELSE
       fname_complete = trim(adjustl(fname))//'_'//REPEAT("0", 4 - k)//trim(ADJUSTL(nit))//'.h5'
     END IF
-
+    IF (MPIvar%glob_id .eq. 0) THEN
     write (6, *) 'Magnetic field loaded from file: ', trim(adjustl(fname_complete))
-
+    ENDIF
     ! Read file
     CALL HDF5_open(fname_complete, file_id, IERR)
     CALL HDF5_array1D_reading(file_id, Br, 'Br')
@@ -744,22 +769,23 @@ CONTAINS
     USE interpolation
     USE HDF5
     USE HDF5_io_module
-    USE MPI_OMP
-    integer        :: i,ierr,ip,jp,ind,j
+    !USE MPI_OMP
+    integer        :: i,ierr,ip,jp,ind,j,k
     integer(HID_T) :: file_id
-!#ifdef MOVINGEQUILIBRIUM
-!    integer              :: k
-!    character(LEN=20)    :: fname = 'WEST_54487_Jtor'
-!    character(10)        :: npr,nid,nit
-!    character(len=1000)  :: fname_complete
-!#endif
+
+    character(LEN=1000)    :: fname = 'Jtor_exp/WEST_54487_Jtor'
+    character(70)        :: npr,nid,nit
+
     real*8,pointer,dimension(:,:) :: r2D,z2D,Jtor
     real*8,allocatable,dimension(:)   :: xvec,yvec
     real*8                            :: x,y
 
+    IF (MPIvar%glob_id .eq. 0) THEN
     WRITE(6,*) "******* Loading Toroidal Current *******"
+    ENDIF
     ! Allocate storing space in phys
     ALLOCATE(phys%Jtor(Mesh%Nnodes))
+    phys%Jtor = 0.
 
     ! Dimensions of the file storing the magnetic field for West
     !ip = 200
@@ -771,25 +797,21 @@ CONTAINS
     ALLOCATE(Jtor(ip,jp))
 
     ! Read file
-!#ifndef MOVINGEQUILIBRIUM
-    CALL HDF5_open('WEST_54487_Jtor_0100.h5',file_id,IERR)
-!#else
-!    ! File name
-!    write(nit, "(i10)") time%it+1
-!    nit = trim(adjustl(nit))
-!    k = INDEX(nit, " ") -1
-!
-!    IF (MPIvar%glob_size.GT.1) THEN
-!      write(nid,*) MPIvar%glob_id+1
-!      write(npr,*) MPIvar%glob_size
-!      fname_complete = trim(adjustl(fname))//'_'//trim(adjustl(nid))//'_'//trim(adjustl(npr))//'_'//REPEAT("0", 4 - k)//trim(ADJUSTL(nit))//'.h5'
-!    ELSE
-!      fname_complete = trim(adjustl(fname))//'_'//REPEAT("0", 4 - k)//trim(ADJUSTL(nit))//'.h5'
-!    END IF
-!
-!    write(6,*) 'Magnetic field loaded from file: ', trim(adjustl(fname_complete))
-!    CALL HDF5_open(fname_complete,file_id,IERR)
-!#endif
+    IF(switch%testcase .eq. 54) THEN
+        fname = trim(adjustl(fname)) //'_0099.h5'
+    ELSE
+      ! File name
+        write(nit, "(i10)") time%it
+        nit = trim(adjustl(nit))
+        k = INDEX(nit, " ") -1
+        fname = trim(adjustl(fname))//'_'//REPEAT("0", 4 - k)//trim(ADJUSTL(nit))//'.h5'
+    ENDIF
+    IF (MPIvar%glob_id .eq. 0) THEN
+      write(6,*) 'Toroidal current loaded from file: ', trim(adjustl(fname))
+    ENDIF
+
+    CALL HDF5_open(fname,file_id,IERR)
+
     CALL HDF5_array2D_reading(file_id,r2D,'r2D')
     CALL HDF5_array2D_reading(file_id,z2D,'z2D')
     CALL HDF5_array2D_reading(file_id,Jtor,'Jtor')
@@ -921,12 +943,18 @@ CONTAINS
     character(LEN=25) :: fname = 'Puff_54487.h5'
     integer(HID_T) :: file_id
 
-    ! Allocate storing space in phys
-    ALLOCATE(phys%puff_exp(time%nts+1))
+    ! Allocate storing space in phys (puff for WEST, 403 entries)
+    ALLOCATE(phys%puff_exp(403))
+    IF (MPIvar%glob_id .eq. 0) THEN
+      WRITE (6, *) "******* Loading puff *******"
+    ENDIF
 
     ! Read file
     CALL HDF5_open(fname,file_id,IERR)
     CALL HDF5_array1D_reading(file_id,phys%puff_exp,'puff')
+    IF (MPIvar%glob_id .eq. 0) THEN
+      write(6,*) 'Puff loaded from file: ', trim(adjustl(fname))
+    ENDIF
     CALL HDF5_close(file_id)
 
   END SUBROUTINE SetPuff

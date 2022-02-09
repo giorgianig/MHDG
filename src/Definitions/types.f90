@@ -219,8 +219,13 @@ MODULE types
     real*8          :: Re                 ! Recycling for the neutral equation
     real*8          :: puff               ! Puff coefficient
     real*8,pointer  :: puff_exp(:)        ! Puff experimental coefficient (only for moving equilibriums)
-    real*8          :: part_source
-    real*8          :: ener_source
+    real*8          :: part_source        ! Particle source for ITER
+    real*8          :: ener_source        ! Particle source for ITER
+    real*8          :: density_source     ! Density source for WEST (2D, case 52)
+    real*8          :: ener_source_e      ! Ion energy source for WEST (2D, case 52)
+    real*8          :: ener_source_ee     ! Electron source for WEST (2D, case 52)
+    real*8          :: sigma_source       ! Sigma for the gaussian sources for WEST (2D, case 52)
+    real*8          :: fluxg_trunc        ! Value of the NORMALISED magnetic flux at which to truncate the gaussian sources for WEST (2D, case 52), refer to Source_shape.m file
   END TYPE Physics_type
 
   !*******************************************************
@@ -261,6 +266,7 @@ MODULE types
     logical :: driftdia ! Set to TRUE to consider diamagnetic drift
     logical :: driftexb ! Set to TRUE to consider ExB drift
     logical :: steady
+    logical :: time_init ! true if it is a time initialization simulation. The time counter "it" does not increment  (i.e. when the analitical initialisation is not good enough). Used for moving equilibrium (case 59)
     integer :: init     ! 1-init. analy. solution at nodes; 2-L2 projection
     ! Set to TRUE for a steady state computation
     ! Set to FALSE for a transient computation
