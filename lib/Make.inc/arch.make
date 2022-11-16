@@ -64,6 +64,8 @@ PASTIX=$(LIB_YES)
 PSBLAS=$(LIB_NO)
 #PSBLMG=$(LIB_YES)
 PSBLMG=$(LIB_NO)
+PETSC=$(LIB_YES)
+#PETSC=$(LIB_NO)
 
 
 #-------------------------------------------------------------------------------
@@ -125,18 +127,22 @@ endif
 ifeq ($(PASTIX),$(LIB_YES))
  MACROS+= -DWITH_PASTIX
  ADDMOD+=solve_pastix.o
+ ADDMODSOLVER+=solve_pastix.o
 endif
 ifeq ($(PETSC),$(LIB_YES))
  MACROS+= -DWITH_PETSC
  ADDMOD+=solve_petsc.o
+ ADDMODSOLVER+=solve_petsc.o
 endif
 ifeq ($(PSBLMG),$(LIB_YES))
  MACROS+= -DWITH_PSBLAS
  MACROS+= -DWITH_MLD2P4
  ADDMOD+=solve_psblas.o
+ ADDMODSOLVER+=solve_psblas.o
 else ifeq ($(PSBLAS),$(LIB_YES))
  MACROS+= -DWITH_PSBLAS
  ADDMOD+=solve_psblas.o
+ ADDMODSOLVER+=solve_psblas.o
 endif
 
 #-------------------------------------------------------------------------------
