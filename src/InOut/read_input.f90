@@ -14,10 +14,10 @@ SUBROUTINE READ_input()
   USE MPI_OMP
   IMPLICIT NONE
 
-  logical :: driftdia,driftexb, axisym, restart,steady,time_init, dotiming,psdtime,decoup,bxgradb
+  logical :: driftdia,driftexb, axisym, restart,steady,time_init, dotiming,psdtime,decoup,bxgradb, igz
   logical :: ckeramp,saveNR,filter,saveTau,lstiming,fixdPotLim,dirivortcore,dirivortlim,convvort,logrho
   integer :: thresh, difcor, tis, stab,pertini,init
-  integer :: itmax, itrace, rest, istop, sollib
+  integer :: itmax, itrace, rest, istop, sollib, kspitrace,rprecond, Nrprecond, kspitmax, kspnorm, gmresres,mglevels,mgtypeform
   integer :: uinput, printint, testcase, nrp
   integer :: nts, tsw, freqdisp, freqsave, shockcp, limrho
   integer :: bcflags(1:10), ntor, ptor, npartor,bohmtypebc
@@ -25,10 +25,10 @@ SUBROUTINE READ_input()
   real*8  :: tfi, a, bohmth, q, diffred, diffmin
   real*8  :: sc_coe, so_coe, df_coe, thr, thrpre, minrho, dc_coe, sc_sen
   real*8  :: epn, Mref, diff_pari, diff_e, Gmbohm, Gmbohme
-  real*8  :: diff_pare, diff_ee, tie, dumpnr, tmax, tol
+  real*8  :: diff_pare, diff_ee, tie, dumpnr, tmax, tol, rtol, atol
   real*8  :: diff_vort, diff_pot, etapar, c1, c2, Potfloat,diagsource(10)
   character(100) :: msg
-  character(20)  :: kmethd, ptype
+  character(20)  :: kmethd, ptype, kspmethd, pctype
 
   character(len=20) :: smther, smther2, prol, restr, solve, restr2, prol2, solve2, mlcycle
   character(len=20) :: aggr_prol, par_aggr_alg, aggr_ord, aggr_filter, csolve, csbsolve, cmat
@@ -55,11 +55,11 @@ SUBROUTINE READ_input()
   NAMELIST /PHYS_LST/ diff_n, diff_u, diff_e, diff_ee, diff_vort, diff_nn, Re, puff,density_source, ener_source_e, ener_source_ee, sigma_source, fluxg_trunc, part_source,ener_source, Pohmic, Tbg, bcflags, bohmth,&
     &Gmbohm, Gmbohme, a, Mref, tie, diff_pari, diff_pare, diff_pot, epn, etapar, Potfloat,diagsource
   NAMELIST /UTILS_LST/ PRINTint, dotiming, freqdisp, freqsave
-  NAMELIST /LSSOLV_LST/ sollib, lstiming, itmax, itrace, rest, istop, tol, kmethd, ptype,&
-    &smther, jsweeps,&
-    &novr, restr, prol, solve, fill, thrsol, smther2, jsweeps2, novr2, restr2, prol2, solve2, fill2, thrsol2, mlcycle,&
-    &outer_sweeps, maxlevs, csize, aggr_prol, par_aggr_alg, aggr_ord, aggr_filter, mncrratio, athres,&
-    &csolve, csbsolve, cmat, cfill, cthres, cjswp
+  NAMELIST /LSSOLV_LST/ sollib, lstiming, kspitrace, rtol, atol, kspitmax, igz, rprecond,Nrprecond, kspnorm, kspmethd, pctype, gmresres,mglevels, mgtypeform, &
+  itmax, itrace, rest, istop, tol, kmethd, ptype, smther, jsweeps,novr, restr, prol, solve, fill, thrsol, &
+  smther2, jsweeps2, novr2, restr2, prol2, solve2, fill2, thrsol2, mlcycle,outer_sweeps, maxlevs, csize, &
+  aggr_prol, par_aggr_alg, aggr_ord, aggr_filter, mncrratio, athres,csolve, csbsolve, cmat, cfill, cthres, &
+  cjswp
 
   ! Reading the file
   uinput = 100
@@ -178,6 +178,19 @@ SUBROUTINE READ_input()
   utils%freqsave          = freqsave
   lssolver%sollib         = sollib
   lssolver%timing         = lstiming
+  lssolver%kspitrace      = kspitrace
+  lssolver%rtol           = rtol
+  lssolver%atol           = atol
+  lssolver%kspitmax       = kspitmax
+  lssolver%igz            = igz
+  lssolver%rprecond       = rprecond
+  lssolver%Nrprecond      = Nrprecond
+  lssolver%kspnorm        = kspnorm
+  lssolver%kspmethd       = kspmethd
+  lssolver%pctype         = pctype
+  lssolver%gmresres       = gmresres
+  lssolver%mglevels       = mglevels
+  lssolver%mgtypeform     = mgtypeform
   lssolver%itmax          = itmax
   lssolver%itrace         = itrace
   lssolver%rest           = rest
@@ -256,7 +269,11 @@ SUBROUTINE READ_input()
 #ifdef NEUTRAL
     PRINT *, ' MODEL: N-Gamma isothermal with neutral                               '
 #else
+#ifndef LAPLACE
     PRINT *, ' MODEL: N-Gamma isothermal                                            '
+#else
+    PRINT *, ' MODEL: Laplace                                                       '
+#endif
 #endif
 #else
 #ifdef NEUTRAL
@@ -382,6 +399,7 @@ SUBROUTINE READ_input()
     PRINT *, '                - max extention in the toroidal direction:            ', numer%tmax
 #endif
     PRINT *, '                - dumping for ExB term:       ', numer%exbdump
+    PRINT *, '                - type of bohm boundary condition:                     ',  numer%bohmtypebc
     PRINT *, '        ***************** Linear solver params******************'
     IF (lssolver%sollib == 1) THEN
       PRINT *, '                - Library used for the linear system:   PASTIX      '
@@ -392,6 +410,20 @@ SUBROUTINE READ_input()
       PRINT *, '                - Stopping criterion type                           ', lssolver%istop
       PRINT *, '                - Stopping criterion tolerance                      ', lssolver%tol
       PRINT *, '                - Restart:                                          ', lssolver%rest
+    ELSEIF (lssolver%sollib == 3) THEN
+      PRINT *, '                - Library used for the linear system:   PETSc      '
+      PRINT *, '                - Iterative method:                                 ', lssolver%kspmethd
+      PRINT *, '                - Preconditioner:                                   ', lssolver%pctype
+      PRINT *, '                - Relative tollerance                               ', lssolver%rtol
+      PRINT *, '                - Absolute tollerance                               ', lssolver%atol
+      PRINT *, '                - Max number of iteration:                          ', lssolver%kspitmax
+      PRINT *, '                - Set to zero the initial guess                     ', lssolver%igz
+      PRINT *, '                - Recompute preconditioner at each NR               ', lssolver%rprecond
+      PRINT *, '                - Norm type                                         ', lssolver%kspnorm
+      PRINT *, '                - Gmres restart value                               ', lssolver%gmresres
+      PRINT *, '                - Display convergence at each iteration             ', lssolver%kspitrace
+      PRINT *, '                - MultiGrid (MG) levels                             ', lssolver%mglevels
+      PRINT *, '                - MultiGrid (MG) type form                          ', lssolver%mgtypeform
     ENDIF
 
     PRINT *, '        '

@@ -119,10 +119,13 @@ CONTAINS
     real*8, dimension(:, :), intent(in)  :: ua
     real*8, dimension(:, :), intent(out) :: up
     real*8,  dimension(size(ua,1))  :: U1,U5
-    real, parameter :: tol = 1e-6
+    real, parameter :: tol = 1e-12
     integer :: i
 
     U1 = abs(ua(:,1))
+#ifdef NEUTRAL
+     U5 = ua(:,5)
+#endif
     do i = 1, size(ua,1)
       if (U1(i)<tol) U1(i)=tol
 #ifdef NEUTRAL    
@@ -1142,9 +1145,49 @@ CONTAINS
 #endif
 
     elseif (numer%stab == 4) then
-      tau_aux = max(abs(5./3.*up(2)*bn), abs(0.3*bn*(3*uc(1) + sqrt(abs(10*uc(3)*uc(1) + 10*uc(4)*uc(1) - 5*uc(2)**2)))/uc(1)), &
-        phys%lscale/geom%R0*abs(bn)*phys%diff_pari*up(7)**2.5, phys%lscale/geom%R0*abs(bn)*phys%diff_pare*up(8)**2.5)
+      !tau_aux = max(abs(5./3.*up(2)*bn), abs(0.3*bn*(3*uc(1) + sqrt(abs(10*uc(3)*uc(1) + 10*uc(4)*uc(1) - 5*uc(2)**2)))/uc(1)), &
+      !  phys%lscale/geom%R0*abs(bn)*phys%diff_pari*up(7)**2.5, phys%lscale/geom%R0*abs(bn)*phys%diff_pare*up(8)**2.5)
+        if (abs(isext - 1.) .lt. 1e-12) then
+        !exterior faces
+        tau_aux = abs((4*uc(2)*bn)/uc(1))
+        else
+        tau_aux = max(abs(5./3.*up(2)*bn), abs(0.3*bn*(3*uc(1) + sqrt(abs(10*uc(3)*uc(1) + 10*uc(4)*uc(1) - 5*uc(2)**2)))/uc(1)))
+        endif
+        !tau_aux = abs(up(2)*bn)*(1+sign(real(1),up(2)*bn))/2
+#ifdef TOR3D
+      if (abs(n(3)) > 0.1) then
+        bn = dot_product(b, n)
+        bnorm = norm2(b)
 
+        ! Poloidal face
+        tau_aux(1) = tau_aux(1) + phys%diff_n
+        tau_aux(2) = tau_aux(2) + phys%diff_u
+        tau_aux(3) = tau_aux(3) + phys%diff_e + abs(bn)*phys%diff_pari*up(7)**2.5*bnorm/uc(1)*refElTor%Ndeg/(numer%tmax*xy(1)/numer%ntor)/Mesh%elemSize(iel)
+        tau_aux(4) = tau_aux(4) + phys%diff_ee + abs(bn)*phys%diff_pare*up(8)**2.5*bnorm/uc(1)*refElTor%Ndeg/(numer%tmax*xy(1)/numer%ntor)/Mesh%elemSize(iel)
+
+#ifdef NEUTRAL
+         tau_aux(5) = tau_aux(5) + phys%diff_nn
+#endif
+       else
+#endif
+        bn = dot_product(b(1:2), n(1:2))
+        bnorm = norm2(b(1:2))
+        ! Toroidal face
+        tau_aux(1) = tau_aux(1) +  diff_iso(1,1,1)/Mesh%elemSize(iel)
+        tau_aux(2) = tau_aux(2) +  diff_iso(2,2,1)/Mesh%elemSize(iel)
+        tau_aux(3) = tau_aux(3) +  diff_iso(3,3,1) + abs(bn)*phys%diff_pari*up(7)**2.5*bnorm/uc(1)*refElPol%ndeg/Mesh%elemSize(iel)!/phys%lscale
+        tau_aux(4) = tau_aux(4) +  diff_iso(4,4,1) + abs(bn)*phys%diff_pare*up(8)**2.5*bnorm/uc(1)*refElPol%ndeg/Mesh%elemSize(iel)!/phys%lscale
+
+        !tau_aux(1) = tau_aux(1) + phys%diff_n/(0.038*2)
+        !tau_aux(2) = tau_aux(2) + phys%diff_u/(0.038*2)
+        !tau_aux(3) = tau_aux(3) + phys%diff_e + abs(bn)*(phys%diff_pari/0.038)*up(7)**2.5/(uc(1)*2)
+        !tau_aux(4) = tau_aux(4) + phys%diff_ee + abs(bn)*(phys%diff_pare/0.038)*up(8)**2.5/(uc(1)*2)
+#ifdef NEUTRAL
+        tau_aux(5) = tau_aux(5) +  diff_iso(5,5,1)
+#endif
+#ifdef TOR3D
+      endif
+#endif
     elseif (numer%stab == 5) then
       if (abs(isext - 1.) .lt. 1e-12) then
         ! exterior faces

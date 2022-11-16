@@ -12,6 +12,10 @@ PROGRAM MHDG
 #ifdef WITH_PSBLAS
   USE solve_psblas
 #endif
+#ifdef WITH_PETSC
+#include "petsc/finclude/petsc.h"
+  USE solve_petsc
+#endif
   USE Postprocess
 #ifdef PARALL
   USE Communications
@@ -29,7 +33,7 @@ PROGRAM MHDG
   character(LEN=1024) :: mesh_name,mesh_name_proj, namemat, save_name
   real*8              :: cputtot, runttot
   integer             ::  OMP_GET_MAX_THREADS
-  integer             :: cks, clock_rate, cke, clock_start, clock_end
+  integer             :: cks, clock_rate, cke, clock_start, clock_end, max_mem_used, RSS_mem_used
   real*8              :: time_start, time_finish, tps, tpe
   real*8,allocatable  :: u_proj(:),q_proj(:),u_tilde_proj(:), xs(:,:)
   INTEGER :: code, pr, aux
@@ -78,6 +82,10 @@ PROGRAM MHDG
 
   ! Initialize MPI
   CALL init_MPI_OMP()
+
+#ifdef WITH_PETSC
+  call InitPETSC()
+#endif
 
   IF (MPIvar%glob_id .eq. 0) THEN
     write(6,*) "Using ", Nthreads, " threads"
@@ -145,7 +153,6 @@ PROGRAM MHDG
   CALL create_toroidal_structures(refElTor, refElPol)
 #endif
 
-
   ! Mesh preprocess: create the mesh related structures
   ! used in the HDG scheme
   CALL mesh_preprocess()
@@ -158,40 +165,12 @@ PROGRAM MHDG
   ! Initialize magnetic field (the Mesh is needed)
   CALL initialize_magnetic_field()
 
-  ! Load magnetic field and, if case is 54 or 59, also Jtor
+  ! Load magnetic field and, if case is 54 or 59
   CALL load_magnetic_field()
 
-
-        IF (switch%testcase .eq. 54) THEN
-          CALL loadJtorMap()
-#ifdef NEUTRAL
-          WRITE(6,*) 'Puff is analytical'
-#else
-          WRITE(6,*) 'This test case should be ran with neutrals'
-          STOP
-#endif
-        ENDIF
-        IF (switch%testcase .eq. 59) THEN
-          CALL loadJtorMap()
-#ifdef NEUTRAL
-          IF(switch%time_init) THEN
-            IF (MPIvar%glob_id .eq. 0) THEN
-              WRITE(6,*) 'Puff is analytical'
-            ENDIF
-          ELSE
-            IF (MPIvar%glob_id .eq. 0) THEN
-              WRITE(6,*) 'Puff is experimental'
-            ENDIF
-              CALL SetPuff()
-          ENDIF
-#else
-          IF (MPIvar%glob_id .eq. 0) THEN
-            WRITE(6,*) 'This test case should be ran with neutrals'
-          ENDIF
-          STOP
-#endif
-        ENDIF
-
+  IF ((switch%testcase .eq. 54) .or. (switch%testcase .eq. 59)) THEN
+    CALL allocate_load_JTOR_PUFF
+  ENDIF
 
 #ifdef TOR3D
   Ndim = 3                                               ! Number of dimensions
@@ -332,7 +311,8 @@ PROGRAM MHDG
 !      endif
       !ENDIF
       ! Solve linear system
-      CALL solve_global_system()
+      CALL solve_global_system(ir)
+
       ! Compute element-by-element solution
       CALL compute_element_solution()
       ! Check for NaN (doesn't work with optimization flags)
@@ -355,17 +335,26 @@ PROGRAM MHDG
         CALL HDF5_save_solution(save_name)
       END IF
 
-      ! Check convergence of Newton-Raphson
+      ! Compute error of the Newton-Raphson
       errNR = computeResidual(sol%u, uiter, 1.)
       errNR = errNR/numer%dumpnr
 
       IF (MPIvar%glob_id .eq. 0) THEN
-        WRITE (6, *) "Error: ", errNR
+        WRITE (*, *)   "Error:                  ", errNR
+#ifdef WITH_PETSC
+        IF(lssolver%sollib .eq. 3) THEN
+          WRITE (*, *) "Relative Residue PETSc: ", matPETSC%residue
+          WRITE (*,*)  "Number of iterations:   ", matPETSC%its
+        ENDIF
+#endif
       END IF
       IF (errNR .lt. numer%tNR) THEN
         EXIT
       ELSEIF (errNR .gt. numer%div) THEN
         WRITE (6, *) 'Problem in the N-R procedure'
+          IF(switch_save .eq. 0) THEN
+            CALL saveMemStat()
+          ENDIF
         STOP
       ELSE
         uiter = sol%u
@@ -401,12 +390,10 @@ PROGRAM MHDG
 
     IF (.not. switch%steady) THEN
       ! Save solution
-      IF (.not. switch%steady) THEN
         IF (mod(time%it, utils%freqsave) .eq. 0) THEN
           CALL setSolName(save_name, mesh_name, time%it, .true., .false.)
           CALL HDF5_save_solution(save_name)
         END IF
-      END IF
 
       !****************************************
       ! Check steady state and update or exit
@@ -457,7 +444,6 @@ PROGRAM MHDG
             END DO
           END IF
           sol%u0(:, 1) = sol%u
-
           time%it = 0
           ! compute dt
         ELSE
@@ -535,7 +521,7 @@ PROGRAM MHDG
           DO is = it, 1, -1
             sol%u0(:, is + 1) = sol%u0(:, is)
           END DO
-        ELSEIF (time%tis > 1) THEN
+        ELSEIF (time%tis .gt. 1) THEN
           DO is = time%tis, 2, -1
             sol%u0(:, is) = sol%u0(:, is - 1)
           END DO
@@ -552,6 +538,10 @@ PROGRAM MHDG
   ! Save solution
   CALL setSolName(save_name, mesh_name, time%it, .true., .true.)
   CALL HDF5_save_solution(save_name)
+
+  IF(switch_save .eq. 0) THEN
+    CALL saveMemStat()
+  ENDIF
 
   call cpu_time(time_finish)
   call system_clock(clock_end, clock_rate)
@@ -609,6 +599,8 @@ PROGRAM MHDG
         WRITE(6, '(" *", 24X, "LINEAR SYSTEM SOLVER TIMING: PASTIX ( Nthreads = ",i2,")", 14X, " *")') Nthreads
       else if (lssolver%sollib .eq. 2) then
         WRITE(6, '(" *", 24X, "LINEAR SYSTEM SOLVER TIMING: PSBLAS ( Nthreads = ",i2,")", 14X, " *")') Nthreads
+      else if (lssolver%sollib .eq. 3) then
+        WRITE(6, '(" *", 24X, "LINEAR SYSTEM SOLVER TIMING: PETSc ( Nthreads = ",i2,")", 14X, " *")') Nthreads
       endif
       WRITE(6, '(" *", 28X, "Cpu-time  (% tot)",6X,    "Run-time  (% tot)   Speedup/Nthreads ", 2X, " *")')
       if (lssolver%sollib .eq. 1) then
@@ -639,6 +631,17 @@ PROGRAM MHDG
           &timing%clstime5,timing%clstime5/cputtot*100,timing%rlstime5,timing%rlstime5/runttot*100,timing%clstime5/timing%rlstime5/Nthreads
         WRITE(6, '(" *", 2X,  "Total time       : ", ES16.3," ("F5.1 "%)",1X,ES13.3," ("F5.1 "%)",6X,F5.1 , 10X, " *")') &
           &cputtot,cputtot/cputtot*100,runttot,runttot/runttot*100,cputtot/runttot/Nthreads
+      elseif (lssolver%sollib .eq. 3) then
+        WRITE(6, '(" *", 2X,  "Init. mat        : ", ES16.3," ("F4.1 "%)",1X,ES14.3," ("F4.1 "%)",8X,  F4.1 , 10X, " *")') &
+          &timing%clstime1,timing%clstime1/cputtot*100,timing%rlstime1,timing%rlstime1/runttot*100,timing%clstime1/timing%rlstime1/Nthreads
+        WRITE(6, '(" *", 2X,  "Build mat        : ", ES16.3," ("F4.1 "%)",1X,ES14.3," ("F4.1 "%)",8X,F4.1 , 10X, " *")') &
+          &timing%clstime2,timing%clstime2/cputtot*100,timing%rlstime2,timing%rlstime2/runttot*100,timing%clstime2/timing%rlstime2/Nthreads
+        WRITE(6, '(" *", 2X,  "Fill vec         : ", ES16.3," ("F4.1 "%)",1X,ES14.3," ("F4.1 "%)",8X,F4.1 , 10X, " *")') &
+          &timing%clstime3,timing%clstime3/cputtot*100,timing%rlstime3,timing%rlstime3/runttot*100,timing%clstime3/timing%rlstime3/Nthreads
+        WRITE(6, '(" *", 2X,  "Solve            : ", ES16.3," ("F4.1 "%)",1X,ES14.3," ("F4.1 "%)",8X,F4.1 , 10X, " *")') &
+          &timing%clstime4,timing%clstime4/cputtot*100,timing%rlstime4,timing%rlstime4/runttot*100,timing%clstime4/timing%rlstime4/Nthreads
+        WRITE(6, '(" *", 2X,  "Total time       : ", ES16.3," ("F5.1 "%)",1X,ES13.3," ("F5.1 "%)",6X,F5.1 , 10X, " *")') &
+            &cputtot,cputtot/cputtot*100,runttot,runttot/runttot*100,cputtot/runttot/Nthreads
       endif
       WRITE (6, '(" *", 90("*"), "**")')
       WRITE (6, *) " "
@@ -664,13 +667,18 @@ PROGRAM MHDG
   IF (lssolver%sollib .eq. 1) THEN
 #ifdef WITH_PASTIX
     CALL terminate_mat_PASTIX()
-
     ! MPI finalization
     call MPI_finalize(IERR)
 #endif
   ELSEIF (lssolver%sollib .eq. 2) THEN
 #ifdef WITH_PSBLAS
     CALL terminate_PSBLAS()
+#endif
+  ELSEIF (lssolver%sollib .eq. 3) THEN
+#ifdef WITH_PETSC
+    call terminate_PETSC()
+    call FinalizePETSC()
+    call MPI_finalize(IERR)
 #endif
   ENDIF
 
@@ -738,6 +746,98 @@ CONTAINS
 
     res = sqrt(sum2)/sqrt(dble(nglo))/coeff
   END FUNCTION computeResidual
+
+  subroutine saveMemStat()
+    logical :: exist
+    character(LEN=100) :: fname = 'mem.log'
+    character(70)  :: npr, nid
+    integer :: ierr
+    character(len=1000) :: fname_complete = 'mem.log'
+    integer(HID_T) :: file_id
+
+    call system_mem_usage(max_mem_used, RSS_mem_used)
+    write(6,*) 'NThreads: ', Nthreads
+    write(6,*) 'RSS memory used (MB): ', RSS_mem_used/1024
+    write(6,*) 'Max memory used (MB): ', max_mem_used/1024
+    write(6,*) 'Max memory used per thread (MB): ', max_mem_used/1024/Nthreads
+
+
+#ifdef PARALL
+    CALL MPI_ALLREDUCE(MPI_IN_PLACE, RSS_mem_used,1 , MPI_INT, MPI_SUM, MPI_COMM_WORLD, ierr)
+    CALL MPI_ALLREDUCE(MPI_IN_PLACE, max_mem_used,1 , MPI_INT, MPI_SUM, MPI_COMM_WORLD, ierr)
+#endif
+    IF (MPIvar%glob_id .eq. 0) THEN
+      inquire(file=fname_complete, exist=exist)
+      if (exist) then
+        open(1, file=fname_complete, status="old", position="append", action="write")
+      else
+        open(1, file=fname_complete, status="new", action="write")
+      end if
+
+#ifdef PARALL
+      write(1,*) 'Process: ', MPIvar%glob_id
+#else
+      write(1,*) 'Serial version'
+#endif
+      write(1,*) 'NThreads: ', Nthreads
+      write(1,*) 'RSS memory used (MB): ', RSS_mem_used/1024
+      write(1,*) 'Max memory used (MB): ', max_mem_used/1024
+      write(1,*) 'Max memory used per thread (MB): ', max_mem_used/1024/Nthreads
+    ENDIF
+
+    close(1)
+
+    return
+end subroutine saveMemStat
+
+  subroutine system_mem_usage(VmPeak, VmRSS)
+    !use ifport !if on intel compiler
+    integer, intent(out) :: VmPeak, VmRSS
+
+    character(len=200):: filename=' '
+    character(len=80) :: line
+    character(len=8)  :: pid_char=' '
+    integer :: pid
+    logical :: ifxst
+
+    VmPeak=-1    ! return negative number if not found
+    VmRSS=-1
+    !--- get process ID
+
+    pid=getpid()
+    write(pid_char,'(I8)') pid
+    filename='/proc/'//trim(adjustl(pid_char))//'/status'
+
+    !--- read system file
+
+    inquire (file=filename,exist=ifxst)
+    if (.not.ifxst) then
+      write (*,*) 'system file does not exist'
+      return
+    endif
+
+    open(unit=100, file=filename, action='read')
+    do
+      read (100,'(a)',end=120) line
+      if (line(1:6).eq.'VmRSS:') then
+         read (line(7:),*) VmRSS
+         exit
+      endif
+    enddo
+    close(100)
+    open(unit=100, file=filename, action='read')
+    do
+      read (100,'(a)',end=120) line
+      if (line(1:7).eq.'VmPeak:') then
+         read (line(8:),*) VmPeak
+         exit
+      endif
+    enddo
+    120 continue
+    close(100)
+
+    return
+end subroutine system_mem_usage
 
   !************************************************
   ! Set the name of the solution

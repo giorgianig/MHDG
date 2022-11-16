@@ -1,15 +1,16 @@
 &SWITCH_LST
-    steady              = .false.       ! Is it a steady state simulation?
+    steady              = .true.       ! Is it a steady state simulation?
                                         ! .false. = time evolving simulation
                                         ! .true.  = steady state simulation 
     time_init           = .false.
     axisym              = .true.        ! Is it an axisymmetric simulation?
                                         ! true = yes (even for magnetic perturbation)
                                         ! false = no
+    time_init           = .true.
     init                = 1             ! Initialization type: 1-analytical at nodes; 2-L2 projection
     driftdia            = .false.       ! Set to FALSE to ignore diamagnetic drifts terms
     driftexb            = .false.       ! Set to FALSE to ignore ExB drifts terms
-    testcase            = 52            ! Determine the analytical solution and the body forces
+    testcase            = 2	        ! Determine the analytical solution and the body forces
     RMP                 = .false.       ! True to set RMP (non-axisymetrical perturbation)
     Ripple              = .false.       ! True to set Ripple (non-axisymetrical perturbation)
     psdtime             = .false.        ! Reduce the diffusion every time we reach the steady state
@@ -53,12 +54,12 @@
 /
 
 &NUMER_LST
-    tau(1)              = 1.E+0         ! Stabilization parameter 1st equation
-    tau(2)              = 1.E+0         ! Stabilization parameter 2nd equation
-    tau(3)              = 1.E+0         ! Stabilization parameter 3rd equation
-    tau(4)              = 1.E+0         ! Stabilization parameter 4th equation
-    tau(5)              = 1.E-0         ! Stabilization parameter 5th equation
-    nrp                 = 10            ! Max number of Newton-Raphson iterations
+    tau(1)              = 1.E+1         ! Stabilization parameter 1st equation
+    tau(2)              = 1.E+1         ! Stabilization parameter 2nd equation
+    tau(3)              = 1.E+1         ! Stabilization parameter 3rd equation
+    tau(4)              = 1.E+1         ! Stabilization parameter 4th equation
+    tau(5)              = 1.E+1         ! Stabilization parameter 5th equation
+    nrp                 = 5           ! Max number of Newton-Raphson iterations
     tNR                 = 1e-4          ! Tolerance of the Newton-Raphson scheme
     tTM                 = 1e-8          ! Tolerance for the steady state achievement
     div                 = 1e5           ! Divergence of Newton-Raphon iteration
@@ -121,11 +122,11 @@
     ! ****** Option for neutral equation (available only if compile with NEUTRAL)
     Re                  = 0.99         ! recycling coefficient
     !puff                =  6.8e22         ! puff coefficient (particles per second in the whole puff area)
-    !puff		= 1.8e-06	!Puff coefficient
-    puff                = 1.e-05
-    density_source      = 1.59           ! amplitude of the truncated gaussian density source for WEST with core (case 52)
+    !puff                = 1.8e2
+    puff                 = 5e-5
+    density_source      = 20           ! amplitude of the truncated gaussian density source for WEST with core (case 52)
     ener_source_e       = 0              ! amplitude of the truncated ion energy source for WEST with core (case 52)
-    ener_source_ee      = 79.78          ! amplitude of the truncated electron energy source for WEST with core (case 52)
+    ener_source_ee      = 797          ! amplitude of the truncated electron energy source for WEST with core (case 52)
     sigma_source        = 0.15           ! sigma of the truncated gaussian sources for WEST with core (case 52)
     fluxg_trunc         = 0.3            ! value of the NORMALISED magnetic surface at which truncate the gaussian source WEST (case 52) 
     part_source         = 8.1e20        ! source coefficient for ITER (particles per second in the whole core area [ONLY BC 6])
@@ -177,7 +178,25 @@
     sollib              = 1             ! Solver library to be used
                                         ! 1-Pastix (Limit found in 3D for total nnz > 2*31-1 even with in64 compilation)
                                         ! 2-PSBLAS (all options below TODO: find a combination that works!)
+                                        ! 3-PETSc 
     lstiming            = true
+
+    ! Parameters relative to the library PETSc
+    kspitrace           = 1             ! Display convergence at each iteration
+    rtol		= 1e-12		! Relative tollerance
+    atol                = 1e-14         ! Absolute tollerance
+    kspitmax            = 2000         ! Max number of iterations
+    igz			= .true.	! Set initial guess of the iterative method equal to zero
+    rprecond		= 1		! Recompute conditioner ( 1 every NR iteration, 2 each Nreprecond iterations, 3 if kspitmax has been reached)
+    Nrprecond		= 2		! Recompute preconditioner each Nrprecond iterations 
+    kspnorm		= 1		! Ksp norm type (1 preconditioned, 2 unpreconditioned)
+    kspmethd		= 'KSPPREONLY'	! Krylov method KSPCG KSPBCGS KSPGMRES KSPPREONLY KSPMINRES KSPRICHARDSON and more 
+    pctype		= 'PCLU'	! Preconditioner type PCNONE PCJACOBI PCSOR PCLU PCILU PCGAMG PCMG and more
+    gmresres            = 30            ! Restart of the GMRES method (30 default)
+    mglevels		= 1		! Number of levels for the MG preconditioner
+    mgtypeform		= 1		! Form of the MG preconditioner (1 multiplicative, 2 additive, 3 full, 4 Kaskade)
+    
+    
     ! Parameters relative to the library PSBLAS
     itmax               = 500           ! Max number of iterations
     itrace              = 0             ! Display convergence at each iteration

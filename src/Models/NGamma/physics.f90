@@ -205,7 +205,7 @@ CONTAINS
     real*8, intent(in)  :: Bmod(:)
     real*8, intent(in)  :: u(:,:) 
     real*8, intent(out) :: d_iso(:, :, :), d_ani(:, :, :)
-    real*8              :: iperdiff(size(xy, 1))
+    real*8              :: iperdiff(size(d_iso,3))
 
     ! d_iso(Neq,Neq,Ngauss),d_ani(Neq,Neq,Ngauss)
     ! first index corresponds to the equation

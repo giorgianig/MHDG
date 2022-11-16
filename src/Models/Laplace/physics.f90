@@ -69,6 +69,24 @@ CONTAINS
 
   END SUBROUTINE cons2phys
 
+  ! ******************************
+  ! Split diffusion terms
+  ! ******************************
+  SUBROUTINE compute_W2(U,W2)
+    real*8, intent(IN) :: U(:)
+    real*8             :: W2(:)
+    W2 = 0.
+    W2(1) = (phys%diff_n-phys%diff_u)*U(2)/U(1)
+  END SUBROUTINE compute_W2
+
+  SUBROUTINE compute_dW2_dU(U,res)
+  real*8, intent(IN) :: U(:)
+  real*8             :: res(:,:)
+  res = 0.
+  res(1,1) = -U(2)*(phys%diff_n-phys%diff_u)/(U(1)**2)
+  res(1,2) = 1.*(phys%diff_n-phys%diff_u)/U(1)
+  END SUBROUTINE compute_dW2_dU
+
   !*****************************************
   ! Jacobian matrices
   !****************************************
@@ -110,11 +128,12 @@ CONTAINS
   !*****************************************
   ! Set the perpendicular diffusion
   !****************************************
-  SUBROUTINE setLocalDiff(xy, d_iso, d_ani, Bmod)
+  SUBROUTINE setLocalDiff(xy,u, d_iso, d_ani, Bmod)
     real*8, intent(in)  :: xy(:, :)
     real*8, intent(in)  :: Bmod(:)
+    real*8, intent(in)  :: u(:,:)
     real*8, intent(out) :: d_iso(:, :, :), d_ani(:, :, :)
-    real*8              :: iperdiff(size(xy, 1))
+    real*8              :: iperdiff(size(d_iso,3))
 
     ! d_iso(Neq,Neq,Ngauss),d_ani(Neq,Neq,Ngauss)
     ! first index corresponds to the equation
@@ -133,8 +152,8 @@ CONTAINS
     !*****************************
     d_iso(1, 1, :) = phys%diff_n
 
-    d_ani(1, 1, :) = 0.!phys%diff_n
-
+    d_ani(1, 1, :) = +phys%diff_n-phys%diff_pari
+    !d_ani(1, 1, :) = -phys%diff_n
     !*****************************
     ! Non diagonal terms
     !*****************************
@@ -195,10 +214,17 @@ CONTAINS
     integer, intent(in)  :: ifa, iel
     real*8, intent(out) :: tau(:, :)
     real*8              :: tau_aux
+    real*8              :: eye3(simpar%Ndim,simpar%Ndim), Dmat(simpar%Ndim,simpar%Ndim)
     real*8 :: xc, yc, rad, h, aux, bn, bnorm
 
-    bn = dot_product(b, n)
-    bnorm = norm2(b)
+    eye3 = 0.
+    eye3(1,1) = 1.
+    eye3(2,2) = 1.
+#ifdef TOR3D
+    eye3(3,3) = 1.
+#endif
+    Dmat = 0.
+
 
     if (numer%stab == 2) then
       tau_aux = phys%diff_n*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
@@ -208,6 +234,21 @@ CONTAINS
 
     elseif (numer%stab == 4) then
       tau_aux = phys%diff_n
+    elseif (numer%stab == 5) THEN
+
+     ! Computation of tau
+      Dmat = phys%diff_pari*tensorProduct(b(1:simpar%Ndim),b(1:simpar%Ndim)) + phys%diff_n*(eye3-tensorProduct(b(1:simpar%Ndim),b(1:simpar%Ndim)))
+      tau_aux = abs(dot_product(n(1:simpar%Ndim),matmul(Dmat(1:simpar%Ndim,1:simpar%Ndim), n(1:simpar%Ndim) )))
+#ifdef TOR3D
+      if (abs(n(3))>0.1) then
+        tau_aux = tau_aux*refElTor%ndeg/(numer%tmax/numer%ntor)/phys%lscale
+      else
+        tau_aux = tau_aux*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
+      endif
+#else
+      tau_aux = tau_aux*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
+#endif
+
     else
       write (6, *) "Wrong stabilization type: ", numer%stab
       stop

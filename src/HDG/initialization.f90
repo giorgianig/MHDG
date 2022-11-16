@@ -213,9 +213,11 @@ CONTAINS
     ALLOCATE (sol%u(sizeu))
     ALLOCATE (sol%u_tilde(sizeutilde))
     ALLOCATE (sol%q(sizeu*Ndim))
+
     sol%u = 0.
     sol%u_tilde = 0.
     sol%q = 0.
+
     ! Initialize the solution
     IF (MPIvar%glob_id .eq. 0) THEN
       IF (utils%printint > 0) THEN
@@ -1137,14 +1139,52 @@ CONTAINS
  
  END SUBROUTINE projectSolutionDifferentMeshes
 
+#ifdef WITH_PETSC
+   subroutine InitPETSC
+#include "petsc/finclude/petsc.h"
+     use petsc, ONLY: PetscInitialize
+     !use petscsys
+     use MPI_OMP
+     implicit none
 
+     PetscErrorCode :: ierr
+     PetscBool      :: initialized
 
+    ! Init PETSC
+     call PetscInitialized(initialized, ierr)
+     IF (.not. initialized) THEN
+      call petscinitializenoarguments(ierr) ! Default communicator = MPI_COMM_WORLD
+     ENDIF
   
+     if (ierr .ne. 0) then
+        print*,'Unable to initialize PETSc even though it was requested. Aborting...'
+        call MPI_Abort(MPI_COMM_WORLD,-1,ierr)
+     endif
 
+   end subroutine InitPETSC
+#endif
 
+#ifdef WITH_PETSC
+   SUBROUTINE FinalizePETSC
+#include "petsc/finclude/petsc.h"
+     use petsc, ONLY: PetscFinalize
+     use MPI_OMP
+     implicit none
 
+     PetscErrorCode :: ierr
+     PetscBool      :: finalized
 
+    ! Init PETSC
 
+    call PetscFinalized(finalized, ierr)
+    IF (.not. finalized) THEN
+     call PetscFinalize(ierr) ! Default communicator = MPI_COMM_WORLD
+    ENDIF
+     if (ierr .ne. 0) then
+        print*,'Unable to finalize PETSc even though it was requested. Aborting...'
+        call MPI_Abort(MPI_COMM_WORLD,-1,ierr)
+     endif
 
-
+   END SUBROUTINE FinalizePETSC
+#endif
 END MODULE initialization

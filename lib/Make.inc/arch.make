@@ -2,15 +2,15 @@
 # Source directory
 #-------------------------------------------------------------------------------
 SDIR=$(PWD)/../src/
-
 #-------------------------------------------------------------------------------
 # Compiling type: optimized - debugging - profiling
 #-------------------------------------------------------------------------------
 COMPTYPE_OPT = opt
 COMPTYPE_DEB = deb
 COMPTYPE_PRO = pro
-COMPTYPE = $(COMPTYPE_OPT)
+
 #COMPTYPE = $(COMPTYPE_DEB)
+COMPTYPE = $(COMPTYPE_OPT)
 #COMPTYPE = $(COMPTYPE_PRO)
 
 #-------------------------------------------------------------------------------
@@ -24,8 +24,9 @@ MODE = $(MODE_SERIAL)
 #-------------------------------------------------------------------------------
 # The compiler
 #-------------------------------------------------------------------------------
-FC = mpif90 
+#FC = mpif90
 #FC = mpif90 -f90=ifort
+FC = mpifort
 
 #-------------------------------------------------------------------------------
 # Model
@@ -43,14 +44,6 @@ MDL=$(MDL_NGAMMA)
 #MDL=$(MDL_NGAMMATITENEUTRAL)
 #MDL=$(MDL_NGAMMAVORT)
 #MDL=$(MDL_LAPLACE)
-
-#-------------------------------------------------------------------------------
-# Moving equilibrium (not available anymore for this version)
-#-------------------------------------------------------------------------------
-#MVEQ_TRUE = true
-#MVEQ_FALS = false
-#MVEQ = $(MVEQ_FALS)
-##MVEQ = $(MVEQ_TRUE)
 
 #-------------------------------------------------------------------------------
 # Dimensions 2D/3D
@@ -114,20 +107,6 @@ else
 endif
 
 #-------------------------------------------------------------------------------
-# MACROS FOR MOVING EQUILIBRIUM
-#-------------------------------------------------------------------------------
-#ifeq ($(MVEQ),$(MVEQ_FALS))
-## Do nothing
-#else ifeq ($(MVEQ),$(MVEQ_TRUE))
-# MACROS+= -DMOVINGEQUILIBRIUM
-# ADDMOD+=hdg_MagneticDependingMatrices.o
-#else
-# abort Unsupported MVEQ==$(MVEQ)
-# exit
-#endif
-
-
-#-------------------------------------------------------------------------------
 # MACROS FOR SERIAL/PARALLEL
 #-------------------------------------------------------------------------------
 ifeq ($(MODE),$(MODE_SERIAL))
@@ -147,6 +126,10 @@ ifeq ($(PASTIX),$(LIB_YES))
  MACROS+= -DWITH_PASTIX
  ADDMOD+=solve_pastix.o
 endif
+ifeq ($(PETSC),$(LIB_YES))
+ MACROS+= -DWITH_PETSC
+ ADDMOD+=solve_petsc.o
+endif
 ifeq ($(PSBLMG),$(LIB_YES))
  MACROS+= -DWITH_PSBLAS
  MACROS+= -DWITH_MLD2P4
@@ -163,7 +146,7 @@ endif
 ifeq ($(COMPTYPE),$(COMPTYPE_DEB))
 # FCFLAGS = -Og -g -fbounds-check -fbacktrace -fbounds-check -ffpe-trap=zero,overflow,underflow,invalid
  FCFLAGS = -Og -g -fbounds-check -fbacktrace -fbounds-check -ffpe-trap=zero,overflow,invalid
- FCFLAGS += -Wall -Wextra -Wconversion -fcheck=all -Wuninitialized -Wtabs
+ FCFLAGS += -Wall -Wextra -Wconversion -fcheck=all -Wuninitialized -Wtabs -Wno-unused-variable
 else ifeq ($(COMPTYPE),$(COMPTYPE_PRO))
  FCFLAGS = -Og -pg
 else ifeq ($(COMPTYPE),$(COMPTYPE_OPT))
@@ -212,6 +195,12 @@ endif
 ifeq ($(PSBLAS),$(LIB_YES))
  FCFLAGS += -I$(MHDG_PSBLAS_DIR)/include/
  FCFLAGS += -I$(MHDG_PSBLAS_DIR)/modules/
+endif
+
+# PETSC
+ifeq ($(PETSC),$(LIB_YES))
+ FCFLAGS += -I$(MHDG_PETSC_DIR)/include/
+ FCFLAGS += -I$(MHDG_PETSC_DIR)/$(PETSC_ARCH)/include
 endif
 
 # MLD2P4
@@ -274,6 +263,13 @@ ifeq ($(PSBLMG),$(LIB_YES))
  include $(MHDG_MLD2P4_DIR)/include/Make.inc.mld2p4
 else ifeq ($(PSBLAS),$(LIB_YES))
  include $(MHDG_PSBLAS_DIR)/include/Make.inc.psblas
+endif
+
+# PETSC
+#Local
+ifeq ($(PETSC),$(LIB_YES))
+ LIB += -L$(MHDG_PETSC_DIR)/lib
+ LIB += -L$(MHDG_PETSC_DIR)/$(PETSC_ARCH)/lib -lpetsc
 endif
 
 #-------------------------------------------------------------------------------

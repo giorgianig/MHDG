@@ -140,6 +140,14 @@ solve_pastix.o : solve_pastix.F matrices_types.o matrices_tools.o globals.o type
 	$(FC) -c $(FCFLAGS) $(INC)  $< -o $@
 endif
 
+ifeq ($(PETSC),$(LIB_YES))	
+solve_petsc.F : $(SDIR)/LinearAlgebra/solve_petsc.f90
+	$(CMP) -s $< $@ || $(CP) -f $< $@
+	
+solve_petsc.o : solve_petsc.F matrices_types.o matrices_tools.o globals.o types.o initialization.o
+	$(FC) -c $(FCFLAGS) $(INC)  $< -o $@
+endif
+
 ifeq ($(PSBLMG),$(LIB_YES))		
 solve_psblas.F : $(SDIR)/LinearAlgebra/solve_psblas.f90
 	$(CMP) -s $< $@ || $(CP) -f $< $@
@@ -180,7 +188,7 @@ analytical.o : analytical.F
 initialization.F : $(SDIR)/HDG/initialization.f90
 	$(CMP) -s $< $@ || $(CP) -f $< $@
 
-initialization.o : initialization.F globals.o physics.o
+initialization.o : initialization.F globals.o physics.o MPI_OMP.o
 	$(FC) -c $(FCFLAGS) $(INC)  $< -o $@
 	
 hdg_PrecalculatedFirstEquation.F : $(SDIR)/HDG/hdg_PrecalculatedFirstEquation.f90
@@ -222,13 +230,13 @@ hdg_LimitingTechniques.o : hdg_LimitingTechniques.F
 solve_global_system.F : $(SDIR)/HDG/solve_global_system.f90
 	$(CMP) -s $< $@ || $(CP) -f $< $@
 
-solve_global_system.o : solve_global_system.F globals.o analytical.o LinearAlgebra.o PrintUtils.o solve_pastix.o
+solve_global_system.o : solve_global_system.F globals.o analytical.o LinearAlgebra.o PrintUtils.o $(ADDMODSOLVER)
 	$(FC) -c $(FCFLAGS) $(INC)  $< -o $@	
 
 compute_element_solution.F : $(SDIR)/HDG/compute_element_solution.f90
 	$(CMP) -s $< $@ || $(CP) -f $< $@
 
-compute_element_solution.o : compute_element_solution.F globals.o analytical.o LinearAlgebra.o PrintUtils.o solve_pastix.o
+compute_element_solution.o : compute_element_solution.F globals.o analytical.o LinearAlgebra.o PrintUtils.o 
 	$(FC) -c $(FCFLAGS) $(INC)  $< -o $@	
 
 Postprocess.F : $(SDIR)/InOut/Postprocess.f90

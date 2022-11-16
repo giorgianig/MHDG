@@ -10,7 +10,6 @@ SUBROUTINE compute_element_solution
   USE globals
   USE LinearAlgebra
   USE printUtils
-  USE solve_pastix
   USE MPI_OMP
   IMPLICIT NONE
 
@@ -158,4 +157,3 @@ SUBROUTINE compute_element_solution
   end if
 
 END SUBROUTINE compute_element_solution
-

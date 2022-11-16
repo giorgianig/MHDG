@@ -66,6 +66,7 @@ SUBROUTINE HDG_computeJacobian()
   real*8,allocatable    :: qres(:,:)
   real*8                :: Bel(refElPol%Nnodes2d,3),fluxel(refElPol%Nnodes2d),Bfl(refElPol%Nfacenodes,3)
   real*8                :: Jtorel(refElPol%Nnodes2d)
+  real*8                :: n,El_n,nn,El_nn,totaln
 #endif
 
   IF (utils%printint > 1) THEN
@@ -243,7 +244,7 @@ SUBROUTINE HDG_computeJacobian()
       fluxel = phys%magnetic_flux(indbe)
       
       ! Ohmic heating (toroidal current)
-      IF ((switch%testcase .EQ. 54 .or. switch%testcase .EQ. 59) THEN
+      IF ((switch%testcase .EQ. 54) .or. (switch%testcase .EQ. 59)) THEN
         Jtorel = phys%Jtor(indbe)
       ELSE
         Jtorel = 0.
@@ -321,7 +322,6 @@ SUBROUTINE HDG_computeJacobian()
 
       !------------- Second poloidal face-----------------
       ifa = refElPol%Nfaces + 2
-
       ! Magnetic field of the nodes of the face
       indbp = itor*Mesh%Nnodes*(Np1Dtor - 1) + Mesh%T(iel,:)
       Bfp = phys%B(indbp,:)
@@ -401,9 +401,16 @@ CONTAINS
     real*8                      :: Bmod_nod(Npel),b_nod(Npel,3),b(Ngvo,3),Bmod(Ngvo),divbg,driftg(3),gradbmod(3)
     real*8                      :: bg(3),Jtor(Ngvo)
     real*8                      :: diff_iso_vol(Neq,Neq,Ngvo),diff_ani_vol(Neq,Neq,Ngvo)
-    real*8                      :: sigma,sigmax,sigmay,x0,y0,A
-
+    real*8                      :: fluxg(Ng2d),max_flux2D,min_flux2D
+    real*8                      :: Pi,sigma,sigmax,sigmay,x0,y0,A,r
+    real*8                      :: th_n = 1.e-14
     real*8,allocatable  :: Auq(:,:,:),Auu(:,:,:),rhs(:,:)
+
+    force = 0.
+
+    Pi = 3.1415926535
+
+
 
     !index i from 2nd to 3rd term with a 4th term as step
     ind_ass = (/(i,i=0,Neq*(Npel - 1),Neq)/)
@@ -437,7 +444,7 @@ CONTAINS
 
     ! toroidal current at Gauss points
     IF ((switch%testcase .EQ. 54) .or. (switch%testcase .EQ. 59)) THEN
-      Jtor = matmul(refElPol%N3D,Jtorel)
+      Jtor = matmul(refElTor%N3D,Jtorel)
     ELSE
       Jtor = 0.
     END IF
@@ -461,80 +468,60 @@ CONTAINS
     ! Body force at the integration points
     CALL body_force(xy(:,1),xy(:,2),teg,force)
 
-#ifdef NEUTRAL
-!    ! Some neutral for WEST
-!    IF (switch%testcase .ge. 50 .and. switch%testcase .le. 59) THEN
-!      DO g = 1,Ng2d
-!        DO igtor =1,Ng1Dtor
-!          !IF (xy(g,1)*phys%lscale .gt. 2.36 .and. xy(g,2)*phys%lscale .lt. -0.69 ) THEN
-!          IF (xy(g,1)*phys%lscale .gt. 2.446 .and. xy(g,1)*phys%lscale .lt. 2.59 .and. xy(g,2)*phys%lscale .gt. -0.7964 .and. xy(g,2)*phys%lscale .lt. -0.7304 ) THEN
-!            ! Case moving equilibrium
-!            ! force(g,5) = phys%puff_exp(time%it+1)
-!            i = (igtor-1)*Ng2d+g
-!            force(i,5) = phys%puff
-!          ENDIF
-!          !x0 = 2.213
-!          !y0 = -0.6968
-!          !sigmax = 0.02
-!          !sigmay = 0.01
-!          !A = phys%lscale**2/(pi*sigmax*sigmay)
-!          !force(g,5) = phys%puff*A*exp(-((xy(g,1)*phys%lscale - x0)**2)/(2*sigmax**2) - ((xy(g,2)*phys%lscale - y0)**2)/(2*sigmay**2))
-!        ENDDO
-!      ENDDO
-!    ENDIF
-#endif
-    ! Some sources for West cases
-    IF (switch%testcase .ge. 51 .and. switch%testcase .le. 55) THEN
+    ! Some neutral for WEST
+    IF (switch%testcase .ge. 50 .and. switch%testcase .le. 59) THEN
+      ! Compute flux surfaces and normalise them
       fluxg = matmul(refElPol%N2D,fluxel)
-      DO g = 1,Ngvo
-        IF (switch%testcase == 51) THEN
-          IF (fluxg(g) .le. -0.88 .and. fluxg(g) .ge. -0.90) THEN
-            !force(g,1) = 3.20119388718018e-05
-            force(g,1) = 4.782676673609557e-05
+      max_flux2D = maxval(phys%magnetic_flux)
+      min_flux2D = minval(phys%magnetic_flux)
+      fluxg = (fluxg - min_flux2D)/(max_flux2D - min_flux2D)
+      DO g = 1,Ng2d
+
+        DO igtor =1,Ng1Dtor
+          i = (igtor-1)*Ng2d+g
+          IF (ueg(g,1) .lt. th_n) THEN
+            force(i,1) = th_n - ueg(i,1)
           END IF
-        ELSE IF (switch%testcase == 52) THEN
-          sigma = 0.1
+          ! WEST CASE with analytical Gaussian sources on density and energies, no puff.
+          IF (switch%testcase == 52) THEN
+            sigma = phys%sigma_source
           x0 = 0.
-          A = (phys%lscale**2)/(2*PI*sigma**2)
-#ifndef NEUTRAL
-          force(g,1) = 0.4*A*exp(-((fluxg(g) - x0)**2)/(2*sigma**2))
-#endif
+            A = (phys%lscale**2)/sqrt((2*Pi*sigma**2))
+            IF (fluxg(g) .le. phys%fluxg_trunc) THEN
+              force(i,1) = phys%density_source*A*exp(-((fluxg(g) - x0)**2)/(2*sigma**2))
 #ifdef TEMPERATURE
-          force(g,3) = 0.
-          force(g,4) = 30.*A*exp(-((fluxg(g) - x0)**2)/(2*sigma**2))
+              force(i,3) = phys%ener_source_e*A*exp(-((fluxg(g) - x0)**2)/(2*sigma**2))
+              force(i,4) = phys%ener_source_ee*A*exp(-((fluxg(g) - x0)**2)/(2*sigma**2))
 #endif
-          !IF (fluxg(g) .le. -0.90 .and. fluxg(g) .ge. -1.) THEN
-          !  force(g,1) = 9.45155008295538e-06
-          !END IF
-        ELSE IF (switch%testcase == 53) THEN
-          IF (fluxg(g) .le. -0.90) THEN
-            force(g,1) = 7.24032211339971e-06
           END IF
-#ifdef TEMPERATURE
-          force(g,3) = 18*force(g,1)
-          force(g,4) = force(g,3)
+          !! Apply puff to the box
+          ELSEIF (switch%testcase == 54) THEN
+#ifdef PARALL
+            IF (Mesh%ghostElems(iel) .eq. 0) THEN
 #endif
-        ELSE IF (switch%testcase == 54) THEN
-#ifndef NEUTRAL
-          sigma = 0.22
-          x0 = 0.
-          A = (phys%lscale**2)/(2*PI*sigma**2)
-          IF (fluxg(g) .le. 0.35) THEN
-            force(g,1) = 1.*A*exp(-((fluxg(g) - x0)**2)/(2*sigma**2))
+              !IF (xy(g,1)*phys%lscale .gt. 2.36 .and. xy(g,2)*phys%lscale .lt. -0.69 ) THEN
+              IF (xy(g,1)*phys%lscale .gt. 2.446 .and. xy(g,1)*phys%lscale .lt. 2.59 .and. xy(g,2)*phys%lscale .gt. -0.7964 .and. xy(g,2)*phys%lscale .lt. -0.7304 ) THEN
+                force(i,5) = phys%puff
           ENDIF
-          !IF (fluxg(g) .le. -1.03) THEN
-          !  force(g,1) = 0.000115575293741846
-          !END IF
+#ifdef PARALL
+            ENDIF
 #endif
-        ELSE IF (switch%testcase == 55) THEN
-          IF (fluxg(g) .le. -0.88 .and. fluxg(g) .ge. -0.90) THEN
-            force(g,1) = 10
+          ELSE IF(switch%testcase .eq. 59) THEN
+#ifdef PARALL
+            IF (Mesh%ghostElems(iel) .eq. 0) THEN
+#endif
+              IF (xy(g,1)*phys%lscale .gt. 2.446 .and. xy(g,1)*phys%lscale .lt. 2.59 .and. xy(g,2)*phys%lscale .gt. -0.7964 .and. xy(g,2)*phys%lscale .lt. -0.7304 ) THEN
+                IF(switch%time_init) THEN
+                  force(i,5) = phys%puff
+                ELSE
+                  force(i,5) = phys%puff_exp(time%it+1)
           END IF
-#ifdef TEMPERATURE
-          force(g,3) = 18*force(g,1)
-          force(g,4) = force(g,3)
+              ENDIF
+#ifdef PARALL
+            ENDIF
 #endif
         END IF
+        END DO
       END DO
     END IF
     !! end sources
@@ -1112,10 +1099,13 @@ CONTAINS
   !   Loop in elements in 2D
   !************************************
   !$OMP PARALLEL DEFAULT(SHARED) &
-  !$OMP PRIVATE(iel,ifa,iface,inde,indf,Xel,Xfl,i,qe,qef,ue,uef,uf,u0e,Bel,Bfl,fluxel,isdir,Jtorel)
+  !$OMP PRIVATE(iel,ifa,iface,inde,indf,Xel,Xfl,i,qe,qef,ue,uef,uf,u0e,Bel,Bfl,fluxel,isdir,Jtorel,El_n,El_nn)
   allocate(Xel(Mesh%Nnodesperelem,2))
   allocate(Xfl(refElPol%Nfacenodes,2))
-  !$OMP DO SCHEDULE(STATIC)
+
+  n = 0.
+  nn = 0.
+  !$OMP DO SCHEDULE(STATIC) REDUCTION(+:n,nn)
   DO iel = 1,N2D
 
     ! Coordinates of the nodes of the element
@@ -1140,8 +1130,17 @@ CONTAINS
     u0e = u0res(inde,:,:)
 
     ! Compute the matrices for the element
-    CALL elemental_matrices_volume(iel,Xel,Bel,fluxel,qe,ue,u0e,Jtorel)
+    CALL elemental_matrices_volume(iel,Xel,Bel,fluxel,qe,ue,u0e,Jtorel,El_n,El_nn)
 
+    ! Compute total plasma and neutral density (don't add contribution of ghost elements)
+#ifdef PARALL
+    IF (Mesh%ghostElems(iel) .eq. 0) THEN
+#endif
+      n  = n + El_n
+      nn = nn + El_nn
+#ifdef PARALL
+    ENDIF
+#endif
     ! Loop in local faces
     DO ifa=1,refElPol%Nfaces
       iface = Mesh%F(iel,ifa)
@@ -1188,6 +1187,17 @@ CONTAINS
   deallocate(Xel,Xfl)
   !$OMP END PARALLEL
 
+#ifdef PARALL
+    CALL MPI_ALLREDUCE(MPI_IN_PLACE, n, 1, MPI_REAL8, MPI_SUM, MPI_COMM_WORLD, ierr)
+    CALL MPI_ALLREDUCE(MPI_IN_PLACE, nn, 1, MPI_REAL8, MPI_SUM, MPI_COMM_WORLD, ierr)
+#endif
+
+   IF (MPIvar%glob_id.eq.0) THEN
+     totaln = n + nn
+     WRITE(6,*) 'n = ',n
+     WRITE(6,*) 'nn = ',nn
+     WRITE(6,*) 'total n = ',totaln
+   ENDIF
 
   deallocate (ures,lres,u0res)
   deallocate (qres)
@@ -1218,12 +1228,13 @@ CONTAINS
   !***************************************************
   ! Volume computation in 2D
   !***************************************************
-  SUBROUTINE elemental_matrices_volume(iel,Xel,Bel,fluxel,qe,ue,u0e,Jtorel)
+  SUBROUTINE elemental_matrices_volume(iel,Xel,Bel,fluxel,qe,ue,u0e,Jtorel,El_n,El_nn)
     integer,intent(IN)            :: iel
     real*8,intent(IN)             :: Xel(:,:)
     real*8,intent(IN)             :: Bel(:,:),fluxel(:),Jtorel(:)
     real*8,intent(IN)             :: qe(:,:)
     real*8,intent(IN)             :: ue(:,:),u0e(:,:,:)
+    real*8,intent(OUT)            :: El_n,El_nn
     integer*4                     :: g,NGauss,i,j,k
     real*8                        :: dvolu
     real*8                        :: xy(Ng2d,ndim),ueg(Ng2d,neq),u0eg(Ng2d,neq,time%tis)
@@ -1234,7 +1245,6 @@ CONTAINS
     real*8                        :: detJ(Ng2d)
     real*8                        :: iJ11(Ng2d),iJ12(Ng2d)
     real*8                        :: iJ21(Ng2d),iJ22(Ng2d)
-    real*8                      :: fluxg(Ng2d),max_flux2D,min_flux2D
     integer*4,dimension(Npel)     :: ind_ass,ind_asq
     real*8                        :: ktis(time%tis + 1)
     real*8,dimension(Npel)        :: Ni,Nxg,Nyg,NNbb,Nx_ax
@@ -1246,13 +1256,17 @@ CONTAINS
     real*8                        :: diff_iso_vol(Neq,Neq,Ng2d),diff_ani_vol(Neq,Neq,Ng2d)
     real*8,allocatable            :: Auq(:,:,:),Auu(:,:,:),rhs(:,:)
     real*8                        :: auxdiffsc(Ng2d)
+    real*8                        :: fluxg(Ng2d),max_flux2D,min_flux2D
     real*8                      :: Pi,sigma,sigmax,sigmay,x0,y0,A,r
     real*8                      :: th_n = 1.e-14
+    real*8                        :: puff = 0
 
     ind_ass = (/(i,i=0,Neq*(Npel - 1),Neq)/)
     ind_asq = (/(i,i=0,Neq*(Npel - 1)*Ndim,Neq*Ndim)/)
 
     force = 0.
+    El_n  = 0.
+    El_nn  = 0.
     Pi = 3.1415926535
     !***********************************
     !    Volume computation
@@ -1330,17 +1344,21 @@ CONTAINS
             force(g,4) = phys%ener_source_ee*A*exp(-((fluxg(g) - x0)**2)/(2*sigma**2))
 #endif
           ENDIF
-#ifdef NEUTRAL
-        ! WEST CASE only with analytical puff. Energy source is given by JTOR.
+          !! Apply puff to the box
         ELSE IF (switch%testcase == 54) THEN
-          ! location of the buffer differs for the mesh 3895_P4 and for the mesh 26830_P4
-          IF (xy(g,1)*phys%lscale .gt. 2.36 .and. xy(g,2)*phys%lscale .lt. -0.69 ) THEN
-          !IF (xy(g,1)*phys%lscale .gt. 2.446 .and. xy(g,1)*phys%lscale .lt. 2.59 .and. xy(g,2)*phys%lscale .gt. -0.7964 .and. xy(g,2)*phys%lscale .lt. -0.7304 ) THEN
+#ifdef PARALL
+            IF (Mesh%ghostElems(iel) .eq. 0) THEN
+#endif
+              IF (xy(g,1)*phys%lscale .gt. 2.446 .and. xy(g,1)*phys%lscale .lt. 2.59 .and. xy(g,2)*phys%lscale .gt. -0.7964 .and. xy(g,2)*phys%lscale .lt. -0.7304 ) THEN
             force(g,5) = phys%puff
           ENDIF
+#ifdef PARALL
+            ENDIF
+#endif
         ELSE IF(switch%testcase .eq. 59) THEN
-          ! location of the buffer differs for the mesh 3895_P4 and for the mesh 26830_P4
-          !IF (xy(g,1)*phys%lscale .gt. 2.36 .and. xy(g,2)*phys%lscale .lt. -0.69 ) THEN
+#ifdef PARALL
+          IF (Mesh%ghostElems(iel) .eq. 0) THEN
+#endif
           IF (xy(g,1)*phys%lscale .gt. 2.446 .and. xy(g,1)*phys%lscale .lt. 2.59 .and. xy(g,2)*phys%lscale .gt. -0.7964 .and. xy(g,2)*phys%lscale .lt. -0.7304 ) THEN
             ! If it is a time initialization simulation, the puff is analytical (from param.txt) otherwise experimental
             IF(switch%time_init) THEN
@@ -1349,10 +1367,17 @@ CONTAINS
               force(g,5) = phys%puff_exp(time%it+1)
             ENDIF
           ENDIF
+#ifdef PARALL
+          ENDIF
 #endif
         ENDIF
       END DO
     END IF
+#ifdef PARALL
+    IF(iel .eq. Mesh%Nelems) THEN
+            CALL MPI_ALLREDUCE(MPI_IN_PLACE, puff, 1, MPI_REAL8, MPI_SUM, MPI_COMM_WORLD, ierr)
+    ENDIF
+#endif
     !! end sources
 
     !!Some sources for Circular cases
@@ -1412,6 +1437,12 @@ CONTAINS
       IF (switch%axisym) THEN
         dvolu = dvolu*xy(g,1)
       END IF
+
+      ! Check if total density is costant
+      El_n  = El_n  + ueg(g,1)*2*3.1416*dvolu*phys%lscale**3
+#ifdef NEUTRAL
+      El_nn = El_nn + ueg(g,5)*2*3.1416*dvolu*phys%lscale**3
+#endif
 
       ! x and y derivatives of the shape functions
       Nxg = iJ11(g)*refElPol%Nxi2D(g,:) + iJ12(g)*refElPol%Neta2D(g,:)

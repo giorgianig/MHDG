@@ -763,87 +763,7 @@ CONTAINS
   END SUBROUTINE calcRippleField
 #endif
 
-  ! Below are routines from Manuel MHDG v2.1. Copy as it without any check: TODO adapt it to global magnetic field
-
-  SUBROUTINE loadJtorMap()
-    USE interpolation
-    USE HDF5
-    USE HDF5_io_module
-    !USE MPI_OMP
-    integer        :: i,ierr,ip,jp,ind,j,k
-    integer(HID_T) :: file_id
-
-    character(LEN=1000)    :: fname = 'Jtor_exp/WEST_54487_Jtor'
-    character(70)        :: npr,nid,nit
-
-    real*8,pointer,dimension(:,:) :: r2D,z2D,Jtor
-    real*8,allocatable,dimension(:)   :: xvec,yvec
-    real*8                            :: x,y
-
-    IF (MPIvar%glob_id .eq. 0) THEN
-    WRITE(6,*) "******* Loading Toroidal Current *******"
-    ENDIF
-    ! Allocate storing space in phys
-    ALLOCATE(phys%Jtor(Mesh%Nnodes))
-    phys%Jtor = 0.
-
-    ! Dimensions of the file storing the magnetic field for West
-    !ip = 200
-    !jp = 200
-    ip = 457;
-    jp = 457;
-    ALLOCATE(r2D(ip,jp))
-    ALLOCATE(z2D(ip,jp))
-    ALLOCATE(Jtor(ip,jp))
-
-    ! Read file
-    IF(switch%testcase .eq. 54) THEN
-        fname = trim(adjustl(fname)) //'_0099.h5'
-    ELSE
-      ! File name
-        write(nit, "(i10)") time%it
-        nit = trim(adjustl(nit))
-        k = INDEX(nit, " ") -1
-        fname = trim(adjustl(fname))//'_'//REPEAT("0", 4 - k)//trim(ADJUSTL(nit))//'.h5'
-    ENDIF
-    IF (MPIvar%glob_id .eq. 0) THEN
-      write(6,*) 'Toroidal current loaded from file: ', trim(adjustl(fname))
-    ENDIF
-
-    CALL HDF5_open(fname,file_id,IERR)
-
-    CALL HDF5_array2D_reading(file_id,r2D,'r2D')
-    CALL HDF5_array2D_reading(file_id,z2D,'z2D')
-    CALL HDF5_array2D_reading(file_id,Jtor,'Jtor')
-    CALL HDF5_close(file_id)
-
-    ! Apply length scale
-    r2D = r2D/phys%lscale
-    z2D = z2D/phys%lscale
-
-    ! Interpolate
-    ALLOCATE(xvec(jp))
-    ALLOCATE(yvec(ip))
-    xvec = r2D(1,:)
-    yvec = z2D(:,1)
-    DO i = 1,Mesh%Nnodes
-      x = Mesh%X(i,1)
-      y = Mesh%X(i,2)
-      ind = i
-#ifdef TOR3D
-      DO j = 1, Mesh%Nnodes_toroidal
-        ind = (j - 1)*Mesh%Nnodes + i
-#endif
-        phys%Jtor(ind) = interpolate(ip, yvec,jp, xvec,Jtor, y,x, 1e-12)
-#ifdef TOR3D
-      END DO
-#endif
-    END DO
-
-    ! Free memory
-    DEALLOCATE(r2D,z2D,Jtor,xvec,yvec)
-
-  END SUBROUTINE loadJtorMap
+  
 
   SUBROUTINE loadMagneticFieldFromExperimentalData()
     USE interpolation
@@ -934,29 +854,4 @@ CONTAINS
     DEALLOCATE(r2D,z2D,flux2D)
 
   END SUBROUTINE loadMagneticFieldFromExperimentalData
-
-
-  SUBROUTINE SetPuff()
-    USE HDF5
-    USE HDF5_io_module
-    integer        :: ierr
-    character(LEN=25) :: fname = 'Puff_54487.h5'
-    integer(HID_T) :: file_id
-
-    ! Allocate storing space in phys (puff for WEST, 403 entries)
-    ALLOCATE(phys%puff_exp(403))
-    IF (MPIvar%glob_id .eq. 0) THEN
-      WRITE (6, *) "******* Loading puff *******"
-    ENDIF
-
-    ! Read file
-    CALL HDF5_open(fname,file_id,IERR)
-    CALL HDF5_array1D_reading(file_id,phys%puff_exp,'puff')
-    IF (MPIvar%glob_id .eq. 0) THEN
-      write(6,*) 'Puff loaded from file: ', trim(adjustl(fname))
-    ENDIF
-    CALL HDF5_close(file_id)
-
-  END SUBROUTINE SetPuff
-
 END MODULE Magnetic_field

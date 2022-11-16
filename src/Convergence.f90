@@ -12,6 +12,10 @@ PROGRAM Convergence
 #ifdef WITH_PSBLAS
   USE solve_psblas
 #endif
+#ifdef WITH_PETSC
+#include "petsc/finclude/petsc.h"
+  USE solve_petsc
+#endif
   USE Postprocess
 #ifdef PARALL
   USE Communications
@@ -19,7 +23,7 @@ PROGRAM Convergence
   USE HDG_LimitingTechniques
   IMPLICIT NONE
 
-  integer             :: it, ir, nts, nu, nb_args, n_points, n_polyns
+  integer             :: it, ir, nts, nu, nb_args, n_points, n_polyns, IERR
   integer             :: ieq
   integer             :: ipol, ipts
   integer             :: Neq, Np, Nel, Ndim, Nfp, Nf, ntorloc
@@ -56,6 +60,7 @@ PROGRAM Convergence
 
   ! Initialize MPI
   CALL init_MPI_OMP()
+  call InitPETSC()
 
   ! Read input file param.txt
   CALL read_input()
@@ -297,7 +302,6 @@ PROGRAM Convergence
       END DO
 
       ! Free allocated variables
-
       CALL free_all()
       time%it = 0
 
@@ -328,7 +332,11 @@ PROGRAM Convergence
   END DO
 
   DEALLOCATE (L2err, Nunk, elSize, Slope, Nelv)
-
+#ifdef WITH_PETSC
+      call terminate_PETSC()
+      call FinalizePETSC()
+      call MPI_finalize(IERR)
+#endif
 contains
 
   !************************************************

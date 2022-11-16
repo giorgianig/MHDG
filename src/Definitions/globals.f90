@@ -241,6 +241,7 @@ CONTAINS
     IF (ALLOCATED(sol%u0)) THEN
       DEALLOCATE (sol%u0)
     END IF
+
     IF (ALLOCATED(sol%tres)) THEN
       DEALLOCATE (sol%tres)
     END IF

@@ -995,6 +995,7 @@ CONTAINS
       t_g = xyDer(g,:)/xyDerNorm_g
       n_g = [t_g(2),-t_g(1)]
       bn = dot_product(b(g,1:2),n_g)
+
       ! Sound speed
 #ifndef TEMPERATURE
       SoundSpeed = sqrt(phys%a)
@@ -1539,11 +1540,9 @@ CONTAINS
     DO i = 3,4
       DO j = 1,4
         IF (i == 3) THEN
-          elMat%Aul_dir(ind_fe(i + ind_asf),iel) = elMat%Aul_dir(ind_fe(i + ind_asf),iel) - &
-            &coefi*Ni*bn*((gmi*dAlpha_dUi(j) + Alphai*(dot_product(Taui(:,j),bg)))*ufg(j))
+          elMat%Aul_dir(ind_fe(i + ind_asf),iel) = elMat%Aul_dir(ind_fe(i + ind_asf),iel) - coefi*Ni*bn*((gmi*dAlpha_dUi(j) + Alphai*(dot_product(Taui(:,j),bg)))*ufg(j))
         ELSE
-          elMat%Aul_dir(ind_fe(i + ind_asf),iel) = elMat%Aul_dir(ind_fe(i + ind_asf),iel) - &
-            &coefe*Ni*bn*((gme*dAlpha_dUe(j) + Alphae*(dot_product(Taue(:,j),bg)))*ufg(j))
+          elMat%Aul_dir(ind_fe(i + ind_asf),iel) = elMat%Aul_dir(ind_fe(i + ind_asf),iel) - coefe*Ni*bn*((gme*dAlpha_dUe(j) + Alphae*(dot_product(Taue(:,j),bg)))*ufg(j))
         END IF
       END DO
     END DO
@@ -1627,8 +1626,7 @@ CONTAINS
           indj = j + ind_asf
           elMat%All(ind_ff(indi),ind_ff(indj),iel) = elMat%All(ind_ff(indi),ind_ff(indj),iel) - tau(i,j)*NiNi
           IF (j == 1) THEN
-            elMat%Alu(ind_ff(indi),ind_fe(indj),iel) = elMat%Alu(ind_ff(indi),ind_fe(indj),iel) +&
-              &tau(i,j)*NiNi + tau(i,j + 1)*(delta*setval)*NiNi
+            elMat%Alu(ind_ff(indi),ind_fe(indj),iel) = elMat%Alu(ind_ff(indi),ind_fe(indj),iel) +tau(i,j)*NiNi + tau(i,j + 1)*(delta*setval)*NiNi
           ELSE IF (j == 2) THEN
             elMat%Alu(ind_ff(indi),ind_fe(indj),iel) = elMat%Alu(ind_ff(indi),ind_fe(indj),iel) + tau(i,j)*(1 - delta)*NiNi
           ELSE
@@ -1682,11 +1680,9 @@ CONTAINS
           DO j = 1,Neq
             indj = ind_asf + j
             elMat%All(ind_ff(indi + 2),ind_ff(indj),iel) = elMat%All(ind_ff(indi + 2),ind_ff(indj),iel) + Abohm(i,j)*NiNi*bn
-            elMat%All(ind_ff(indi + 2),ind_ff(indj),iel) = elMat%All(ind_ff(indi + 2),ind_ff(indj),iel) -&
-              &coefi*(gmi*dAlpha_dUi(j) + Alphai*(dot_product(Taui(:,j),bg)))*NiNi*bn
+            elMat%All(ind_ff(indi + 2),ind_ff(indj),iel) = elMat%All(ind_ff(indi + 2),ind_ff(indj),iel) - coefi*(gmi*dAlpha_dUi(j) + Alphai*(dot_product(Taui(:,j),bg)))*NiNi*bn
             DO k = 1,Ndim
-              elMat%Alq(ind_ff(indi+2),ind_fG(k+(j-1)*Ndim+ind_ash),iel) = elMat%Alq(ind_ff(indi+2),ind_fG(k+(j-1)*Ndim+ind_ash),iel) -&
-                &coefi*Alphai*Vveci(j)*bg(k)*NiNi*bn
+              elMat%Alq(ind_ff(indi+2),ind_fG(k+(j-1)*Ndim+ind_ash),iel) = elMat%Alq(ind_ff(indi+2),ind_fG(k+(j-1)*Ndim+ind_ash),iel) - coefi*Alphai*Vveci(j)*bg(k)*NiNi*bn
             END DO
           END DO
           elMat%fh(ind_ff(indi+2),iel) = elMat%fh(ind_ff(indi+2),iel) - coefi*Alphai*( dot_product (matmul(transpose(Taui),bg),ufg)  )*Ni*bn
@@ -1718,8 +1714,7 @@ CONTAINS
           indi = ind_asf + k
           indj = ind_ash + idm + (k - 1)*Ndim
           ! Non-tangent case
-          elMat%Alq(ind_ff(indi),ind_fG(indj),iel)=elMat%Alq(ind_ff(indi),ind_fG(indj),iel)-&
-            &NiNi*(ng(idm)*diffiso(k,k)-bn*bg(idm)*diffani(k,k) )
+          elMat%Alq(ind_ff(indi),ind_fG(indj),iel)=elMat%Alq(ind_ff(indi),ind_fG(indj),iel)-NiNi*(ng(idm)*diffiso(k,k)-bn*bg(idm)*diffani(k,k) )
             IF(k == 2) THEN
               ! Assembly LQ
               j = 1 ! all other terms are 0 anyway in vector W2
@@ -1965,8 +1960,7 @@ CONTAINS
     ! Gradient part
     DO idm = 1,Ndim
       indj = ind_ash + idm + (i - 1)*Ndim
-      elMat%Alq(ind_ff(indi),ind_fG(indj),iel)=elMat%Alq(ind_ff(indi),ind_fG(indj),iel)-&
-        &NiNi*(ng(idm)*diffiso(i,i)-bn*bg(idm)*diffani(i,i) )
+      elMat%Alq(ind_ff(indi),ind_fG(indj),iel)=elMat%Alq(ind_ff(indi),ind_fG(indj),iel)-NiNi*(ng(idm)*diffiso(i,i)-bn*bg(idm)*diffani(i,i) )
     END DO
 
 
@@ -2002,8 +1996,7 @@ CONTAINS
         ! Gradient part
         DO idm = 1,Ndim
           indj = ind_ash + idm + (i - 1)*Ndim
-          elMat%Alq(ind_ff(indi),ind_fG(indj),iel)=elMat%Alq(ind_ff(indi),ind_fG(indj),iel)-&
-            &NiNi*(ng(idm)*diffiso(i,i)-bn*bg(idm)*diffani(i,i) )
+          elMat%Alq(ind_ff(indi),ind_fG(indj),iel)=elMat%Alq(ind_ff(indi),ind_fG(indj),iel)-NiNi*(ng(idm)*diffiso(i,i)-bn*bg(idm)*diffani(i,i) )
         END DO
       END IF
     elseif (numer%bohmtypebc.eq.2) then
@@ -2027,8 +2020,7 @@ CONTAINS
           ! Gradient part
           DO idm = 1,Ndim
             indj = ind_ash + idm + (i - 1)*Ndim
-            elMat%Alq(ind_ff(indi),ind_fG(indj),iel)=elMat%Alq(ind_ff(indi),ind_fG(indj),iel)-&
-              &NiNi*(ng(idm)*diffiso(i,i)-bn*bg(idm)*diffani(i,i) )
+            elMat%Alq(ind_ff(indi),ind_fG(indj),iel)=elMat%Alq(ind_ff(indi),ind_fG(indj),iel)-NiNi*(ng(idm)*diffiso(i,i)-bn*bg(idm)*diffani(i,i) )
           END DO
         endif
       ELSE
@@ -2039,8 +2031,7 @@ CONTAINS
         ! Gradient part
         DO idm = 1,Ndim
           indj = ind_ash + idm + (i - 1)*Ndim
-          elMat%Alq(ind_ff(indi),ind_fG(indj),iel)=elMat%Alq(ind_ff(indi),ind_fG(indj),iel)-&
-            &NiNi*(ng(idm)*diffiso(i,i)-bn*bg(idm)*diffani(i,i) )
+          elMat%Alq(ind_ff(indi),ind_fG(indj),iel)=elMat%Alq(ind_ff(indi),ind_fG(indj),iel)-NiNi*(ng(idm)*diffiso(i,i)-bn*bg(idm)*diffani(i,i) )
         END DO
       END IF
     else
@@ -2087,11 +2078,9 @@ CONTAINS
           DO j = 1,Neq
             indj = ind_asf + j
             elMat%All(ind_ff(indi + 2),ind_ff(indj),iel) = elMat%All(ind_ff(indi + 2),ind_ff(indj),iel) + Abohm(i,j)*NiNi*bn
-            elMat%All(ind_ff(indi + 2),ind_ff(indj),iel) = elMat%All(ind_ff(indi + 2),ind_ff(indj),iel) -&
-              &coefi*(gmi*dAlpha_dUi(j) + Alphai*(dot_product(Taui(:,j),bg)))*NiNi*bn
+            elMat%All(ind_ff(indi + 2),ind_ff(indj),iel) = elMat%All(ind_ff(indi + 2),ind_ff(indj),iel) - coefi*(gmi*dAlpha_dUi(j) + Alphai*(dot_product(Taui(:,j),bg)))*NiNi*bn
             DO k = 1,Ndim
-              elMat%Alq(ind_ff(indi+2),ind_fG(k+(j-1)*Ndim+ind_ash),iel) = elMat%Alq(ind_ff(indi+2),ind_fG(k+(j-1)*Ndim+ind_ash),iel) -&
-                &coefi*Alphai*Vveci(j)*bg(k)*NiNi*bn
+              elMat%Alq(ind_ff(indi+2),ind_fG(k+(j-1)*Ndim+ind_ash),iel) = elMat%Alq(ind_ff(indi+2),ind_fG(k+(j-1)*Ndim+ind_ash),iel) - coefi*Alphai*Vveci(j)*bg(k)*NiNi*bn
             END DO
           END DO
           elMat%fh(ind_ff(indi+2),iel) = elMat%fh(ind_ff(indi+2),iel) - coefi*Alphai*( dot_product (matmul(transpose(Taui),bg),ufg)  )*Ni*bn
@@ -2099,11 +2088,9 @@ CONTAINS
           DO j = 1,Neq
             indj = ind_asf + j
             elMat%All(ind_ff(indi + 2),ind_ff(indj),iel) = elMat%All(ind_ff(indi + 2),ind_ff(indj),iel) + Abohm(i,j)*NiNi*bn
-            elMat%All(ind_ff(indi + 2),ind_ff(indj),iel) = elMat%All(ind_ff(indi + 2),ind_ff(indj),iel) -&
-              &coefe*(gme*dAlpha_dUe(j) + Alphae*(dot_product(Taue(:,j),bg)))*NiNi*bn
+            elMat%All(ind_ff(indi + 2),ind_ff(indj),iel) = elMat%All(ind_ff(indi + 2),ind_ff(indj),iel) - coefe*(gme*dAlpha_dUe(j) + Alphae*(dot_product(Taue(:,j),bg)))*NiNi*bn
             DO k = 1,Ndim
-              elMat%Alq(ind_ff(indi+2),ind_fG(k+(j-1)*Ndim+ind_ash),iel) = elMat%Alq(ind_ff(indi+2),ind_fG(k+(j-1)*Ndim+ind_ash),iel) -&
-                &coefe*Alphae*Vvece(j)*bg(k)*NiNi*bn
+              elMat%Alq(ind_ff(indi+2),ind_fG(k+(j-1)*Ndim+ind_ash),iel) = elMat%Alq(ind_ff(indi+2),ind_fG(k+(j-1)*Ndim+ind_ash),iel) - coefe*Alphae*Vvece(j)*bg(k)*NiNi*bn
             END DO
           END DO
           elMat%fh(ind_ff(indi+2),iel) = elMat%fh(ind_ff(indi+2),iel) - coefe*Alphae*( dot_product (matmul(transpose(Taue),bg),ufg)  )*Ni*bn
@@ -2133,8 +2120,7 @@ CONTAINS
         indi = ind_asf + k
         indj = ind_ash + idm + (k - 1)*Ndim
         ! Non-tangent case
-        elMat%Alq(ind_ff(indi),ind_fG(indj),iel)=elMat%Alq(ind_ff(indi),ind_fG(indj),iel)-&
-          &NiNi*(ng(idm)*diffiso(k,k)-bn*bg(idm)*diffani(k,k) )
+        elMat%Alq(ind_ff(indi),ind_fG(indj),iel)=elMat%Alq(ind_ff(indi),ind_fG(indj),iel)-NiNi*(ng(idm)*diffiso(k,k)-bn*bg(idm)*diffani(k,k) )
       END DO
     END DO
 #endif

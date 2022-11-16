@@ -218,7 +218,9 @@ MODULE types
     real*8          :: diff_nn            ! Diffusion in the neutral equation
     real*8          :: Re                 ! Recycling for the neutral equation
     real*8          :: puff               ! Puff coefficient
+    !real*8          :: puff_density       ! Puff coefficient density (divided by number of elements in puff location (BUFFER for WEST))
     real*8,pointer  :: puff_exp(:)        ! Puff experimental coefficient (only for moving equilibriums)
+    !real*8,pointer  :: puff_exp_density(:)! Puff experimental coefficient (only for moving equilibriums)
     real*8          :: part_source        ! Particle source for ITER
     real*8          :: ener_source        ! Particle source for ITER
     real*8          :: density_source     ! Density source for WEST (2D, case 52)
@@ -361,7 +363,26 @@ MODULE types
     integer           :: sollib    ! Solver library to be used
     ! 1-Pastix
     ! 2-PSBLAS
+    ! 3-PETSc
+
     logical           :: timing    ! timing of the linear solver
+    ! Parameters relative to the library PETSc
+    integer           :: kspitrace     ! Display convergence at each iteration
+    real*8            :: rtol       ! Relative tolerance
+    real*8            :: atol       ! Absolute tolerance
+    integer           :: kspitmax      ! Max number of iterations
+    character(len=20) :: kspmethd     ! Krylov method (see list on the library manual)
+    logical           :: igz        ! Set initial guess of the iterative method to zeros
+    Integer           :: rprecond   ! Recompute preconditioner
+    Integer           :: Nrprecond  ! Recompute preconditioner each Rrprecond iterations
+    integer           :: kspnorm    ! norm type to be used
+    character(len=20) :: ksptype    ! Krylov solver type
+    character(len=20) :: pctype     ! Preconditioner type
+    integer           :: gmresres   ! Restart value for GMRES
+    integer           :: mglevels   ! Number of levels for the MultiGrid preconditioner
+    integer           :: mgtypeform   ! Form type of the MultiGrid preconditioner
+
+
     ! Parameters relative to the library PSBLAS
     character(len=20) :: kmethd    ! Krylov method (see list on the library manual)
     integer           :: istop     ! Stopping criterion (see spec on the library manual)

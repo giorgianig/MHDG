@@ -444,7 +444,7 @@ CONTAINS
       call HDF5_real_saving(group_id2, phys%a, 'a')
       call HDF5_real_saving(group_id2, phys%Mref, 'Mref')
       call HDF5_real_saving(group_id2, phys%c1, 'c1')
-      call HDF5_real_saving(group_id2, phys%c1, 'c2')
+      call HDF5_real_saving(group_id2, phys%c2, 'c2')
       call HDF5_real_saving(group_id2, phys%diff_pari, 'diff_pari')
       call HDF5_real_saving(group_id2, phys%diff_pare, 'diff_pare')
       call HDF5_real_saving(group_id2, phys%etapar, 'eta_parallel')
@@ -632,7 +632,7 @@ CONTAINS
     !              3D case
     !*************************************
 
-    IF (fname(1:5) == 'Sol3D') THEN
+    IF ((fname(1:5) == 'Sol3D') .or. (fname(1:7) == './Sol3D')) THEN
       ! Initialization with a 3D solution
       WRITE (6, *) "3D initial solution"
 
@@ -688,7 +688,7 @@ CONTAINS
       !      endif
       CALL HDF5_array1D_reading(file_id, sol%q, 'q')
       CALL HDF5_close(file_id)
-    ELSEIF (fname(1:5) == 'Sol2D') THEN
+    ELSEIF ((fname(1:5) == 'Sol2D' .or. fname(1:7) == './Sol2D')) THEN
       ! Initialization with a 2D solution
       WRITE (6, *) "2D initial solution: propagating in the torus..."
 
@@ -938,10 +938,10 @@ CONTAINS
     call HDF5_array1D_saving(file_id, MatK%vals, MatK%nnz, 'vals')
     call HDF5_close(file_id)
     ! Message to confirm succesful creation and filling of file
-    !      IF (MPIvar%glob_id.eq.0) THEN
-    !                                                   print*,'Output written to file ', trim(adjustl(fname_complete))
-    !                                                   print*,'        '
-    !      END IF
+          IF (MPIvar%glob_id.eq.0) THEN
+            print*,'Output written to file ', trim(adjustl(fname_complete))
+            print*,'        '
+          END IF
 
   end subroutine HDF5_save_CSR_matrix
 

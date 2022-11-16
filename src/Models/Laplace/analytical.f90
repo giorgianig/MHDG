@@ -443,9 +443,16 @@ CONTAINS
     real*8, dimension(:), intent(IN) :: x, y
     real*8, dimension(:, :), intent(OUT) :: f
     integer                            :: i, n
-    real*8  :: a, b, xc, yc, D, mu, k
+    real*8  :: a, b, xc, yc, D,diff_pari, mu, k, xm, ym, xx, yy, xmin, xmax, ymin, ymax
 
     n = size(x)
+    xmax = Mesh%xmax
+    xmin = Mesh%xmin
+    ymax = Mesh%ymax
+    ymin = Mesh%ymin
+
+    xm = 0.5*(xmax + xmin)
+    ym = 0.5*(ymax + ymin)
 
     f = 0.
     SELECT CASE (switch%testcase)
@@ -471,9 +478,152 @@ CONTAINS
       xc = 0.
       yc = 0.
       D = phys%diff_n
+      diff_pari = phys%diff_pari
       mu = phys%diff_u
       k = phys%a
-      f(:, 1) = 0.
+
+
+
+      DO i=1,size(x)
+      xx = x(i)
+      yy = y(i)
+      ! isotropic diffusion
+      ! f(i, 1) = (D*a*1.0D0/(xm*xx*(-2.0D0)-ym*yy*2.0D0+xm**2+xx**2*2.0D0+ym*&
+      !     &*2+yy**2)**2*(-xm**4*cos(a*xx)*sin(a*yy)-xx**4*cos(a*xx)*sin(a*yy)&
+      !     &*6.0D0-xm**2*xx**2*cos(a*xx)*sin(a*yy)*1.1D+1-xm**2*ym**2*cos(a*xx&
+      !    &)*sin(a*yy)-xx**2*ym**2*cos(a*xx)*sin(a*yy)*5.0D0-xm**2*yy**2*cos(&
+      !     &a*xx)*sin(a*yy)-xx**2*yy**2*cos(a*xx)*sin(a*yy)*5.0D0+a*xx**5*sin(&
+      !    &a*xx)*sin(a*yy)*6.0D0+xm*xx**3*cos(a*xx)*sin(a*yy)*1.2D+1+xm**3*xx&
+      !     &*cos(a*xx)*sin(a*yy)*5.0D0-xm*ym**3*cos(a*yy)*sin(a*xx)-xm**3*ym*c&
+      !     &os(a*yy)*sin(a*xx)+xx*ym**3*cos(a*yy)*sin(a*xx)*2.0D0+xx**3*ym*cos&
+      !     &(a*yy)*sin(a*xx)*2.0D0+xm*yy**3*cos(a*yy)*sin(a*xx)+xm**3*yy*cos(a&
+      !     &*yy)*sin(a*xx)-xx*yy**3*cos(a*yy)*sin(a*xx)*2.0D0-xx**3*yy*cos(a*y&
+      !     &y)*sin(a*xx)*2.0D0+a*xx**4*ym*cos(a*xx)*cos(a*yy)*4.0D0-a*xx**4*yy&
+      !     &*cos(a*xx)*cos(a*yy)*4.0D0-a*xm*xx**4*sin(a*xx)*sin(a*yy)*1.0D+1+a&
+      !     &*xm**4*xx*sin(a*xx)*sin(a*yy)+a*xx*ym**4*sin(a*xx)*sin(a*yy)+a*xx*&
+      !     &yy**4*sin(a*xx)*sin(a*yy)+xm*xx*ym**2*cos(a*xx)*sin(a*yy)*3.0D0-xm&
+      !     &*xx**2*ym*cos(a*yy)*sin(a*xx)*4.0D0+xm**2*xx*ym*cos(a*yy)*sin(a*xx&
+      !     &)*4.0D0+xm*xx*yy**2*cos(a*xx)*sin(a*yy)*3.0D0+xm*xx**2*yy*cos(a*yy&
+      !     &)*sin(a*xx)*4.0D0-xm**2*xx*yy*cos(a*yy)*sin(a*xx)*4.0D0-xm*ym*yy**&
+      !     &2*cos(a*yy)*sin(a*xx)*3.0D0+xm*ym**2*yy*cos(a*yy)*sin(a*xx)*3.0D0+&
+      !     &xm**2*ym*yy*cos(a*xx)*sin(a*yy)*2.0D0+xx*ym*yy**2*cos(a*yy)*sin(a*&
+      !     &xx)*6.0D0-xx*ym**2*yy*cos(a*yy)*sin(a*xx)*6.0D0+xx**2*ym*yy*cos(a*&
+      !     &xx)*sin(a*yy)*1.0D+1+a*xx**2*ym**3*cos(a*xx)*cos(a*yy)*2.0D0-a*xx*&
+      !     &*2*yy**3*cos(a*xx)*cos(a*yy)*2.0D0+a*xm**2*xx**3*sin(a*xx)*sin(a*y&
+      !     &y)*9.0D0-a*xm**3*xx**2*sin(a*xx)*sin(a*yy)*4.0D0+a*xx**3*ym**2*sin&
+      !     &(a*xx)*sin(a*yy)*5.0D0+a*xx**3*yy**2*sin(a*xx)*sin(a*yy)*5.0D0+a*x&
+      !     &m**2*xx**2*ym*cos(a*xx)*cos(a*yy)*6.0D0-a*xm**2*xx**2*yy*cos(a*xx)&
+      !     &*cos(a*yy)*6.0D0+a*xx**2*ym*yy**2*cos(a*xx)*cos(a*yy)*6.0D0-a*xx**&
+      !     &2*ym**2*yy*cos(a*xx)*cos(a*yy)*6.0D0-a*xm*xx**2*ym**2*sin(a*xx)*si&
+      !     &n(a*yy)*4.0D0+a*xm**2*xx*ym**2*sin(a*xx)*sin(a*yy)*2.0D0-a*xm*xx**&
+      !     &2*yy**2*sin(a*xx)*sin(a*yy)*4.0D0+a*xm**2*xx*yy**2*sin(a*xx)*sin(a&
+      !     &*yy)*2.0D0+a*xx*ym**2*yy**2*sin(a*xx)*sin(a*yy)*6.0D0-xm*xx*ym*yy*&
+      !     &cos(a*xx)*sin(a*yy)*6.0D0-a*xm*xx*ym**3*cos(a*xx)*cos(a*yy)*2.0D0-&
+      !     &a*xm*xx**3*ym*cos(a*xx)*cos(a*yy)*8.0D0-a*xm**3*xx*ym*cos(a*xx)*co&
+      !     &s(a*yy)*2.0D0+a*xm*xx*yy**3*cos(a*xx)*cos(a*yy)*2.0D0+a*xm*xx**3*y&
+      !     &y*cos(a*xx)*cos(a*yy)*8.0D0+a*xm**3*xx*yy*cos(a*xx)*cos(a*yy)*2.0D&
+      !     &0-a*xx*ym*yy**3*sin(a*xx)*sin(a*yy)*4.0D0-a*xx*ym**3*yy*sin(a*xx)*&
+      !     &sin(a*yy)*4.0D0-a*xx**3*ym*yy*sin(a*xx)*sin(a*yy)*1.0D+1-a*xm*xx*y&
+      !     &m*yy**2*cos(a*xx)*cos(a*yy)*6.0D0+a*xm*xx*ym**2*yy*cos(a*xx)*cos(a&
+      !     &*yy)*6.0D0+a*xm*xx**2*ym*yy*sin(a*xx)*sin(a*yy)*8.0D0-a*xm**2*xx*y&
+      !     &m*yy*sin(a*xx)*sin(a*yy)*4.0D0))/xx
+
+          ! anisotropic diffusion
+          f(i,1) =-1.0D0/xx**5*1.0D0/(1.0D0/xx**2*(xm-xx)**2+1.0D0/xx**2*(ym-yy&
+          &)**2+1.0D0)**2*(a*diff_pari*ym**4*cos(a*xx)*sin(a*yy)*2.0D0-a*D*ym**&
+          &4*cos(a*xx)*sin(a*yy)*2.0D0+a*diff_pari*yy**4*cos(a*xx)*sin(a*yy)*2.0D0&
+          &-a*D*yy**4*cos(a*xx)*sin(a*yy)*2.0D0-a**2*D*xx**5*sin(a*xx)*&
+          &sin(a*yy)*(1.0D0/xx**2*(xm-xx)**2+1.0D0/xx**2*(ym-yy)**2+1.0D0)**2&
+          &*2.0D0+a*diff_pari*xm**2*ym**2*cos(a*xx)*sin(a*yy)*2.0D0-a*D*xm**2*y&
+          &m**2*cos(a*xx)*sin(a*yy)*2.0D0+a*diff_pari*xx**2*ym**2*cos(a*xx)*sin(a*&
+          &yy)*2.0D0-a*D*xx**2*ym**2*cos(a*xx)*sin(a*yy)*2.0D0+a*diff_pari*xm**&
+          &2*yy**2*cos(a*xx)*sin(a*yy)*2.0D0-a*D*xm**2*yy**2*cos(a*xx)*sin&
+          &(a*yy)*2.0D0+a*diff_pari*xx**2*yy**2*cos(a*xx)*sin(a*yy)*2.0D0-a*D*x&
+          &x**2*yy**2*cos(a*xx)*sin(a*yy)*2.0D0+a*diff_pari*ym**2*yy**2*cos(a*xx)*&
+          &sin(a*yy)*1.2D+1-a*D*ym**2*yy**2*cos(a*xx)*sin(a*yy)*1.2D+1-a*diff_pari&
+          &*xx**4*cos(a*xx)*sin(a*yy)*(1.0D0/xx**2*(xm-xx)**2+1.0D0/xx**2*&
+          &(ym-yy)**2+1.0D0)+a*D*xx**4*cos(a*xx)*sin(a*yy)*(1.0D0/xx**2*(x&
+          &m-xx)**2+1.0D0/xx**2*(ym-yy)**2+1.0D0)+a*D*xx**4*cos(a*xx)*sin(&
+          &a*yy)*(1.0D0/xx**2*(xm-xx)**2+1.0D0/xx**2*(ym-yy)**2+1.0D0)**2-a**&
+          &2*diff_pari*xx**5*sin(a*xx)*sin(a*yy)*(1.0D0/xx**2*(xm-xx)**2+1.0D0/xx*&
+          &*2*(ym-yy)**2+1.0D0)+a**2*D*xx**5*sin(a*xx)*sin(a*yy)*(1.0D0/xx&
+          &**2*(xm-xx)**2+1.0D0/xx**2*(ym-yy)**2+1.0D0)-a*diff_pari*xm*ym**3*cos(a&
+          &*yy)*sin(a*xx)*2.0D0-a*diff_pari*xm**3*ym*cos(a*yy)*sin(a*xx)*2.0D0+a*D&
+          &*xm*ym**3*cos(a*yy)*sin(a*xx)*2.0D0+a*D*xm**3*ym*cos(a*yy)*s&
+          &in(a*xx)*2.0D0+a*diff_pari*xx*ym**3*cos(a*yy)*sin(a*xx)*2.0D0+a*diff_pari*xx&
+          &**3*ym*cos(a*yy)*sin(a*xx)*2.0D0-a*D*xx*ym**3*cos(a*yy)*sin(a*x&
+          &x)*2.0D0-a*D*xx**3*ym*cos(a*yy)*sin(a*xx)*2.0D0+a*diff_pari*xm*yy**3&
+          &*cos(a*yy)*sin(a*xx)*2.0D0+a*diff_pari*xm**3*yy*cos(a*yy)*sin(a*xx)*2.0&
+          &D0-a*D*xm*yy**3*cos(a*yy)*sin(a*xx)*2.0D0-a*D*xm**3*yy*cos(a&
+          &*yy)*sin(a*xx)*2.0D0-a*diff_pari*xx*yy**3*cos(a*yy)*sin(a*xx)*2.0D0-a*diff_pari&
+          &*xx**3*yy*cos(a*yy)*sin(a*xx)*2.0D0+a*D*xx*yy**3*cos(a*yy)*s&
+          &in(a*xx)*2.0D0+a*D*xx**3*yy*cos(a*yy)*sin(a*xx)*2.0D0-a*diff_pari*ym&
+          &*yy**3*cos(a*xx)*sin(a*yy)*8.0D0-a*diff_pari*ym**3*yy*cos(a*xx)*sin(a*y&
+          &y)*8.0D0+a*D*ym*yy**3*cos(a*xx)*sin(a*yy)*8.0D0+a*D*ym**3*yy&
+          &*cos(a*xx)*sin(a*yy)*8.0D0+a**2*diff_pari*xx**4*ym*cos(a*xx)*cos(a*yy)*&
+          &(1.0D0/xx**2*(xm-xx)**2+1.0D0/xx**2*(ym-yy)**2+1.0D0)*2.0D0-a**2*D&
+          &*xx**4*ym*cos(a*xx)*cos(a*yy)*(1.0D0/xx**2*(xm-xx)**2+1.0D0/xx*&
+          &*2*(ym-yy)**2+1.0D0)*2.0D0-a**2*diff_pari*xx**4*yy*cos(a*xx)*cos(a*yy)*&
+          &(1.0D0/xx**2*(xm-xx)**2+1.0D0/xx**2*(ym-yy)**2+1.0D0)*2.0D0+a**2*D&
+          &*xx**4*yy*cos(a*xx)*cos(a*yy)*(1.0D0/xx**2*(xm-xx)**2+1.0D0/xx*&
+          &*2*(ym-yy)**2+1.0D0)*2.0D0-a*diff_pari*xx**2*ym**2*cos(a*xx)*sin(a*yy)*&
+          &(1.0D0/xx**2*(xm-xx)**2+1.0D0/xx**2*(ym-yy)**2+1.0D0)+a*D*xx**2&
+          &*ym**2*cos(a*xx)*sin(a*yy)*(1.0D0/xx**2*(xm-xx)**2+1.0D0/xx**2*(ym&
+          &-yy)**2+1.0D0)-a*diff_pari*xx**2*yy**2*cos(a*xx)*sin(a*yy)*(1.0D0/xx**2&
+          &*(xm-xx)**2+1.0D0/xx**2*(ym-yy)**2+1.0D0)+a*D*xx**2*yy**2*cos(a&
+          &*xx)*sin(a*yy)*(1.0D0/xx**2*(xm-xx)**2+1.0D0/xx**2*(ym-yy)**2+1.0D&
+          &0)+a**2*diff_pari*xm*xx**4*sin(a*xx)*sin(a*yy)*(1.0D0/xx**2*(xm-xx)**2+&
+          &1.0D0/xx**2*(ym-yy)**2+1.0D0)*2.0D0-a**2*D*xm*xx**4*sin(a*xx)*s&
+          &in(a*yy)*(1.0D0/xx**2*(xm-xx)**2+1.0D0/xx**2*(ym-yy)**2+1.0D0)*2.0&
+          &D0-a*diff_pari*xm*xx*ym**2*cos(a*xx)*sin(a*yy)*4.0D0-a*diff_pari*xm*xx**2*ym&
+          &*cos(a*yy)*sin(a*xx)*6.0D0+a*diff_pari*xm**2*xx*ym*cos(a*yy)*sin(a*xx)*&
+          &6.0D0+a*D*xm*xx*ym**2*cos(a*xx)*sin(a*yy)*4.0D0+a*D*xm*xx**2&
+          &*ym*cos(a*yy)*sin(a*xx)*6.0D0-a*D*xm**2*xx*ym*cos(a*yy)*sin(a*x&
+          &x)*6.0D0-a*diff_pari*xm*xx*yy**2*cos(a*xx)*sin(a*yy)*4.0D0+a*diff_pari*xm*xx&
+          &**2*yy*cos(a*yy)*sin(a*xx)*6.0D0-a*diff_pari*xm**2*xx*yy*cos(a*yy)*sin(&
+          &a*xx)*6.0D0+a*D*xm*xx*yy**2*cos(a*xx)*sin(a*yy)*4.0D0-a*D*xm&
+          &*xx**2*yy*cos(a*yy)*sin(a*xx)*6.0D0+a*D*xm**2*xx*yy*cos(a*yy)*s&
+          &in(a*xx)*6.0D0-a*diff_pari*xm*ym*yy**2*cos(a*yy)*sin(a*xx)*6.0D0+a*diff_pari&
+          &*xm*ym**2*yy*cos(a*yy)*sin(a*xx)*6.0D0-a*diff_pari*xm**2*ym*yy*cos(a*xx&
+          &)*sin(a*yy)*4.0D0+a*D*xm*ym*yy**2*cos(a*yy)*sin(a*xx)*6.0D0-a*D&
+          &*xm*ym**2*yy*cos(a*yy)*sin(a*xx)*6.0D0+a*D*xm**2*ym*yy*cos(a&
+          &*xx)*sin(a*yy)*4.0D0+a*diff_pari*xx*ym*yy**2*cos(a*yy)*sin(a*xx)*6.0D0-&
+          &a*diff_pari*xx*ym**2*yy*cos(a*yy)*sin(a*xx)*6.0D0-a*diff_pari*xx**2*ym*yy*co&
+          &s(a*xx)*sin(a*yy)*4.0D0-a*D*xx*ym*yy**2*cos(a*yy)*sin(a*xx)*6.0&
+          &D0+a*D*xx*ym**2*yy*cos(a*yy)*sin(a*xx)*6.0D0+a*D*xx**2*ym*yy&
+          &*cos(a*xx)*sin(a*yy)*4.0D0-a**2*diff_pari*xm**2*xx**3*sin(a*xx)*sin(a*y&
+          &y)*(1.0D0/xx**2*(xm-xx)**2+1.0D0/xx**2*(ym-yy)**2+1.0D0)+a**2*D&
+          &*xm**2*xx**3*sin(a*xx)*sin(a*yy)*(1.0D0/xx**2*(xm-xx)**2+1.0D0/xx*&
+          &*2*(ym-yy)**2+1.0D0)-a**2*diff_pari*xx**3*ym**2*sin(a*xx)*sin(a*yy)*(1.&
+          &0D0/xx**2*(xm-xx)**2+1.0D0/xx**2*(ym-yy)**2+1.0D0)+a**2*D*xx**3&
+          &*ym**2*sin(a*xx)*sin(a*yy)*(1.0D0/xx**2*(xm-xx)**2+1.0D0/xx**2*(ym&
+          &-yy)**2+1.0D0)-a**2*diff_pari*xx**3*yy**2*sin(a*xx)*sin(a*yy)*(1.0D0/xx&
+          &**2*(xm-xx)**2+1.0D0/xx**2*(ym-yy)**2+1.0D0)+a**2*D*xx**3*yy**2&
+          &*sin(a*xx)*sin(a*yy)*(1.0D0/xx**2*(xm-xx)**2+1.0D0/xx**2*(ym-yy)**&
+          &2+1.0D0)+a*diff_pari*xm*xx**3*cos(a*xx)*sin(a*yy)*(1.0D0/xx**2*(xm-xx)*&
+          &*2+1.0D0/xx**2*(ym-yy)**2+1.0D0)-a*D*xm*xx**3*cos(a*xx)*sin(a*y&
+          &y)*(1.0D0/xx**2*(xm-xx)**2+1.0D0/xx**2*(ym-yy)**2+1.0D0)+a*diff_pari*xm&
+          &*xx**2*ym*cos(a*yy)*sin(a*xx)*(1.0D0/xx**2*(xm-xx)**2+1.0D0/xx**2*&
+          &(ym-yy)**2+1.0D0)-a*D*xm*xx**2*ym*cos(a*yy)*sin(a*xx)*(1.0D0/xx&
+          &**2*(xm-xx)**2+1.0D0/xx**2*(ym-yy)**2+1.0D0)-a*diff_pari*xm*xx**2*yy*co&
+          &s(a*yy)*sin(a*xx)*(1.0D0/xx**2*(xm-xx)**2+1.0D0/xx**2*(ym-yy)**2+1&
+          &.0D0)+a*D*xm*xx**2*yy*cos(a*yy)*sin(a*xx)*(1.0D0/xx**2*(xm-xx)*&
+          &*2+1.0D0/xx**2*(ym-yy)**2+1.0D0)+a*diff_pari*xx**2*ym*yy*cos(a*xx)*sin(&
+          &a*yy)*(1.0D0/xx**2*(xm-xx)**2+1.0D0/xx**2*(ym-yy)**2+1.0D0)*2.0D0-&
+          &a*D*xx**2*ym*yy*cos(a*xx)*sin(a*yy)*(1.0D0/xx**2*(xm-xx)**2+1.0&
+          &D0/xx**2*(ym-yy)**2+1.0D0)*2.0D0+a*diff_pari*xm*xx*ym*yy*cos(a*xx)*sin(&
+          &a*yy)*8.0D0-a*D*xm*xx*ym*yy*cos(a*xx)*sin(a*yy)*8.0D0-a**2*diff_pari&
+          &*xm*xx**3*ym*cos(a*xx)*cos(a*yy)*(1.0D0/xx**2*(xm-xx)**2+1.0D0/xx*&
+          &*2*(ym-yy)**2+1.0D0)*2.0D0+a**2*D*xm*xx**3*ym*cos(a*xx)*cos(a*y&
+          &y)*(1.0D0/xx**2*(xm-xx)**2+1.0D0/xx**2*(ym-yy)**2+1.0D0)*2.0D0+a**&
+          &2*diff_pari*xm*xx**3*yy*cos(a*xx)*cos(a*yy)*(1.0D0/xx**2*(xm-xx)**2+1.0&
+          &D0/xx**2*(ym-yy)**2+1.0D0)*2.0D0-a**2*D*xm*xx**3*yy*cos(a*xx)*c&
+          &os(a*yy)*(1.0D0/xx**2*(xm-xx)**2+1.0D0/xx**2*(ym-yy)**2+1.0D0)*2.0&
+          &D0+a**2*diff_pari*xx**3*ym*yy*sin(a*xx)*sin(a*yy)*(1.0D0/xx**2*(xm-xx)*&
+          &*2+1.0D0/xx**2*(ym-yy)**2+1.0D0)*2.0D0-a**2*D*xx**3*ym*yy*sin(a&
+          &*xx)*sin(a*yy)*(1.0D0/xx**2*(xm-xx)**2+1.0D0/xx**2*(ym-yy)**2+1.0D&
+          &0)*2.0D0)
+    ENDDO
     CASE (50:)
       !Do nothing
     CASE DEFAULT

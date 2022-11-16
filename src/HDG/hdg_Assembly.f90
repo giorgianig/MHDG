@@ -592,6 +592,7 @@ CONTAINS
     call mymatmul(A_lq,LL,auxAlqLL)
     call mymatmul(A_lu,UU,auxAluUU)
     Kel(:,:,iel3) = auxAlqLL+auxAluUU+A_ll
+
     deallocate(auxAlqLL,auxAluUU)
     !      Kel(:,:,iel3) = matmul(A_lq, LL) + matmul(A_lu, UU) + A_ll
 
