@@ -256,7 +256,7 @@ PROGRAM MHDG
   ALLOCATE (sol%u0(nu, time%tis))
   sol%u0 = 0.
   sol%u0(:, 1) = sol%u
-  switch_save = 0
+  switch_save = 1
   !*******************************************************
   !                  TIME LOOP
   !*******************************************************

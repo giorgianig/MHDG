@@ -361,7 +361,7 @@ CONTAINS
       ENDIF
     ENDIF
 
-    call KSPView(matPETSC%ksp,PETSC_VIEWER_STDOUT_WORLD, ierr)
+    !call KSPView(matPETSC%ksp,PETSC_VIEWER_STDOUT_WORLD, ierr)
     call KSPSolve(matPETSC%ksp, matPETSC%rhs_vec, matPETSC%solPETSC_vec, ierr); CHKERRA(ierr)
 
     call KSPGetIterationNumber(matPETSC%ksp,matPETSC%its,ierr)

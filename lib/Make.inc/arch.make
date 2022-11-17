@@ -58,8 +58,8 @@ DIM=$(DIM_2D)
 # Available libraries: put $(LIB_YES) to use the library, $(LIB_NO) to not use it
 LIB_YES=yes
 LIB_NO=no
-PASTIX=$(LIB_YES)
-#PASTIX=$(LIB_NO)
+#PASTIX=$(LIB_YES)
+PASTIX=$(LIB_NO)
 #PSBLAS=$(LIB_YES)
 PSBLAS=$(LIB_NO)
 #PSBLMG=$(LIB_YES)
