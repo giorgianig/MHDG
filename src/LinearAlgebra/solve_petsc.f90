@@ -339,13 +339,15 @@ CONTAINS
 
     ! reuse or not preconditioner
     IF(lssolver%rprecond .eq. 1) THEN
-      call KSPSetReusePreconditioner(matPETSC%ksp,PETSC_TRUE,ierr)
+       call KSPSetReusePreconditioner(matPETSC%ksp,PETSC_FALSE,ierr)
     ELSEIF(lssolver%rprecond .eq. 2) THEN
-      IF(MOD(ir, lssolver%Nrprecond) .eq. 0) THEN
+       IF(MOD(ir-1, lssolver%Nrprecond) .eq. 0) THEN
         call KSPSetReusePreconditioner(matPETSC%ksp,PETSC_FALSE,ierr)
-        IF (MPIvar%glob_id .eq. 0) then
+         IF ((MPIvar%glob_id .eq. 0) .and. (ir .ne. 1)) then
             WRITE(*,*) 'PETSC is re-computing preconditioner'
         ENDIF
+       ELSE
+          call KSPSetReusePreconditioner(matPETSC%ksp,PETSC_TRUE,ierr)
       ENDIF
     ELSEIF(lssolver%rprecond .eq. 3) THEN
       IF(matPETSC%its .eq. lssolver%kspitmax) THEN
@@ -353,6 +355,8 @@ CONTAINS
         IF (MPIvar%glob_id .eq. 0) then
             WRITE(*,*) 'PETSC is re-computing preconditioner'
         ENDIF
+       ELSE
+         call KSPSetReusePreconditioner(matPETSC%ksp,PETSC_TRUE,ierr)
       ENDIF
     ELSE
       IF (MPIvar%glob_id .eq. 0) then
