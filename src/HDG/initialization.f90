@@ -946,7 +946,7 @@ CONTAINS
  SUBROUTINE projectSolutionDifferentMeshes(xs)
  use reference_element, only:orthopoly2d,orthopoly1d,permutation_quads
  use linearAlgebra, only:solve_linear_system_sing,solve_linear_system
- 
+
  real*8, intent(in)  :: xs(:,:)
  real*8, allocatable:: u_prov(:,:),q_prov(:,:)
  integer :: np,neq,iel,ip,nnod,nnod1
@@ -954,31 +954,31 @@ CONTAINS
  integer, allocatable :: correl(:)
  real*8  :: Xe(3,2),d,xieta(2),mat(3,3),bc(3),Xq(4,2)
  real*8  :: V(1:refElPol%Nnodes2D, 1:refElPol%Nnodes2D)
- real*8  :: V1(1:refElPol%Nnodes1D, 1:refElPol%Nnodes1D) 
+ real*8  :: V1(1:refElPol%Nnodes1D, 1:refElPol%Nnodes1D)
  real*8  :: sf(refElPol%Nnodes2D),sf1(refElPol%Nnodes1D),sf2(refElPol%Nnodes1D)
  real*8  :: b1,b2,b3,dd
- real*8  :: a11,a12,a13,a21,a22,a23,a31,a32,a33 
+ real*8  :: a11,a12,a13,a21,a22,a23,a31,a32,a33
  real*8 :: r, s, p(1:refElPol%Nnodes2D),q1(refElPol%Nnodes1D),q2(refElPol%Nnodes1D)
  integer*4 :: i,j,perm(refElPol%Nnodes2D)
  real*8 :: tol
- 
- 
+
+
  IF (MPIvar%glob_id .eq. 0) THEN
     write (6,*) "*** Projecting the solution: find corresponding elements"
  ENDIF
-    
+
  tol = max(abs(Mesh%xmax),abs(Mesh%xmin),abs(Mesh%ymax),abs(Mesh%ymin))*1e-5
- 
+
  np = size(xs,1)
  neq = phys%Neq
  nnod = refElPol%Nnodes2D
- nnod1= refElPol%Nnodes1D 
+ nnod1= refElPol%Nnodes1D
  allocate(u_prov(neq,np))
  allocate(q_prov(neq*2,np))
  allocate(correl(np))
  correl = 0
- 
- ! Find corresponding element 
+
+ ! Find corresponding element
  do iel = 1,size(Mesh%T,1)
     Xe = Mesh%X(Mesh%T(iel,1:3),:)
     mat(1,1:3) = Xe(1:3,1)
@@ -986,16 +986,16 @@ CONTAINS
     mat(3,1:3) = 1.
 				dd = (mat(1,1)*mat(2,2)*mat(3,3) - mat(1,1)*mat(2,3)*mat(3,2) - mat(1,2)*mat(2,1)*mat(3,3) + &
 							  &mat(1,2)*mat(2,3)*mat(3,1) + mat(1,3)*mat(2,1)*mat(3,2) - mat(1,3)*mat(2,2)*mat(3,1))
-				
+
 				a11 =   mat(2,2)*mat(3,3) - mat(2,3)*mat(3,2)
 				a12 = - mat(1,2)*mat(3,3) + mat(1,3)*mat(3,2)
-				a13 =   mat(1,2)*mat(2,3) - mat(1,3)*mat(2,2)			  
+				a13 =   mat(1,2)*mat(2,3) - mat(1,3)*mat(2,2)
 				a21 = - mat(2,1)*mat(3,3) + mat(2,3)*mat(3,1)
 				a22 =   mat(1,1)*mat(3,3) - mat(1,3)*mat(3,1)
 				a23 = - mat(1,1)*mat(2,3) + mat(1,3)*mat(2,1)
 				a31 =   mat(2,1)*mat(3,2) - mat(2,2)*mat(3,1)
 				a32 = - mat(1,1)*mat(3,2) + mat(1,2)*mat(3,1)
-				a33 =   mat(1,1)*mat(2,2) - mat(1,2)*mat(2,1)			  
+				a33 =   mat(1,1)*mat(2,2) - mat(1,2)*mat(2,1)
 				do i=1,np
 
 							b1 = xs(i,1)
@@ -1008,7 +1008,7 @@ CONTAINS
 			       correl(i) = iel
 			    endif
 				end do
-				
+
 				if (refElPol%elemType==1) then
 						 Xe = Mesh%X(Mesh%T(iel,(/1,3,4/)),:)
 						 mat(1,1:3) = Xe(1:3,1)
@@ -1016,16 +1016,16 @@ CONTAINS
 						 mat(3,1:3) = 1.
 							dd = (mat(1,1)*mat(2,2)*mat(3,3) - mat(1,1)*mat(2,3)*mat(3,2) - mat(1,2)*mat(2,1)*mat(3,3) + &
 												&mat(1,2)*mat(2,3)*mat(3,1) + mat(1,3)*mat(2,1)*mat(3,2) - mat(1,3)*mat(2,2)*mat(3,1))
-							
+
 							a11 =   mat(2,2)*mat(3,3) - mat(2,3)*mat(3,2)
 							a12 = - mat(1,2)*mat(3,3) + mat(1,3)*mat(3,2)
-							a13 =   mat(1,2)*mat(2,3) - mat(1,3)*mat(2,2)			  
+							a13 =   mat(1,2)*mat(2,3) - mat(1,3)*mat(2,2)
 							a21 = - mat(2,1)*mat(3,3) + mat(2,3)*mat(3,1)
 							a22 =   mat(1,1)*mat(3,3) - mat(1,3)*mat(3,1)
 							a23 = - mat(1,1)*mat(2,3) + mat(1,3)*mat(2,1)
 							a31 =   mat(2,1)*mat(3,2) - mat(2,2)*mat(3,1)
 							a32 = - mat(1,1)*mat(3,2) + mat(1,2)*mat(3,1)
-							a33 =   mat(1,1)*mat(2,2) - mat(1,2)*mat(2,1)			  
+							a33 =   mat(1,1)*mat(2,2) - mat(1,2)*mat(2,1)
 							do i=1,np
 
 										b1 = xs(i,1)
@@ -1037,42 +1037,42 @@ CONTAINS
 										if ( bc(1)>=-tol .and. bc(2)>=-tol .and. bc(3)>=-tol .and. bc(1)<=1+tol .and. bc(2)<=1+tol .and. bc(3)<=1+tol) then
 									    correl(i) = iel
 									 endif
-							end do				
+							end do
 				endif
  end do
- 
- 
+
+
  IF (MPIvar%glob_id .eq. 0) THEN
     write (6,*) "*** Projecting the solution: interpolation at points"
  ENDIF
- 
+
 ! call displayVectorInt(correl(1:1000))
 ! stop
  do ip = 1,np
- 
+
     iel = correl(ip)
     if (iel==0) then
      write(6,*) "Element not found for point: ", xs(i,:), " Stopping"
      stop
     endif
-    
-    ! Find the corresponding point in the reference element (linear approach so far)    
+
+    ! Find the corresponding point in the reference element (linear approach so far)
     if (refElPol%elemType==0) then
 						 Xe = Mesh%X(Mesh%T(iel,1:3),:)
 						 d = 0.5*( (Xe(2,1)-Xe(1,1))*(Xe(3,2)-Xe(1,2))-(Xe(3,1)-Xe(1,1))*(Xe(2,2)-Xe(1,2)))
-						 
+
 						 xieta(1)= 1./d*( (Xe(3,2)-Xe(1,2))*(xs(ip,1)-0.5*(Xe(2,1)+Xe(3,1)) ) - (Xe(3,1)-Xe(1,1))*(xs(ip,2)-0.5*(Xe(2,2)+Xe(3,2)) ) )
-						 xieta(2)= 1./d*( (Xe(2,1)-Xe(1,1))*(xs(ip,2)-0.5*(Xe(2,2)+Xe(3,2)) ) - (Xe(2,2)-Xe(1,2))*(xs(ip,1)-0.5*(Xe(2,1)+Xe(3,1)) ) ) 
+						 xieta(2)= 1./d*( (Xe(2,1)-Xe(1,1))*(xs(ip,2)-0.5*(Xe(2,2)+Xe(3,2)) ) - (Xe(2,2)-Xe(1,2))*(xs(ip,1)-0.5*(Xe(2,1)+Xe(3,1)) ) )
     else if (refElPol%elemType==1) then
 						 Xq = Mesh%X(Mesh%T(iel,1:4),:)
 						 d = 0.25*( (Xq(2,1)+Xq(3,1)-Xq(1,1)-Xq(4,1))*(Xq(3,2)+Xq(4,2)-Xq(1,2)-Xq(2,2)) - &
 						           &(Xq(2,2)+Xq(3,2)-Xq(1,2)-Xq(4,2))*(Xq(3,1)+Xq(4,1)-Xq(1,1)-Xq(2,1)) )
-						 
+
 						 xieta(1)= 1./d*( (Xq(3,2)+Xq(4,2)-Xq(1,2)-Xq(2,2))*(xs(ip,1)-0.25*(Xq(1,1)+Xq(2,1)+Xq(3,1)+Xq(4,1)) ) - &
-						                & (Xq(3,1)+Xq(4,1)-Xq(1,1)-Xq(2,1))*(xs(ip,2)-0.25*(Xq(1,2)+Xq(2,2)+Xq(3,2)+Xq(4,2)) ) ) 
+						                & (Xq(3,1)+Xq(4,1)-Xq(1,1)-Xq(2,1))*(xs(ip,2)-0.25*(Xq(1,2)+Xq(2,2)+Xq(3,2)+Xq(4,2)) ) )
 						 xieta(2)= 1./d*( (Xq(2,1)+Xq(3,1)-Xq(1,1)-Xq(4,1))*(xs(ip,2)-0.25*(Xq(1,2)+Xq(2,2)+Xq(3,2)+Xq(4,2)) ) - &
-						                 &(Xq(2,2)+Xq(3,2)-Xq(1,2)-Xq(4,2))*(xs(ip,1)-0.25*(Xq(1,1)+Xq(2,1)+Xq(3,1)+Xq(4,1)) ) ) 
-						 
+						                 &(Xq(2,2)+Xq(3,2)-Xq(1,2)-Xq(4,2))*(xs(ip,1)-0.25*(Xq(1,1)+Xq(2,1)+Xq(3,1)+Xq(4,1)) ) )
+
     end if
 
     if (refElPol%elemType==0) then
@@ -1083,7 +1083,7 @@ CONTAINS
 						   s = refElPol%coord2d(i, 2)
 						   CALL orthopoly2d(r, s, nnod, refElPol%Ndeg, p)
 						   V(i, :) = p(:)
-						 END DO        
+						 END DO
     ! Compute shape functions on triangles
 						 CALL orthopoly2d(xieta(1), xieta(2), nnod, refElPol%Ndeg, p)
 						 CALL solve_linear_system_sing(transpose(V), p, sf)
@@ -1094,7 +1094,7 @@ CONTAINS
 						   r = refElPol%coord1d(i)
 						   CALL orthopoly1d(r, refElPol%Ndeg, q1)
 						   V1(i, :) = q1(:)
-						 END DO     
+						 END DO
     ! Compute shape functions on quads
        CALL orthopoly1d(xieta(1), refElPol%Ndeg, q1)
        CALL orthopoly1d(xieta(2), refElPol%Ndeg, q2)
@@ -1103,18 +1103,18 @@ CONTAINS
        perm = permutation_quads(refElPol)
        sf(perm) = col(tensorProduct(sf1,sf2))
     endif
-    
-    
-    
+
+
+
     ! Interpolation
     ind_u =  (iel-1)*nnod*neq+(/(i,i=1,nnod*neq)/)
     ind_q =  (iel-1)*nnod*neq*2+(/(i,i=1,nnod*neq*2)/)
     u_prov(:,ip) = matmul(sf,transpose(reshape(sol%u(ind_u),[neq,nnod])))
     q_prov(:,ip) = matmul(sf,transpose(reshape(sol%q(ind_q),[neq*2,nnod])))
-          
-    
+
+
  end do
- 
+
  deallocate(sol%u,sol%q,sol%u_tilde)
  allocate(sol%u(np*neq))
  allocate(sol%q(np*neq*2))
@@ -1127,16 +1127,16 @@ CONTAINS
    sol%u( i+(j-1)*neq ) = u_prov(i,j)
    end do
  end do
-  
+
  do j=1,np
    do i=1,neq*2
    sol%q( i+(j-1)*neq*2 ) = q_prov(i,j)
    end do
  end do
- 
- 
+
+
  deallocate(u_prov,q_prov,correl)
- 
+
  END SUBROUTINE projectSolutionDifferentMeshes
 
 #ifdef WITH_PETSC
@@ -1153,9 +1153,9 @@ CONTAINS
     ! Init PETSC
      call PetscInitialized(initialized, ierr)
      IF (.not. initialized) THEN
-      call petscinitializenoarguments(ierr) ! Default communicator = MPI_COMM_WORLD
+      call petscinitialize(ierr) ! Default communicator = MPI_COMM_WORLD
      ENDIF
-  
+
      if (ierr .ne. 0) then
         print*,'Unable to initialize PETSc even though it was requested. Aborting...'
         call MPI_Abort(MPI_COMM_WORLD,-1,ierr)
