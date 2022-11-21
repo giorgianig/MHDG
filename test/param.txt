@@ -10,7 +10,7 @@
     init                = 1             ! Initialization type: 1-analytical at nodes; 2-L2 projection
     driftdia            = .false.       ! Set to FALSE to ignore diamagnetic drifts terms
     driftexb            = .false.       ! Set to FALSE to ignore ExB drifts terms
-    testcase            = 2	        ! Determine the analytical solution and the body forces
+    testcase            = 59	        ! Determine the analytical solution and the body forces
     RMP                 = .false.       ! True to set RMP (non-axisymetrical perturbation)
     Ripple              = .false.       ! True to set Ripple (non-axisymetrical perturbation)
     psdtime             = .false.        ! Reduce the diffusion every time we reach the steady state
@@ -71,7 +71,7 @@
     dc_coe              = 100           ! Coefficient of the diffusion to add in the corners
     thr                 = 1.e-7         ! Min value of density allowed (works only if the switch is activated)
     thrpre              = 1.e-9         ! Min value of pressure allowed (works only if the switch is activated)
-    stab                = 5             ! Stabilization type (from 1 to 4 (5), 2 is good, 5 is better (simplified 2, only for N-Gamma(-T))
+    stab                = 4             ! Stabilization type (from 1 to 4 (5), 2 is good, 5 is better (simplified 2, only for N-Gamma(-T))
     dumpnr              = 0.1             ! Dumping factor for Newton-Raphson (0<dumpnr<1, first parameter to decrease if NR fail)
     ntor                = 3             ! Number of elements in the toroidal direction
     ptor                = 4             ! Polynomial degree in the toroidal direction
@@ -175,7 +175,7 @@
 /
 
 &LSSOLV_LST
-    sollib              = 1             ! Solver library to be used
+    sollib              = 3             ! Solver library to be used
                                         ! 1-Pastix (Limit found in 3D for total nnz > 2*31-1 even with in64 compilation)
                                         ! 2-PSBLAS (all options below TODO: find a combination that works!)
                                         ! 3-PETSc 

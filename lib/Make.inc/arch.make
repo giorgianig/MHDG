@@ -9,8 +9,8 @@ COMPTYPE_OPT = opt
 COMPTYPE_DEB = deb
 COMPTYPE_PRO = pro
 
-#COMPTYPE = $(COMPTYPE_DEB)
-COMPTYPE = $(COMPTYPE_OPT)
+COMPTYPE = $(COMPTYPE_DEB)
+#COMPTYPE = $(COMPTYPE_OPT)
 #COMPTYPE = $(COMPTYPE_PRO)
 
 #-------------------------------------------------------------------------------
@@ -18,8 +18,8 @@ COMPTYPE = $(COMPTYPE_OPT)
 #-------------------------------------------------------------------------------
 MODE_SERIAL = serial
 MODE_PARALL = parall
-MODE = $(MODE_SERIAL)
-#MODE = $(MODE_PARALL)
+#MODE = $(MODE_SERIAL)
+MODE = $(MODE_PARALL)
 
 #-------------------------------------------------------------------------------
 # The compiler
@@ -38,10 +38,10 @@ MDL_NGAMMATITE=NGammaTiTe
 MDL_NGAMMATITENEUTRAL=NGammaTiTeNeutral
 MDL_NGAMMAVORT=NGammaVort
 # Model chosen
-MDL=$(MDL_NGAMMA)
+#MDL=$(MDL_NGAMMA)
 #MDL=$(MDL_NGAMMANEUTRAL)
 #MDL=$(MDL_NGAMMATITE)
-#MDL=$(MDL_NGAMMATITENEUTRAL)
+MDL=$(MDL_NGAMMATITENEUTRAL)
 #MDL=$(MDL_NGAMMAVORT)
 #MDL=$(MDL_LAPLACE)
 

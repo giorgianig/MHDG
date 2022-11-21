@@ -381,7 +381,6 @@ CONTAINS
     real*8                      :: detJ(Ng2d)
     real*8                      :: iJ11(Ng2d),iJ12(Ng2d)
     real*8                      :: iJ21(Ng2d),iJ22(Ng2d)
-    real*8                      :: fluxg(Ng2d)
     real*8                      :: xy(Ng2d,2),teg(Ng1dtor)
     real*8                      :: ueg(Ngvo,neq),upg(Ngvo,phys%npv),u0eg(Ngvo,neq,time%tis)
     real*8                      :: qeg(Ngvo,neq*Ndim)

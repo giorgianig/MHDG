@@ -115,9 +115,7 @@ CONTAINS
     ALLOCATE (Mesh%ghostFaces(Nfaces))
     ALLOCATE (Mesh%loc2glob_fa(Nfaces))
     ALLOCATE (Mesh%loc2glob_el(Nelems))
-#ifdef TOR3D
     ALLOCATE (Mesh%ghostElems(Nelems))
-#endif
 #endif
     CALL HDF5_array2D_reading_int(file_id, Mesh%T, 'T', ierr)
     IF (IERR .ne. 0) THEN
@@ -155,21 +153,19 @@ CONTAINS
       WRITE (6, *) "Error reading ghostFaces"
       STOP
     ENDIF
-#ifdef TOR3D
     CALL HDF5_array1D_reading_int(file_id, Mesh%ghostElems, 'ghostElems', ierr)
     IF (IERR .ne. 0) THEN
       WRITE (6, *) "Error reading ghostElems"
       STOP
     ENDIF
-#endif
     ! Find the number of ghost faces
     ghfa = sum(Mesh%ghostFaces)
     Mesh%nghostfaces = ghfa
-#ifdef TOR3D
+
     ! Find the number of ghost elements
     ghel = sum(Mesh%ghostElems)
     Mesh%nghostElems = ghel
-#endif
+
     ALLOCATE (Mesh%ghostflp(ghfa))
     ALLOCATE (Mesh%ghostpro(ghfa))
     ALLOCATE (Mesh%ghostloc(ghfa))
