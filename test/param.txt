@@ -10,7 +10,7 @@
     init                = 1             ! Initialization type: 1-analytical at nodes; 2-L2 projection
     driftdia            = .false.       ! Set to FALSE to ignore diamagnetic drifts terms
     driftexb            = .false.       ! Set to FALSE to ignore ExB drifts terms
-    testcase            = 59	        ! Determine the analytical solution and the body forces
+    testcase            = 60	        ! Determine the analytical solution and the body forces
     RMP                 = .false.       ! True to set RMP (non-axisymetrical perturbation)
     Ripple              = .false.       ! True to set Ripple (non-axisymetrical perturbation)
     psdtime             = .false.        ! Reduce the diffusion every time we reach the steady state
@@ -175,7 +175,7 @@
 /
 
 &LSSOLV_LST
-    sollib              = 3             ! Solver library to be used
+    sollib              = 1             ! Solver library to be used
                                         ! 1-Pastix (Limit found in 3D for total nnz > 2*31-1 even with in64 compilation)
                                         ! 2-PSBLAS (all options below TODO: find a combination that works!)
                                         ! 3-PETSc 

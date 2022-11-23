@@ -65,9 +65,9 @@ PROGRAM MHDG
     mesh_name_proj = Adjustl(Trim(mesh_name_proj))
     PRINT *, " Projecting solution from: ", mesh_name_proj
   END IF
-  
-  
-  
+
+
+
   IF (nb_args .gt. 3) THEN
     PRINT *, " Too many arguments "
     stop
@@ -84,7 +84,9 @@ PROGRAM MHDG
   CALL init_MPI_OMP()
 
 #ifdef WITH_PETSC
+IF (lssolver%sollib .eq. 3) THEN
   call InitPETSC()
+ENDIF
 #endif
 
   IF (MPIvar%glob_id .eq. 0) THEN
@@ -104,29 +106,29 @@ PROGRAM MHDG
 
   ! Initialization of the simulation parameters !TODO check if I need to pass dt to init_sim
   CALL init_sim(nts, dt)
-  
-  
-  
+
+
+
   if (nb_args .eq. 3) then
      ! find projection points
      CALL load_mesh(mesh_name)
      allocate(xs(size(Mesh%T,1)*size(Mesh%T,2),2))
      xs = Mesh%X(colint(transpose(Mesh%T)),:)
      call free_mesh()
-     
+
      ! Load solution to project
      CALL load_mesh(mesh_name_proj)
      CALL create_reference_element(refElPol, 2)
      CALL mesh_preprocess()
      CALL HDF5_load_solution(save_name)
-     
+
      ! Project the solution
      call projectSolutionDifferentMeshes(xs)
      deallocate(xs)
      call free_mesh()
      call free_reference_element()
   endif
-  
+
 
   ! Load the mesh file
   CALL load_mesh(mesh_name)
@@ -298,7 +300,7 @@ PROGRAM MHDG
       !  WRITE (6, *) "Save matrix"
 !        call HDF5_save_CSR_matrix('Mat')
 !        call HDF5_save_CSR_vector('rhs')
-!        
+!
 !        stop
       !  switch_save = 1
       !call displayMatrixInt(Mesh%F)
@@ -410,11 +412,11 @@ PROGRAM MHDG
           IF (MPIvar%glob_id .eq. 0) THEN
             WRITE (6, *) "************************************************"
             WRITE (6, *) "Reducing diffusion: ", phys%diff_n*switch%diffred*simpar%refval_diffusion
-            
+
 #ifdef NEUTRAL
             WRITE (6, *) "Neutrals diffusion: ", phys%diff_nn*switch%diffred*simpar%refval_diffusion
-#endif  
-            WRITE (6, *) "************************************************"         
+#endif
+            WRITE (6, *) "************************************************"
           END IF
           phys%diff_n = phys%diff_n*switch%diffred
           phys%diff_u = phys%diff_u*switch%diffred

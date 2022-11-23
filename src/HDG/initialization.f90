@@ -980,7 +980,7 @@ CONTAINS
 
  ! Find corresponding element
  do iel = 1,size(Mesh%T,1)
-    Xe = Mesh%X(Mesh%T(iel,1:3),:)
+    !Xe = Mesh%X(Mesh%T(iel,1:3),:)
     mat(1,1:3) = Xe(1:3,1)
     mat(2,1:3) = Xe(1:3,2)
     mat(3,1:3) = 1.
@@ -1010,7 +1010,7 @@ CONTAINS
 				end do
 
 				if (refElPol%elemType==1) then
-						 Xe = Mesh%X(Mesh%T(iel,(/1,3,4/)),:)
+						 !Xe = Mesh%X(Mesh%T(iel,(/1,3,4/)),:)
 						 mat(1,1:3) = Xe(1:3,1)
 						 mat(2,1:3) = Xe(1:3,2)
 						 mat(3,1:3) = 1.
@@ -1058,13 +1058,13 @@ CONTAINS
 
     ! Find the corresponding point in the reference element (linear approach so far)
     if (refElPol%elemType==0) then
-						 Xe = Mesh%X(Mesh%T(iel,1:3),:)
+						 !Xe = Mesh%X(Mesh%T(iel,1:3),:)
 						 d = 0.5*( (Xe(2,1)-Xe(1,1))*(Xe(3,2)-Xe(1,2))-(Xe(3,1)-Xe(1,1))*(Xe(2,2)-Xe(1,2)))
 
 						 xieta(1)= 1./d*( (Xe(3,2)-Xe(1,2))*(xs(ip,1)-0.5*(Xe(2,1)+Xe(3,1)) ) - (Xe(3,1)-Xe(1,1))*(xs(ip,2)-0.5*(Xe(2,2)+Xe(3,2)) ) )
 						 xieta(2)= 1./d*( (Xe(2,1)-Xe(1,1))*(xs(ip,2)-0.5*(Xe(2,2)+Xe(3,2)) ) - (Xe(2,2)-Xe(1,2))*(xs(ip,1)-0.5*(Xe(2,1)+Xe(3,1)) ) )
     else if (refElPol%elemType==1) then
-						 Xq = Mesh%X(Mesh%T(iel,1:4),:)
+						 !Xq = Mesh%X(Mesh%T(iel,1:4),:)
 						 d = 0.25*( (Xq(2,1)+Xq(3,1)-Xq(1,1)-Xq(4,1))*(Xq(3,2)+Xq(4,2)-Xq(1,2)-Xq(2,2)) - &
 						           &(Xq(2,2)+Xq(3,2)-Xq(1,2)-Xq(4,2))*(Xq(3,1)+Xq(4,1)-Xq(1,1)-Xq(2,1)) )
 
@@ -1153,7 +1153,7 @@ CONTAINS
     ! Init PETSC
      call PetscInitialized(initialized, ierr)
      IF (.not. initialized) THEN
-      call petscinitialize(ierr) ! Default communicator = MPI_COMM_WORLD
+      call petscinitializenoarguments(ierr) ! Default communicator = MPI_COMM_WORLD
      ENDIF
 
      if (ierr .ne. 0) then
