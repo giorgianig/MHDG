@@ -83,18 +83,18 @@ PROGRAM MHDG
   ! Initialize MPI
   CALL init_MPI_OMP()
 
-#ifdef WITH_PETSC
-IF (lssolver%sollib .eq. 3) THEN
-  call InitPETSC()
-ENDIF
-#endif
-
   IF (MPIvar%glob_id .eq. 0) THEN
     write(6,*) "Using ", Nthreads, " threads"
   ENDIF
 
   ! Read input file param.txt
   CALL read_input()
+
+#ifdef WITH_PETSC
+IF (lssolver%sollib .eq. 3) THEN
+  call InitPETSC()
+ENDIF
+#endif
 
   ! Set parallelization division in toroidal and poloidal plane
 #ifdef TOR3D
