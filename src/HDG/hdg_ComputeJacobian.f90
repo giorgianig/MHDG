@@ -242,7 +242,7 @@ SUBROUTINE HDG_computeJacobian()
 
       Bel = phys%B(indbe,:)
       fluxel = phys%magnetic_flux(indbe)
-      
+
       ! Ohmic heating (toroidal current)
       IF ((switch%testcase .EQ. 54) .or. (switch%testcase .EQ. 59)) THEN
         Jtorel = phys%Jtor(indbe)
@@ -454,7 +454,7 @@ CONTAINS
 
     ! Compute diffusion at Gauss points
     CALL setLocalDiff(xy,ueg,diff_iso_vol,diff_ani_vol,Bmod)
-    
+
     ! Solution at previous time steps,at Gauss points
     do i = 1,time%tis
       u0eg(:,:,i) = matmul(refElTor%N3D,u0e(:,:,i))
@@ -498,8 +498,8 @@ CONTAINS
 #ifdef PARALL
             IF (Mesh%ghostElems(iel) .eq. 0) THEN
 #endif
-              !IF (xy(g,1)*phys%lscale .gt. 2.36 .and. xy(g,2)*phys%lscale .lt. -0.69 ) THEN
-              IF (xy(g,1)*phys%lscale .gt. 2.446 .and. xy(g,1)*phys%lscale .lt. 2.59 .and. xy(g,2)*phys%lscale .gt. -0.7964 .and. xy(g,2)*phys%lscale .lt. -0.7304 ) THEN
+              IF (xy(g,1)*phys%lscale .gt. 2.36 .and. xy(g,2)*phys%lscale .lt. -0.69 ) THEN
+              !IF (xy(g,1)*phys%lscale .gt. 2.446 .and. xy(g,1)*phys%lscale .lt. 2.59 .and. xy(g,2)*phys%lscale .gt. -0.7964 .and. xy(g,2)*phys%lscale .lt. -0.7304 ) THEN
                 force(i,5) = phys%puff
           ENDIF
 #ifdef PARALL
@@ -668,7 +668,7 @@ CONTAINS
 
     ! Trace solution at face Gauss points
     ufg = matmul(refElPol%N2D,uf)
-    
+
     ! Compute diffusion at Gauss points
     CALL setLocalDiff(xyf,ufg,diff_iso_fac,diff_ani_fac,Bmod)
 
@@ -1297,7 +1297,7 @@ CONTAINS
     ! Solution at Gauss points
     ueg = matmul(refElPol%N2D,ue)
     qeg = matmul(refElPol%N2D,qe)
-    
+
     ! Compute diffusion at Gauss points
     CALL setLocalDiff(xy,ueg,diff_iso_vol,diff_ani_vol,Bmod)
 
@@ -1348,7 +1348,8 @@ CONTAINS
 #ifdef PARALL
             IF (Mesh%ghostElems(iel) .eq. 0) THEN
 #endif
-              IF (xy(g,1)*phys%lscale .gt. 2.446 .and. xy(g,1)*phys%lscale .lt. 2.59 .and. xy(g,2)*phys%lscale .gt. -0.7964 .and. xy(g,2)*phys%lscale .lt. -0.7304 ) THEN
+              IF (xy(g,1)*phys%lscale .gt. 2.36 .and. xy(g,2)*phys%lscale .lt. -0.69 ) THEN
+              !IF (xy(g,1)*phys%lscale .gt. 2.446 .and. xy(g,1)*phys%lscale .lt. 2.59 .and. xy(g,2)*phys%lscale .gt. -0.7964 .and. xy(g,2)*phys%lscale .lt. -0.7304 ) THEN
             force(g,5) = phys%puff
           ENDIF
 #ifdef PARALL
@@ -1358,6 +1359,7 @@ CONTAINS
 #ifdef PARALL
           IF (Mesh%ghostElems(iel) .eq. 0) THEN
 #endif
+          !IF (xy(g,1)*phys%lscale .gt. 2.36 .and. xy(g,2)*phys%lscale .lt. -0.69 ) THEN
           IF (xy(g,1)*phys%lscale .gt. 2.446 .and. xy(g,1)*phys%lscale .lt. 2.59 .and. xy(g,2)*phys%lscale .gt. -0.7964 .and. xy(g,2)*phys%lscale .lt. -0.7304 ) THEN
             ! If it is a time initialization simulation, the puff is analytical (from param.txt) otherwise experimental
             IF(switch%time_init) THEN

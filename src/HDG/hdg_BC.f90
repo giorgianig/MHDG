@@ -1608,11 +1608,6 @@ CONTAINS
         elMat%All(ind_ff(ind),ind_ff(ind),iel) = elMat%All(ind_ff(ind),ind_ff(ind),iel) - tau(i,i)*NiNi
         IF (i == 2) THEN
           elMat%Alu(ind_ff(ind),ind_fe(ind - 1),iel) = elMat%Alu(ind_ff(ind),ind_fe(ind - 1),iel) + tau(i,i)*(delta*setval)*NiNi
-          !if (iel==195) then
-          !write(6,*) "delta",delta
-          !write(6,*) "setval",setval
-          !write(6,*) "tau(i,i)",tau(i,i)
-          !endif
           elMat%Alu(ind_ff(ind),ind_fe(ind),iel) = elMat%Alu(ind_ff(ind),ind_fe(ind),iel) + tau(i,i)*(1 - delta)*NiNi
         ELSE
           elMat%Alu(ind_ff(ind),ind_fe(ind),iel) = elMat%Alu(ind_ff(ind),ind_fe(ind),iel) + tau(i,i)*NiNi
@@ -2340,4 +2335,3 @@ CONTAINS
 
   END SUBROUTINE assembly_bohm_bc_new
 END SUBROUTINE HDG_BC
-

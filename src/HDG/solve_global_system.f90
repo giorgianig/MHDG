@@ -123,6 +123,10 @@ SUBROUTINE solve_global_system(ir)
     call preallocate_matrix_PETSC(matPETSC)
     call fill_vec_PETSC(matPETSC)
     call build_mat_PETSC(matPETSC)
+    !If((iargc() .eq. 2) .and. (ir .eq. 1)) THEN
+    !  WRITE(*,*) "IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIN"
+    !  call extractSolution()
+    !ENDIF
     matK%start = .false.
   ELSE
     call init_mat_PETSC(matPETSC)
@@ -388,6 +392,118 @@ ELSE IF (lssolver%sollib .eq. 3) THEN
     ENDIF
 #endif
   ENDSUBROUTINE
+
+  SUBROUTINE extractSolution
+    Integer               :: total_n = 0, counts_recv(MPIvar%glob_size), displs(MPIvar%glob_size)
+    Real*8, allocatable   :: aux_sol_glob_petsc(:)
+
+        ALLOCATE (aux_sol(matK%n))
+
+#ifdef TOR3D
+      ! ********* Parallel 3D ***********
+      IF (MPIvar%ntor .gt. 1) THEN
+        ntorass = numer%ntor/MPIvar%ntor
+      ELSE
+        ntorass = numer%ntor
+      ENDIF
+
+      Neq = phys%Neq
+      Nfl = refElTor%Nfl
+      N2d = Mesh%Nelems
+      Np2d = refElPol%Nnodes2D
+      Nfaces = Mesh%Nfaces
+      Nfdir = Mesh%Ndir
+      Nghostf = Mesh%nghostfaces
+      Nghoste = Mesh%nghostelems
+      IF (MPIvar%ntor .gt. 1 .and. MPIvar%itor .eq. MPIvar%ntor) THEN
+        ct = 0
+        dd = 1 + ntorass*(N2D*Np2D+(Nfaces - Nfdir)*Nfl)*Neq
+        ddl = 1
+        DO i = 1, N2D
+          IF (Mesh%ghostelems(i) .eq. 1) CYCLE
+          ct = ct + 1
+          indgp = dd + (i - 1)*Np2D*Neq + (/(j, j=0, Np2D*Neq - 1)/)
+          indlp = ddl + (ct - 1)*Np2D*Neq + (/(j, j=0, Np2D*Neq - 1)/)
+          aux_sol(indlp) = sol%u_tilde(indgp)
+        END DO
+      END IF
+      DO itor = 1, ntorass
+        ct = 0
+        dd = 1 + (itor - 1)*(N2D*Np2D+(Nfaces - Nfdir)*Nfl)*Neq
+        ddl = 1 + (itor - 1)*((N2D-Nghoste)*Np2D+(Nfaces - Nfdir - Nghostf)*Nfl)*Neq
+        IF (MPIvar%ntor .gt. 1 .and. MPIvar%itor .ne. MPIvar%ntor) THEN
+          ddl = ddl - (N2D-Nghoste)*Np2d*Neq
+        END IF
+        DO i = 1, N2D
+          IF (Mesh%ghostelems(i) .eq. 1) CYCLE
+          IF (MPIvar%ntor .gt. 1 .and. itor == 1) CYCLE
+          ct = ct + 1
+          indgp = dd + (i - 1)*Np2D*Neq + (/(j, j=0, Np2D*Neq - 1)/)
+          indlp = ddl + (ct - 1)*Np2D*Neq + (/(j, j=0, Np2D*Neq - 1)/)
+          aux_sol(indlp) = sol%u_tilde(indgp)
+        END DO
+        ct = 0
+        dd = dd + (N2D*Np2D)*Neq
+        ddl = ddl + ((N2D-Nghoste)*Np2D)*Neq
+
+        DO i = 1, Mesh%Nfaces
+          IF (Mesh%ghostfaces(i) .eq. 1) CYCLE
+          ct = ct + 1
+          indgt = dd + (i - 1)*Nfl*Neq + (/(j, j=0, Neq*Nfl - 1)/)
+          indlt = ddl + (ct - 1)*Nfl*Neq + (/(j, j=0, Neq*Nfl - 1)/)
+          aux_sol(indlt) = sol%u_tilde(indgt)
+        END DO
+      END DO
+      IF (MPIvar%ntor .gt. 1 .and. MPIvar%itor .ne. MPIvar%ntor) THEN
+        ct = 0
+        dd = 1 + ntorass*(N2D*Np2D+(Nfaces - Nfdir)*Nfl)*Neq
+        ddl = 1 + ntorass*((N2D-Nghoste)*Np2D+(Nfaces - Nfdir - Nghostf)*Nfl)*Neq
+        ddl = ddl - (N2D-Nghoste)*Np2d*Neq
+        DO i = 1, N2D
+          IF (Mesh%ghostelems(i) .eq. 1) CYCLE
+          ct = ct + 1
+          indgp = dd + (i - 1)*Np2D*Neq + (/(j, j=0, Np2D*Neq - 1)/)
+          indlp = ddl + (ct - 1)*Np2D*Neq + (/(j, j=0, Np2D*Neq - 1)/)
+          aux_sol(indlp) = sol%u_tilde(indgp)
+        END DO
+      END IF
+
+#else
+      ! ********* Parallel 2D ***********
+      ct = 0
+      Neq = phys%Neq
+      Nfp = Mesh%Nnodesperface
+      DO i = 1, Mesh%Nfaces
+        IF (Mesh%ghostfaces(i) .eq. 1) CYCLE
+        ct = ct + 1
+        indg = (i - 1)*Neq*Nfp + (/(j, j=1, Neq*Nfp)/)
+        indl = (ct - 1)*Neq*Nfp + (/(j, j=1, Neq*Nfp)/)
+        aux_sol(indl) = sol%u_tilde(indg)
+      END DO
+#endif
+
+
+    IF (lssolver%sollib .eq. 3) THEN
+#ifdef WITH_PETSC
+        !aux_sol = sol%u_tilde(1:matK%n)
+
+        CALL MPI_ALLREDUCE(matK%n,total_n, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD, ierr)
+        ALLOCATE(aux_sol_glob_petsc(total_n))
+        aux_sol_glob_petsc = 0
+        aux_sol_glob_petsc(matPETSC%loc2glob) = aux_sol
+        call PETSC_set_array(matPETSC%solPETSC_vec,aux_sol_glob_petsc,matK%n)
+        DEALLOCATE(aux_sol_glob_petsc)
+        DEALLOCATE(aux_sol)
+#else
+        WRITE (6, *) "Trying to use PETSC but compiled without option -DWITH_PETSC"
+        STOP
+#endif
+    ENDIF
+
+ENDSUBROUTINE extractSolution
+
+
+
   subroutine displayMatrixInfo
     WRITE (6, *) " "
     WRITE (6, '(" *", 41("*"), "**")')

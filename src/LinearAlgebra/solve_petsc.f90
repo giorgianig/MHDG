@@ -389,10 +389,23 @@ CONTAINS
     PetscScalar, pointer      :: data_array(:)
     PetscErrorCode            :: ierr
     ! copy the vector values into the array
-    call VecGetArrayF90(vector,data_array,ierr)
+    call VecGetArrayReadF90(vector,data_array,ierr)
     aux_sol = data_array
-    call VecRestoreArrayF90(vector,data_array,ierr)
+    call VecRestoreArrayReadF90(vector,data_array,ierr)
   END SUBROUTINE PETSC_retrieve_array
+
+  SUBROUTINE PETSC_set_array(vector, aux_sol, size)
+    Vec, INTENT(INOUT)           :: vector
+    Integer, INTENT(IN)       :: size
+    PetscScalar, INTENT(IN)     :: aux_sol(size)
+    PetscScalar, pointer      :: data_array(:)
+    PetscErrorCode            :: ierr
+    ! copy the vector values into the array
+    call VecGetArrayF90(vector,data_array,ierr)
+    data_array = aux_sol
+    call VecRestoreArrayF90(vector,data_array,ierr)
+  END SUBROUTINE PETSC_set_array
+
 
   SUBROUTINE compute_residue
     Vec                       :: true_residue_vec
@@ -484,4 +497,5 @@ CONTAINS
     call MatDestroy(matPETSC%matK, ierr); CHKERRA(ierr)
     call KSPDestroy(matPETSC%ksp, ierr); CHKERRA(ierr)
   END SUBROUTINE terminate_PETSC
+
 END MODULE solve_petsc

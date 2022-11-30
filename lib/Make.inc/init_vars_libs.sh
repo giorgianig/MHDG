@@ -19,7 +19,7 @@ export MHDG_HWLOC_DIR=/usr/lib/x86_64-linux-gnu
 export MHDG_HDF5_DIR=/usr/lib/x86_64-linux-gnu
 
 # Set where the libraries are (if common directory)
-export MHDG_LIB_DIR=$HOME/libs/
+export MHDG_LIB_DIR=$HOME/workspace/libs
 
 # Set where the PETSc folders are
 export PETSC_ARCH=arch-linux-c-opt

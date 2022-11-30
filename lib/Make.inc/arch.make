@@ -9,8 +9,8 @@ COMPTYPE_OPT = opt
 COMPTYPE_DEB = deb
 COMPTYPE_PRO = pro
 
-COMPTYPE = $(COMPTYPE_DEB)
-#COMPTYPE = $(COMPTYPE_OPT)
+#COMPTYPE = $(COMPTYPE_DEB)
+COMPTYPE = $(COMPTYPE_OPT)
 #COMPTYPE = $(COMPTYPE_PRO)
 
 #-------------------------------------------------------------------------------

@@ -254,8 +254,10 @@ ENDIF
 
 
   ! Allocate and initialize uiter and u0
-  ALLOCATE (uiter(nu))
-  ALLOCATE (sol%u0(nu, time%tis))
+  !ALLOCATE (uiter(nu))
+  ALLOCATE (uiter(size(sol%u)))
+  !ALLOCATE (sol%u0(nu, time%tis))
+  ALLOCATE (sol%u0(size(sol%u), time%tis))
   sol%u0 = 0.
   sol%u0(:, 1) = sol%u
   switch_save = 1
