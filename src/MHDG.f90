@@ -348,7 +348,8 @@ ENDIF
 #ifdef WITH_PETSC
         IF(lssolver%sollib .eq. 3) THEN
           WRITE (*, *) "Relative Residue PETSc: ", matPETSC%residue
-          WRITE (*,*)  "Number of iterations:   ", matPETSC%its
+          WRITE (*,*)  "Number of Iterations:   ", matPETSC%its
+          WRITE (*,*)  "Converged Reason:       ", matPETSC%convergedReason
         ENDIF
 #endif
       END IF

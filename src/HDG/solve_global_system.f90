@@ -123,10 +123,9 @@ SUBROUTINE solve_global_system(ir)
     call preallocate_matrix_PETSC(matPETSC)
     call fill_vec_PETSC(matPETSC)
     call build_mat_PETSC(matPETSC)
-    !If((iargc() .eq. 2) .and. (ir .eq. 1)) THEN
-    !  WRITE(*,*) "IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIN"
-    !  call extractSolution()
-    !ENDIF
+    If((iargc() .eq. 2) .and. (ir .eq. 1)) THEN
+      call extractInitialGuess_PETSC()
+    ENDIF
     matK%start = .false.
   ELSE
     call init_mat_PETSC(matPETSC)
@@ -257,6 +256,7 @@ ELSE IF (lssolver%sollib .eq. 3) THEN
         ! However, we want to each process to own the elements mapped by loc2glob
         ! therefore retrieve the global solution and then remap from global2local using loc2glob
         call PETSC_retrieve_array(matPETSC%solPETSC_vec, aux_sol, matK%n)
+
         CALL MPI_ALLREDUCE(matK%n,total_n, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD, ierr)
         ALLOCATE(aux_sol_glob_petsc(total_n))
         aux_sol_glob_petsc = 0
@@ -393,9 +393,10 @@ ELSE IF (lssolver%sollib .eq. 3) THEN
 #endif
   ENDSUBROUTINE
 
-  SUBROUTINE extractSolution
-    Integer               :: total_n = 0, counts_recv(MPIvar%glob_size), displs(MPIvar%glob_size)
-    Real*8, allocatable   :: aux_sol_glob_petsc(:)
+SUBROUTINE extractInitialGuess_PETSC
+#ifdef PARALL
+	Integer               :: total_n = 0, counts_recv(MPIvar%glob_size), displs(MPIvar%glob_size)
+	Real*8, allocatable   :: aux_sol_glob_petsc(:)
 
         ALLOCATE (aux_sol(matK%n))
 
@@ -485,22 +486,51 @@ ELSE IF (lssolver%sollib .eq. 3) THEN
 
     IF (lssolver%sollib .eq. 3) THEN
 #ifdef WITH_PETSC
-        !aux_sol = sol%u_tilde(1:matK%n)
+         CALL MPI_ALLREDUCE(matK%n,total_n, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD, ierr)
+         ALLOCATE(aux_sol_glob_petsc(total_n))
 
-        CALL MPI_ALLREDUCE(matK%n,total_n, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD, ierr)
-        ALLOCATE(aux_sol_glob_petsc(total_n))
-        aux_sol_glob_petsc = 0
-        aux_sol_glob_petsc(matPETSC%loc2glob) = aux_sol
-        call PETSC_set_array(matPETSC%solPETSC_vec,aux_sol_glob_petsc,matK%n)
-        DEALLOCATE(aux_sol_glob_petsc)
-        DEALLOCATE(aux_sol)
+         aux_sol_glob_petsc = 0
+         counts_recv = 0
+         displs = 0
+
+         aux_sol_glob_petsc(matPETSC%loc2glob) = aux_sol
+         counts_recv(MPIvar%glob_id+1) = matK%n
+
+          CALL MPI_ALLREDUCE(MPI_IN_PLACE,counts_recv,MPIvar%glob_size, MPI_INT, MPI_SUM, MPI_COMM_WORLD, ierr)
+          displs(2:MPIvar%glob_size) = counts_recv(1:MPIvar%glob_size-1)
+
+          DO i = 2,MPIvar%glob_size
+            displs(i) = displs(i-1) + displs(i)
+          ENDDO
+
+         CALL MPI_ALLREDUCE(MPI_IN_PLACE,aux_sol_glob_petsc,total_n, MPI_REAL8, MPI_SUM, MPI_COMM_WORLD, ierr)
+
+         call PETSC_set_array(matPETSC%solPETSC_vec,aux_sol_glob_petsc(displs(MPIvar%glob_id+1)+1:displs(MPIvar%glob_id+1)+matK%n),matK%n)
+
+         DEALLOCATE(aux_sol_glob_petsc)
+         DEALLOCATE(aux_sol)
 #else
         WRITE (6, *) "Trying to use PETSC but compiled without option -DWITH_PETSC"
         STOP
 #endif
     ENDIF
+#else
+      ! ********* Sequential 2D and 3D ***********
+      IF (lssolver%sollib .eq. 3) THEN
+#ifdef WITH_PETSC
+        ALLOCATE (aux_sol(matK%n))
+        aux_sol = sol%u_tilde(1:matK%n)
+        call PETSC_set_array(matPETSC%solPETSC_vec,aux_sol,matK%n)
 
-ENDSUBROUTINE extractSolution
+        DEALLOCATE(aux_sol)
+#else
+        WRITE (6, *) "Trying to use PETSC but compiled without option -DWITH_PETSC"
+        STOP
+#endif
+      ENDIF
+#endif
+
+ENDSUBROUTINE extractInitialGuess_PETSC
 
 
 

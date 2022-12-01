@@ -24,6 +24,7 @@ TYPE PETSC_STRUC ! A type to store structures for the PETSC library
   PetscScalar, dimension(:), pointer :: vals_rhs => null()
   PetscScalar                       :: residue   ! UNPRECONDTIONED residue norm of the linear system
   PetscInt                          :: its      ! Previous number of iterations
+  KSPConvergedReason                :: convergedReason
 
 END TYPE
 
@@ -369,6 +370,7 @@ CONTAINS
     call KSPSolve(matPETSC%ksp, matPETSC%rhs_vec, matPETSC%solPETSC_vec, ierr); CHKERRA(ierr)
 
     call KSPGetIterationNumber(matPETSC%ksp,matPETSC%its,ierr)
+    call KSPGetConvergedReason(matPETSC%ksp, matPETSC%convergedReason, ierr)
 
     ! compute the unpreconditioned relative residue
     call compute_residue

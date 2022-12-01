@@ -663,10 +663,10 @@ CONTAINS
 
     CASE (bc_BohmPump)
        CALL set_Bohm_bc(tau_save_el,xy_g_save_el)
-    CASE (bc_BohmPuff) 
+    CASE (bc_BohmPuff)
        CALL set_Bohm_bc(tau_save_el,xy_g_save_el)
     CASE (bc_iter_core)
-      CALL set_itercore_bc()       
+      CALL set_itercore_bc()
     CASE DEFAULT
       WRITE (6,*) "Error: wrong boundary type"
       STOP
@@ -930,9 +930,9 @@ CONTAINS
     END DO
 
   END SUBROUTINE set_itercore_bc
-  
-  
-  
+
+
+
   !********************************
   ! Transmission boundary condition
   !********************************
@@ -1031,10 +1031,10 @@ CONTAINS
         endif
       END IF
 #endif
-     
 
- 
-      
+
+
+
       ! Shape functions
       NiNi = tensorProduct(refElPol%N1D(g,:),refElPol%N1D(g,:))*dline
       Ni = refElPol%N1D(g,:)*dline
@@ -1391,9 +1391,9 @@ CONTAINS
       indj = ind_ash + idm + (j - 1)*Ndim
       elMat%Alq(ind_ff(indi),ind_fG(indj),iel) = elMat%Alq(ind_ff(indi),ind_fG(indj),iel) - &
         &NiNi*ng(idm)*phys%diff_nn
-    END DO      
+    END DO
     ! flux rhs-part
-    elMat%fh(ind_ff(indi),iel) = elMat%fh(ind_ff(indi),iel) - source_dens_coeff*Ni 
+    elMat%fh(ind_ff(indi),iel) = elMat%fh(ind_ff(indi),iel) - source_dens_coeff*Ni
 
 
 
@@ -1402,7 +1402,7 @@ CONTAINS
     i = 2
     indi = i + ind_asf
     elMat%All(ind_ff(indi),ind_ff(indi),iel) = elMat%All(ind_ff(indi),ind_ff(indi),iel) - numer%tau(i)*NiNi
- 
+
 #ifdef TEMPERATURE
     ! *********** Equation 3 --> Ions energy flux equal 10 MW
     ! stabilization part
@@ -1416,9 +1416,9 @@ CONTAINS
       indj = ind_ash + idm + (j - 1)*Ndim
       elMat%Alq(ind_ff(indi),ind_fG(indj),iel) = elMat%Alq(ind_ff(indi),ind_fG(indj),iel) - &
         &NiNi*ng(idm)*phys%diff_e
-    END DO 
+    END DO
     ! flux rhs-part
-    elMat%fh(ind_ff(indi),iel) = elMat%fh(ind_ff(indi),iel) - source_ener_coeff*Ni 
+    elMat%fh(ind_ff(indi),iel) = elMat%fh(ind_ff(indi),iel) - source_ener_coeff*Ni
 
 
     ! *********** Equation 4 --> Electrons energy flux equal 10 MW
@@ -1433,10 +1433,10 @@ CONTAINS
       indj = ind_ash + idm + (j - 1)*Ndim
       elMat%Alq(ind_ff(indi),ind_fG(indj),iel) = elMat%Alq(ind_ff(indi),ind_fG(indj),iel) - &
         &NiNi*ng(idm)*phys%diff_ee
-    END DO 
+    END DO
     ! flux rhs-part
-    elMat%fh(ind_ff(indi),iel) = elMat%fh(ind_ff(indi),iel) - source_ener_coeff*Ni 
-#endif      
+    elMat%fh(ind_ff(indi),iel) = elMat%fh(ind_ff(indi),iel) - source_ener_coeff*Ni
+#endif
 
 
     ! *********** Equation Neq --> Flux neutrals equal to flux plasma - source
@@ -1458,17 +1458,17 @@ CONTAINS
 !      indj = ind_ash + idm + (j - 1)*Ndim
 !      elMat%Alq(ind_ff(indi),ind_fG(indj),iel) = elMat%Alq(ind_ff(indi),ind_fG(indj),iel) - &
 !        &NiNi*ng(idm)*phys%diff_n
-!    END DO      
+!    END DO
 !    ! flux rhs-part
-!    elMat%fh(ind_ff(indi),iel) = elMat%fh(ind_ff(indi),iel) - source_dens_coeff*Ni 
-    
-    
-    
+!    elMat%fh(ind_ff(indi),iel) = elMat%fh(ind_ff(indi),iel) - source_dens_coeff*Ni
+
+
+
 
   END SUBROUTINE assembly_itercore_bc
-  
-  
-  
+
+
+
   !**********************************
   ! Assembly Dirichlet in strong form
   !**********************************
@@ -1872,14 +1872,14 @@ CONTAINS
     CASE (bc_BohmPump)
        recycling_coeff =  min(0.9928,phys%Re)
        puff_coeff = 0.
-    CASE (bc_BohmPuff) 
+    CASE (bc_BohmPuff)
        recycling_coeff =  0.
        puff_coeff = phys%puff/simpar%refval_density/(Mesh%puff_area*phys%lscale**2)/(simpar%refval_diffusion)*phys%lscale
     CASE DEFAULT
       WRITE (6,*) "Error: wrong boundary type"
       STOP
     END SELECT
-    
+
     ! convective part
     k = Neq
     indi = k+ind_asf
@@ -1887,8 +1887,8 @@ CONTAINS
     if (ntang) then
       elMat%Alu(ind_ff(indi),ind_fe(indj),iel) = elMat%Alu(ind_ff(indi),ind_fe(indj),iel) + bn*NiNi*recycling_coeff
     endif
-    
-    ! diffusive diagonal part 
+
+    ! diffusive diagonal part
     DO idm = 1,Ndim
       k = Neq
       indi = ind_asf+k
@@ -1900,8 +1900,8 @@ CONTAINS
       endif
     END DO
     elMat%fh(ind_ff(indi),iel) = elMat%fh(ind_ff(indi),iel) - puff_coeff*Ni
-    
-    ! diffusive non-diagonal part 
+
+    ! diffusive non-diagonal part
     DO idm = 1,Ndim
       k = phys%Neq
       j=1
@@ -2288,7 +2288,7 @@ CONTAINS
     CASE (bc_BohmPump)
        recycling_coeff =  min(0.9928,phys%Re)
        puff_coeff = 0.
-    CASE (bc_BohmPuff) 
+    CASE (bc_BohmPuff)
        recycling_coeff =  0.
        puff_coeff = phys%puff/simpar%refval_density/(Mesh%puff_area*phys%lscale**2)/(simpar%refval_diffusion)*phys%lscale
 !       write(6,*) "puff coeff " , puff_coeff
@@ -2297,7 +2297,7 @@ CONTAINS
       WRITE (6,*) "Error: wrong boundary type"
       STOP
     END SELECT
-    
+
     ! convective part
     k = Neq
     indi = k+ind_asf
@@ -2305,8 +2305,8 @@ CONTAINS
     if (ntang) then
       elMat%Alu(ind_ff(indi),ind_fe(indj),iel) = elMat%Alu(ind_ff(indi),ind_fe(indj),iel) + bn*NiNi*recycling_coeff
     endif
-    
-    ! diffusive diagonal part 
+
+    ! diffusive diagonal part
     DO idm = 1,Ndim
       k = Neq
       indi = ind_asf+k
@@ -2317,9 +2317,9 @@ CONTAINS
         elMat%Alq(ind_ff(indi),ind_fG(indj),iel)=elMat%Alq(ind_ff(indi),ind_fG(indj),iel)-NiNi*ng(idm)*phys%diff_nn
       endif
     END DO
-    elMat%fh(ind_ff(indi),iel) = elMat%fh(ind_ff(indi),iel) - puff_coeff*Ni    
-    
-    ! diffusive non-diagonal part 
+    elMat%fh(ind_ff(indi),iel) = elMat%fh(ind_ff(indi),iel) - puff_coeff*Ni
+
+    ! diffusive non-diagonal part
     DO idm = 1,Ndim
       k = phys%Neq
       j=1

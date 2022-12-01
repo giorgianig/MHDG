@@ -1,5 +1,5 @@
 &SWITCH_LST
-    steady              = .true.       ! Is it a steady state simulation?
+    steady              = .false.       ! Is it a steady state simulation?
                                         ! .false. = time evolving simulation
                                         ! .true.  = steady state simulation 
     time_init           = .true.
@@ -73,8 +73,8 @@
     thrpre              = 1.e-9         ! Min value of pressure allowed (works only if the switch is activated)
     stab                = 4             ! Stabilization type (from 1 to 4 (5), 2 is good, 5 is better (simplified 2, only for N-Gamma(-T))
     dumpnr              = 0.1             ! Dumping factor for Newton-Raphson (0<dumpnr<1, first parameter to decrease if NR fail)
-    ntor                = 6             ! Number of elements in the toroidal direction
-    ptor                = 1             ! Polynomial degree in the toroidal direction
+    ntor                = 4             ! Number of elements in the toroidal direction
+    ptor                = 2             ! Polynomial degree in the toroidal direction
     tmax                = 1.5708        ! Max extention in the toroidal direction
     npartor             = 2             ! Number of MPI partition in the toroidal direction
     bohmtypebc          = 0             ! Implementation of the Bohm bc for Gamma (0-Old Bohm BC, 1-Dirichlet always, 2-Dirichlet+Neumann)
@@ -102,7 +102,7 @@
 
 
 &TIME_LST
-    dt0                 = 1.e9        ! Initial time step
+    dt0                 = 1.e4       ! Initial time step
     nts                 = 20         ! Max number of time iterations to do in the current session (only for transient simulations)
     tfi                 = 1e5           ! Final time: the simulation stops when this time is reached
     tsw                 = 0             ! Switch to modify the time step
@@ -183,17 +183,17 @@
 
     ! Parameters relative to the library PETSc
     kspitrace           = 1             ! Display convergence at each iteration
-    rtol		= 1e-5		! Relative tollerance
+    rtol		= 1e-6		! Relative tollerance
     atol                = 1e-14         ! Absolute tollerance
     kspitmax            = 2000         ! Max number of iterations
     igz			= .true.	! Set initial guess of the iterative method equal to zero
     rprecond		= 1		! Recompute conditioner ( 1 every NR iteration, 2 each Nreprecond iterations, 3 if kspitmax has been reached)
     Nrprecond		= 1		! Recompute preconditioner each Nrprecond iterations 
     kspnorm		= 1		! Ksp norm type (1 preconditioned, 2 unpreconditioned)
-    kspmethd		= 'KSPPREONLY'	! Krylov method KSPCG KSPBCGS KSPGMRES KSPPREONLY KSPMINRES KSPRICHARDSON and more 
-    !kspmethd		= 'KSPBCGS'	! Krylov method KSPCG KSPBCGS KSPGMRES KSPPREONLY KSPMINRES KSPRICHARDSON and more 
-    pctype		= 'PCLU'	! Preconditioner type PCNONE PCJACOBI PCSOR PCLU PCILU PCGAMG PCMG and more
-    !pctype		= 'PCJACOBI'	! Preconditioner type PCNONE PCJACOBI PCSOR PCLU PCILU PCGAMG PCMG and more
+    !kspmethd		= 'KSPPREONLY'	! Krylov method KSPCG KSPBCGS KSPGMRES KSPPREONLY KSPMINRES KSPRICHARDSON and more 
+    kspmethd		= 'KSPBCGS'	! Krylov method KSPCG KSPBCGS KSPGMRES KSPPREONLY KSPMINRES KSPRICHARDSON and more 
+    !pctype		= 'PCLU'	! Preconditioner type PCNONE PCJACOBI PCSOR PCLU PCILU PCGAMG PCMG and more
+    pctype		= 'PCJACOBI'	! Preconditioner type PCNONE PCJACOBI PCSOR PCLU PCILU PCGAMG PCMG and more
     gmresres            = 30            ! Restart of the GMRES method (30 default)
     mglevels		= 1		! Number of levels for the MG preconditioner
     mgtypeform		= 1		! Form of the MG preconditioner (1 multiplicative, 2 additive, 3 full, 4 Kaskade)
