@@ -1,2 +1,0 @@
-restoredefaultpath
-addpath('orthopoly/')
