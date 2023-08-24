@@ -18,7 +18,7 @@
                                         ! condition (only works if steady=.false.)
     diffred             = 0.719685673001! 0.6654697696  ! Reduction factor of the diffusion for psdtime simulation (set for 20*diff_x)
     !diffred             = 0.76923076923
-    diffmin             = 0.1           ! Minimum value of the diffusion for a psdtime simulation
+    diffmin             = 0.995         ! Minimum value of the diffusion for a psdtime simulation (m^2/s)
     shockcp             = 0             ! Shock capturing option
                                         ! 0 - No shock capturing
                                         ! 1 - Constant in each element
@@ -120,7 +120,7 @@
     diff_e = 2.68 ! perpendicular diffusion for the energy equation
     diff_ee = 2.68 ! perpendicular diffusion in the electron temperature equation (for the TiTe model)
     diff_vort = 2.68 ! diffusion in the vorticity equation
-    v_p = -0.1 ! Pinch velocity in the continuity equation (Pinch = vp*(psi^2 + psi^2*tanh((0.95 - psi)/0.02)) with psi = 1. at separatrix )            
+    v_p = -0.2 ! Pinch velocity in the continuity equation (Pinch = vp*(psi^2 + psi^2*tanh((0.95 - psi)/0.02)) with psi = 1. at separatrix )            
     diff_nn = 26e3  ! diffusion for neutral equation (TODO: check adimensionalization)
     ! ****** Option for neutral equation (available only if compile with NEUTRAL)
     Re                  = 0.995     ! Recycling coefficient
