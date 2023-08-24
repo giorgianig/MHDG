@@ -486,10 +486,10 @@ CONTAINS
           d_iso(3, 3, :) = phys%diff_e - (phys%diff_e - 0.5*simpar%refval_time/simpar%refval_length**2)/14.65*(phys%I_p - 0.35)
           d_iso(4, 4, :) = phys%diff_ee - (phys%diff_ee - 0.5*simpar%refval_time/simpar%refval_length**2)/14.65*(phys%I_p - 0.35)
       else if (switch%testcase .eq. 86) then
-          d_iso(1,1,:) = phys%diff_n - 2.18*simpar%refval_time/simpar%refval_length**2*(tanh((phys%I_p - 0.35)/5.))
-          d_iso(2,2,:) = phys%diff_u - 2.18*simpar%refval_time/simpar%refval_length**2*(tanh((phys%I_p - 0.35)/5.))
-          d_iso(3,3,:) = phys%diff_e - 2.18*simpar%refval_time/simpar%refval_length**2*(tanh((phys%I_p - 0.35)/5.))
-          d_iso(4,4,:) = phys%diff_ee - 2.18*simpar%refval_time/simpar%refval_length**2*(tanh((phys%I_p - 0.35)/5.))
+          d_iso(1,1,:) = max(switch%diffmin,phys%diff_n - 2.18*simpar%refval_time/simpar%refval_length**2*(tanh((phys%I_p - 0.35)/5.)))
+          d_iso(2,2,:) = max(switch%diffmin,phys%diff_u - 2.18*simpar%refval_time/simpar%refval_length**2*(tanh((phys%I_p - 0.35)/5.)))
+          d_iso(3,3,:) = max(switch%diffmin,phys%diff_e - 2.18*simpar%refval_time/simpar%refval_length**2*(tanh((phys%I_p - 0.35)/5.)))
+          d_iso(4,4,:) = max(switch%diffmin,phys%diff_ee - 2.18*simpar%refval_time/simpar%refval_length**2*(tanh((phys%I_p - 0.35)/5.)))
       else if (switch%testcase .eq. 87) then
           d_iso(1,1,:) = phys%diff_n - 0.5*simpar%refval_time/simpar%refval_length**2*(tanh((phys%I_p - 0.35)/5.))
           d_iso(2,2,:) = phys%diff_u - 0.5*simpar%refval_time/simpar%refval_length**2*(tanh((phys%I_p - 0.35)/5.))
@@ -549,10 +549,10 @@ CONTAINS
          d_ani(3, 3, :) = phys%diff_e - (phys%diff_e - 0.5*simpar%refval_time/simpar%refval_length**2)/14.65*(phys%I_p - 0.35)
          d_ani(4, 4, :) = phys%diff_ee - (phys%diff_ee - 0.5*simpar%refval_time/simpar%refval_length**2)/14.65*(phys%I_p - 0.35)
        else if (switch%testcase .eq. 86) then
-          d_ani(1,1,:) = phys%diff_n - 2.18*simpar%refval_time/simpar%refval_length**2*(tanh((phys%I_p - 0.35)/5.))
-          d_ani(2,2,:) = phys%diff_u - 2.18*simpar%refval_time/simpar%refval_length**2*(tanh((phys%I_p - 0.35)/5.))
-          d_ani(3,3,:) = phys%diff_e - 2.18*simpar%refval_time/simpar%refval_length**2*(tanh((phys%I_p - 0.35)/5.))
-          d_ani(4,4,:) = phys%diff_ee - 2.18*simpar%refval_time/simpar%refval_length**2*(tanh((phys%I_p - 0.35)/5.))
+          d_ani(1,1,:) = max(switch%diffmin,phys%diff_n - 2.18*simpar%refval_time/simpar%refval_length**2*(tanh((phys%I_p - 0.35)/5.)))
+          d_ani(2,2,:) = max(switch%diffmin,phys%diff_u - 2.18*simpar%refval_time/simpar%refval_length**2*(tanh((phys%I_p - 0.35)/5.)))
+          d_ani(3,3,:) = max(switch%diffmin,phys%diff_e - 2.18*simpar%refval_time/simpar%refval_length**2*(tanh((phys%I_p - 0.35)/5.)))
+          d_ani(4,4,:) = max(switch%diffmin,phys%diff_ee - 2.18*simpar%refval_time/simpar%refval_length**2*(tanh((phys%I_p - 0.35)/5.)))
        else if (switch%testcase .eq. 87) then
           d_ani(1,1,:) = phys%diff_n - 0.5*simpar%refval_time/simpar%refval_length**2*(tanh((phys%I_p - 0.35)/5.))
           d_ani(2,2,:) = phys%diff_u - 0.5*simpar%refval_time/simpar%refval_length**2*(tanh((phys%I_p - 0.35)/5.))
@@ -1932,10 +1932,10 @@ SUBROUTINE computeAlphaCoeff(U,Q,Vpn,res)
       else
 #endif
         ! Toroidal face
-        tau_aux(1) = tau_aux(1) + 6*phys%diff_n
-        tau_aux(2) = tau_aux(2) + 6*phys%diff_u
-        tau_aux(3) = tau_aux(3) + 6*phys%diff_e + abs(bn)*phys%diff_pari*(min(1.,up(7)))**2.5*bnorm/uc(1)*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
-        tau_aux(4) = tau_aux(4) + 6*phys%diff_ee + abs(bn)*phys%diff_pare*(min(1.,up(8)))**2.5*bnorm/uc(1)*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
+        tau_aux(1) = tau_aux(1) + 6*diff_iso(1,1,1)
+        tau_aux(2) = tau_aux(2) + 6*diff_iso(2,2,1)
+        tau_aux(3) = tau_aux(3) + 6*diff_iso(3,3,1) + abs(bn)*phys%diff_pari*(min(1.,up(7)))**2.5*bnorm/uc(1)*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
+        tau_aux(4) = tau_aux(4) + 6*diff_iso(4,4,1) + abs(bn)*phys%diff_pare*(min(1.,up(8)))**2.5*bnorm/uc(1)*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
 #ifndef NEUTRALP
 #ifdef NEUTRAL
         tau_aux(5) = tau_aux(5) + diff_iso(5,5,1) !phys%diff_nn !numer%tau(5) 

@@ -1141,7 +1141,7 @@ CONTAINS
     
     ! Normalized magnetic flux of the nodes of the element: PSI el
     psiel = phys%magnetic_psi(Mesh%T(iel,:))
-
+    
     ! Ohmic heating (toroidal current)
     IF (switch%ohmicsrc) THEN
       Jtorel = phys%Jtor(Mesh%T(iel,:))
@@ -1194,7 +1194,7 @@ CONTAINS
    
       ! Normalized magnetic flux of the nodes of the face: PSI fl
       psifl = phys%magnetic_psi(Mesh%T(iel,refElPol%face_nodes(ifa,:)))
-
+            
       ! Face solution
       indf = (iface-1)*Npfl + (/(i,i=1,Npfl)/)
       uf = lres(indf,:)
@@ -1356,7 +1356,7 @@ CONTAINS
     b = matmul(refElPol%N2D,b_nod)
    
     ! Normalized magnetic flux at Gauss points: PSI
-    Psig = matmul(refElPol%N2D,fluxel) 
+    Psig = matmul(refElPol%N2D,psiel) 
   
     ! toroidal current at Gauss points
     IF (switch%ohmicsrc) THEN
@@ -1618,7 +1618,7 @@ CONTAINS
     real*8                    :: NNif(Npfl,Npfl),Nif(Npfl),Nfbn(Npfl)
     real*8                    :: upgf(Ng1d,phys%npv)
     real*8                    :: tau(Neq,Neq),Vnng(Ndim)
-    real*8                    :: Bmod_nod(Npfl),b_nod(Npfl,3),b(Ng1d,3),Bmod(Ng1d), Psig(Ng1d)
+    real*8                    :: Bmod_nod(Npfl),b_nod(Npfl,3),b(Ng1d,3),Bmod(Ng1d),Psig(Ng1d)
     real*8                    :: diff_iso_fac(Neq,Neq,Ng1d),diff_ani_fac(Neq,Neq,Ng1d)
     real*8                    :: auxdiffsc(Ng1d)
 
@@ -1723,7 +1723,7 @@ CONTAINS
       END IF
 
       ! Assembly local contributions
-      CALL assemblyIntFacesContribution(iel,ind_asf,ind_ash,ind_ff,ind_fe,ind_fg,b(g,:),Bmod(g),psig(g),&
+      CALL assemblyIntFacesContribution(iel,ind_asf,ind_ash,ind_ff,ind_fe,ind_fg,b(g,:),Bmod(g),Psig(g),&
         n_g,diff_iso_fac(:,:,g),diff_ani_fac(:,:,g),NNif,Nif,Nfbn,ufg(g,:),upgf(g,:),qfg(g,:),tau,Vnng)
 
       if (save_tau) then

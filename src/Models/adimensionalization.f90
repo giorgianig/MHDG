@@ -143,7 +143,8 @@ SUBROUTINE adimensionalization()
   phys%diff_vort = phys%diff_vort/D0
   phys%diff_pot = phys%diff_pot/D0
   phys%diff_nn = phys%diff_nn/D0
-  
+  switch%diffmin = switch%diffmin/D0  
+
   ! Pinch velocity
   phys%v_p = phys%v_p/u0
 

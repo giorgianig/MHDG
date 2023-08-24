@@ -2418,7 +2418,6 @@ CONTAINS
           ! Diagonal terms for perpendicular diffusion
           z = i+(k-1)*Neq+(i-1)*Neq*Ndim
           kmult = diffiso(i,i)*NxyzNi(:,:,k) - diffani(i,i)*NNxy*b(k)
-
 #ifdef VORTICITY
           if (i==4) then
             kmult = kmult/ue(1)

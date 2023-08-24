@@ -143,6 +143,9 @@ SUBROUTINE adimensionalization()
   phys%diff_vort = phys%diff_vort/D0
   phys%diff_pot = phys%diff_pot/D0
   phys%diff_nn = phys%diff_nn/D0
+  
+  ! Pinch velocity
+  phys%v_p = phys%v_p/u0
 
   ! Curvature drift coefficient
   phys%dfcoef = 2*Tev*t0/(L0**2*B0)
