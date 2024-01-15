@@ -421,10 +421,20 @@ CONTAINS
       An(4, 4) = 5./3.*U(2)/U(1)
       
 #ifdef NEUTRAL
+#ifndef NEUTRALGAMMA
       !An(5, 1) = -U(5)*U(2)/U(1)**2
       !An(5, 2) = U(5)/U(1)
       !An(5, 5) = U(2)/U(1)
       !An(5, :) = simpar%refval_time/(simpar%refval_length**2*phys%diff_n)*An(5,:)
+#else
+      A(5, 6) = 1.
+
+      A(6, 1) = 2./3.*U(5)*(- U(3)/U(1)**2 + U(2)**2/U(1)**3)
+      A(6, 2) = - 2./3.*U(5)*U(2)/U(1)**2
+      A(6, 3) = 2./3.*U(5)/U(1)
+      A(6, 5) = - U(6)**2/U(5)**2 + 2./3.*(U(3)/U(1) - 1./2.*U(2)**2/U(1)**2)
+      A(6, 6) = 2.*U(6)/U(5)
+#endif
 #endif      
     endif
     An = bn*An
