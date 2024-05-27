@@ -45,11 +45,14 @@ SUBROUTINE READ_input()
   logical     :: OhmicSrc
   real*8      :: Pohmic,diff_nn,Re,puff,puff_slope
   
-  ! Movin Equilibrium
+  ! Moving Equilibrium
   logical     :: ME
+  
+  ! Pinch
+  integer     :: pinch
 
   ! Defining the variables to READ from the file
-  NAMELIST /SWITCH_LST/ steady, time_init, axisym, init, driftdia, driftexb, testcase, OhmicSrc, ME, RMP, Ripple, psdtime, diffred, diffmin, &
+  NAMELIST /SWITCH_LST/ steady, time_init, axisym, init, driftdia, driftexb, testcase, OhmicSrc, ME, pinch, RMP, Ripple, psdtime, diffred, diffmin, &
     & shockcp, limrho, difcor, thresh, filter, decoup, ckeramp, saveNR, saveTau, fixdPotLim, dirivortcore,dirivortlim, convvort,pertini,&
     & logrho,bxgradb
   NAMELIST /NUMER_LST/ tau,nrp,tNR,tTM,div,sc_coe,sc_sen,minrho,so_coe,df_coe,dc_coe,thr,thrpre,stab,dumpnr,ntor,ptor,tmax,npartor,bohmtypebc,exbdump
@@ -89,6 +92,7 @@ SUBROUTINE READ_input()
   switch%testcase         = testcase
   switch%ohmicsrc         = OhmicSrc
   switch%ME               = ME
+  switch%pinch            = pinch
   switch%RMP              = RMP
   switch%Ripple           = Ripple
   switch%psdtime          = psdtime
@@ -344,6 +348,7 @@ SUBROUTINE READ_input()
     PRINT *, '                - test case:                                          ', testcase
     PRINT *, '                - Ohmic heating:                                      ', OhmicSrc
     PRINT *, '                - Moving equilibrium:                                 ', ME
+    PRINT *, '                - Pinch                                               ', pinch
     PRINT *, '                - RMP:                                                ', RMP
     PRINT *, '                - Ripple:                                             ', Ripple
     PRINT *, '                - shockcp:                                            ', shockcp

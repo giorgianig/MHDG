@@ -1277,13 +1277,23 @@ CONTAINS
       up(:, 1) = 1.
       up(:, 3) = 18.
       up(:, 4) = 18.
-    CASE (50:64)
+    CASE (50:59)
       fluxel = phys%magnetic_flux(Mesh%T(iel,:))  
       fluxel = (fluxel - phys%Flux2Dmin)/(phys%Flux2Dmax - phys%Flux2Dmin)                                            
       sigma = 0.4
       up(:, 1) = 1.*exp(-fluxel**2/(2*sigma**2))
       up(:, 3) = 18.*exp(-fluxel**2/(2*sigma**2))
       up(:, 4) = 18.*exp(-fluxel**2/(2*sigma**2))
+#ifdef NEUTRAL
+      up(:,11) = 1.e-8
+#endif
+#ifdef NEUTRALGAMMA
+      up(:,12) = 0.
+#endif
+   CASE (60:64)
+      up(:, 1) = 2.
+      up(:, 3) = 37.
+      up(:, 4) = 37.
 #ifdef NEUTRAL
       up(:,11) = 1.e-8
 #endif
@@ -1310,10 +1320,10 @@ CONTAINS
     !Define an anylitical solution with a Gaussian shape respect to the normalized flux surface
       fluxel = phys%magnetic_flux(Mesh%T(iel,:))  
       fluxel = (fluxel - phys%Flux2Dmin)/(phys%Flux2Dmax - phys%Flux2Dmin)                                            
-      sigma = 0.3
-      up(:, 1) = 1.*exp(-fluxel**2/(2*sigma**2))
-      up(:, 3) = 18.*exp(-fluxel**2/(2*sigma**2))
-      up(:, 4) = 18.*exp(-fluxel**2/(2*sigma**2))
+      sigma = 0.5
+      up(:, 1) = 1./(sigma*sqrt(2*3.14))*exp(-fluxel**2/(2*sigma**2))
+      up(:, 3) = 18.*1./(sigma*sqrt(2.*3.14))*exp(-fluxel**2/(2*sigma**2))
+      up(:, 4) = 18.*1./(sigma*sqrt(2.*3.14))*exp(-fluxel**2/(2*sigma**2))
     !Define an anylitical solution with a Gaussian shape respect to geometrical center of symmetry of the domain 
     !  sigma = 1.5
     !  up(:, 1) = 1.*exp(-((x*phys%lscale - xm*phys%lscale)**2 + (y*phys%lscale - ym*phys%lscale)**2)/(2*sigma**2))

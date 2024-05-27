@@ -427,13 +427,13 @@ CONTAINS
       !An(5, 5) = U(2)/U(1)
       !An(5, :) = simpar%refval_time/(simpar%refval_length**2*phys%diff_n)*An(5,:)
 #else
-      A(5, 6) = 1.
+      An(5, 6) = 1.
 
-      A(6, 1) = 2./3.*U(5)*(- U(3)/U(1)**2 + U(2)**2/U(1)**3)
-      A(6, 2) = - 2./3.*U(5)*U(2)/U(1)**2
-      A(6, 3) = 2./3.*U(5)/U(1)
-      A(6, 5) = - U(6)**2/U(5)**2 + 2./3.*(U(3)/U(1) - 1./2.*U(2)**2/U(1)**2)
-      A(6, 6) = 2.*U(6)/U(5)
+      An(6, 1) = 2./3.*U(5)*(- U(3)/U(1)**2 + U(2)**2/U(1)**3)
+      An(6, 2) = - 2./3.*U(5)*U(2)/U(1)**2
+      An(6, 3) = 2./3.*U(5)/U(1)
+      An(6, 5) = - U(6)**2/U(5)**2 + 2./3.*(U(3)/U(1) - 1./2.*U(2)**2/U(1)**2)
+      An(6, 6) = 2.*U(6)/U(5)
 #endif
 #endif      
     endif
@@ -493,10 +493,9 @@ CONTAINS
     !A(1, 5) = A(1,5) + RE*U(3)*U(2)/U(1)**2 - 1./2.*(U(2)/U(1))**3
 
     ! Pinch flux
-    !A(5, 1) = -U(5)*U(2)/U(1)**2
-    !A(5, 2) = U(5)/U(1)
-    !A(5, 5) = U(2)/U(1) 
-    !A(5, :) = simpar%refval_time/(simpar%refval_length**2*phys%diff_n)*A(5,:)
+    A(5, 1) = -U(5)*U(2)/U(1)**2
+    A(5, 2) = U(5)/U(1)
+    A(5, 5) = U(2)/U(1)     
 #endif
   END SUBROUTINE jacobianMatricesBohm
 
@@ -630,13 +629,14 @@ CONTAINS
     END DO
     Dnn = simpar%refval_charge*max(simpar%refval_temperature*2./(3.*phys%Mref)*(U3/U1 - 1./2.*(U2/U1)**2),0.1)/(simpar%refval_mass*simpar%refval_density*U1*(sigmaviz + sigmavcx))   
     Dnn = Dnn*simpar%refval_time/simpar%refval_length**2
-    Dnn(:) = Dnn(:)*(1 + (Dnn(:)/phys%diff_nn)**20)**(-1./20)
+    !Dnn(:) = Dnn(:)*(1 + (Dnn(:)/phys%diff_nn)**20)**(-1./20)
     d_iso(5,5,:) = Dnn
     !Set a threshold on Dnn
-    !DO i=1,size(Dnn,1)
-       !if (Dnn(i) .gt.  phys%diff_nn) d_iso(5,5,i) = phys%diff_nn
+    DO i=1,size(Dnn,1)
+       if (Dnn(i) .gt.  phys%diff_nn) d_iso(5,5,i) = phys%diff_nn
+       if (Dnn(i) .lt. 200*d_iso(1,1,i)) d_iso(5,5,i) = 200*d_iso(1,1,i)
        !d_iso(5,5,i)= d_iso(5,5,i)*(1 + (d_iso(5,5,i)/phys%diff_nn)**1)**(-1./1)
-       !if (Dnn(i) .lt.  19) d_iso(5,5,i) = 19
+       !if (Dnn(i) .lt.  100*d_iso(1,1,i)) d_iso(5,5,i) = 19
        !if (Dnn(i) .lt. 50*simpar%refval_time/simpar%refval_length**2) d_iso(5,5,i) = 50*simpar%refval_time/simpar%refval_length**2
        !cs_n = sqrt(phys%Mref*abs(2./(3.*phys%Mref)*(U3(i)/U1(i) - 1./2.*(U2(i)/U1(i))**2)))
        !DnnTh = abs(cs_n*U5(i)/(sqrt(q(i,9)**2 + q(i,10)**2)))
@@ -649,7 +649,7 @@ CONTAINS
 	      !!Min Value
 	      !!if (Dnn(i) .lt.  phys%diff_n) d_iso(5,5,i) = phys%diff_n
        !end if
-    !END DO
+    END DO
     !Dnn = sum(Dnn)/size(u,1)
 #endif
 #else
@@ -892,7 +892,8 @@ CONTAINS
     ! Decrease collisionality threshold for pinch term 
     ! ITER: nu_th = 0.04 at flat-top phase as E. Militello-Asp NF 2022
     if (switch%testcase .gt. 80) then
-       nu_th = max(0.04,1. - 0.96*tanh((phys%I_p - 0.35)/5.))
+       !nu_th = max(0.04,1. - 0.96*tanh((phys%I_p - 0.35)/5.))
+       nu_th = 0.06
     end if
 
   END SUBROUTINE
@@ -912,10 +913,10 @@ CONTAINS
        a = 2.
        Zeff = 1.6
        epsilon = a/R0
-       n_e = U(1)*simpar%refval_density
-       T_e = 2./(3.*phys%Mref)*U(4)/U(1)*simpar%refval_temperature
-       lambda_e = 31.3 - log(sqrt(abs(n_e))/T_e)
-       nu = 6.921e-18*(R0*q*n_e*Zeff*lambda_e)/((epsilon**(1.5))*(T_e**(2.)))
+       n_e = abs(U(1))*simpar%refval_density
+       T_e = abs(2./(3.*phys%Mref)*U(4)/U(1))*simpar%refval_temperature
+       lambda_e = 31.3 - log(sqrt(abs(n_e))/abs(T_e))
+       nu = 6.921e-18*(R0*abs(q)*n_e*Zeff*lambda_e)/((epsilon**(1.5))*(abs(T_e)**(2.)))
     END IF
 
   END SUBROUTINE
@@ -933,27 +934,33 @@ CONTAINS
     ! Normalized poloidal magnetic field vector
     bnorm = b(:)/norm2(b)
   
-    ! IMPLEMENTATION: v_p = v_p(psi) ad hoc profile  
-    IF (psi .le. 0.95) THEN
-       v_p = phys%v_p*(psi**2 + psi**2*tanh((0.95 - psi)/0.02))
-       !IF (v_p .lt. 1.e-4/simpar%refval_speed) v_p = 0.   
-    END IF
-
-    ! IMPLEMENTATION: v_p = v_p(nu) self consistent profile as a function of 
-    ! normalized electorn collisionality 
-    ! Tuned as in JINTRAC (see E. Militello-Asp NF 2022)
-    !f_nu = 0.
-    !IF (psi .le. 0.95) THEN ! Apply just in the closed field line region (MUST balance BC for PFR )
-    !   CALL computeNuth(nu_th)
-    !   CALL computeCollisionality(U,q,nu) 
-    !   CALL setLocalDiffSplitTerms(U, D)
-    !   D = D*simpar%refval_length**2/simpar%refval_time
-    !   nu_Star = nu/nu_th
-    !   !nu_star = min(nu/nu_th,10.)
-    !   f_nu = exp(1 - nu_star)
-    !   v_p = f_nu*0.5*D(1)*sqrt(abs(psi))
-    !   v_p = phys%v_p*v_p
-    !END IF
+    SELECT CASE (switch%pinch)
+       CASE(1)
+          ! IMPLEMENTATION: v_p = v_p(psi) ad hoc profile  
+          IF (psi .le. 0.92) THEN
+             v_p = phys%v_p*(psi**2 + psi**2*tanh((0.92 - psi)/0.02))
+             !IF (v_p .lt. 1.e-4/simpar%refval_speed) v_p = 0.   
+          END IF
+       CASE(2)
+          ! IMPLEMENTATION: v_p = v_p(nu) self consistent profile as a function of 
+          ! normalized electorn collisionality 
+          ! Tuned as in JINTRAC (see E. Militello-Asp NF 2022)
+          f_nu = 0.
+          IF (psi .le. 0.9) THEN ! Apply just in the closed field line region (MUST balance BC for PFR )
+             CALL computeNuth(nu_th)
+             CALL computeCollisionality(U,q,nu) 
+             CALL setLocalDiffSplitTerms(U, D)
+             D = D*simpar%refval_length**2/simpar%refval_time
+             nu_Star = nu/nu_th
+             nu_star = min(nu/nu_th,10.)
+             f_nu = exp(1 - nu_star)
+             v_p = f_nu*0.5*D(1)*sqrt(abs(psi))!*((1 - tanh((0.9 - psi)/0.02))/2.)
+             v_p = phys%v_p*v_p
+          END IF
+       CASE DEFAULT
+             v_p = 0.
+    END SELECT
+        
     
     phys%v_pmax = min(phys%v_pmax,v_p)
 
@@ -1215,6 +1222,67 @@ CONTAINS
   ! Neutral Source terms
   ! ******************************
 #ifdef NEUTRAL
+
+#ifdef DNNLINEARIZED
+  SUBROUTINE compute_dDnn_dU(U, Dnn_dU)
+    real*8, intent(IN) :: U(:)
+    real*8, intent(OUT) :: Dnn_dU(:)
+    real*8              :: double_soft_deriv, Dnn, ti, soft_deriv, ti_min=1e-6,tol=1e-10
+    real*8              :: sigmaviz, sigmavcx
+    real*8              :: D(4), dti_du(size(U,1)), dsigmaviz_dU(size(U,1)), dsigmavcx_dU(size(U,1))
+
+    Dnn_dU(:) = 0.
+    if ((U(3)>=tol) .and. (U(1)>=tol) .and. (U(5)>=tol)) then
+      ! calculation of atomic rates
+        call compute_sigmaviz(U,sigmaviz)
+        call compute_sigmavcx(U,sigmavcx)
+        ! calculation of temperature before limitation
+        ti = simpar%refval_temperature*2./(3.*phys%Mref)*(U(3)/U(1) - 1./2.*(U(2)/U(1))**2)
+        ti = max(simpar%refval_temperature*2./(3.*phys%Mref)*(U(3)/U(1) - 1./2.*(U(2)/U(1))**2),0.1)
+        !call softplus_deriv(ti, ti_min,soft_deriv)   
+         !call softplus(ti,ti_min)
+        ! calculation of Dnn before limitation
+        Dnn = simpar%refval_charge*ti/(simpar%refval_mass*simpar%refval_density*U(1)*(sigmaviz + sigmavcx))*simpar%refval_time/simpar%refval_length**2
+        !call double_softplus_deriv(Dnn,10.*phys%diff_n,phys%diff_nn,double_soft_deriv)   !to check the mulptiplier for Dnn_min
+
+        ! ti derivative
+        dti_du(:) = 0.
+        dti_du(1) = -U(3)/U(1)**2+U(2)**2/U(1)**3
+        dti_du(2) = -U(2)/U(1)**2
+        dti_du(3) = 1./U(1)
+        dti_du(:) = dti_du(:)*simpar%refval_temperature*2./(3.*phys%Mref)
+
+        ! atomic rates derivatives
+        call compute_dsigmaviz_dU(U,dsigmaviz_dU)
+        call compute_dsigmavcx_dU(U,dsigmavcx_dU)
+
+        ! arrange all ingredients
+        Dnn_dU(:) = 0.
+
+        ! ti part
+        !Dnn_dU(:) = Dnn_dU(:)+dti_du(:)*soft_deriv*simpar%refval_charge/(simpar%refval_mass*simpar%refval_density*U(1)*(sigmaviz + sigmavcx))
+        ! n part
+        !Dnn_dU(1) = Dnn_dU(1)-ti*simpar%refval_charge/(simpar%refval_mass*simpa\r%refval_density*U(1)**2*(sigmaviz + sigmavcx))
+        ! atomic rates part
+        !Dnn_dU(:) = Dnn_dU(:)-ti*simpar%refval_charge/(simpar%refval_mass*simpa\r%refval_density*U(1)*(sigmaviz + sigmavcx)**2)*(dsigmaviz_dU(:)+dsigmavcx_dU(:))
+        !Dnn_dU(:) = Dnn_dU(:)*simpar%refval_time/simpar%refval_length**2*double\_soft_deriv
+        CALL setLocalDiffSplitTerms(U,D)
+
+        IF (Dnn .le. phys%diff_nn .AND. Dnn .gt. 200.*D(1)) THEN
+           ! ti part
+           Dnn_dU(:) = Dnn_dU(:)+dti_du(:)*simpar%refval_charge/(simpar%refval_mass*simpar%refval_density*U(1)*(sigmaviz + sigmavcx))
+           ! n part
+           Dnn_dU(1) = Dnn_dU(1)-ti*simpar%refval_charge/(simpar%refval_mass*simpar%refval_density*U(1)**2*(sigmaviz + sigmavcx))
+           ! atomic rates part
+           Dnn_dU(:) = Dnn_dU(:)-ti*simpar%refval_charge/(simpar%refval_mass*simpar%refval_density*U(1)*(sigmaviz + sigmavcx)**2)*(dsigmaviz_dU(:)+dsigmavcx_dU(:))
+           Dnn_dU(:) = Dnn_dU(:)*simpar%refval_time/simpar%refval_length**2
+        END IF
+
+     endif
+  END SUBROUTINE  compute_dDnn_dU
+#endif
+        
+
 
   SUBROUTINE compute_niz(U,niz)
     real*8, intent(IN) :: U(:)
@@ -1672,62 +1740,62 @@ CONTAINS
   
     ! EIRENE documentation
     !Reaction 2.1.8JH
-    alpha(1,:) = (/-2.85572848e+01, 3.48856323e-02, -2.79964439e-02,&
-     1.20954532e-02, -2.43663080e-03, 2.83789372e-04,&
-     -1.88651117e-05, 6.75215560e-07, -1.00589386e-08/)
-    alpha(2,:) = (/-7.66404261e-01, -3.58323337e-03, -7.45251429e-03,&
-     2.70929976e-03, -7.74512977e-04, 1.14244470e-04,&
-     -9.38278352e-06, 3.90280010e-07, -6.38741159e-09/)
-    alpha(3,:) = (/-4.93042400e-03, -3.62024535e-03, 6.95871196e-03,&
-     -2.13925730e-03, 4.60388371e-04, -5.99163684e-05,&
-     4.72926255e-06, -1.99348540e-07, 3.35258987e-09/)
-    alpha(4,:) = (/-5.38683098e-03, -9.53284048e-04, 4.63175381e-04,&
-     -5.37117970e-04, 1.54335050e-04, -2.25756584e-05,&
-     1.73078295e-06, -6.61824078e-08, 1.01336428e-09/)
-    alpha(5,:) = (/-1.62603924e-04, 1.88804863e-04, 1.28857769e-04,&
-     -1.63458052e-05, -9.60103695e-06, 3.42526239e-06,&
-     -4.07701994e-07, 2.04204110e-08, -3.70797772e-10/)
-    alpha(6,:) = (/6.08090765e-06, -1.01489068e-05, -1.14502889e-04,&
-     5.94219398e-05, -1.21185172e-05, 1.11896550e-06,&
-     -4.27532157e-08, 3.70861611e-10, 7.06845011e-12/)
-    alpha(7,:) = (/2.10110205e-05, 2.24567656e-05, -2.24562427e-06,&
-     -2.94487376e-06, 1.00210510e-06, -1.29132080e-07,&
-     7.78615546e-09, -2.44112778e-10, 3.77320848e-12/)
-    alpha(8,:) = (/-2.77071760e-06, -4.69598237e-06, 3.25087887e-06,&
-     -9.38729079e-07, 1.39239163e-07, -1.13909329e-08,&
-     5.17850560e-10, -9.45240216e-12, -4.67272402e-14/)
-    alpha(9,:) = (/1.03823594e-07, 2.52316661e-07, -2.14539040e-07,&
-     7.38143524e-08, -1.29971368e-08, 1.26518958e-09,&
-     -6.85420397e-11, 1.83661503e-12, -1.64049236e-14/)
+    !alpha(1,:) = (/-2.85572848e+01, 3.48856323e-02, -2.79964439e-02,&
+    ! 1.20954532e-02, -2.43663080e-03, 2.83789372e-04,&
+    ! -1.88651117e-05, 6.75215560e-07, -1.00589386e-08/)
+    !alpha(2,:) = (/-7.66404261e-01, -3.58323337e-03, -7.45251429e-03,&
+    ! 2.70929976e-03, -7.74512977e-04, 1.14244470e-04,&
+    ! -9.38278352e-06, 3.90280010e-07, -6.38741159e-09/)
+    !alpha(3,:) = (/-4.93042400e-03, -3.62024535e-03, 6.95871196e-03,&
+    ! -2.13925730e-03, 4.60388371e-04, -5.99163684e-05,&
+    ! 4.72926255e-06, -1.99348540e-07, 3.35258987e-09/)
+    !alpha(4,:) = (/-5.38683098e-03, -9.53284048e-04, 4.63175381e-04,&
+    ! -5.37117970e-04, 1.54335050e-04, -2.25756584e-05,&
+    ! 1.73078295e-06, -6.61824078e-08, 1.01336428e-09/)
+    !alpha(5,:) = (/-1.62603924e-04, 1.88804863e-04, 1.28857769e-04,&
+    ! -1.63458052e-05, -9.60103695e-06, 3.42526239e-06,&
+    ! -4.07701994e-07, 2.04204110e-08, -3.70797772e-10/)
+    !alpha(6,:) = (/6.08090765e-06, -1.01489068e-05, -1.14502889e-04,&
+    ! 5.94219398e-05, -1.21185172e-05, 1.11896550e-06,&
+    ! -4.27532157e-08, 3.70861611e-10, 7.06845011e-12/)
+    !alpha(7,:) = (/2.10110205e-05, 2.24567656e-05, -2.24562427e-06,&
+    ! -2.94487376e-06, 1.00210510e-06, -1.29132080e-07,&
+    ! 7.78615546e-09, -2.44112778e-10, 3.77320848e-12/)
+    !alpha(8,:) = (/-2.77071760e-06, -4.69598237e-06, 3.25087887e-06,&
+    ! -9.38729079e-07, 1.39239163e-07, -1.13909329e-08,&
+    ! 5.17850560e-10, -9.45240216e-12, -4.67272402e-14/)
+    !alpha(9,:) = (/1.03823594e-07, 2.52316661e-07, -2.14539040e-07,&
+    ! 7.38143524e-08, -1.29971368e-08, 1.26518958e-09,&
+    ! -6.85420397e-11, 1.83661503e-12, -1.64049236e-14/)
 
     !Reaction 2.1.8a AMJUEL
-    !alpha(1,:) = (/-2.861779556590e+01, -1.786166918005e-02, 6.391553337864e-04,&     
-    ! -4.509415260040e-04, 7.095459017274e-05, -5.660309928918e-06,&
-    ! 1.160186631232e-07, 7.564986067995e-09, -2.969815025786e-10/)
-    !alpha(2,:) = (/-7.251997071478e-01, 3.210966054964e-03, 4.550251497787e-03,&
-    !  -1.882306456891e-03, 3.983133042462e-04, -4.851835293564e-05,&
-    !  3.404834497087e-06, -1.280839994482e-07, 1.982839967575e-09/)
-    !alpha(3,:) = (/ -1.735023322687e-02, -3.112517426840e-03, 1.077863345492e-03,&
-    !  -2.616958968739e-04, 5.459332810644e-05, -8.635308675130e-06,&
-    !  8.383106368091e-07, -4.133352004945e-08, 7.872491728981e-10/)
-    !alpha(4,:) = (/-3.557752804131e-03, 1.558966107388e-03, -1.037331531958e-03,&
-    !  2.817237174744e-04, -4.407815167942e-05, 4.646017350681e-06,&
-    !  -3.365654551356e-07, 1.428350791171e-08, -2.522153346435e-10/)
-    !alpha(5,:) = (/-2.777882255016e-04, -9.329932857673e-05, 1.096331766957e-04,&
-    !  -4.567488387292e-05, 8.495787235165e-06, -7.261076273040e-07,&
-    !   2.326992940046e-08, 2.208089550616e-10, -1.989979386039e-11/)
-    !alpha(6,:) = (/ 2.060295404466e-05, -1.283711654633e-04, 7.312311894769e-05,&
-    !   -1.064805149480e-05, -1.498776433806e-07, 1.199087596048e-07,&
-    !   -5.668079133507e-09, -1.018554043516e-10, 7.766578964142e-12/)
-    !alpha(7,:) = (/ 1.593238392469e-05, 3.705503401064e-05, -2.407235857913e-05,&
-    !   4.915213917257e-06, -3.346609397503e-07, -4.912753691671e-09,&
-    !   1.302393677822e-09, -3.169013613822e-11, -1.783762758524e-13/)
-    !alpha(8,:) = (/-2.116580756634e-06, -3.854172456142e-06, 2.662392026941e-06,&
-    !   -6.120846201882e-07, 5.663728215333e-08, -1.474221162308e-09,&
-    !   -7.373095178045e-11, 4.314457229158e-12, -4.791677504810e-14/)
-    !alpha(9,:) = (/7.665990100168e-08, 1.400789118322e-07, -1.008951470934e-07,&
-    !    2.495214914834e-08, -2.678484130657e-09, 1.170138331019e-10,&
-    !    -1.588254701759e-13, -1.226345218681e-13, 2.329402447113e-15/)
+    alpha(1,:) = (/-2.861779556590e+01, -1.786166918005e-02, 6.391553337864e-04,&     
+     -4.509415260040e-04, 7.095459017274e-05, -5.660309928918e-06,&
+     1.160186631232e-07, 7.564986067995e-09, -2.969815025786e-10/)
+    alpha(2,:) = (/-7.251997071478e-01, 3.210966054964e-03, 4.550251497787e-03,&
+      -1.882306456891e-03, 3.983133042462e-04, -4.851835293564e-05,&
+      3.404834497087e-06, -1.280839994482e-07, 1.982839967575e-09/)
+    alpha(3,:) = (/ -1.735023322687e-02, -3.112517426840e-03, 1.077863345492e-03,&
+      -2.616958968739e-04, 5.459332810644e-05, -8.635308675130e-06,&
+      8.383106368091e-07, -4.133352004945e-08, 7.872491728981e-10/)
+    alpha(4,:) = (/-3.557752804131e-03, 1.558966107388e-03, -1.037331531958e-03,&
+      2.817237174744e-04, -4.407815167942e-05, 4.646017350681e-06,&
+      -3.365654551356e-07, 1.428350791171e-08, -2.522153346435e-10/)
+    alpha(5,:) = (/-2.777882255016e-04, -9.329932857673e-05, 1.096331766957e-04,&
+      -4.567488387292e-05, 8.495787235165e-06, -7.261076273040e-07,&
+       2.326992940046e-08, 2.208089550616e-10, -1.989979386039e-11/)
+    alpha(6,:) = (/ 2.060295404466e-05, -1.283711654633e-04, 7.312311894769e-05,&
+       -1.064805149480e-05, -1.498776433806e-07, 1.199087596048e-07,&
+       -5.668079133507e-09, -1.018554043516e-10, 7.766578964142e-12/)
+    alpha(7,:) = (/ 1.593238392469e-05, 3.705503401064e-05, -2.407235857913e-05,&
+       4.915213917257e-06, -3.346609397503e-07, -4.912753691671e-09,&
+       1.302393677822e-09, -3.169013613822e-11, -1.783762758524e-13/)
+    alpha(8,:) = (/-2.116580756634e-06, -3.854172456142e-06, 2.662392026941e-06,&
+       -6.120846201882e-07, 5.663728215333e-08, -1.474221162308e-09,&
+       -7.373095178045e-11, 4.314457229158e-12, -4.791677504810e-14/)
+    alpha(9,:) = (/7.665990100168e-08, 1.400789118322e-07, -1.008951470934e-07,&
+        2.495214914834e-08, -2.678484130657e-09, 1.170138331019e-10,&
+        -1.588254701759e-13, -1.226345218681e-13, 2.329402447113e-15/)
   
      call compute_eirene_rate(te,ne,alpha,sigmavrec)
   
@@ -1758,62 +1826,62 @@ CONTAINS
   
     ! EIRENE documentation
     !Reaction 2.1.8JH AMJUEL
-    alpha(1,:) = (/-2.85572848e+01, 3.48856323e-02, -2.79964439e-02,&
-     1.20954532e-02, -2.43663080e-03, 2.83789372e-04,&
-     -1.88651117e-05, 6.75215560e-07, -1.00589386e-08/)
-    alpha(2,:) = (/-7.66404261e-01, -3.58323337e-03, -7.45251429e-03,&
-     2.70929976e-03, -7.74512977e-04, 1.14244470e-04,&
-     -9.38278352e-06, 3.90280010e-07, -6.38741159e-09/)
-    alpha(3,:) = (/-4.93042400e-03, -3.62024535e-03, 6.95871196e-03,&
-     -2.13925730e-03, 4.60388371e-04, -5.99163684e-05,&
-     4.72926255e-06, -1.99348540e-07, 3.35258987e-09/)
-    alpha(4,:) = (/-5.38683098e-03, -9.53284048e-04, 4.63175381e-04,&
-     -5.37117970e-04, 1.54335050e-04, -2.25756584e-05,&
-     1.73078295e-06, -6.61824078e-08, 1.01336428e-09/)
-    alpha(5,:) = (/-1.62603924e-04, 1.88804863e-04, 1.28857769e-04,&
-     -1.63458052e-05, -9.60103695e-06, 3.42526239e-06,&
-     -4.07701994e-07, 2.04204110e-08, -3.70797772e-10/)
-    alpha(6,:) = (/6.08090765e-06, -1.01489068e-05, -1.14502889e-04,&
-     5.94219398e-05, -1.21185172e-05, 1.11896550e-06,&
-     -4.27532157e-08, 3.70861611e-10, 7.06845011e-12/)
-    alpha(7,:) = (/2.10110205e-05, 2.24567656e-05, -2.24562427e-06,&
-     -2.94487376e-06, 1.00210510e-06, -1.29132080e-07,&
-     7.78615546e-09, -2.44112778e-10, 3.77320848e-12/)
-    alpha(8,:) = (/-2.77071760e-06, -4.69598237e-06, 3.25087887e-06,&
-     -9.38729079e-07, 1.39239163e-07, -1.13909329e-08,&
-     5.17850560e-10, -9.45240216e-12, -4.67272402e-14/)
-    alpha(9,:) = (/1.03823594e-07, 2.52316661e-07, -2.14539040e-07,&
-     7.38143524e-08, -1.29971368e-08, 1.26518958e-09,&
-     -6.85420397e-11, 1.83661503e-12, -1.64049236e-14/)
+    !alpha(1,:) = (/-2.85572848e+01, 3.48856323e-02, -2.79964439e-02,&
+    ! 1.20954532e-02, -2.43663080e-03, 2.83789372e-04,&
+    ! -1.88651117e-05, 6.75215560e-07, -1.00589386e-08/)
+    !alpha(2,:) = (/-7.66404261e-01, -3.58323337e-03, -7.45251429e-03,&
+    ! 2.70929976e-03, -7.74512977e-04, 1.14244470e-04,&
+    ! -9.38278352e-06, 3.90280010e-07, -6.38741159e-09/)
+    !alpha(3,:) = (/-4.93042400e-03, -3.62024535e-03, 6.95871196e-03,&
+    ! -2.13925730e-03, 4.60388371e-04, -5.99163684e-05,&
+    ! 4.72926255e-06, -1.99348540e-07, 3.35258987e-09/)
+    !alpha(4,:) = (/-5.38683098e-03, -9.53284048e-04, 4.63175381e-04,&
+    ! -5.37117970e-04, 1.54335050e-04, -2.25756584e-05,&
+    ! 1.73078295e-06, -6.61824078e-08, 1.01336428e-09/)
+    !alpha(5,:) = (/-1.62603924e-04, 1.88804863e-04, 1.28857769e-04,&
+    ! -1.63458052e-05, -9.60103695e-06, 3.42526239e-06,&
+    ! -4.07701994e-07, 2.04204110e-08, -3.70797772e-10/)
+    !alpha(6,:) = (/6.08090765e-06, -1.01489068e-05, -1.14502889e-04,&
+    ! 5.94219398e-05, -1.21185172e-05, 1.11896550e-06,&
+    ! -4.27532157e-08, 3.70861611e-10, 7.06845011e-12/)
+    !alpha(7,:) = (/2.10110205e-05, 2.24567656e-05, -2.24562427e-06,&
+    ! -2.94487376e-06, 1.00210510e-06, -1.29132080e-07,&
+    ! 7.78615546e-09, -2.44112778e-10, 3.77320848e-12/)
+    !alpha(8,:) = (/-2.77071760e-06, -4.69598237e-06, 3.25087887e-06,&
+    ! -9.38729079e-07, 1.39239163e-07, -1.13909329e-08,&
+    ! 5.17850560e-10, -9.45240216e-12, -4.67272402e-14/)
+    !alpha(9,:) = (/1.03823594e-07, 2.52316661e-07, -2.14539040e-07,&
+    ! 7.38143524e-08, -1.29971368e-08, 1.26518958e-09,&
+    ! -6.85420397e-11, 1.83661503e-12, -1.64049236e-14/)
 
     !Reaction 2.1.8a AMJUEL 
-    !alpha(1,:) = (/-2.861779556590e+01, -1.786166918005e-02, 6.391553337864e-04,&
-    ! -4.509415260040e-04, 7.095459017274e-05, -5.660309928918e-06,&
-    ! 1.160186631232e-07, 7.564986067995e-09, -2.969815025786e-10/)
-    !alpha(2,:) = (/-7.251997071478e-01, 3.210966054964e-03, 4.550251497787e-03,&
-    !  -1.882306456891e-03, 3.983133042462e-04, -4.851835293564e-05,&
-    !  3.404834497087e-06, -1.280839994482e-07, 1.982839967575e-09/)
-    !alpha(3,:) = (/ -1.735023322687e-02, -3.112517426840e-03, 1.077863345492e-03,&
-    !  -2.616958968739e-04, 5.459332810644e-05, -8.635308675130e-06,&
-    !  8.383106368091e-07, -4.133352004945e-08, 7.872491728981e-10/)
-    !alpha(4,:) = (/-3.557752804131e-03, 1.558966107388e-03, -1.037331531958e-03,&
-    !  2.817237174744e-04, -4.407815167942e-05, 4.646017350681e-06,&
-    !  -3.365654551356e-07, 1.428350791171e-08, -2.522153346435e-10/)
-    !alpha(5,:) = (/-2.777882255016e-04, -9.329932857673e-05, 1.096331766957e-04,&
-    !  -4.567488387292e-05, 8.495787235165e-06, -7.261076273040e-07,&
-    !   2.326992940046e-08, 2.208089550616e-10, -1.989979386039e-11/)
-    !alpha(6,:) = (/ 2.060295404466e-05, -1.283711654633e-04, 7.312311894769e-05,&
-    !   -1.064805149480e-05, -1.498776433806e-07, 1.199087596048e-07,&
-    !   -5.668079133507e-09, -1.018554043516e-10, 7.766578964142e-12/)
-    !alpha(7,:) = (/ 1.593238392469e-05, 3.705503401064e-05, -2.407235857913e-05,&
-    !   4.915213917257e-06, -3.346609397503e-07, -4.912753691671e-09,&
-    !   1.302393677822e-09, -3.169013613822e-11, -1.783762758524e-13/)
-    !alpha(8,:) = (/-2.116580756634e-06, -3.854172456142e-06, 2.662392026941e-06,&
-    !   -6.120846201882e-07, 5.663728215333e-08, -1.474221162308e-09,&
-    !   -7.373095178045e-11, 4.314457229158e-12, -4.791677504810e-14/)
-    !alpha(9,:) = (/7.665990100168e-08, 1.400789118322e-07, -1.008951470934e-07,&
-    !    2.495214914834e-08, -2.678484130657e-09, 1.170138331019e-10,&
-    !    -1.588254701759e-13, -1.226345218681e-13, 2.329402447113e-15/)
+    alpha(1,:) = (/-2.861779556590e+01, -1.786166918005e-02, 6.391553337864e-04,&
+     -4.509415260040e-04, 7.095459017274e-05, -5.660309928918e-06,&
+     1.160186631232e-07, 7.564986067995e-09, -2.969815025786e-10/)
+    alpha(2,:) = (/-7.251997071478e-01, 3.210966054964e-03, 4.550251497787e-03,&
+      -1.882306456891e-03, 3.983133042462e-04, -4.851835293564e-05,&
+      3.404834497087e-06, -1.280839994482e-07, 1.982839967575e-09/)
+    alpha(3,:) = (/ -1.735023322687e-02, -3.112517426840e-03, 1.077863345492e-03,&
+      -2.616958968739e-04, 5.459332810644e-05, -8.635308675130e-06,&
+      8.383106368091e-07, -4.133352004945e-08, 7.872491728981e-10/)
+    alpha(4,:) = (/-3.557752804131e-03, 1.558966107388e-03, -1.037331531958e-03,&
+      2.817237174744e-04, -4.407815167942e-05, 4.646017350681e-06,&
+      -3.365654551356e-07, 1.428350791171e-08, -2.522153346435e-10/)
+    alpha(5,:) = (/-2.777882255016e-04, -9.329932857673e-05, 1.096331766957e-04,&
+      -4.567488387292e-05, 8.495787235165e-06, -7.261076273040e-07,&
+       2.326992940046e-08, 2.208089550616e-10, -1.989979386039e-11/)
+    alpha(6,:) = (/ 2.060295404466e-05, -1.283711654633e-04, 7.312311894769e-05,&
+       -1.064805149480e-05, -1.498776433806e-07, 1.199087596048e-07,&
+       -5.668079133507e-09, -1.018554043516e-10, 7.766578964142e-12/)
+    alpha(7,:) = (/ 1.593238392469e-05, 3.705503401064e-05, -2.407235857913e-05,&
+       4.915213917257e-06, -3.346609397503e-07, -4.912753691671e-09,&
+       1.302393677822e-09, -3.169013613822e-11, -1.783762758524e-13/)
+    alpha(8,:) = (/-2.116580756634e-06, -3.854172456142e-06, 2.662392026941e-06,&
+       -6.120846201882e-07, 5.663728215333e-08, -1.474221162308e-09,&
+       -7.373095178045e-11, 4.314457229158e-12, -4.791677504810e-14/)
+    alpha(9,:) = (/7.665990100168e-08, 1.400789118322e-07, -1.008951470934e-07,&
+        2.495214914834e-08, -2.678484130657e-09, 1.170138331019e-10,&
+        -1.588254701759e-13, -1.226345218681e-13, 2.329402447113e-15/)
   
      res = 0.
   
@@ -2429,10 +2497,59 @@ SUBROUTINE computeAlphaCoeff(U,Q,Vpn,res)
     Etan = Etan*simpar%refval_time/simpar%refval_length**2/simpar%refval_density
 
     if (Etan/U5 .gt. phys%diff_nn) then
-        Etan = U5*phys%diff_nn
+       Etan = U5*phys%diff_nn
     end if
+
+    !if (Etan/U5 .lt. 200*simpar%refval_time/simpar%refval_length**2) then
+    !   Etan = U5*200*simpar%refval_time/simpar%refval_length**2
+    !end if
   
   END SUBROUTINE computeEtan
+
+  SUBROUTINE compute_dEtan_dU(U,dEtan_dU)
+    real*8, intent(IN) :: U(:)
+    real*8, intent(OUT):: dEtan_dU(:)
+    real*8             :: U1,U2,U3,U4,U5,U6
+    real*8             :: Tn,Etan,sigmavcx
+    real*8             :: dPn_dU(size(U,1)),dsigmavcx_dU(size(U,1))
+
+    dPn_dU = 0.
+    dEtan_dU = 0.
+
+    U1 = U(1)
+    U2 = U(2)
+    U3 = U(3)
+    U4 = U(4)
+    U5 = U(5)
+    U6 = U(6)
+
+    ! Neutral temperature
+    Tn = simpar%refval_temperature*2./(3.*phys%Mref)*(U3/U1 - 1./2.*(U2/U1)**2)
+
+    ! Neutral pressure derivatives                                                                                                                   
+    dPn_dU(1) = U5*(-U3/U1**2+U2**2/U1**3)
+    dPn_dU(2) = U5*(-U2/U1**2)
+    dPn_dU(3) = U5/U1
+    dPn_dU(5) = U3/U1 - 1./2.*U2**2/U1**2
+    dPn_dU(:) = simpar%refval_density*simpar%refval_temperature*2./(3.*phys%Mref)*dPn_dU(:)
+
+    ! Atomic rates derivatives                                                                                                                     
+    call compute_dsigmavcx_dU(U,dsigmavcx_dU)
+
+    CALL computeEtan(U,Etan)
+    
+    IF (Etan/U5 .le. phys%diff_nn .AND. Etan/U5 .gt. 200*simpar%refval_time/simpar%refval_length**2) THEN
+       ! Neutral pressure part                                                                                        
+       dEtan_dU(:) = dEtan_dU(:) + dPn_dU(:)*simpar%refval_charge/(simpar%refval_mass*simpar%refval_density*U1*sigmavcx)
+       ! Density part                                                                                                                                  
+       dEtan_dU(1) = dEtan_dU(1) - simpar%refval_density*U1*Tn*simpar%refval_charge/(simpar%refval_mass*simpar%refval_density*U1**2*sigmavcx)
+       ! Atomic rates part                                                                                                                       
+       dEtan_dU(:) = dEtan_dU(:) - simpar%refval_density*U1*Tn*simpar%refval_charge/(simpar%refval_mass*simpar%refval_density*U1*sigmavcx**2)*dsigmavcx_dU(:)
+       ! Dimensionless
+       dEtan_dU(:) = dEtan_dU(:)*simpar%refval_time/simpar%refval_length**2/simpar%refval_density
+    END IF
+
+  END SUBROUTINE compute_dEtan_dU
 
   SUBROUTINE computeVun(U,Vun)
     real*8, intent(IN) :: U(:)
@@ -2448,7 +2565,7 @@ SUBROUTINE computeAlphaCoeff(U,Q,Vpn,res)
     Vun(6) = 1./U5
 
   END SUBROUTINE computeVun
-
+  
   SUBROUTINE compute_dVun_dU(U,dVun_dU)
     real*8, intent(IN)  :: U(:)
     real*8, intent(OUT) :: dVun_dU(:, :)

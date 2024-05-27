@@ -1335,6 +1335,7 @@ CONTAINS
     real*8                        :: Pi,sigma,sigmax,sigmay,x0,y0,A,r
     real*8                        :: th_n = 1.e-14
     real*8                        :: Vnng(Ndim)
+    real*8                        :: it0_ECRH,dt_ECRH
     
     if (save_tau) then
        Xg_el = 0.
@@ -1506,7 +1507,17 @@ CONTAINS
           ELSE IF (switch%testcase == 87) THEN
              x0 = 6.6
              sigma = phys%sigma_source
-             A = 1./(2.*Pi*0.5*sigma**2.)/(2.*Pi*x0)*phys%ener_source_ee*simpar%refval_time/simpar%refval_specenergydens/simpar%refval_mass
+             IF (switch%ME == .TRUE.) THEN
+                it0_ECRH = 200
+                dt_ECRH = simpar%refval_time*time%dt*(time%it - it0_ECRH) + simpar%refval_time*time%dt
+                IF (dt_ECRH .le. 5) THEN
+                   A = 1./(2.*Pi*0.5*sigma**2.)/(2.*Pi*x0)*phys%ener_source_ee*(dt_ECRH/5)*simpar%refval_time/simpar%refval_specenergydens/simpar%refval_mass
+                ELSE
+                   A = 1./(2.*Pi*0.5*sigma**2.)/(2.*Pi*x0)*phys%ener_source_ee*simpar%refval_time/simpar%refval_specenergydens/simpar%refval_mass
+                END IF
+             ELSE
+                A = 1./(2.*Pi*0.5*sigma**2.)/(2.*Pi*x0)*phys%ener_source_ee*simpar%refval_time/simpar%refval_specenergydens/simpar%refval_mass
+             END IF
              ! ECRH source 
 #ifdef TEMPERATURE
              force(g,4) = A*exp(-((xy(g,1)*phys%lscale - x0)**2)/(2*(0.5*sigma)**2) - ((xy(g,2)*phys%lscale - 0.5)**2)/(2*sigma**2))
@@ -2090,12 +2101,13 @@ CONTAINS
     real*8                    :: niz,nrec,fGammacx,fGammarec
     real*8                    :: dniz_dU(Neq),dnrec_dU(Neq),dfGammacx_dU(Neq),dfGammarec_dU(Neq)
 #ifdef TEMPERATURE
+    real*8                    :: dDnn_dU(Neq)
     real*8                    :: sigmaviz,sigmavrec,sigmavcx,Tloss,Tlossrec,fEiiz,fEirec,fEicx
     real*8                    :: dsigmaviz_dU(Neq),dsigmavrec_dU(Neq),dsigmavcx_dU(Neq),dTloss_dU(Neq),dTlossrec_dU(Neq)
     real*8                    :: dfEiiz_dU(Neq),dfEirec_dU(Neq),dfEicx_dU(Neq)
 #ifdef NEUTRALP
-    real*8                    :: Dnn,Dpn,Alphanp,Betanp,GammaLim,Gammaredpn,Tmin
-    real*8                    :: Anp(Neq),Vpn(Neq),dVpn_dU(Neq,Neq),dDpn_dU(Neq),gmpn(Ndim),gmipn(Ndim),Taupn(Ndim,Neq)
+    real*8                    :: Dpn,GammaLim
+    real*8                    :: Vpn(Neq),dVpn_dU(Neq,Neq),dDpn_dU(Neq),gmpn(Ndim),Taupn(Ndim,Neq)
 #endif
 #ifdef NEUTRALGAMMA
     real*8                    :: Etan,fGammaN
@@ -2204,38 +2216,9 @@ CONTAINS
     ! Compute Dpn(U^(k-1))
     CALL computeDpn(ue,Qpr,Vpn,Dpn)
     ! Compute dDpn_dU(U^(k-1))
-    CALL compute_dDpn_dU(ue,Qpr,Vpn,dDpn_dU) 
-    ! Reduce Grad Pn for low collision regime 
-    ! Threshold set at 0.5xGradPn for Ti = 0.2 eV 
-    !Gammaredpn = 1.
-    !Tmin = 0.2/simpar%refval_temperature
-    !IF (Tmin/upe(7) .le. 1.) Gammaredpn = Gammaredpn*Tmin/upe(7)
-    !Dnn = Gammaredpn*(simpar%refval_time**2/simpar%refval_length**2*simpar%refval_charge*simpar%refval_temperature/simpar%refval_mass)*upe(7)*Dpn 
-    ! Compute Gammaredpn(U^(k-1))
-    !CALL computeGammared(ue,Gammaredpn) 
-    !gmipn = matmul(Qpr,Vveci) 
-    !CALL computeGammaLim(ue,Qpr,Vpn,GammaLim)
-    ! Set Grad Ti = 0. for low collision regime 
-    ! (back to diffusion equation for neutral density)
-    !CALL computeAlphaCoeff(ue,Qpr,Vpn,Alphanp)  
-    !CALL computeBetaCoeff(ue,Qpr,Vpn,Betanp)  
-    !Dpn = Alphanp*Dpn
-    !dDpn_dU = Alphanp*dDpn_dU
-    !Dnn = Betanp*(simpar%refval_time**2/simpar%refval_length**2*simpar%refval_charge*simpar%refval_temperature/simpar%refval_mass)*upe(7)*Dpn 
-    !IF (Dnn .gt. phys%diff_nn) Dnn = phys%diff_nn
-    !IF (Dpn .gt. phys%diff_nn) THEN
-    !   Dpn = Alphanp*Dpn !0.
-    !   dDpn_dU = Alphanp*dDpn_dU !0.
-    !   Dnn = Betanp*(simpar%refval_time**2/simpar%refval_length**2*simpar%refval_charge*simpar%refval_temperature/simpar%refval_mass)*upe(7)*phys%diff_nn
-    !   END IF
-    ! Set Gamma Convective = cs_n*n_n for low collision regime 
-    !IF (Dpn .gt. phys%diff_nn) THEN
-    !   Dpn = 0.
-    !   dDpn_dU = 0.
-    !   CALL jacobianMatricesNP(ue,Anp)
-    !ELSE
-    !   Anp = 0.
-    !END IF
+    CALL compute_dDpn_dU(ue,Qpr,Vpn,dDpn_dU)
+    ! Compute flux limiter
+    CALL computeGammaLim(ue,Qpr,Vpn,GammaLim)
 #endif
 
 #ifdef NEUTRALGAMMA
@@ -2253,6 +2236,10 @@ CONTAINS
 #endif
 
 #ifdef NEUTRAL
+#ifndef NEUTRALP
+    ! Linarization Dnn
+    call compute_dDnn_dU(ue,dDnn_dU)
+#endif
     !Neutral Source Terms needed in the plasma and neutral density equations
     call compute_niz(ue,niz)
     call compute_nrec(ue,nrec)
@@ -2442,23 +2429,30 @@ CONTAINS
           IF (switch%ohmicsrc) THEN
             rhs(:,i) = rhs(:,i) + Sohmic*(Jtor**2)*Ni
           ENDIF
-#ifdef NEUTRALP		  
+#ifdef NEUTRAL
+#ifndef NEUTRALP
+          ELSEIF(i == 5) THEN
+             DO j = 1,5 
+                z = i+(j-1)*Neq
+                DO k = 1,Ndim
+                   !z = i+(k-1)*Neq+(j-1)*Neq*Ndim
+                   Auu(:,:,z) =Auu(:,:,z) + (NxyzNi(:,:,k)*dDnn_dU(j)*Qpr(k,i))
+                END DO
+             END DO
+             DO k = 1, Ndim
+                rhs(:,i) = rhs(:,i)+dot_product(dDnn_dU,ue)*Qpr(k,i)*Nxyzg(:,k)
+             END DO
+#else		  
           ELSEIF (i == 5) THEN
              DO j = 1,5
 	        DO k = 1,Ndim
 	           z = i+(k-1)*Neq+(j-1)*Neq*Ndim
-                   Auu(:,:,i+(j-1)*Neq) = Auu(:,:,i+(j-1)*Neq) + (Dpn*Taupn(k,j) + dDpn_dU(j)*gmpn(k))*(NxyzNi(:,:,k) - NNxy*b(k)) 
-                   !Auu(:,:,i+(j-1)*Neq) = Auu(:,:,i+(j-1)*Neq) - Gammaredpn*(Dpn*Taui(k,j) + dDpn_dU(j)*gmipn(k))*NxyzNi(:,:,k) 
-                   Auq(:,:,z) = Auq(:,:,z) + Dpn*Vpn(j)*(NxyzNi(:,:,k) - NNxy*b(k))
-                   !Auq(:,:,z) = Auq(:,:,z) - Gammaredpn*Dpn*Vveci(j)*NxyzNi(:,:,k)
-                   !IF (j == 5) THEN
-                   !   Auq(:,:,z) = Auq(:,:,z) + Dnn*NxyzNi(:,:,k)
-                   !END 
+                   Auu(:,:,i+(j-1)*Neq) = Auu(:,:,i+(j-1)*Neq) + (Dpn*Taupn(k,j) + dDpn_dU(j)*gmpn(k))*GammaLim*NxyzNi(:,:,k) 
+                   Auq(:,:,z) = Auq(:,:,z) + Dpn*Vpn(j)*GammaLim*NxyzNi(:,:,k)
                 END DO
              END DO
              DO k = 1,Ndim
-                rhs(:,i) = rhs(:,i) + dot_product(dDpn_dU,ue)*gmpn(k)*(Nxyzg(:,k) - NNbb*b(k))
-                !rhs(:,i) = rhs(:,i) - Gammaredpn*(Dpn*dot_product(Taui(k,:),ue) + dot_product(dDpn_dU,ue)*gmipn(k))*Nxyzg(:,k)
+                rhs(:,i) = rhs(:,i) + dot_product(dDpn_dU,ue)*gmpn(k)*GammaLim*Nxyzg(:,k)
              END DO
 #endif
 #ifdef NEUTRALGAMMA
@@ -2479,6 +2473,7 @@ CONTAINS
                rhs(:,i) = rhs(:,i) + Etan*dot_product(TauGamman(k,:),ue)*Nxyzg(:,k)
             END DO
 #endif
+#endif
          END IF
 #endif
        
@@ -2487,9 +2482,6 @@ CONTAINS
            z = i+(j-1)*Neq
            Auu(:,:,z)= Auu(:,:,z) - A(i,j)*NNxy
 #ifdef NEUTRAL
-!#ifdef NEUTRALP
-!          IF (i == 5) Auu(:,:,z) = Auu(:,:,z) - Anp(j)*NNxy
-!#endif
           !Sources
           Auu(:,:,z) = Auu(:,:,z) + Sn(i,j)*NNi
 #endif
@@ -2666,9 +2658,6 @@ CONTAINS
 #ifdef NEUTRAL
       rhs = rhs-tensorProduct(Ni,Sn0)
 #endif
-!#ifdef NEUTRALP
-!      rhs = rhs+tensorProduct(Ni,fth)
-!#endif
     END SUBROUTINE assemblyVolumeContribution
 
     !********************************************************************
@@ -2702,9 +2691,12 @@ CONTAINS
       real*8                    :: Vvece(Neq),dV_dUe(Neq,Neq),Alphae,dAlpha_dUe(Neq),gme,taue(Ndim,Neq)
       real*8                    :: W3(Neq),dW3_dU(Neq,Neq),QdW3(Ndim,Neq)
       real*8                    :: W4(Neq),dW4_dU(Neq,Neq),QdW4(Ndim,Neq)
+#ifdef NEUTRAL
+      real*8                    :: dDnn_dU(Neq)
+#endif
 #ifdef NEUTRALP
-      real*8                    :: Dnn,Dpn,GammaLim,Alphanp,Betanp,Gammaredpn,Tmin
-      real*8                    :: Anp(Neq),Vpn(Neq),dVpn_dU(Neq,Neq),gmpn(Ndim),gmipn(Ndim),Taupn(Ndim,Neq),dDpn_dU(Neq)
+      real*8                    :: Dpn,GammaLim
+      real*8                    :: Vpn(Neq),dVpn_dU(Neq,Neq),gmpn(Ndim),Taupn(Ndim,Neq),dDpn_dU(Neq)
 #endif
 #ifdef NEUTRALGAMMA
       real*8                    :: Etan,fGammaN
@@ -2765,7 +2757,13 @@ CONTAINS
       gme = dot_product(matmul(Qpr,Vvece),b)
       Taui = matmul(Qpr,dV_dUi)      ! 2x3
       Taue = matmul(Qpr,dV_dUe)      ! 2x3
-#ifdef NEUTRALP
+
+      ! Neutral model
+#ifdef NEUTRAL
+#ifndef NEUTRALP
+      ! Linearization Dnn
+      call compute_dDnn_dU(uf,dDnn_dU)
+#else
     ! Compute Vpn(U^(k-1))
     CALL computeVpn(uf,Vpn)
     gmpn = matmul(Qpr,Vpn)                     ! Ndim x 1
@@ -2776,39 +2774,9 @@ CONTAINS
     CALL computeDpn(uf,Qpr,Vpn,Dpn)
     ! Compute dDpn_dU(U^(k-1))
     CALL compute_dDpn_dU(uf,Qpr,Vpn,dDpn_dU)
-    ! Reduce Grad Pn for low collision regime 
-    ! Threshold set at 0.5xGradPn for Ti = 0.2 eV 
-    !Gammaredpn = 1.
-    !Tmin = 0.2/simpar%refval_temperature
-    !IF (Tmin/upf(7) .le. 1.) Gammaredpn = Gammaredpn*Tmin/upf(7)
-    !Dnn = Gammaredpn*(simpar%refval_time**2/simpar%refval_length**2*simpar%refval_charge*simpar%refval_temperature/simpar%refval_mass)*upf(7)*Dpn 
-    ! Comput Gammaredpn(U^(k-1))
-    !CALL computeGammared(uf,Gammaredpn)
-    !gmipn = matmul(Qpr,Vveci)
-    !CALL computeGammaLim(ue,Qpr,Vpn,GammaLim)
-    ! Set Grad Ti = 0. for low collision regime 
-    ! (back to diffusion equation for neutral density)
-    !CALL computeAlphaCoeff(uf,Qpr,Vpn,Alphanp)  
-    !CALL computeBetaCoeff(uf,Qpr,Vpn,Betanp)  
-    !Dpn = Alphanp*Dpn
-    !dDpn_dU = Alphanp*dDpn_dU
-    !Dnn = Betanp*(simpar%refval_time**2/simpar%refval_length**2*simpar%refval_charge*simpar%refval_temperature/simpar%refval_mass)*upf(7)*Dpn 
-    !IF (Dnn .gt. phys%diff_nn) Dnn = phys%diff_nn
-    !IF (Dpn .gt. phys%diff_nn) THEN
-    !   Dpn = Alphanp*Dpn !0.
-    !   dDpn_dU = Alphanp*dDpn_dU !0.
-    !   Dnn = Betanp*(simpar%refval_time**2/simpar%refval_length**2*simpar%refval_charge*simpar%refval_temperature/simpar%refval_mass)*upf(7)*phys%diff_nn
-    !   END IF
-    ! Set Gamma Convective = cs_n*n_n for low collision regime 
-    !IF (Dpn .gt. phys%diff_nn) THEN
-    !   Dpn = 0.
-    !   dDpn_dU = 0.
-    !   CALL jacobianMatricesNP(uf,Anp)
-    !ELSE
-    !   Anp = 0.
-    !END IF
+    ! Compute flux limiter
+    CALL computeGammaLim(uf,Qpr,Vpn,GammaLim)
 #endif
-
 #ifdef NEUTRALGAMMA
     ! Viscosity term
     CALL computeEtan(uf,Etan)
@@ -2818,7 +2786,7 @@ CONTAINS
     gmGamman = matmul(Qpr,Vun)
     TauGamman = matmul(Qpr,dVun_dU)
 #endif
-
+#endif   ! Neutral model
 #endif
 
       ! Assembly local matrix
@@ -2937,23 +2905,8 @@ CONTAINS
         DO j = 1,Neq
           ind_jf = ind_asf + j
           kmult = bn*A(i,j)*NNif
-!#ifdef NEUTRALP
-!          IF (i == 5) kmult = kmult + bn*Anp(j)*NNif
-!#endif
           elMat%Aul(ind_fe(ind_if),ind_ff(ind_jf),iel) = elMat%Aul(ind_fe(ind_if),ind_ff(ind_jf),iel) + kmult
           elMat%All(ind_ff(ind_if),ind_ff(ind_jf),iel) = elMat%All(ind_ff(ind_if),ind_ff(ind_jf),iel) + kmult
-!#ifdef TEMPERATURE
-!#ifdef NEUTRAL
-!          !X component neutral convective velocity
-!          kmult = n(1)*Ax(i,j)*NNif
-!          elMat%Aul(ind_fe(ind_if),ind_ff(ind_jf),iel) = elMat%Aul(ind_fe(ind_if),ind_ff(ind_jf),iel) - kmult
-!          elMat%All(ind_ff(ind_if),ind_ff(ind_jf),iel) = elMat%All(ind_ff(ind_if),ind_ff(ind_jf),iel) - kmult
-!          !Y component neutral convective velocity
-!          kmult = n(2)*Ay(i,j)*NNif
-!          elMat%Aul(ind_fe(ind_if),ind_ff(ind_jf),iel) = elMat%Aul(ind_fe(ind_if),ind_ff(ind_jf),iel) - kmult
-!          elMat%All(ind_ff(ind_if),ind_ff(ind_jf),iel) = elMat%All(ind_ff(ind_if),ind_ff(ind_jf),iel) - kmult
-!#endif
-!#endif
         END DO ! j-loop
         ! Pinch contribution
         elMat%Aul(ind_fe(ind_if),ind_ff(ind_if),iel) = elMat%Aul(ind_fe(ind_if),ind_ff(ind_if),iel) + (APinch(i,1)*n(1) + APinch(i,2)*n(2))*NNif
@@ -3003,27 +2956,35 @@ CONTAINS
           kmultf = coefe*Alphae*(dot_product(matmul(transpose(Taue),b),uf))*Nfbn
           elMat%S(ind_fe(ind_if),iel) = elMat%S(ind_fe(ind_if),iel) - kmultf
           elMat%fh(ind_ff(ind_if),iel) = elMat%fh(ind_ff(ind_if),iel) - kmultf
-#ifdef NEUTRALP
+#ifdef NEUTRAL
+#ifndef NEUTRALP
+       ELSEIF (i == 5) THEN
+          DO j=1,Neq
+             ind_jf = ind_asf+j
+             DO k=1,Ndim
+                kmult = dDnn_dU(j)*Qpr(k,i)*n(k)*NNif
+                elMat%Aul(ind_fe(ind_if),ind_ff(ind_jf),iel)  = elMat%Aul(ind_fe(ind_if),ind_ff(ind_jf),iel) - kmult
+                elMat%All(ind_ff(ind_if),ind_ff(ind_jf),iel)  = elMat%All(ind_ff(ind_if),ind_ff(ind_jf),iel) - kmult
+             END DO
+          END DO
+          kmultf = dot_product(dDnn_dU,uf)*(Qpr(1,i)*n(1)+Qpr(2,i)*n(2))*Nif
+          elMat%S(ind_fe(ind_if),iel) = elMat%S(ind_fe(ind_if),iel) - kmultf
+          elMat%fh(ind_ff(ind_if),iel) = elMat%fh(ind_ff(ind_if),iel) - kmultf
+#else
        ELSEIF (i == 5) THEN
           DO j = 1,Neq
              ind_jf = ind_asf + j
              DO k = 1,Ndim
                 ind_kf = k + (j - 1)*Ndim + ind_ash
-                kmult = (Dpn*Taupn(k,j) + dDpn_dU(j)*gmpn(k))*NNif*(n(k) - bn*b(k)) 
-                !kmult = kmult - Gammaredpn*(Dpn*Taui(k,j) + dDpn_dU(j)*gmipn(k))*n(k)*NNif 
+                kmult = (Dpn*Taupn(k,j) + dDpn_dU(j)*gmpn(k))*GammaLim*n(k)*NNif 
                 elMat%Aul(ind_fe(ind_if),ind_ff(ind_jf),iel) = elMat%Aul(ind_fe(ind_if),ind_ff(ind_jf),iel) - kmult
                 elMat%All(ind_ff(ind_if),ind_ff(ind_jf),iel) = elMat%All(ind_ff(ind_if),ind_ff(ind_jf),iel) - kmult
-                kmult = Dpn*Vpn(j)*NNif*(n(k) - bn*b(k))
-                !kmult = kmult - Gammaredpn*Dpn*Vveci(j)*n(k)*NNif
-                !IF (j == 5) THEN
-                !   kmult = kmult + Dnn*n(k)*NNif
-                !END IF 
+                kmult = Dpn*Vpn(j)*GammaLim*n(k)*NNif
                 elMat%Auq(ind_fe(ind_if),ind_fg(ind_kf),iel) = elMat%Auq(ind_fe(ind_if),ind_fg(ind_kf),iel) - kmult
                 elMat%Alq(ind_ff(ind_if),ind_fg(ind_kf),iel) = elMat%Alq(ind_ff(ind_if),ind_fg(ind_kf),iel) - kmult
              END DO
           END DO
-          kmultf = dot_product(dDpn_dU,uf)*(gmpn(1)*(n(1) - bn*b(1)) + gmpn(2)*(n(2) - bn*b(2)))*Nif              
-          !kmultf = kmultf - Gammaredpn*(Dpn*(dot_product(Taui(1,:),uf)*n(1) + dot_product(Taui(2,:),uf)*n(2)) + dot_product(dDpn_dU,uf)*(gmipn(1)*n(1) + gmipn(2)*n(2)))*Nif             
+          kmultf = dot_product(dDpn_dU,uf)*(gmpn(1)*n(1) + gmpn(2)*n(2))*GammaLim*Nif              
           elMat%S(ind_fe(ind_if),iel) = elMat%S(ind_fe(ind_if),iel) - kmultf
           elMat%fh(ind_ff(ind_if),iel) = elMat%fh(ind_ff(ind_if),iel) - kmultf 
 #endif
@@ -3047,6 +3008,7 @@ CONTAINS
           kmultf = Etan*(dot_product(TauGamman(1,:),uf)*n(1) + dot_product(TauGamman(2,:),uf)*n(2))*Nif
           elMat%S(ind_fe(ind_if),iel) = elMat%S(ind_fe(ind_if),iel) - kmultf
           elMat%fh(ind_ff(ind_if),iel) = elMat%fh(ind_ff(ind_if),iel) - kmultf
+#endif
 #endif                                                                           
        END IF
 #endif
@@ -3110,9 +3072,12 @@ CONTAINS
       real*8                    :: Vvece(Neq),dV_dUe(Neq,Neq),Alphae,dAlpha_dUe(Neq),gme,taue(Ndim,Neq)
       real*8                    :: W3(Neq), dW3_dU(Neq,Neq), QdW3(Ndim,Neq)
       real*8                    :: W4(Neq), dW4_dU(Neq,Neq), QdW4(Ndim,Neq)
+#ifdef NEUTRAL
+      real*8                    :: dDnn_dU(Neq)
+#endif
 #ifdef NEUTRALP
-      real*8                    :: Dnn,Dpn,GammaLim,Alphanp,Betanp,Gammaredpn,Tmin
-      real*8                    :: Anp(Neq),Vpn(Neq),dVpn_dU(Neq,Neq),gmpn(Ndim),gmipn(Ndim),Taupn(Ndim,Neq),dDpn_dU(Neq)
+      real*8                    :: Dpn,GammaLim
+      real*8                    :: Vpn(Neq),dVpn_dU(Neq,Neq),gmpn(Ndim),Taupn(Ndim,Neq),dDpn_dU(Neq)
 #endif
 #ifdef NEUTRALGAMMA
       real*8                    :: Etan,fGammaN
@@ -3174,7 +3139,13 @@ CONTAINS
       gme = dot_product(matmul(Qpr,Vvece),b)
       Taui = matmul(Qpr,dV_dUi)               ! 2x3
       Taue = matmul(Qpr,dV_dUe)               ! 2x3
-#ifdef NEUTRALP
+
+      ! Neutral model
+#ifdef NEUTRAL
+#ifndef NEUTRALP
+      ! Linarization Dnn
+      call compute_dDnn_dU(uf,dDnn_dU)
+#else
       ! Compute Vpn(U^(k-1))
       CALL computeVpn(uf,Vpn)
       gmpn = matmul(Qpr,Vpn)                       ! Ndim x 1
@@ -3185,39 +3156,9 @@ CONTAINS
       CALL computeDpn(uf,Qpr,Vpn,Dpn)
       ! Compute dDpn_dU(U^(k-1))
       CALL compute_dDpn_dU(uf,Qpr,Vpn,dDpn_dU)
-      ! Reduce Grad Pn for low collision regime 
-      ! Threshold set at 0.5xGradPn for Ti = 0.2 eV 
-      !Gammaredpn = 1.
-      !Tmin = 0.2/simpar%refval_temperature
-      !IF (Tmin/upf(7) .le. 1.) Gammaredpn = Gammaredpn*Tmin/upf(7)
-      !Dnn = Gammaredpn*(simpar%refval_time**2/simpar%refval_length**2*simpar%refval_charge*simpar%refval_temperature/simpar%refval_mass)*upf(7)*Dpn 
-      ! Comput Gammaredpn(U^(k-1))
-      !CALL computeGammared(uf,Gammaredpn)
-      !gmipn = matmul(Qpr,Vveci)
-      !CALL computeGammaLim(ue,Qpr,Vpn,GammaLim)
-      ! Set Grad Ti = 0. for low collision regime 
-      ! (back to diffusion equation for neutral density)
-      !CALL computeAlphaCoeff(uf,Qpr,Vpn,Alphanp)  
-      !CALL computeBetaCoeff(uf,Qpr,Vpn,Betanp)  
-      !Dpn = Alphanp*Dpn
-      !dDpn_dU = Alphanp*dDpn_dU
-      !Dnn = Betanp*(simpar%refval_time**2/simpar%refval_length**2*simpar%refval_charge*simpar%refval_temperature/simpar%refval_mass)*upf(7)*Dpn      
-      !IF (Dnn .gt. phys%diff_nn) Dnn = phys%diff_nn    
-      !IF (Dpn .gt. phys%diff_nn) THEN
-      ! Dpn = Alphanp*Dpn !0.
-      ! dDpn_dU = Alphanp*dDpn_dU !0.
-      ! Dnn = Betanp*(simpar%refval_time**2/simpar%refval_length**2*simpar%refval_charge*simpar%refval_temperature/simpar%refval_mass)*upf(7)*phys%diff_nn
-      ! END IF  
-      ! Set Gamma Convective = cs_n*n_n for low collision regime 
-      !IF (Dpn .gt. phys%diff_nn) THEN
-      !   Dpn = 0.
-      !   dDpn_dU = 0.
-      !   CALL jacobianMatricesNP(uf,Anp)
-      !ELSE
-      !   Anp = 0.
-      !END IF   
+      ! Compute flux limiter
+      CALL computeGammaLim(uf,Qpr,Vpn,GammaLim)
 #endif
-
 #ifdef NEUTRALGAMMA
     ! Viscosity term
     CALL computeEtan(uf,Etan)
@@ -3227,7 +3168,7 @@ CONTAINS
     gmGamman = matmul(Qpr,Vun)
     TauGamman = matmul(Qpr,dVun_dU)
 #endif
-
+#endif   ! Neutral model
 #endif
 
       ! Assembly local matrix
@@ -3351,20 +3292,7 @@ END IF
           DO j = 1,Neq
             ind_jf = ind_asf + j
             kmult = bn*A(i,j)*NNif
-!#ifdef NEUTRALP
-!            IF (i == 5) kmult = kmult + bn*Anp(j)*NNif
-!#endif
             elMat%Aul(ind_fe(ind_if),ind_ff(ind_jf),iel) = elMat%Aul(ind_fe(ind_if),ind_ff(ind_jf),iel) + kmult
-!#ifdef TEMPERATURE
-!#ifdef NEUTRAL
-!            !X component neutral convective velocity
-!            kmult = n(1)*Ax(i,j)*NNif
-!            elMat%Aul(ind_fe(ind_if),ind_ff(ind_jf),iel) = elMat%Aul(ind_fe(ind_if),ind_ff(ind_jf),iel) - kmult
-!            !Y component neutral convective velocity
-!            kmult = n(2)*Ay(i,j)*NNif
-!            elMat%Aul(ind_fe(ind_if),ind_ff(ind_jf),iel) = elMat%Aul(ind_fe(ind_if),ind_ff(ind_jf),iel) - kmult
-!#endif
-!#endif
           END DO ! j-loop
           ! Pinch Contribution
           elMat%Aul(ind_fe(ind_if),ind_ff(ind_if),iel) = elMat%Aul(ind_fe(ind_if),ind_ff(ind_if),iel) + (APinch(i,1)*n(1) + APinch(i,2)*n(2))*NNif
@@ -3416,25 +3344,31 @@ END IF
           END DO
           kmultf = coefe*Alphae*(dot_product(matmul(transpose(Taue),b),uf))*Nfbn
           elMat%S(ind_fe(ind_if),iel) = elMat%S(ind_fe(ind_if),iel) - kmultf
-#ifdef NEUTRALP
+#ifdef NEUTRAL
+#ifndef NEUTRALP
+          ELSEIF (i == 5) THEN
+             DO j=1,Neq
+                ind_jf = ind_asf+j
+                DO k = 1,Ndim
+                   kmult = dDnn_dU(j)*Qpr(k,i)*n(k)*NNif
+                   elMat%Aul(ind_fe(ind_if),ind_ff(ind_jf),iel) = elMat%Aul(ind_fe(ind_if),ind_ff(ind_jf),iel) - kmult
+                END DO
+             END DO
+             kmultf = dot_product(dDnn_dU,uf)*(Qpr(1,i)*n(1)+Qpr(2,i)*n(2))*Nif
+             elMat%S(ind_fe(ind_if),iel) = elMat%S(ind_fe(ind_if),iel) - kmultf
+#else
        ELSEIF (i == 5) THEN
           DO j = 1,Neq
              ind_jf = ind_asf + j
              DO k = 1,Ndim
                 ind_kf = k + (j - 1)*Ndim + ind_ash
-                kmult = (Dpn*Taupn(k,j) + dDpn_dU(j)*gmpn(k))*NNif*(n(k) - bn*b(k)) 
-                !kmult = kmult - Gammaredpn*(Dpn*Taui(k,j) + dDpn_dU(j)*gmipn(k))*n(k)*NNif 
+                kmult = (Dpn*Taupn(k,j) + dDpn_dU(j)*gmpn(k))*GammaLim*n(k)*NNif
                 elMat%Aul(ind_fe(ind_if),ind_ff(ind_jf),iel) = elMat%Aul(ind_fe(ind_if),ind_ff(ind_jf),iel) - kmult
-                kmult = Dpn*Vpn(j)*NNif*(n(k) - bn*b(k))
-                !kmult = kmult - Gammaredpn*Dpn*Vveci(j)*n(k)*NNif
-                !IF (j == 5) THEN
-                !   kmult = kmult + Dnn*n(k)*NNif
-                !END IF
+                kmult = Dpn*Vpn(j)*GammaLim*n(k)*NNif
                 elMat%Auq(ind_fe(ind_if),ind_fg(ind_kf),iel) = elMat%Auq(ind_fe(ind_if),ind_fg(ind_kf),iel) - kmult
              END DO
           END DO
-          kmultf = dot_product(dDpn_dU,uf)*(gmpn(1)*(n(1) - bn*b(1)) + gmpn(2)*(n(2) - bn*b(2)))*Nif        
-          !kmultf = kmultf - Gammaredpn*(Dpn*(dot_product(Taui(1,:),uf)*n(1) + dot_product(Taui(2,:),uf)*n(2)) + dot_product(dDpn_dU,uf)*(gmipn(1)*n(1) + gmipn(2)*n(2)))*Nif                             
+          kmultf = dot_product(dDpn_dU,uf)*(gmpn(1)*n(1) + gmpn(2)*n(2))*GammaLim*Nif        
           elMat%S(ind_fe(ind_if),iel) = elMat%S(ind_fe(ind_if),iel) - kmultf
 #endif
 #ifdef NEUTRALGAMMA
@@ -3454,6 +3388,7 @@ END IF
           !kmultf = Etan*dot_product(matmul(transpose(TauGamman),n),uf)*Nif
           kmultf = Etan*(dot_product(TauGamman(1,:),uf)*n(1) + dot_product(TauGamman(2,:),uf)*n(2))*Nif
           elMat%S(ind_fe(ind_if),iel) = elMat%S(ind_fe(ind_if),iel) - kmultf
+#endif
 #endif
       END IF
 #endif

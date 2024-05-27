@@ -251,6 +251,19 @@ MODULE types
     real*8          :: ME_diff_u
     real*8          :: ME_diff_e
     real*8          :: ME_diff_ee
+#ifdef EXPANDEDCX
+#ifdef AMJUELCX
+    real*8, dimension(9):: alpha_cx       ! Coefficients for charge exchange coefficients spline
+#endif
+#ifdef THERMALCX
+    real*8, dimension(5):: alpha_cx       ! Coefficients for charge exchange coefficients spline
+#endif
+#endif
+#ifdef AMJUELSPLINES
+    ! Atomic rates coefficients
+    real*8, dimension(9,9):: alpha_iz     ! Coefficients for ionization coefficients spline from EIRENE, (te,ne) grid
+    real*8, dimension(9,9):: alpha_rec     ! Coefficients for recompination coefficients spline from EIRENE, (te,ne) grid
+#endif
   END TYPE Physics_type
 
   !*******************************************************
@@ -294,6 +307,7 @@ MODULE types
     logical :: driftexb ! Set to TRUE to consider ExB drift
     logical :: steady
     logical :: time_init ! true if it is a time initialization simulation. The time counter "it" does not increment  (i.e. when the analitical initialisation is not good enough). Used for moving equilibrium (case 59)
+    integer :: pinch    ! 0-no Pinch; 1-ad hoc pinch profile; 2-collisionless pinch
     integer :: init     ! 1-init. analy. solution at nodes; 2-L2 projection
     ! Set to TRUE for a steady state computation
     ! Set to FALSE for a transient computation
