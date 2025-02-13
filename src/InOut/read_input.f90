@@ -42,8 +42,8 @@ SUBROUTINE READ_input()
   integer     :: nbCoils_rmp,  parite, nbRow, nbCoils_ripple
 
   ! Neutral and Ohmic heating
-  logical     :: OhmicSrc
-  real*8      :: Pohmic,diff_nn,Re,puff,puff_slope
+  logical     :: OhmicSrc, Kotov
+  real*8      :: Pohmic,diff_nn,Re,puff,puff_slope,cryopump
   
   ! Moving Equilibrium
   logical     :: ME
@@ -52,14 +52,14 @@ SUBROUTINE READ_input()
   integer     :: pinch
 
   ! Defining the variables to READ from the file
-  NAMELIST /SWITCH_LST/ steady, time_init, axisym, init, driftdia, driftexb, testcase, OhmicSrc, ME, pinch, RMP, Ripple, psdtime, diffred, diffmin, &
+  NAMELIST /SWITCH_LST/ steady, time_init, axisym, init, driftdia, driftexb, testcase, OhmicSrc, ME, pinch, Kotov, RMP, Ripple, psdtime, diffred, diffmin, &
     & shockcp, limrho, difcor, thresh, filter, decoup, ckeramp, saveNR, saveTau, fixdPotLim, dirivortcore,dirivortlim, convvort,pertini,&
     & logrho,bxgradb
   NAMELIST /NUMER_LST/ tau,nrp,tNR,tTM,div,sc_coe,sc_sen,minrho,so_coe,df_coe,dc_coe,thr,thrpre,stab,dumpnr,ntor,ptor,tmax,npartor,bohmtypebc,exbdump
   NAMELIST /GEOM_LST/ R0, q
   NAMELIST /MAGN_LST/ amp_rmp,nbCoils_rmp,torElongCoils_rmp,parite,nbRow,amp_ripple,nbCoils_ripple,triang,ellip ! RMP and Ripple
   NAMELIST /TIME_LST/ dt0, nts, tfi, tsw, tis
-  NAMELIST /PHYS_LST/ diff_n, diff_u, diff_e, diff_ee, diff_vort, v_p, diff_nn, Re, puff,puff_slope, density_source, ener_source_e, ener_source_ee, sigma_source, fluxg_trunc, part_source,ener_source, Pohmic, Tbg, bcflags, bohmth,&
+  NAMELIST /PHYS_LST/ diff_n, diff_u, diff_e, diff_ee, diff_vort, v_p, diff_nn, Re, puff, puff_slope, cryopump, density_source, ener_source_e, ener_source_ee, sigma_source, fluxg_trunc, part_source,ener_source, Pohmic, Tbg, bcflags, bohmth,&
     &Gmbohm, Gmbohme, a, Mref, tie, diff_pari, diff_pare, diff_pot, epn, etapar, Potfloat,diagsource
   NAMELIST /UTILS_LST/ PRINTint, dotiming, freqdisp, freqsave
   NAMELIST /LSSOLV_LST/ sollib, lstiming, itmax, itrace, rest, istop, tol, kmethd, ptype,&
@@ -93,6 +93,7 @@ SUBROUTINE READ_input()
   switch%ohmicsrc         = OhmicSrc
   switch%ME               = ME
   switch%pinch            = pinch
+  switch%Kotov            = Kotov
   switch%RMP              = RMP
   switch%Ripple           = Ripple
   switch%psdtime          = psdtime
@@ -161,6 +162,7 @@ SUBROUTINE READ_input()
   phys%Re                 = Re
   phys%puff               = puff
   phys%puff_slope         = puff_slope
+  phys%cryopump           = cryopump
   phys%density_source     = density_source
   phys%ener_source_e      = ener_source_e
   phys%ener_source_ee     = ener_source_ee
@@ -324,12 +326,14 @@ SUBROUTINE READ_input()
     PRINT *, '                - perp. diffusion in the potential equation:          ', phys%diff_pot
 #endif
 #ifdef NEUTRAL
+    PRINT *, '                - Kotov model for Neutral-Neutral collisions          ', switch%Kotov    
     PRINT *, '                - diffusion in the neutral equation:                  ', phys%diff_nn
     PRINT *, '                - recycling coefficient in the neutral equation:      ', phys%Re
     PRINT *, '                - puff coefficient in the neutral equation:           ', phys%puff
     if (switch%ME) then
        PRINT *, '             - puff increment slope:                               ', phys%puff_slope
     endif 
+    PRINT *, '                - cryopump speed:                                     ', phys%cryopump
     PRINT *, '                - particle source at core:                            ', part_source
     PRINT *, '                - energy source at core:                              ', ener_source
 #endif

@@ -63,7 +63,8 @@ CONTAINS
 
     CASE (70:79)
       ! Magnetic field loaded from file in the mesh nodes
-      CALL load_magnetic_field_nodes
+      !CALL load_magnetic_field_nodes
+      CALL load_magnetic_field_grid
 
     CASE (80:89)
       ! Magnetic field loaded from file in a cartesian grid
@@ -214,8 +215,8 @@ CONTAINS
     ! Read file
     if (switch%testcase>=50 .and. switch%testcase<60) then
        ! WEST case
-				   ! Dimensions of the file storing the magnetic field for West
-				   ip = 457
+       ! Dimensions of the file storing the magnetic field for West
+       ip = 457
        jp = 457
        !ip = 541
        !jp = 391 
@@ -239,6 +240,24 @@ CONTAINS
           write(6,*) 'Magnetic field loaded from file: ', trim(adjustl(fname))
         ENDIF
         CALL HDF5_open(fname, file_id, IERR)
+    elseif (switch%testcase>=70 .and. switch%testcase<80) then
+        ! SPARC case                                                                                                                                        
+        if (switch%ME .eq. .FALSE.) then !if not a moving equilibrium simulation                                                                                  
+            !fname = 'SPARC_1791.h5'
+            fname = 'SPARC_91003_0000.h5'
+        else
+            fname = 'B_field_exp/SPARC_91003'
+            write(nit, "(i10)") int(time%it + 1)
+            nit = trim(adjustl(nit))
+            k = INDEX(nit, " ") -1
+            fname = trim(adjustl(fname))//'_'//REPEAT("0", 4 - k)//trim(ADJUSTL(nit))//'.h5'
+        endif
+        IF (MPIvar%glob_id .eq. 0) THEN
+          write(6,*) 'Magnetic field loaded from file: ', trim(adjustl(fname))
+        ENDIF
+        CALL HDF5_open(fname, file_id, IERR)
+        CALL HDF5_integer_reading(file_id, ip, 'ip')
+        CALL HDF5_integer_reading(file_id, jp, 'jp')
     elseif (switch%testcase>=80 .and. switch%testcase<90) then
         ! ITER case
     		  if (switch%ME .eq. .FALSE.) then !if not a moving equilibrium simulation
@@ -291,6 +310,8 @@ CONTAINS
     ALLOCATE (yvec(ip))
     xvec = r2D(1, :)
     yvec = z2D(:, 1)
+    !WRITE(6,*) 'xvec = ', xvec*phys%lscale
+    !WRITE(6,*) 'yvec = ', yvec*phys%lscale
     DO i = 1, Mesh%Nnodes
       x = Mesh%X(i, 1)
       y = Mesh%X(i, 2)
@@ -860,7 +881,25 @@ CONTAINS
           write(6,*) 'Toroidal current loaded from file: ', trim(adjustl(fname))
         ENDIF
         CALL HDF5_open(fname, file_id, IERR)
-    elseif (switch%testcase>=80 .and. switch%testcase<90) then
+     elseif (switch%testcase>=70 .and. switch%testcase<80) then
+        ! SPARC case                                                                                                                                         
+        if(switch%ME .eq. .FALSE.) then !if not a moving equilibrium simulation                                                                        
+          !fname = 'SPARC_1791_Jtor.h5'
+          fname = 'SPARC_91003_Jtor_0000.h5'
+        else
+          fname = 'B_field_exp/SPARC_91003_Jtor'
+          write(nit, "(i10)") int(time%it + 1)
+          nit = trim(adjustl(nit))
+          k = INDEX(nit, " ") -1
+          fname = trim(adjustl(fname))//'_'//REPEAT("0", 4 - k)//trim(ADJUSTL(nit))//'.h5'
+        endif
+        IF (MPIvar%glob_id .eq. 0) THEN
+          write(6,*) 'Toroidal current loaded from file: ', trim(adjustl(fname))
+        ENDIF
+        CALL HDF5_open(fname, file_id, IERR)
+        CALL HDF5_integer_reading(file_id, ip, 'ip')
+        CALL HDF5_integer_reading(file_id, jp, 'jp')
+     elseif (switch%testcase>=80 .and. switch%testcase<90) then
         ! ITER case
     		if(switch%ME .eq. .FALSE.) then !if not a moving equilibrium simulation
     	    !fname = 'ITER_2008_MagField.h5'
@@ -1084,7 +1123,7 @@ CONTAINS
     integer(HID_T)    :: file_id
     integer           :: qp, Nn2D
     integer           :: T(Mesh%Nelems,refElPol%Nnodes2D) 
-    real*8            :: lower, upper, nli, n_Gw, n_la, nlit, nslope, pi = 3.1416, a = 2.
+    real*8            :: lower, upper, nli, n_Gw, n_la, nlit, nslope, pi = 3.1416, a, Af
     real*8            :: X(Mesh%Nnodes,2), u(Mesh%Nelems*refElPol%Nnodes2D,phys%Neq)
     real*8            :: Y_min, Y_max, linex(1000), liney(1000), n_i(Mesh%Nelems*refElPol%Nnodes2D)
 
@@ -1103,6 +1142,84 @@ CONTAINS
        ENDIF
        CALL HDF5_close(file_id)
     END IF
+
+    ! SPARC puff: linear increase to nli = puff_slope
+     IF (switch%testcase .ge. 70 .and. switch%testcase .le. 79) THEN
+        ! Puff feedback: check if central line integrated has reached the target value                                                                
+        qp = size(linex)
+        Nn2D = refElPol%Nnodes2D
+        X = mesh%X
+        T = mesh%T
+        a = 0.57
+        nli = 0.
+        lower = minval(Mesh%X(:,1))
+        upper = maxval(Mesh%X(:,1))
+        linex = (/(lower + (upper - lower)/1000.*(i-1), i=1, 1000)/)
+        liney = 0./phys%lscale
+        Y_max = liney(1)
+        Y_min = liney(1)
+        u = transpose(reshape(sol%u,[phys%Neq,size(sol%u)/phys%Neq]))
+        n_i = u(:,1)
+#ifdef PARALL
+        ! Check in the case of horizontal partition to not waste time                                                                                                     
+        IF (maxval(Mesh%X(:,2)) .gt. liney(1) .and. minval(Mesh%X(:,2)) .lt. liney(1) ) THEN
+           ! Double check if maxval or minval are ghost points                                                        
+           DO iel=1, Mesh%Nelems
+              IF (Mesh%ghostElems(iel) .eq. 0) THEN
+                 Y_max = max(maxval(Mesh%X(Mesh%T(iel,:),2)),Y_max)
+                 Y_min = min(minval(Mesh%X(Mesh%T(iel,:),2)),Y_min)
+              END IF
+           END DO
+           IF (Y_max .gt. liney(1) .and. Y_min .lt. liney(1)) THEN                                         
+              CALL lineintegration(qp, linex, liney, n_i, X, T, Nn2D, nli)
+              !WRITE(6,*) 'Y max = ', Y_max
+              !WRITE(6,*) 'Y min = ', Y_min
+              !WRITE(6,*) 'nli = ', nli
+           END IF
+        END IF
+        CALL MPI_ALLREDUCE(MPI_IN_PLACE, nli, 1, MPI_REAL8, MPI_MAX, MPI_COMM_WORLD, ierr)
+        n_la = nli/(2.43 - 1.269)*simpar%refval_density
+        IF (MPIvar%glob_id .eq. 0) THEN
+           WRITE(6,*) 'nli = ', nli, 'E+19 [m^-2]'
+           WRITE(6,*) 'n_la = ', n_la, '[m^-3]'
+        END IF
+#else
+        CALL lineintegration(qp, linex, liney, n_i, X, T, Nn2D, nli)
+        n_la = nli/(2.43 - 1.269)*simpar%refval_density
+        WRITE(6,*) 'nli = ', nli, 'E+19 [m^-2]'
+        WRITE(6,*) n_la, '[m^-3]'
+#endif
+        ! Upgrade puff                                                                                                                                                     
+        n_Gw = phys%I_p/(pi*a**2)*10.*simpar%refval_density
+        phys%n_li(time%it+1) = nli
+        nlit = phys%n_li(1) + (phys%puff_slope/simpar%refval_density - phys%n_li(1))/(8.55 - 0.5)*(phys%I_p - 0.5)
+        phys%n_lit(time%it+1) =  nlit
+        IF (time%it .eq. 0) THEN
+           !phys%puff_exp(time%it+1) = max(sign(1.,1. - nli/nlit)*100.*simpar%refval_density*abs(nlit - nli), 0., 1.e20)
+           phys%puff_exp(time%it+1) = phys%puff + sign(1.,1. - nli/nlit)*60.*simpar%refval_density*abs(nlit - nli)
+           phys%puff = phys%puff_exp(time%it+1)
+        ELSE
+           IF (phys%I_p .lt. 8.5) THEN
+              !WRITE(6,*) phys%n_li(time%it+1)
+              !WRITE(6,*) phys%n_li(time%it)
+              !WRITE(6,*) phys%n_lit(time%it+1)
+              !WRITE(6,*) phys%n_lit(time%it)
+              nslope = (phys%n_li(time%it+1) - phys%n_li(time%it))/(phys%n_lit(time%it+1) - phys%n_lit(time%it))
+              Af = sign(1.,phys%n_lit(time%it+1) - phys%n_lit(time%it))
+           ELSE
+              nslope =  phys%n_li(time%it+1)/phys%n_li(time%it) ! (phys%n_li(time%it+1) - phys%n_li(time%it))/(phys%n_li(time%it) - phys%n_li(time%it-1))
+              Af = 20.
+           END IF
+           !WRITE(6,*) 'nslope = ', nslope
+           phys%puff_exp(time%it+1) = max(phys%puff_exp(time%it) + sign(1.,1. - nli/nlit)*60.*simpar%refval_density*abs(nlit - nli) + 15.*Af*simpar%refval_density*(1 - nslope), 0.)
+           phys%puff = phys%puff_exp(time%it+1)
+       END IF
+       IF (MPIvar%glob_id .eq. 0) THEN
+               WRITE(6,*) 'nlit = ', nlit, 'E+19 [m^-2]'
+         WRITE (6, '(" * Puff = ", E10.3, 27X, " *")')  phys%puff
+       END IF
+    END IF
+
     
     ! ITER puff: linear increase up to nli = 4.00E+19
     IF (switch%testcase .ge. 80 .and. switch%testcase .le. 89) THEN

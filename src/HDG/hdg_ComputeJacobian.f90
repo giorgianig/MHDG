@@ -1260,7 +1260,7 @@ CONTAINS
 #endif
 
    IF (MPIvar%glob_id.eq.0) THEN
-     if(switch%ME .eq. .TRUE. .AND. switch%testcase .ge. 80) then
+     if(switch%ME .eq. .TRUE. ) then
         WRITE(6,*) 'D_n = ', phys%ME_diff_n*simpar%refval_length**2/simpar%refval_time
         WRITE(6,*) 'D_e = ', phys%ME_diff_e*simpar%refval_length**2/simpar%refval_time
         WRITE(6,*) 'Max v_p = ', phys%v_pmax*simpar%refval_speed
@@ -1332,7 +1332,7 @@ CONTAINS
     real*8                        :: diff_iso_vol(Neq,Neq,Ng2d),diff_ani_vol(Neq,Neq,Ng2d)
     real*8,allocatable            :: Auq(:,:,:),Auu(:,:,:),rhs(:,:)
     real*8                        :: auxdiffsc(Ng2d)
-    real*8                        :: Pi,sigma,sigmax,sigmay,x0,y0,A,r
+    real*8                        :: Pi,sigma,sigmax,sigmay,x0,y0,A,A_i,A_e,r
     real*8                        :: th_n = 1.e-14
     real*8                        :: Vnng(Ndim)
     real*8                        :: it0_ECRH,dt_ECRH
@@ -1392,7 +1392,7 @@ CONTAINS
     qeg = matmul(refElPol%N2D,qe)
 
     ! Compute diffusion at Gauss points
-    CALL setLocalDiff(xy,ueg,qeg,diff_iso_vol,diff_ani_vol)
+    CALL setLocalDiff(xy,ueg,qeg,Psig,diff_iso_vol,diff_ani_vol)
     if (save_tau) then
        diff_nn_Vol_el = diff_iso_vol(5,5,:)
     endif
@@ -1511,16 +1511,18 @@ CONTAINS
                 it0_ECRH = 200
                 dt_ECRH = simpar%refval_time*time%dt*(time%it - it0_ECRH) + simpar%refval_time*time%dt
                 IF (dt_ECRH .le. 5) THEN
-                   A = 1./(2.*Pi*0.5*sigma**2.)/(2.*Pi*x0)*phys%ener_source_ee*(dt_ECRH/5)*simpar%refval_time/simpar%refval_specenergydens/simpar%refval_mass
+                   A_e = 1./(2.*Pi*0.5*sigma**2.)/(2.*Pi*x0)*phys%ener_source_ee*(dt_ECRH/5)*simpar%refval_time/simpar%refval_specenergydens/simpar%refval_mass
                 ELSE
-                   A = 1./(2.*Pi*0.5*sigma**2.)/(2.*Pi*x0)*phys%ener_source_ee*simpar%refval_time/simpar%refval_specenergydens/simpar%refval_mass
+                   A_e = 1./(2.*Pi*0.5*sigma**2.)/(2.*Pi*x0)*phys%ener_source_ee*simpar%refval_time/simpar%refval_specenergydens/simpar%refval_mass
                 END IF
              ELSE
-                A = 1./(2.*Pi*0.5*sigma**2.)/(2.*Pi*x0)*phys%ener_source_ee*simpar%refval_time/simpar%refval_specenergydens/simpar%refval_mass
+                A_i = 1./(2.*Pi*0.5*sigma**2.)/(2.*Pi*x0)*phys%ener_source_e*simpar%refval_time/simpar%refval_specenergydens/simpar%refval_mass
+                A_e = 1./(2.*Pi*0.5*sigma**2.)/(2.*Pi*x0)*phys%ener_source_ee*simpar%refval_time/simpar%refval_specenergydens/simpar%refval_mass
              END IF
              ! ECRH source 
 #ifdef TEMPERATURE
-             force(g,4) = A*exp(-((xy(g,1)*phys%lscale - x0)**2)/(2*(0.5*sigma)**2) - ((xy(g,2)*phys%lscale - 0.5)**2)/(2*sigma**2))
+             force(g,3) = A_i*exp(-((xy(g,1)*phys%lscale - x0)**2)/(2*(0.5*sigma)**2) - ((xy(g,2)*phys%lscale - 0.5)**2)/(2*sigma**2))
+             force(g,4) = A_e*exp(-((xy(g,1)*phys%lscale - x0)**2)/(2*(0.5*sigma)**2) - ((xy(g,2)*phys%lscale - 0.5)**2)/(2*sigma**2))
 #endif
            ELSE IF (switch%testcase == 88) THEN
              ! NBI source
@@ -1728,7 +1730,7 @@ CONTAINS
     qfg = matmul(refElPol%N1D,qef)
 
     ! Compute diffusion at faces Gauss points
-    CALL setLocalDiff(xyf,uefg,qfg,diff_iso_fac,diff_ani_fac)
+    CALL setLocalDiff(xyf,uefg,qfg,Psig,diff_iso_fac,diff_ani_fac)
     if (save_tau) then
        indsave = (ifa - 1)*Ngauss + (/(i,i=1,Ngauss)/)
        diff_nn_Fac_el(indsave) = diff_iso_fac(5,5,:)
@@ -1775,7 +1777,7 @@ CONTAINS
         ! Non constant stabilization
         ! Compute tau in the Gauss points
         IF (numer%stab < 6) THEN
-          CALL computeTauGaussPoints(upgf(g,:),ufg(g,:),qfg(g,:),b(g,:),n_g,iel,ifa,0.,xyf(g,:),tau)
+          CALL computeTauGaussPoints(upgf(g,:),ufg(g,:),qfg(g,:),b(g,:),psig(g),n_g,iel,ifa,0.,xyf(g,:),tau)
         ELSE
           CALL computeTauGaussPoints_matrix(upgf(g,:),ufg(g,:),b(g,:),n_g,xyf(g,:),0.,iel,tau)
         ENDIF
@@ -1881,7 +1883,7 @@ CONTAINS
     qfg = matmul(refElPol%N1D,qef)
 
     ! Compute diffusion at faces Gauss points
-    CALL setLocalDiff(xyf,uefg,qfg,diff_iso_fac,diff_ani_fac)
+    CALL setLocalDiff(xyf,uefg,qfg,Psig,diff_iso_fac,diff_ani_fac)
     if (save_tau) then
        indsave = (ifa -1)*Ngauss + (/(i,i=1,Ngauss)/)
        diff_nn_Fac_el(indsave) = diff_iso_fac(5,5,:)
@@ -1930,7 +1932,7 @@ CONTAINS
         ! Non constant stabilization
         ! Compute tau in the Gauss points
         IF (numer%stab < 6) THEN
-          CALL computeTauGaussPoints(upgf(g,:),ufg(g,:),qfg(g,:),b(g,:),n_g,iel,ifa,isext,xyf(g,:),tau)
+          CALL computeTauGaussPoints(upgf(g,:),ufg(g,:),qfg(g,:),b(g,:),Psig(g),n_g,iel,ifa,isext,xyf(g,:),tau)
         ELSE
           CALL computeTauGaussPoints_matrix(upgf(g,:),ufg(g,:),b(g,:),n_g,xyf(g,:),isext,iel,tau)
         ENDIF
@@ -2102,8 +2104,8 @@ CONTAINS
     real*8                    :: dniz_dU(Neq),dnrec_dU(Neq),dfGammacx_dU(Neq),dfGammarec_dU(Neq)
 #ifdef TEMPERATURE
     real*8                    :: dDnn_dU(Neq)
-    real*8                    :: sigmaviz,sigmavrec,sigmavcx,Tloss,Tlossrec,fEiiz,fEirec,fEicx
-    real*8                    :: dsigmaviz_dU(Neq),dsigmavrec_dU(Neq),dsigmavcx_dU(Neq),dTloss_dU(Neq),dTlossrec_dU(Neq)
+    real*8                    :: sigmaviz,sigmavrec,sigmavcx,Tloss,Tlossrec,sigmavEiz,sigmavErec,fEiiz,fEirec,fEicx
+    real*8                    :: dsigmaviz_dU(Neq),dsigmavrec_dU(Neq),dsigmavcx_dU(Neq),dTloss_dU(Neq),dTlossrec_dU(Neq),dsigmavEiz_dU(Neq),dsigmavErec_dU(Neq)
     real*8                    :: dfEiiz_dU(Neq),dfEirec_dU(Neq),dfEicx_dU(Neq)
 #ifdef NEUTRALP
     real*8                    :: Dpn,GammaLim
@@ -2277,6 +2279,11 @@ CONTAINS
     call compute_dTloss_dU(ue,dTloss_dU)
     call compute_Tlossrec(ue,Tlossrec)
     call compute_dTlossrec_dU(ue,dTlossrec_dU)
+    !Amjuel energy losses
+    call compute_sigmavEiz(ue,sigmavEiz)
+    call compute_sigmavErec(ue,sigmavErec)
+    call compute_dsigmavEiz_dU(ue,dsigmavEiz_dU)
+    call compute_dsigmavErec_dU(ue,dsigmavErec_dU)
 #endif
 
     !Assembly the matrix for neutral sources
@@ -2284,11 +2291,11 @@ CONTAINS
 #ifdef NEUTRALGAMMA
      call assemblyNeutral(ue,niz,dniz_dU,nrec,dnrec_dU,sigmaviz,dsigmaviz_dU,sigmavrec,dsigmavrec_dU,&
       &fGammacx,dfGammacx_dU,fGammarec,dfGammarec_dU,fGammaN,dfGammaN_dU,sigmavcx,dsigmavcx_dU,fEiiz,&
-      &dfEiiz_dU,fEirec,dfEirec_dU,fEicx,dfEicx_dU,Tloss,dTloss_dU,Tlossrec,dTlossrec_dU,Sn,Sn0)
+      &dfEiiz_dU,fEirec,dfEirec_dU,fEicx,dfEicx_dU,Tloss,dTloss_dU,Tlossrec,dTlossrec_dU,sigmavEiz,dsigmavEiz_dU,sigmavErec,dsigmavErec_dU,Sn,Sn0)
 #else
     call assemblyNeutral(ue,niz,dniz_dU,nrec,dnrec_dU,sigmaviz,dsigmaviz_dU,sigmavrec,dsigmavrec_dU,&
       &fGammacx,dfGammacx_dU,fGammarec,dfGammarec_dU,sigmavcx,dsigmavcx_dU,fEiiz,&
-      &dfEiiz_dU,fEirec,dfEirec_dU,fEicx,dfEicx_dU,Tloss,dTloss_dU,Tlossrec,dTlossrec_dU,Sn,Sn0)
+      &dfEiiz_dU,fEirec,dfEirec_dU,fEicx,dfEicx_dU,Tloss,dTloss_dU,Tlossrec,dTlossrec_dU,sigmavEiz,dsigmavEiz_dU,sigmavErec,dsigmavErec_dU,Sn,Sn0)
 #endif
 #else
     call assemblyNeutral(ue,niz,dniz_dU,nrec,dnrec_dU,fGammacx,dfGammacx_dU,fGammarec,dfGammarec_dU,Sn,Sn0)
@@ -2437,6 +2444,10 @@ CONTAINS
                 DO k = 1,Ndim
                    !z = i+(k-1)*Neq+(j-1)*Neq*Ndim
                    Auu(:,:,z) =Auu(:,:,z) + (NxyzNi(:,:,k)*dDnn_dU(j)*Qpr(k,i))
+                   ! GradTi Q(k-1)*dVi_dU(U(k-1))
+                   !Auu(:,:,z) = Auu(:,:,z) + diffiso(5,5)/upe(7)*ue(5)*2./(3.*phys%Mref)*Taui(k,j)*NxyzNi(:,:,k)
+                   ! GradTi Vi(U(k-1))
+                   !Auq(:,:,i+(k-1)*Neq+(j-1)*Neq*Ndim) = Auq(:,:,i+(k-1)*Neq+(j-1)*Neq*Ndim) +  diffiso(5,5)/upe(7)*ue(5)*2./(3.*phys%Mref)*Vveci(j)*NxyzNi(:,:,k)
                 END DO
              END DO
              DO k = 1, Ndim
@@ -2963,8 +2974,15 @@ CONTAINS
              ind_jf = ind_asf+j
              DO k=1,Ndim
                 kmult = dDnn_dU(j)*Qpr(k,i)*n(k)*NNif
+                ! GradTi Q(k-1)*dVi_dU(U(k-1))
+                !kmult = kmult +  diffiso(5,5)/upf(7)*uf(5)*2./(3.*phys%Mref)*Taui(k,j)*n(k)*NNif
                 elMat%Aul(ind_fe(ind_if),ind_ff(ind_jf),iel)  = elMat%Aul(ind_fe(ind_if),ind_ff(ind_jf),iel) - kmult
                 elMat%All(ind_ff(ind_if),ind_ff(ind_jf),iel)  = elMat%All(ind_ff(ind_if),ind_ff(ind_jf),iel) - kmult
+                ! GradTi Vi(U(k-1))
+                !kmult =  diffiso(5,5)/upf(7)*uf(5)*2./(3.*phys%Mref)*Vveci(j)*n(k)*NNif
+                !ind_kf = k + (j - 1)*Ndim + ind_ash
+                !elMat%Auq(ind_fe(ind_if),ind_fg(ind_kf),iel) = elMat%Auq(ind_fe(ind_if),ind_fg(ind_kf),iel) - kmult
+                !elMat%Alq(ind_ff(ind_if),ind_fg(ind_kf),iel) = elMat%Alq(ind_ff(ind_if),ind_fg(ind_kf),iel) - kmult
              END DO
           END DO
           kmultf = dot_product(dDnn_dU,uf)*(Qpr(1,i)*n(1)+Qpr(2,i)*n(2))*Nif
@@ -3351,7 +3369,13 @@ END IF
                 ind_jf = ind_asf+j
                 DO k = 1,Ndim
                    kmult = dDnn_dU(j)*Qpr(k,i)*n(k)*NNif
+                   ! GradTi Q(k-1)*dVi_dU(U(k-1))                                                                                                           
+                   !kmult = kmult +  diffiso(5,5)/upf(7)*uf(5)*2./(3.*phys%Mref)*Taui(k,j)*n(k)*NNif
                    elMat%Aul(ind_fe(ind_if),ind_ff(ind_jf),iel) = elMat%Aul(ind_fe(ind_if),ind_ff(ind_jf),iel) - kmult
+                   ! GradTi Vi(U(k-1))    
+                   !kmult =  diffiso(5,5)/upf(7)*uf(5)*2./(3.*phys%Mref)*Vveci(j)*n(k)*NNif
+                   !ind_kf = k + (j - 1)*Ndim + ind_ash
+                   !elMat%Auq(ind_fe(ind_if),ind_fg(ind_kf),iel) = elMat%Auq(ind_fe(ind_if),ind_fg(ind_kf),iel) - kmult
                 END DO
              END DO
              kmultf = dot_product(dDnn_dU,uf)*(Qpr(1,i)*n(1)+Qpr(2,i)*n(2))*Nif
@@ -3453,11 +3477,11 @@ END IF
 #ifdef NEUTRALGAMMA
   SUBROUTINE assemblyNeutral(U,niz,dniz_dU,nrec,dnrec_dU,sigmaviz,dsigmaviz_dU,sigmavrec,dsigmavrec_dU,&
        &fGammacx,dfGammacx_dU,fGammarec,dfGammarec_dU,fGammaN,dfGammaN_dU,sigmavcx,dsigmavcx_dU,fEiiz,&
-       &dfEiiz_dU,fEirec,dfEirec_dU,fEicx,dfEicx_dU,Tloss,dTloss_dU,Tlossrec,dTlossrec_dU,Sn,Sn0)
+       &dfEiiz_dU,fEirec,dfEirec_dU,fEicx,dfEicx_dU,Tloss,dTloss_dU,Tlossrec,dTlossrec_dU,sigmavEiz,dsigmavEiz_dU,sigmavErec,dsigmavErec_dU,Sn,Sn0)
 #else
   SUBROUTINE assemblyNeutral(U,niz,dniz_dU,nrec,dnrec_dU,sigmaviz,dsigmaviz_dU,sigmavrec,dsigmavrec_dU,&
       &fGammacx,dfGammacx_dU,fGammarec,dfGammarec_dU,sigmavcx,dsigmavcx_dU,fEiiz,&
-      &dfEiiz_dU,fEirec,dfEirec_dU,fEicx,dfEicx_dU,Tloss,dTloss_dU,Tlossrec,dTlossrec_dU,Sn,Sn0)
+      &dfEiiz_dU,fEirec,dfEirec_dU,fEicx,dfEicx_dU,Tloss,dTloss_dU,Tlossrec,dTlossrec_dU,sigmavEiz,dsigmavEiz_dU,sigmavErec,dsigmavErec_dU,Sn,Sn0)
 #endif
 #else
     SUBROUTINE assemblyNeutral(U,niz,dniz_dU,nrec,dnrec_dU,fGammacx,dfGammacx_dU,fGammarec,dfGammarec_dU,Sn,Sn0)
@@ -3471,16 +3495,17 @@ END IF
 #ifndef TEMPERATURE
       real*8             :: sigmaviz,sigmavrec,sigmavcx
 #else
-      real*8, intent(IN) :: sigmaviz,sigmavrec,sigmavcx,fEiiz,fEirec,fEicx,Tloss,Tlossrec
-      real*8, intent(IN) :: dsigmaviz_dU(:),dsigmavrec_dU(:),dsigmavcx_dU(:),dTloss_dU(:),dTlossrec_dU(:)
+      real*8, intent(IN) :: sigmaviz,sigmavrec,sigmavcx,fEiiz,fEirec,fEicx,Tloss,Tlossrec,sigmavEiz,sigmavErec
+      real*8, intent(IN) :: dsigmaviz_dU(:),dsigmavrec_dU(:),dsigmavcx_dU(:),dTloss_dU(:),dTlossrec_dU(:),dsigmavEiz_dU(:),dsigmavErec_dU(:)
       real*8, intent(IN) :: dfEiiz_dU(:),dfEirec_dU(:),dfEicx_dU(:)
 #endif
-      real*8             :: ad,ad4,RE,Sn(:,:),Sn0(:),Ti,Te
+      real*8             :: ad,ad4,Eth,RE,Sn(:,:),Sn0(:),Ti,Te
 
       Sn   = 0.
       Sn0  = 0.
       !RE   = 0.2
       RE   = 1.
+      Eth = 13.6 ! eV
       ad   = 1.3737e12
       ad4  = (ad*1.6e-19)/((1.3839e4**2)*3.35e-27)
 
@@ -3521,11 +3546,16 @@ END IF
       Sn(3,4)   = ad*(-RE*fEiiz*dsigmaviz_dU(4) + fEirec*dsigmavrec_dU(4) + fEicx*dsigmavcx_dU(4))
       Sn(3,5)   = ad*(-RE*dfEiiz_dU(5)*sigmaviz + dfEicx_dU(5)*sigmavcx)
       !Assembly Source Terms in electron energy equation
-      Sn(4,1)   = ad4*(dniz_dU(1)*sigmaviz*Tloss + niz*dsigmaviz_dU(1)*Tloss + niz*sigmaviz*dTloss_dU(1) +&
-        &dnrec_dU(1)*sigmavrec*Tlossrec + nrec*dsigmavrec_dU(1)*Tlossrec + nrec*sigmavrec*dTlossrec_dU(1))
-      Sn(4,4)   = ad4*(niz*dsigmaviz_dU(4)*Tloss + niz*sigmaviz*dTloss_dU(4) +&
-        &nrec*dsigmavrec_dU(4)*Tlossrec + nrec*sigmavrec*dTlossrec_dU(4))
-      Sn(4,5)   = ad4*(dniz_dU(5)*sigmaviz*Tloss )
+      !Sn(4,1)   = ad4*(dniz_dU(1)*sigmaviz*Tloss + niz*dsigmaviz_dU(1)*Tloss + niz*sigmaviz*dTloss_dU(1) +&
+      !  &dnrec_dU(1)*sigmavrec*Tlossrec + nrec*dsigmavrec_dU(1)*Tlossrec + nrec*sigmavrec*dTlossrec_dU(1))
+      !Sn(4,4)   = ad4*(niz*dsigmaviz_dU(4)*Tloss + niz*sigmaviz*dTloss_dU(4) +&
+      !  &nrec*dsigmavrec_dU(4)*Tlossrec + nrec*sigmavrec*dTlossrec_dU(4))
+      !Sn(4,5)   = ad4*(dniz_dU(5)*sigmaviz*Tloss )
+      ! Amjuel radiaton losses
+      Sn(4,:)   =  ad4*(dniz_dU(:)*sigmavEiz + niz*dsigmavEiz_dU(:) +&
+           &dnrec_dU(:)*sigmavErec + nrec*dsigmavErec_dU(:))
+      ! Electron potential energy loss
+      Sn(4,:) = Sn(4,:) -ad4*Eth*(dnrec_dU(:)*sigmavrec + nrec*dsigmavrec_dU(:))
 #endif
       !Assembly Source Terms in neutral density equation
       Sn(5,:) = -Sn(1,:)
@@ -3555,8 +3585,13 @@ END IF
       Sn0(3)    = ad*(RE*fEiiz*sigmaviz - fEirec*sigmavrec - fEicx*sigmavcx)
       Sn0(3)    = Sn0(3) + ad*(RE*fEiiz*dot_product(dsigmaviz_dU,U) - fEirec*dot_product(dsigmavrec_dU,U))
       ! Electron energy equation
-      Sn0(4)    = ad4*(-niz*sigmaviz*Tloss - nrec*sigmavrec*Tlossrec)
-      Sn0(4)    = Sn0(4) + ad4*(-niz*dot_product(dsigmaviz_dU,U)*Tloss - nrec*dot_product(dsigmavrec_dU,U)*Tlossrec)
+      !Sn0(4)    = ad4*(-niz*sigmaviz*Tloss - nrec*sigmavrec*Tlossrec)
+      !Sn0(4)    = Sn0(4) + ad4*(-niz*dot_product(dsigmaviz_dU,U)*Tloss - nrec*dot_product(dsigmavrec_dU,U)*Tlossrec)
+      ! Amjuel radiation losses
+      Sn0(4)    = ad4*(-niz*sigmavEiz - nrec*sigmavErec)
+      Sn0(4)    = Sn0(4) + ad4*(-niz*dot_product(dsigmavEiz_dU,U) - nrec*dot_product(dsigmavErec_dU,U))
+      ! Electron potential energy loss
+      Sn0(4)    = Sn0(4) + ad4*Eth*(nrec*sigmavrec + nrec*dot_product(dsigmavrec_dU,U))
 #endif
       ! Neutral Sources
       Sn0(5)    = -Sn0(1)

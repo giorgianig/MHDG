@@ -40,8 +40,8 @@ MDL_NGAMMATITENEUTRALGAMMA=NGammaTiTeNeutralGamma
 #MDL=$(MDL_NGAMMA)
 #MDL=$(MDL_NGAMMANEUTRAL)
 #MDL=$(MDL_NGAMMATITE)
-#MDL=$(MDL_NGAMMATITENEUTRAL)
-MDL=$(MDL_NGAMMATITENEUTRALGAMMA)
+MDL=$(MDL_NGAMMATITENEUTRAL)
+#MDL=$(MDL_NGAMMATITENEUTRALGAMMA)
 
 # Moving equilibrium
 MVEQ_TRUE = true
@@ -93,6 +93,7 @@ else ifeq ($(MDL),$(MDL_NGAMMATITENEUTRAL))
  MACROS+= -DENERGY
  MACROS+= -DTEMPERATURE
  MACROS+= -DNEUTRAL
+ MACROS+= -DDNNLINEARIZED
  MACROS+= -DSAVEFLUX
  ADDMOD+=hdg_LimitingTechniques.o
 else ifeq ($(MDL),$(MDL_NGAMMATITENEUTRALGAMMA))
@@ -103,6 +104,7 @@ else ifeq ($(MDL),$(MDL_NGAMMATITENEUTRALGAMMA))
  MACROS+= -DTEMPERATURE
  MACROS+= -DNEUTRAL
  MACROS+= -DNEUTRALGAMMA
+ MACROS+= -DDNNLINEARIZED
  MACROS+= -DSAVEFLUX
  ADDMOD+=hdg_LimitingTechniques.o
 else
@@ -174,11 +176,21 @@ LIBBLAS = $(MKL_ROOT)/lib/intel64/libmkl_intel_lp64.a $(MKL_ROOT)/lib/intel64/li
 
 # Includes
 FCFLAGS += -I/trinity/shared/apps/tr17.10/x86_64/hdf5-icc18-impi-1.10.1/include/
-FCFLAGS += -I/home/ptamain/libs/new_meso/pastix_5.2.2.22_64bits_MKL_scotch_6.0.5a_ifort18/src/../install/
+#FCFLAGS += -I/home/ptamain/libs/new_meso/pastix_5.2.2.22_64bits_MKL_scotch_6.0.5a_ifort18/src/../install/
+FCFLAGS += -I/scratch/mscottodabusco/MHDG_Marconi/libs/pastix_5.2.3/install
+FCFLAGS += -I/scratch/mscottodabusco/MHDG_Marconi/libs/scotch_6.1.0/scotch/include
+#FCFLAGS += -I/home/ikudashev/libs/pastix_5.2.3_rep/install
+#FCFLAGS += -I/home/ikudashev/libs/scotch_6.0.4/include 
 
 # Libraries needed for linking
-LIB += -L/home/ptamain/libs/new_meso/pastix_5.2.2.22_64bits_MKL_scotch_6.0.5a_ifort18/src/../install/ -lpastix -lm -lrt -lifcore
-LIB += -L/home/ptamain/libs/new_meso/scotch_6.0.5a_64bits_ifort18/lib -lptscotch -lscotch -lptscotcherrexit
+#LIB += -L/home/ptamain/libs/new_meso/pastix_5.2.2.22_64bits_MKL_scotch_6.0.5a_ifort18/src/../install/ -lpastix -lm -lrt -lifcore
+#LIB += -L/home/ptamain/libs/new_meso/scotch_6.0.5a_64bits_ifort18/lib -lptscotch -lscotch -lptscotcherrexit
+LIB += -L/scratch/mscottodabusco/MHDG_Marconi/libs/scotch_6.1.0/scotch/lib -lptscotch -lscotch -lptscotcherr -lz -lm -lrt -lpthread
+LIB += -L/scratch/mscottodabusco/MHDG_Marconi/libs/pastix_5.2.3/install -lpastix -lm -lrt -lifcore -lpthread -lhwloc -lptscotch -lscotch -lscotcherr
+#LIB += -L/home/ikudashev/libs/scotch_6.0.4/lib -lptscotch -lscotch -lptscotcherr -lz -lm -lrt -lpthread
+#LIB += -L/home/ikudashev/libs/pastix_5.2.3_rep/install -lpastix -lm -lrt -lifcore -lpthread -lhwloc -lptscotch -lscotch -lscotcherr
+
+
 LIB += -L/trinity/shared/apps/tr17.10/x86_64/hwloc-1.11.8/lib -lhwloc -lpthread
 LIB += $(LIBBLAS) $(LIBBLAS)
 LIB += -L/trinity/shared/apps/tr17.10/x86_64/hdf5-icc18-impi-1.10.1/lib -lhdf5_fortran -lhdf5 -lz -L/usr/lib64 -lX11

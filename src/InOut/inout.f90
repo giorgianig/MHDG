@@ -251,7 +251,7 @@ CONTAINS
     CALL MPI_ALLREDUCE(MPI_IN_PLACE, xmin, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD, ierr)
 #endif
     ! Apply shift if axisymmetric case
-    IF ((switch%axisym .and. switch%testcase .ge. 60 .and. switch%testcase .lt. 80) .or. (switch%axisym .and. xmin < tol)) THEN
+    IF ((switch%axisym .and. switch%testcase .ge. 60 .and. switch%testcase .lt. 70) .or. (switch%axisym .and. xmin < tol)) THEN
       IF (MPIvar%glob_id .eq. 0) THEN
         WRITE (6, *) "*** Applying translation in axisymmetric case!"
       ENDIF

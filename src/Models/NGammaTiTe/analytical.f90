@@ -1316,12 +1316,12 @@ CONTAINS
           up(i, 2) = 1.
         END IF
       END DO
-    CASE (80:89)
+    CASE (70:89)
     !Define an anylitical solution with a Gaussian shape respect to the normalized flux surface
       fluxel = phys%magnetic_flux(Mesh%T(iel,:))  
       fluxel = (fluxel - phys%Flux2Dmin)/(phys%Flux2Dmax - phys%Flux2Dmin)                                            
       sigma = 0.5
-      up(:, 1) = 1./(sigma*sqrt(2*3.14))*exp(-fluxel**2/(2*sigma**2))
+      up(:, 1) = 4./(sigma*sqrt(2*3.14))*exp(-fluxel**2/(2*sigma**2))
       up(:, 3) = 18.*1./(sigma*sqrt(2.*3.14))*exp(-fluxel**2/(2*sigma**2))
       up(:, 4) = 18.*1./(sigma*sqrt(2.*3.14))*exp(-fluxel**2/(2*sigma**2))
     !Define an anylitical solution with a Gaussian shape respect to geometrical center of symmetry of the domain 

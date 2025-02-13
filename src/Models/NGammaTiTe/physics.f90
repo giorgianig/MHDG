@@ -113,6 +113,58 @@ CONTAINS
 #ifdef NEUTRALGAMMA
     simpar%consvar_refval(6) = simpar%refval_momentum
 #endif
+
+#ifdef NEUTRAL
+    ! Allocate atomic data
+    phys%E = (/0, 1, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 200, 250, 270, 300, 350, 400, 500, 600, 700, 1000/)
+    phys%theta = (/0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90/)
+    
+    phys%RN_DW(1,:) = (/0.7987, 0.8017, 0.8047, 0.8078, 0.8169, 0.8260, 0.8351, 0.8482, 0.8612, 0.8743, 0.8928,&
+                        0.9114, 0.9261, 0.9409, 0.9514, 0.9620, 0.9682, 0.9716, 0.9751/)
+    phys%RN_DW(2,:) = (/0.7949, 0.7980, 0.8010, 0.8040, 0.8131, 0.8223, 0.8314, 0.8446, 0.8578, 0.8710, 0.8898,&
+                        0.9085, 0.9238, 0.9391, 0.9504, 0.9618, 0.9687, 0.9725, 0.9763/)
+    phys%RN_DW(3,:) = (/0.7614, 0.7643, 0.7672, 0.7702, 0.7793, 0.7885, 0.7977, 0.8125, 0.8272, 0.8420, 0.8622,&
+                        0.8824, 0.9029, 0.9234, 0.9417, 0.9601, 0.9730, 0.9800, 0.9871 /)
+    phys%RN_DW(4,:) = (/0.7242, 0.7270, 0.7297, 0.7325, 0.7418, 0.7511, 0.7604, 0.7768, 0.7933, 0.8097, 0.8316,&
+                        0.8534, 0.8797, 0.9059, 0.9321, 0.9582, 0.9778, 0.9885, 0.9991 /)
+    phys%RN_DW(5,:) = (/0.7091, 0.7119, 0.7146, 0.7174, 0.7265, 0.7357, 0.7448, 0.7607, 0.7766, 0.7925, 0.8148,&
+                        0.8371, 0.8645, 0.8919, 0.9220, 0.9520, 0.9765, 0.9900, 1.0000 /)
+    phys%RN_DW(6,:) = (/0.6941, 0.6968, 0.6995, 0.7023, 0.7113, 0.7203, 0.7293, 0.7446, 0.7599, 0.7753, 0.7981,&
+                        0.8208, 0.8494, 0.8780, 0.9118, 0.9457, 0.9752, 0.9916, 1.0000 /)
+    phys%RN_DW(7,:) = (/0.6790, 0.6817, 0.6844, 0.6872, 0.6960, 0.7049, 0.7138, 0.7285, 0.7433, 0.7580, 0.7813,&
+                        0.8045, 0.8343, 0.8640, 0.9017, 0.9395, 0.9738, 0.9932, 1.0000 /)
+    phys%RN_DW(8,:) = (/0.6730, 0.6755, 0.6781, 0.6806, 0.6894, 0.6983, 0.7072, 0.7220, 0.7369, 0.7518, 0.7740,&
+                        0.7962, 0.8260, 0.8558, 0.8945, 0.9333, 0.9711, 0.9932, 1.0000 /)
+    phys%RN_DW(9,:) = (/0.6671, 0.6694, 0.6717, 0.6740, 0.6828, 0.6917, 0.7005, 0.7156, 0.7306, 0.7456, 0.7667,& 
+                        0.7879, 0.8178, 0.8476, 0.8874, 0.9271, 0.9683, 0.9933, 1.0000 /)
+    phys%RN_DW(10,:) = (/0.6611, 0.6632, 0.6653, 0.6674, 0.6762, 0.6851, 0.6939, 0.7091, 0.7242, 0.7394, 0.7595,&
+                         0.7795, 0.8095, 0.8395, 0.8802, 0.9209, 0.9655, 0.9933, 1.0000 /)
+    phys%RN_DW(11,:) = (/0.6552, 0.6570, 0.6589, 0.6608, 0.6696, 0.6785, 0.6873, 0.7026, 0.7179, 0.7332, 0.7522,&
+                         0.7712, 0.8013, 0.8313, 0.8730, 0.9147, 0.9627, 0.9933, 1.0000 /)
+    phys%RN_DW(12,:) = (/0.6492, 0.6509, 0.6525, 0.6542, 0.6630, 0.6719, 0.6807, 0.6961, 0.7115, 0.7269, 0.7449,&
+                         0.7629, 0.7930, 0.8232, 0.8659, 0.9085, 0.9599, 0.9934, 1.0000 /)
+    phys%RN_DW(13,:) = (/0.6117, 0.6157, 0.6197, 0.6237, 0.6300, 0.6364, 0.6427, 0.6584, 0.6741, 0.6898, 0.7107,&
+                         0.7315, 0.7588, 0.7861, 0.8273, 0.8685, 0.9315, 0.9904, 1.0000 /)
+    phys%RN_DW(14,:) = (/0.6024, 0.6053, 0.6081, 0.6110, 0.6196, 0.6282, 0.6368, 0.6513, 0.6658, 0.6804, 0.7006,&
+                         0.7209, 0.7475, 0.7740, 0.8144, 0.8547, 0.9199, 0.9882, 1.0000 /)
+    phys%RN_DW(15,:) = (/0.5981, 0.6010, 0.6039, 0.6069, 0.6156, 0.6243, 0.6330, 0.6476, 0.6622, 0.6768, 0.6969,&
+                         0.7170, 0.7436, 0.7702, 0.8102, 0.8502, 0.9153, 0.9872, 1.0000 /)
+    phys%RN_DW(16,:) = (/0.5924, 0.5954, 0.5985, 0.6015, 0.6102, 0.6189, 0.6276, 0.6423, 0.6569, 0.6715, 0.6917,&
+                         0.7120, 0.7382, 0.7644, 0.8041, 0.8438, 0.9091, 0.9857, 1.0000 /)
+    phys%RN_DW(17,:) = (/0.5839, 0.5869, 0.5900, 0.5930, 0.6019, 0.6108, 0.6196, 0.6344, 0.6492, 0.6640, 0.6840,&
+                         0.7041, 0.7303, 0.7565, 0.7954, 0.8344, 0.8997, 0.9829, 1.0000 /)
+    phys%RN_DW(18,:) = (/0.5767, 0.5794, 0.5821, 0.5848, 0.5939, 0.6031, 0.6122, 0.6273, 0.6423, 0.6574, 0.6774,&
+                         0.6974, 0.7235, 0.7497, 0.7882, 0.8267, 0.8908, 0.9799, 1.0000 /)
+    phys%RN_DW(19,:) = (/0.5639, 0.5669, 0.5698, 0.5728, 0.5819, 0.5911, 0.6002, 0.6150, 0.6298, 0.6445, 0.6653,&
+                         0.6860, 0.7119, 0.7378, 0.7758, 0.8137, 0.8766, 0.9739, 1.0000 /)
+    phys%RN_DW(20,:) = (/0.5528, 0.5555, 0.5582, 0.5609, 0.5700, 0.5791, 0.5881, 0.6039, 0.6197, 0.6355, 0.6566,&
+                         0.6777, 0.7032, 0.7288, 0.7658, 0.8028, 0.8649, 0.9671, 1.0000 /)
+    phys%RN_DW(21,:) = (/0.5425, 0.5451, 0.5477, 0.5503, 0.5599, 0.5694, 0.5790, 0.5943, 0.6097, 0.6250, 0.6466,&
+                         0.6683, 0.6952, 0.7222, 0.7581, 0.7941, 0.8554, 0.9609, 1.0000 /)
+    phys%RN_DW(22,:) = (/0.5174, 0.5210, 0.5247, 0.5283, 0.5379, 0.5474, 0.5570, 0.5730, 0.5890, 0.6050, 0.6253,&
+                         0.6456, 0.6741, 0.7026, 0.7381, 0.7737, 0.8327, 0.9419, 1.0000/)
+#endif
+
   END SUBROUTINE
 
   !*******************************************
@@ -131,7 +183,7 @@ CONTAINS
     ua(:,5) = abs(up(:,11))
 #endif
 #ifdef NEUTRALGAMMA
-    ua(:,6) = up(:,11)*up(:,12)
+    ua(:,6) = abs(up(:,11))*up(:,12)
 #endif
 
   END SUBROUTINE phys2cons
@@ -172,7 +224,7 @@ CONTAINS
     up(:,11) = abs(U5)                                                ! density neutral
 #endif
 #ifdef NEUTRALGAMMA
-    up(:,12) = ua(:,6)/U5                                             ! u parallel neutral
+    up(:,12) = ua(:,6)/abs(U5)                                             ! u parallel neutral
 #endif
 
     ! Set threshold for low density and temperature
@@ -358,11 +410,11 @@ CONTAINS
 #else
       A(5, 6) = 1.
       
-      A(6, 1) = 2./3.*U(5)*(- U(3)/U(1)**2 + U(2)**2/U(1)**3)
-      A(6, 2) = - 2./3.*U(5)*U(2)/U(1)**2
-      A(6, 3) = 2./3.*U(5)/U(1)
-      A(6, 5) = - U(6)**2/U(5)**2 + 2./3.*(U(3)/U(1) - 1./2.*U(2)**2/U(1)**2)
-      A(6, 6) = 2.*U(6)/U(5)
+      A(6, 1) = 2./3.*max(1.e-7,U(5))*(- U(3)/U(1)**2 + U(2)**2/U(1)**3)
+      A(6, 2) = - 2./3.*max(1.e-7,U(5))*U(2)/U(1)**2
+      A(6, 3) = 2./3.*max(1.e-7,U(5))/U(1)
+      A(6, 5) = - U(6)**2/(max(1.e-7,U(5)))**2 + 2./3.*(U(3)/U(1) - 1./2.*U(2)**2/U(1)**2)
+      A(6, 6) = 2.*U(6)/max(1.e-7,U(5))
 #endif
 #endif 
     end if
@@ -429,11 +481,11 @@ CONTAINS
 #else
       An(5, 6) = 1.
 
-      An(6, 1) = 2./3.*U(5)*(- U(3)/U(1)**2 + U(2)**2/U(1)**3)
-      An(6, 2) = - 2./3.*U(5)*U(2)/U(1)**2
-      An(6, 3) = 2./3.*U(5)/U(1)
-      An(6, 5) = - U(6)**2/U(5)**2 + 2./3.*(U(3)/U(1) - 1./2.*U(2)**2/U(1)**2)
-      An(6, 6) = 2.*U(6)/U(5)
+      An(6, 1) = 2./3.*max(1.e-7,U(5))*(- U(3)/U(1)**2 + U(2)**2/U(1)**3)
+      An(6, 2) = - 2./3.*max(1.e-7,U(5))*U(2)/U(1)**2
+      An(6, 3) = 2./3.*max(1.e-7,U(5))/U(1)
+      An(6, 5) = - U(6)**2/(max(1.e-7,U(5)))**2 + 2./3.*(U(3)/U(1) - 1./2.*U(2)**2/U(1)**2)
+      An(6, 6) = 2.*U(6)/max(1.e-7,U(5))
 #endif
 #endif      
     endif
@@ -563,15 +615,16 @@ CONTAINS
   !*****************************************
   ! Set the perpendicular diffusion
   !****************************************
-  SUBROUTINE setLocalDiff(xy, u, q, d_iso, d_ani)
+  SUBROUTINE setLocalDiff(xy,u,q,psi,d_iso, d_ani)
     real*8, intent(in)  		:: xy(:, :)
-    real*8, intent(in)  		:: u(:,:), q(:,:)
+    real*8, intent(in)  		:: u(:,:),q(:,:)
+    real*8, intent(in)                  :: psi(:)
     real*8, intent(out)		 :: d_iso(:, :, :), d_ani(:, :, :)
-    real*8		              :: iperdiff(size(xy, 1))
+    real*8		              :: iperdiff(size(xy, 1)), psi1=0.994, psi2=1.012, sigma=1.e3
 #ifdef NEUTRAL
     integer             		:: i
     real*8				            :: Ery = 13.6, cs_n, DnnTh
-    real*8, dimension(size(u,1))	:: U1, U2, U3, U4, U5, E0iz, E0cx, sigmaviz, sigmavcx, Dnn
+    real*8, dimension(size(u,1))	:: U1, U2, U3, U4, U5, E0iz, E0cx, sigmaviz, sigmavcx, sigmavnn, Dnn
 #endif
 
     ! d_iso(Neq,Neq,Ngauss),d_ani(Neq,Neq,Ngauss)
@@ -593,6 +646,54 @@ CONTAINS
     d_iso(2, 2, :) = phys%diff_u
     d_iso(3, 3, :) = phys%diff_e
     d_iso(4, 4, :) = phys%diff_ee
+    ! SPARC testcases
+    if (switch%testcase .gt. 74) then
+       if (switch%testcase .eq. 75) then 
+          DO i=1,size(u,1)
+             d_iso(1, 1, i) = max(switch%diffmin,phys%diff_n - (phys%diff_n - switch%diffmin)/time%nts*time%it,phys%diff_n*((tanh(-(psi(i) - 0.992)*1.5e3) + 1.)/2. + (tanh((psi(i) - 1.008)*1.5e3) + 1.)/2.))
+             d_iso(2, 2, i) = max(switch%diffmin,phys%diff_u - (phys%diff_u - switch%diffmin)/time%nts*time%it,phys%diff_u*((tanh(-(psi(i) - 0.992)*1.5e3) + 1.)/2. + (tanh((psi(i) - 1.008)*1.5e3) + 1.)/2.))
+             d_iso(3, 3, i) = max(switch%diffmin,phys%diff_e - (phys%diff_e - switch%diffmin)/time%nts*time%it,phys%diff_e*((tanh(-(psi(i) - 0.992)*1.5e3) + 1.)/2. + (tanh((psi(i) - 1.008)*1.5e3) + 1.)/2.))
+             d_iso(4, 4, i) = max(switch%diffmin,phys%diff_e - (phys%diff_ee - switch%diffmin)/time%nts*time%it,phys%diff_ee*((tanh(-(psi(i) - 0.992)*1.5e3) + 1.)/2. + (tanh((psi(i) - 1.008)*1.5e3) + 1.)/2.))
+          END DO
+       else if (switch%testcase .eq. 76) then
+          DO i=1,size(u,1)
+             d_iso(1, 1, i) = max(switch%diffmin,phys%diff_n - (phys%diff_n - switch%diffmin)/time%nts*time%it,phys%diff_n*((tanh(-(psi(i) - psi1)*sigma) + 1.)/2. + (tanh((psi(i) - psi2)*sigma) + 1.)/2.))
+             d_iso(2, 2, i) = max(switch%diffmin,phys%diff_u - (phys%diff_u - switch%diffmin)/time%nts*time%it,phys%diff_u*((tanh(-(psi(i) - psi1)*sigma) + 1.)/2. + (tanh((psi(i) - psi2)*sigma) + 1.)/2.))
+             d_iso(3, 3, i) = max(switch%diffmin,phys%diff_e - (phys%diff_e - switch%diffmin)/time%nts*time%it,phys%diff_e*((tanh(-(psi(i) - psi1)*sigma) + 1.)/2. +(tanh((psi(i) - psi2)*sigma) + 1.)/2.))
+             d_iso(4, 4, i) = max(switch%diffmin,phys%diff_e - (phys%diff_ee - switch%diffmin)/time%nts*time%it,phys%diff_ee*((tanh(-(psi(i) - psi1)*sigma) + 1.)/2 + (tanh((psi(i) - psi2)*sigma) + 1.)/2.))
+          END DO
+       else if (switch%testcase .eq. 77) then
+          DO i=1,size(u,1)
+              d_iso(3, 3, i) = max(switch%diffmin,phys%diff_e*((tanh(-(psi(i) - psi1)*sigma) + 1.)/2. + (tanh((psi(i) - psi2)*sigma) + 1.)/2.))
+             d_iso(4, 4, i) = max(switch%diffmin,phys%diff_ee*((tanh(-(psi(i) - psi1)*sigma) + 1.)/2. + (tanh((psi(i) - psi2)*sigma) + 1.)/2.))
+          END DO
+       else if (switch%testcase .eq. 78) then
+          DO i=1,size(u,1)
+             d_iso(1, 1, i) = max(switch%diffmin,phys%diff_n*((tanh(-(psi(i) - psi1)*sigma) + 1.)/2. + (tanh((psi(i) - psi2)*sigma) + 1.)/2.))
+             d_iso(2, 2, i) = max(switch%diffmin,phys%diff_u*((tanh(-(psi(i) - psi1)*sigma) + 1.)/2. + (tanh((psi(i) - psi2)*sigma) + 1.)/2.))
+             d_iso(3, 3, i) = max(switch%diffmin,phys%diff_e*((tanh(-(psi(i) - psi1)*sigma) + 1.)/2. + (tanh((psi(i) - psi2)*sigma) + 1.)/2.))
+             d_iso(4, 4, i) = max(switch%diffmin,phys%diff_ee*((tanh(-(psi(i) - psi1)*sigma) + 1.)/2. + (tanh((psi(i) - psi2)*sigma) + 1.)/2.))
+          END DO
+       end if
+    end if
+    if (switch%ME .eq. .TRUE.) then
+       if (switch%testcase .eq. 74) then
+          d_iso(1,1,:) = max(switch%diffmin,phys%diff_n - 1.7*simpar%refval_time/simpar%refval_length**2*(tanh((phys%I_p - 0.5)/5.)))
+          d_iso(2,2,:) = max(switch%diffmin,phys%diff_u - 1.7*simpar%refval_time/simpar%refval_length**2*(tanh((phys%I_p - 0.5)/5.)))
+          d_iso(3,3,:) = max(switch%diffmin,phys%diff_e - 1.7*simpar%refval_time/simpar%refval_length**2*(tanh((phys%I_p - 0.5)/5.)))
+          d_iso(4,4,:) = max(switch%diffmin,phys%diff_ee - 1.7*simpar%refval_time/simpar%refval_length**2*(tanh((phys%I_p - 0.5)/5.)))
+       else if (switch%testcase .eq. 75) then
+          d_iso(1,1,:) = max(switch%diffmin,phys%diff_n - 1.7*simpar%refval_time/simpar%refval_length**2*(tanh((phys%I_p - 0.5)/3.9)))
+          d_iso(2,2,:) = max(switch%diffmin,phys%diff_u - 1.7*simpar%refval_time/simpar%refval_length**2*(tanh((phys%I_p - 0.5)/3.9)))
+          d_iso(3,3,:) = max(switch%diffmin,phys%diff_e - 1.7*simpar%refval_time/simpar%refval_length**2*(tanh((phys%I_p - 0.5)/3.9)))
+          d_iso(4,4,:) = max(switch%diffmin,phys%diff_ee - 1.7*simpar%refval_time/simpar%refval_length**2*(tanh((phys%I_p - 0.5)/3.9)))
+       end if
+       phys%ME_diff_n = d_iso(1,1,1)
+       phys%ME_diff_u = d_iso(2,2,1)
+       phys%ME_diff_e = d_iso(3,3,1)
+       phys%ME_diff_ee = d_iso(4,4,1)
+    end if
+    ! ITER testcases
     if (switch%ME .eq. .TRUE.  .AND. switch%testcase .gt. 84) then
        if (switch%testcase .eq. 85) then !Iter core-edge with evolving equilibria plus diffusion decrease
           d_iso(1, 1, :) = phys%diff_n - (phys%diff_n - 0.5*simpar%refval_time/simpar%refval_length**2)/14.65*(phys%I_p - 0.35)
@@ -626,15 +727,24 @@ CONTAINS
     DO i=1,size(u,1)
        CALL compute_sigmaviz(u(i,:),sigmaviz(i))
        CALL compute_sigmavcx(u(i,:),sigmavcx(i))
+       if (switch%Kotov .eq. .true.) then
+          CALL compute_sigmavnn(u(i,:),sigmavnn(i))
+       endif
     END DO
-    Dnn = simpar%refval_charge*max(simpar%refval_temperature*2./(3.*phys%Mref)*(U3/U1 - 1./2.*(U2/U1)**2),0.1)/(simpar%refval_mass*simpar%refval_density*U1*(sigmaviz + sigmavcx))   
+    if (switch%Kotov .eq. .false.) then
+       ! NO KOTOV
+       Dnn = simpar%refval_charge*max(simpar%refval_temperature*2./(3.*phys%Mref)*(U3/U1 - 1./2.*(U2/U1)**2),0.1)/(simpar%refval_mass*simpar%refval_density*(U1*(sigmaviz + sigmavcx)))
+    else
+       ! WITH KOTOV
+       Dnn = simpar%refval_charge*max(simpar%refval_temperature*2./(3.*phys%Mref)*(U3/U1 - 1./2.*(U2/U1)**2),0.1)/(simpar%refval_mass*simpar%refval_density*(U1*(sigmaviz + sigmavcx) + max(1.e-7,U5)*sigmavnn))   
+    end if
     Dnn = Dnn*simpar%refval_time/simpar%refval_length**2
     !Dnn(:) = Dnn(:)*(1 + (Dnn(:)/phys%diff_nn)**20)**(-1./20)
     d_iso(5,5,:) = Dnn
     !Set a threshold on Dnn
     DO i=1,size(Dnn,1)
        if (Dnn(i) .gt.  phys%diff_nn) d_iso(5,5,i) = phys%diff_nn
-       if (Dnn(i) .lt. 200*d_iso(1,1,i)) d_iso(5,5,i) = 200*d_iso(1,1,i)
+       if (Dnn(i) .lt. 200*simpar%refval_time/simpar%refval_length**2) d_iso(5,5,i) = 200*simpar%refval_time/simpar%refval_length**2
        !d_iso(5,5,i)= d_iso(5,5,i)*(1 + (d_iso(5,5,i)/phys%diff_nn)**1)**(-1./1)
        !if (Dnn(i) .lt.  100*d_iso(1,1,i)) d_iso(5,5,i) = 19
        !if (Dnn(i) .lt. 50*simpar%refval_time/simpar%refval_length**2) d_iso(5,5,i) = 50*simpar%refval_time/simpar%refval_length**2
@@ -655,10 +765,58 @@ CONTAINS
 #else
     d_iso(5,5,:) = 0.
 #endif
+    !****************************
+    ! D ANISOTROPIC
+    !***************************
     d_ani(1, 1, :) = phys%diff_n
     d_ani(2, 2, :) = phys%diff_u
     d_ani(3, 3, :) = phys%diff_e
     d_ani(4, 4, :) = phys%diff_ee
+    ! SPARC testcases                                                                                                                                                                               
+    if (switch%testcase .gt. 74) then
+        if (switch%testcase .eq. 75) then
+          DO i=1,size(u,1)
+             d_ani(1, 1, i) = max(switch%diffmin,phys%diff_n - (phys%diff_n - switch%diffmin)/time%nts*time%it,phys%diff_n*((tanh(-(psi(i) - 0.992)*1.5e3) + 1.)/2. + (tanh((psi(i) - 1.008)*1.5e3) + 1.)/2.))
+             d_ani(2, 2, i) = max(switch%diffmin,phys%diff_u - (phys%diff_u - switch%diffmin)/time%nts*time%it,phys%diff_u*((tanh(-(psi(i) - 0.992)*1.5e3) + 1.)/2. + (tanh((psi(i) - 1.008)*1.5e3) + 1.)/2.))
+             d_ani(3, 3, i) = max(switch%diffmin,phys%diff_e - (phys%diff_e - switch%diffmin)/time%nts*time%it,phys%diff_e*((tanh(-(psi(i) - 0.992)*1.5e3) + 1.)/2. + (tanh((psi(i) - 1.008)*1.5e3) + 1.)/2.))
+             d_ani(4, 4, i) = max(switch%diffmin,phys%diff_e - (phys%diff_ee - switch%diffmin)/time%nts*time%it,phys%diff_ee*((tanh(-(psi(i) - 0.992)*1.5e3) + 1.)/2. + (tanh((psi(i) - 1.008)*1.5e3) + 1.)/2.))
+          END DO
+       else if (switch%testcase .eq. 76) then
+          DO i=1,size(u,1)
+             d_ani(1, 1, i) = max(switch%diffmin,phys%diff_n - (phys%diff_n - switch%diffmin)/time%nts*time%it,phys%diff_n*((tanh(-(psi(i) - 0.995)*1.5e3) + 1.)/2. + (tanh((psi(i) - 1.005)*1.5e3) + 1.)/2.))
+            d_ani(2, 2, i) = max(switch%diffmin,phys%diff_u - (phys%diff_u - switch%diffmin)/time%nts*time%it,phys%diff_u*((tanh(-(psi(i) - 0.995)*1.5e3) + 1.)/2. +\
+ (tanh((psi(i) - 1.005)*1.5e3) + 1.)/2.))
+             d_ani(3, 3, i) = max(switch%diffmin,phys%diff_e - (phys%diff_e - switch%diffmin)/time%nts*time%it,phys%diff_e*((tanh(-(psi(i) - 0.995)*1.5e3) + 1.)/2. + (tanh((psi(i) - 1.005)*1.5e3) + 1.)/2.))
+             d_ani(4, 4, i) = max(switch%diffmin,phys%diff_e - (phys%diff_ee - switch%diffmin)/time%nts*time%it,phys%diff_ee*((tanh(-(psi(i) - 0.995)*1.5e3) + 1.)/2 + (tanh((psi(i) - 1.005)*1.5e3) + 1.)/2.))
+          END DO
+       else if (switch%testcase .eq. 77) then
+          DO i=1,size(u,1)
+             d_ani(3, 3, i) = max(switch%diffmin,phys%diff_e*((tanh(-(psi(i) - psi1)*sigma) + 1.)/2. + (tanh((psi(i) - psi2)*sigma) + 1.)/2.))
+             d_ani(4, 4, i) = max(switch%diffmin,phys%diff_ee*((tanh(-(psi(i) - psi1)*sigma) + 1.)/2. + (tanh((psi(i) - psi2)*sigma) + 1.)/2.))
+          END DO
+       else if (switch%testcase .eq. 78) then
+          DO i=1,size(u,1)
+             d_ani(1, 1, i) = max(switch%diffmin,phys%diff_n*((tanh(-(psi(i) - psi1)*sigma) + 1.)/2. + (tanh((psi(i) - psi2)*sigma) + 1.)/2.))
+             d_ani(2, 2, i) = max(switch%diffmin,phys%diff_u*((tanh(-(psi(i) - psi1)*sigma) + 1.)/2. + (tanh((psi(i) - psi2)*sigma) + 1.)/2.))
+             d_ani(3, 3, i) = max(switch%diffmin,phys%diff_e*((tanh(-(psi(i) - psi1)*sigma) + 1.)/2. + (tanh((psi(i) - psi2)*sigma) + 1.)/2.))
+             d_ani(4, 4, i) = max(switch%diffmin,phys%diff_ee*((tanh(-(psi(i) - psi1)*sigma) + 1.)/2. + (tanh((psi(i) - psi2)*sigma) + 1.)/2.))
+          END DO
+       end if
+    end if
+    if (switch%ME .eq. .TRUE.) then
+       if (switch%testcase .eq. 74) then
+          d_ani(1,1,:) = max(switch%diffmin,phys%diff_n - 1.7*simpar%refval_time/simpar%refval_length**2*(tanh((phys%I_p - 0.5)/5.)))
+          d_ani(2,2,:) = max(switch%diffmin,phys%diff_u - 1.7*simpar%refval_time/simpar%refval_length**2*(tanh((phys%I_p - 0.5)/5.)))
+          d_ani(3,3,:) = max(switch%diffmin,phys%diff_e - 1.7*simpar%refval_time/simpar%refval_length**2*(tanh((phys%I_p - 0.5)/5.)))
+          d_ani(4,4,:) = max(switch%diffmin,phys%diff_ee - 1.7*simpar%refval_time/simpar%refval_length**2*(tanh((phys%I_p - 0.5)/5.)))
+       else if (switch%testcase .eq. 75) then
+          d_ani(1,1,:) = max(switch%diffmin,phys%diff_n - 1.7*simpar%refval_time/simpar%refval_length**2*(tanh((phys%I_p - 0.5)/3.9)))
+          d_ani(2,2,:) = max(switch%diffmin,phys%diff_u - 1.7*simpar%refval_time/simpar%refval_length**2*(tanh((phys%I_p - 0.5)/3.9)))
+          d_ani(3,3,:) = max(switch%diffmin,phys%diff_e - 1.7*simpar%refval_time/simpar%refval_length**2*(tanh((phys%I_p - 0.5)/3.9)))
+          d_ani(4,4,:) = max(switch%diffmin,phys%diff_ee - 1.7*simpar%refval_time/simpar%refval_length**2*(tanh((phys%I_p - 0.5)/3.9)))
+       end if
+    end if
+    ! ITER testcases
     if (switch%ME .eq. .TRUE. .AND. switch%testcase .gt. 84) then !Iter core-edge with evolving equilibria plus diffusion decrease
        if (switch%testcase .eq. 85) then
          d_ani(1, 1, :) = phys%diff_n - (phys%diff_n - 0.5*simpar%refval_time/simpar%refval_length**2)/14.65*(phys%I_p - 0.35)
@@ -711,7 +869,21 @@ CONTAINS
     D(4) = phys%diff_ee
 
     ! Diffusion evlution for ME cases
-    ! Iter core-edge with evolving equilibria plus diffusion decrease
+    ! SPARC core-edge with evolving equilibria plus diffusion decrease                                                                                                                             
+    if (switch%ME .eq. .TRUE.  .AND. switch%testcase .gt. 70 .AND. switch%testcase .lt. 80) then
+       if (switch%testcase .eq. 74) then
+          D(1) = max(switch%diffmin,phys%diff_n - 1.7*simpar%refval_time/simpar%refval_length**2*(tanh((phys%I_p - 0.5)/5.)))
+          D(2) = D(1)
+          D(3) = D(1)
+          D(4) = D(1)
+       else if (switch%testcase .eq. 75) then
+          D(1) = max(switch%diffmin,phys%diff_n - 1.7*simpar%refval_time/simpar%refval_length**2*(tanh((phys%I_p - 0.5)/3.9)))
+          D(2) = D(1)
+          D(3) = D(1)
+          D(4) = D(1)
+       end if
+    endif
+    ! ITER core-edge with evolving equilibria plus diffusion decrease
     if (switch%ME .eq. .TRUE.  .AND. switch%testcase .gt. 84) then
        if (switch%testcase .eq. 85) then 
           D(1) = phys%diff_n - (phys%diff_n - 0.5*simpar%refval_time/simpar%refval_length**2)/14.65*(phys%I_p - 0.35)
@@ -891,9 +1063,9 @@ CONTAINS
 
     ! Decrease collisionality threshold for pinch term 
     ! ITER: nu_th = 0.04 at flat-top phase as E. Militello-Asp NF 2022
-    if (switch%testcase .gt. 80) then
+    if (switch%testcase .ge. 70) then
        !nu_th = max(0.04,1. - 0.96*tanh((phys%I_p - 0.35)/5.))
-       nu_th = 0.06
+       nu_th = 0.04
     end if
 
   END SUBROUTINE
@@ -907,17 +1079,22 @@ CONTAINS
     
     nu = 0.
 
+    ! SPARC testcase
+    IF (switch%testcase .ge. 70 .and. switch%testcase .lt. 80) THEN
+       R0 = 1.8495
+       a = 0.57
     ! ITER testcase
-    IF (switch%testcase .ge. 80 .and. switch%testcase .lt. 90) THEN
+    ELSE IF (switch%testcase .ge. 80 .and. switch%testcase .lt. 90) THEN
        R0 = 6.2
        a = 2.
-       Zeff = 1.6
-       epsilon = a/R0
-       n_e = abs(U(1))*simpar%refval_density
-       T_e = abs(2./(3.*phys%Mref)*U(4)/U(1))*simpar%refval_temperature
-       lambda_e = 31.3 - log(sqrt(abs(n_e))/abs(T_e))
-       nu = 6.921e-18*(R0*abs(q)*n_e*Zeff*lambda_e)/((epsilon**(1.5))*(abs(T_e)**(2.)))
     END IF
+    
+    Zeff = 1.6
+    epsilon = a/R0
+    n_e = abs(U(1))*simpar%refval_density
+    T_e = abs(2./(3.*phys%Mref)*U(4)/U(1))*simpar%refval_temperature
+    lambda_e = 31.3 - log(sqrt(abs(n_e))/abs(T_e))
+    nu = 6.921e-18*(R0*abs(q)*n_e*Zeff*lambda_e)/((epsilon**(1.5))*(abs(T_e)**(2.)))
 
   END SUBROUTINE
 
@@ -946,7 +1123,7 @@ CONTAINS
           ! normalized electorn collisionality 
           ! Tuned as in JINTRAC (see E. Militello-Asp NF 2022)
           f_nu = 0.
-          IF (psi .le. 0.9) THEN ! Apply just in the closed field line region (MUST balance BC for PFR )
+          IF (psi .le. 0.95) THEN ! Apply just in the closed field line region (MUST balance BC for PFR )
              CALL computeNuth(nu_th)
              CALL computeCollisionality(U,q,nu) 
              CALL setLocalDiffSplitTerms(U, D)
@@ -1065,7 +1242,7 @@ CONTAINS
     real, parameter :: tol = 1e-5
     aux = U(3)/U(1) - 0.5*U(2)**2/U(1)**2
     if ((2./(3.*phys%Mref)*aux > 1.) .and. (switch%testcase .ne. 2)) then
-      res = (3.*phys%Mref/2)**(phys%epn)
+      res = (1.*3.*phys%Mref/2)**(phys%epn)
     else
       if (aux<tol) aux = tol
       res = aux**phys%epn
@@ -1078,7 +1255,7 @@ CONTAINS
     real, parameter :: tol = 1e-5
     aux = U(4)/U(1)
     if ((2./(3.*phys%Mref)*aux > 1.) .and. (switch%testcase .ne. 2)) then
-      res = (3.*phys%Mref/2)**(phys%epn)
+      res = (1.*3.*phys%Mref/2)**(phys%epn)
     else
       if (aux<tol) aux = tol
       res = aux**phys%epn
@@ -1222,27 +1399,46 @@ CONTAINS
   ! Neutral Source terms
   ! ******************************
 #ifdef NEUTRAL
+  SUBROUTINE compute_RN(E,theta,RN)
+    ! Compute the recycling coefficeint RN(E,theta) interpolating the TRIM data
+    USE interpolation
+    real*8, intent(IN)   :: E,theta
+    real*8, intent(OUT)  :: RN
+    integer              :: ip, jp
+
+    RN = 1.
+
+    ip = size(phys%E)
+    jp = size(phys%theta)
+
+    RN = interpolate(ip, phys%E, jp, phys%theta, phys%RN_DW, E, theta, 1e-12)
+
+  END SUBROUTINE compute_RN
 
 #ifdef DNNLINEARIZED
   SUBROUTINE compute_dDnn_dU(U, Dnn_dU)
     real*8, intent(IN) :: U(:)
     real*8, intent(OUT) :: Dnn_dU(:)
     real*8              :: double_soft_deriv, Dnn, ti, soft_deriv, ti_min=1e-6,tol=1e-10
-    real*8              :: sigmaviz, sigmavcx
-    real*8              :: D(4), dti_du(size(U,1)), dsigmaviz_dU(size(U,1)), dsigmavcx_dU(size(U,1))
+    real*8              :: sigmaviz, sigmavcx, sigmavnn
+    real*8              :: D(4), dti_du(size(U,1)), dsigmaviz_dU(size(U,1)), dsigmavcx_dU(size(U,1)), dsigmavnn_dU(size(U,1))
 
     Dnn_dU(:) = 0.
     if ((U(3)>=tol) .and. (U(1)>=tol) .and. (U(5)>=tol)) then
       ! calculation of atomic rates
         call compute_sigmaviz(U,sigmaviz)
         call compute_sigmavcx(U,sigmavcx)
+        call compute_sigmavnn(U,sigmavnn)
         ! calculation of temperature before limitation
         ti = simpar%refval_temperature*2./(3.*phys%Mref)*(U(3)/U(1) - 1./2.*(U(2)/U(1))**2)
         ti = max(simpar%refval_temperature*2./(3.*phys%Mref)*(U(3)/U(1) - 1./2.*(U(2)/U(1))**2),0.1)
         !call softplus_deriv(ti, ti_min,soft_deriv)   
          !call softplus(ti,ti_min)
-        ! calculation of Dnn before limitation
-        Dnn = simpar%refval_charge*ti/(simpar%refval_mass*simpar%refval_density*U(1)*(sigmaviz + sigmavcx))*simpar%refval_time/simpar%refval_length**2
+        ! Calculation of Dnn before limitation
+        ! NO KOTOV
+        Dnn = simpar%refval_charge*ti/(simpar%refval_mass*simpar%refval_density*(U(1)*(sigmaviz + sigmavcx)))*simpar%refval_time/simpar%refval_length**2
+        ! WITH KOTOV
+        !Dnn = simpar%refval_charge*ti/(simpar%refval_mass*simpar%refval_density*(U(1)*(sigmaviz + sigmavcx) + U(5)*sigmavnn))*simpar%refval_time/simpar%refval_length**2
         !call double_softplus_deriv(Dnn,10.*phys%diff_n,phys%diff_nn,double_soft_deriv)   !to check the mulptiplier for Dnn_min
 
         ! ti derivative
@@ -1255,6 +1451,7 @@ CONTAINS
         ! atomic rates derivatives
         call compute_dsigmaviz_dU(U,dsigmaviz_dU)
         call compute_dsigmavcx_dU(U,dsigmavcx_dU)
+        call compute_dsigmavnn_dU(U,dsigmavnn_dU)
 
         ! arrange all ingredients
         Dnn_dU(:) = 0.
@@ -1268,13 +1465,27 @@ CONTAINS
         !Dnn_dU(:) = Dnn_dU(:)*simpar%refval_time/simpar%refval_length**2*double\_soft_deriv
         CALL setLocalDiffSplitTerms(U,D)
 
-        IF (Dnn .le. phys%diff_nn .AND. Dnn .gt. 200.*D(1)) THEN
-           ! ti part
-           Dnn_dU(:) = Dnn_dU(:)+dti_du(:)*simpar%refval_charge/(simpar%refval_mass*simpar%refval_density*U(1)*(sigmaviz + sigmavcx))
-           ! n part
-           Dnn_dU(1) = Dnn_dU(1)-ti*simpar%refval_charge/(simpar%refval_mass*simpar%refval_density*U(1)**2*(sigmaviz + sigmavcx))
-           ! atomic rates part
-           Dnn_dU(:) = Dnn_dU(:)-ti*simpar%refval_charge/(simpar%refval_mass*simpar%refval_density*U(1)*(sigmaviz + sigmavcx)**2)*(dsigmaviz_dU(:)+dsigmavcx_dU(:))
+        IF (Dnn .le. phys%diff_nn .AND. Dnn .gt. 200.*simpar%refval_time/simpar%refval_length**2) THEN
+           if (switch%Kotov .eq. .FALSE.) THEN
+              ! NO KOTOV
+              ! ti part
+              Dnn_dU(:) = Dnn_dU(:)+dti_du(:)*simpar%refval_charge/(simpar%refval_mass*simpar%refval_density*U(1)*(sigmaviz + sigmavcx))
+              ! n part
+              Dnn_dU(1) = Dnn_dU(1)-ti*simpar%refval_charge/(simpar%refval_mass*simpar%refval_density*U(1)**2*(sigmaviz + sigmavcx))
+              ! atomic rates part
+              Dnn_dU(:) = Dnn_dU(:)-ti*simpar%refval_charge/(simpar%refval_mass*simpar%refval_density*U(1)*(sigmaviz + sigmavcx)**2)*(dsigmaviz_dU(:)+dsigmavcx_dU(:))
+          else
+             ! WITH KOTOV
+             ! ti part
+             Dnn_dU(:) = Dnn_dU(:)+dti_du(:)*simpar%refval_charge/(simpar%refval_mass*simpar%refval_density*(U(1)*(sigmaviz + sigmavcx)+ U(5) * sigmavnn))
+             ! n part
+             Dnn_dU(1) = Dnn_dU(1)-ti*simpar%refval_charge/(simpar%refval_mass*simpar%refval_density*(U(1)*(sigmaviz + sigmavcx) + U(5)*sigmavnn)**2)*(sigmaviz + sigmavcx)
+             ! nn part
+             Dnn_dU(5) = Dnn_dU(5)-ti*simpar%refval_charge/(simpar%refval_mass*simpar%refval_density*(U(1)*(sigmaviz + sigmavcx) + U(5)*sigmavnn)**2)*sigmavnn
+             ! atomic rates part
+             Dnn_dU(:) = Dnn_dU(:)-ti*simpar%refval_charge/(simpar%refval_mass*simpar%refval_density*(U(1)*(sigmaviz + sigmavcx) + U(5)*sigmavnn)**2)*(U(1)*(dsigmaviz_dU(:) + dsigmavcx_dU(:)) + U(5)*dsigmavnn_dU)
+           end if
+           ! DIMENSIONLESS
            Dnn_dU(:) = Dnn_dU(:)*simpar%refval_time/simpar%refval_length**2
         END IF
 
@@ -1740,62 +1951,62 @@ CONTAINS
   
     ! EIRENE documentation
     !Reaction 2.1.8JH
-    !alpha(1,:) = (/-2.85572848e+01, 3.48856323e-02, -2.79964439e-02,&
-    ! 1.20954532e-02, -2.43663080e-03, 2.83789372e-04,&
-    ! -1.88651117e-05, 6.75215560e-07, -1.00589386e-08/)
-    !alpha(2,:) = (/-7.66404261e-01, -3.58323337e-03, -7.45251429e-03,&
-    ! 2.70929976e-03, -7.74512977e-04, 1.14244470e-04,&
-    ! -9.38278352e-06, 3.90280010e-07, -6.38741159e-09/)
-    !alpha(3,:) = (/-4.93042400e-03, -3.62024535e-03, 6.95871196e-03,&
-    ! -2.13925730e-03, 4.60388371e-04, -5.99163684e-05,&
-    ! 4.72926255e-06, -1.99348540e-07, 3.35258987e-09/)
-    !alpha(4,:) = (/-5.38683098e-03, -9.53284048e-04, 4.63175381e-04,&
-    ! -5.37117970e-04, 1.54335050e-04, -2.25756584e-05,&
-    ! 1.73078295e-06, -6.61824078e-08, 1.01336428e-09/)
-    !alpha(5,:) = (/-1.62603924e-04, 1.88804863e-04, 1.28857769e-04,&
-    ! -1.63458052e-05, -9.60103695e-06, 3.42526239e-06,&
-    ! -4.07701994e-07, 2.04204110e-08, -3.70797772e-10/)
-    !alpha(6,:) = (/6.08090765e-06, -1.01489068e-05, -1.14502889e-04,&
-    ! 5.94219398e-05, -1.21185172e-05, 1.11896550e-06,&
-    ! -4.27532157e-08, 3.70861611e-10, 7.06845011e-12/)
-    !alpha(7,:) = (/2.10110205e-05, 2.24567656e-05, -2.24562427e-06,&
-    ! -2.94487376e-06, 1.00210510e-06, -1.29132080e-07,&
-    ! 7.78615546e-09, -2.44112778e-10, 3.77320848e-12/)
-    !alpha(8,:) = (/-2.77071760e-06, -4.69598237e-06, 3.25087887e-06,&
-    ! -9.38729079e-07, 1.39239163e-07, -1.13909329e-08,&
-    ! 5.17850560e-10, -9.45240216e-12, -4.67272402e-14/)
-    !alpha(9,:) = (/1.03823594e-07, 2.52316661e-07, -2.14539040e-07,&
-    ! 7.38143524e-08, -1.29971368e-08, 1.26518958e-09,&
-    ! -6.85420397e-11, 1.83661503e-12, -1.64049236e-14/)
+    alpha(1,:) = (/-2.85572848e+01, 3.48856323e-02, -2.79964439e-02,&
+     1.20954532e-02, -2.43663080e-03, 2.83789372e-04,&
+     -1.88651117e-05, 6.75215560e-07, -1.00589386e-08/)
+    alpha(2,:) = (/-7.66404261e-01, -3.58323337e-03, -7.45251429e-03,&
+     2.70929976e-03, -7.74512977e-04, 1.14244470e-04,&
+     -9.38278352e-06, 3.90280010e-07, -6.38741159e-09/)
+    alpha(3,:) = (/-4.93042400e-03, -3.62024535e-03, 6.95871196e-03,&
+     -2.13925730e-03, 4.60388371e-04, -5.99163684e-05,&
+     4.72926255e-06, -1.99348540e-07, 3.35258987e-09/)
+    alpha(4,:) = (/-5.38683098e-03, -9.53284048e-04, 4.63175381e-04,&
+     -5.37117970e-04, 1.54335050e-04, -2.25756584e-05,&
+     1.73078295e-06, -6.61824078e-08, 1.01336428e-09/)
+    alpha(5,:) = (/-1.62603924e-04, 1.88804863e-04, 1.28857769e-04,&
+     -1.63458052e-05, -9.60103695e-06, 3.42526239e-06,&
+     -4.07701994e-07, 2.04204110e-08, -3.70797772e-10/)
+    alpha(6,:) = (/6.08090765e-06, -1.01489068e-05, -1.14502889e-04,&
+     5.94219398e-05, -1.21185172e-05, 1.11896550e-06,&
+     -4.27532157e-08, 3.70861611e-10, 7.06845011e-12/)
+    alpha(7,:) = (/2.10110205e-05, 2.24567656e-05, -2.24562427e-06,&
+     -2.94487376e-06, 1.00210510e-06, -1.29132080e-07,&
+     7.78615546e-09, -2.44112778e-10, 3.77320848e-12/)
+    alpha(8,:) = (/-2.77071760e-06, -4.69598237e-06, 3.25087887e-06,&
+     -9.38729079e-07, 1.39239163e-07, -1.13909329e-08,&
+     5.17850560e-10, -9.45240216e-12, -4.67272402e-14/)
+    alpha(9,:) = (/1.03823594e-07, 2.52316661e-07, -2.14539040e-07,&
+     7.38143524e-08, -1.29971368e-08, 1.26518958e-09,&
+     -6.85420397e-11, 1.83661503e-12, -1.64049236e-14/)
 
     !Reaction 2.1.8a AMJUEL
-    alpha(1,:) = (/-2.861779556590e+01, -1.786166918005e-02, 6.391553337864e-04,&     
-     -4.509415260040e-04, 7.095459017274e-05, -5.660309928918e-06,&
-     1.160186631232e-07, 7.564986067995e-09, -2.969815025786e-10/)
-    alpha(2,:) = (/-7.251997071478e-01, 3.210966054964e-03, 4.550251497787e-03,&
-      -1.882306456891e-03, 3.983133042462e-04, -4.851835293564e-05,&
-      3.404834497087e-06, -1.280839994482e-07, 1.982839967575e-09/)
-    alpha(3,:) = (/ -1.735023322687e-02, -3.112517426840e-03, 1.077863345492e-03,&
-      -2.616958968739e-04, 5.459332810644e-05, -8.635308675130e-06,&
-      8.383106368091e-07, -4.133352004945e-08, 7.872491728981e-10/)
-    alpha(4,:) = (/-3.557752804131e-03, 1.558966107388e-03, -1.037331531958e-03,&
-      2.817237174744e-04, -4.407815167942e-05, 4.646017350681e-06,&
-      -3.365654551356e-07, 1.428350791171e-08, -2.522153346435e-10/)
-    alpha(5,:) = (/-2.777882255016e-04, -9.329932857673e-05, 1.096331766957e-04,&
-      -4.567488387292e-05, 8.495787235165e-06, -7.261076273040e-07,&
-       2.326992940046e-08, 2.208089550616e-10, -1.989979386039e-11/)
-    alpha(6,:) = (/ 2.060295404466e-05, -1.283711654633e-04, 7.312311894769e-05,&
-       -1.064805149480e-05, -1.498776433806e-07, 1.199087596048e-07,&
-       -5.668079133507e-09, -1.018554043516e-10, 7.766578964142e-12/)
-    alpha(7,:) = (/ 1.593238392469e-05, 3.705503401064e-05, -2.407235857913e-05,&
-       4.915213917257e-06, -3.346609397503e-07, -4.912753691671e-09,&
-       1.302393677822e-09, -3.169013613822e-11, -1.783762758524e-13/)
-    alpha(8,:) = (/-2.116580756634e-06, -3.854172456142e-06, 2.662392026941e-06,&
-       -6.120846201882e-07, 5.663728215333e-08, -1.474221162308e-09,&
-       -7.373095178045e-11, 4.314457229158e-12, -4.791677504810e-14/)
-    alpha(9,:) = (/7.665990100168e-08, 1.400789118322e-07, -1.008951470934e-07,&
-        2.495214914834e-08, -2.678484130657e-09, 1.170138331019e-10,&
-        -1.588254701759e-13, -1.226345218681e-13, 2.329402447113e-15/)
+    !alpha(1,:) = (/-2.861779556590e+01, -1.786166918005e-02, 6.391553337864e-04,&     
+    ! -4.509415260040e-04, 7.095459017274e-05, -5.660309928918e-06,&
+    ! 1.160186631232e-07, 7.564986067995e-09, -2.969815025786e-10/)
+    !alpha(2,:) = (/-7.251997071478e-01, 3.210966054964e-03, 4.550251497787e-03,&
+    !  -1.882306456891e-03, 3.983133042462e-04, -4.851835293564e-05,&
+    !  3.404834497087e-06, -1.280839994482e-07, 1.982839967575e-09/)
+    !alpha(3,:) = (/ -1.735023322687e-02, -3.112517426840e-03, 1.077863345492e-03,&
+    !  -2.616958968739e-04, 5.459332810644e-05, -8.635308675130e-06,&
+    !  8.383106368091e-07, -4.133352004945e-08, 7.872491728981e-10/)
+    !alpha(4,:) = (/-3.557752804131e-03, 1.558966107388e-03, -1.037331531958e-03,&
+    !  2.817237174744e-04, -4.407815167942e-05, 4.646017350681e-06,&
+    !  -3.365654551356e-07, 1.428350791171e-08, -2.522153346435e-10/)
+    !alpha(5,:) = (/-2.777882255016e-04, -9.329932857673e-05, 1.096331766957e-04,&
+    !  -4.567488387292e-05, 8.495787235165e-06, -7.261076273040e-07,&
+    !   2.326992940046e-08, 2.208089550616e-10, -1.989979386039e-11/)
+    !alpha(6,:) = (/ 2.060295404466e-05, -1.283711654633e-04, 7.312311894769e-05,&
+    !   -1.064805149480e-05, -1.498776433806e-07, 1.199087596048e-07,&
+    !   -5.668079133507e-09, -1.018554043516e-10, 7.766578964142e-12/)
+    !alpha(7,:) = (/ 1.593238392469e-05, 3.705503401064e-05, -2.407235857913e-05,&
+    !   4.915213917257e-06, -3.346609397503e-07, -4.912753691671e-09,&
+    !   1.302393677822e-09, -3.169013613822e-11, -1.783762758524e-13/)
+    !alpha(8,:) = (/-2.116580756634e-06, -3.854172456142e-06, 2.662392026941e-06,&
+    !   -6.120846201882e-07, 5.663728215333e-08, -1.474221162308e-09,&
+    !   -7.373095178045e-11, 4.314457229158e-12, -4.791677504810e-14/)
+    !alpha(9,:) = (/7.665990100168e-08, 1.400789118322e-07, -1.008951470934e-07,&
+    !    2.495214914834e-08, -2.678484130657e-09, 1.170138331019e-10,&
+    !    -1.588254701759e-13, -1.226345218681e-13, 2.329402447113e-15/)
   
      call compute_eirene_rate(te,ne,alpha,sigmavrec)
   
@@ -1826,62 +2037,62 @@ CONTAINS
   
     ! EIRENE documentation
     !Reaction 2.1.8JH AMJUEL
-    !alpha(1,:) = (/-2.85572848e+01, 3.48856323e-02, -2.79964439e-02,&
-    ! 1.20954532e-02, -2.43663080e-03, 2.83789372e-04,&
-    ! -1.88651117e-05, 6.75215560e-07, -1.00589386e-08/)
-    !alpha(2,:) = (/-7.66404261e-01, -3.58323337e-03, -7.45251429e-03,&
-    ! 2.70929976e-03, -7.74512977e-04, 1.14244470e-04,&
-    ! -9.38278352e-06, 3.90280010e-07, -6.38741159e-09/)
-    !alpha(3,:) = (/-4.93042400e-03, -3.62024535e-03, 6.95871196e-03,&
-    ! -2.13925730e-03, 4.60388371e-04, -5.99163684e-05,&
-    ! 4.72926255e-06, -1.99348540e-07, 3.35258987e-09/)
-    !alpha(4,:) = (/-5.38683098e-03, -9.53284048e-04, 4.63175381e-04,&
-    ! -5.37117970e-04, 1.54335050e-04, -2.25756584e-05,&
-    ! 1.73078295e-06, -6.61824078e-08, 1.01336428e-09/)
-    !alpha(5,:) = (/-1.62603924e-04, 1.88804863e-04, 1.28857769e-04,&
-    ! -1.63458052e-05, -9.60103695e-06, 3.42526239e-06,&
-    ! -4.07701994e-07, 2.04204110e-08, -3.70797772e-10/)
-    !alpha(6,:) = (/6.08090765e-06, -1.01489068e-05, -1.14502889e-04,&
-    ! 5.94219398e-05, -1.21185172e-05, 1.11896550e-06,&
-    ! -4.27532157e-08, 3.70861611e-10, 7.06845011e-12/)
-    !alpha(7,:) = (/2.10110205e-05, 2.24567656e-05, -2.24562427e-06,&
-    ! -2.94487376e-06, 1.00210510e-06, -1.29132080e-07,&
-    ! 7.78615546e-09, -2.44112778e-10, 3.77320848e-12/)
-    !alpha(8,:) = (/-2.77071760e-06, -4.69598237e-06, 3.25087887e-06,&
-    ! -9.38729079e-07, 1.39239163e-07, -1.13909329e-08,&
-    ! 5.17850560e-10, -9.45240216e-12, -4.67272402e-14/)
-    !alpha(9,:) = (/1.03823594e-07, 2.52316661e-07, -2.14539040e-07,&
-    ! 7.38143524e-08, -1.29971368e-08, 1.26518958e-09,&
-    ! -6.85420397e-11, 1.83661503e-12, -1.64049236e-14/)
+    alpha(1,:) = (/-2.85572848e+01, 3.48856323e-02, -2.79964439e-02,&
+     1.20954532e-02, -2.43663080e-03, 2.83789372e-04,&
+     -1.88651117e-05, 6.75215560e-07, -1.00589386e-08/)
+    alpha(2,:) = (/-7.66404261e-01, -3.58323337e-03, -7.45251429e-03,&
+     2.70929976e-03, -7.74512977e-04, 1.14244470e-04,&
+     -9.38278352e-06, 3.90280010e-07, -6.38741159e-09/)
+    alpha(3,:) = (/-4.93042400e-03, -3.62024535e-03, 6.95871196e-03,&
+     -2.13925730e-03, 4.60388371e-04, -5.99163684e-05,&
+     4.72926255e-06, -1.99348540e-07, 3.35258987e-09/)
+    alpha(4,:) = (/-5.38683098e-03, -9.53284048e-04, 4.63175381e-04,&
+     -5.37117970e-04, 1.54335050e-04, -2.25756584e-05,&
+     1.73078295e-06, -6.61824078e-08, 1.01336428e-09/)
+    alpha(5,:) = (/-1.62603924e-04, 1.88804863e-04, 1.28857769e-04,&
+     -1.63458052e-05, -9.60103695e-06, 3.42526239e-06,&
+     -4.07701994e-07, 2.04204110e-08, -3.70797772e-10/)
+    alpha(6,:) = (/6.08090765e-06, -1.01489068e-05, -1.14502889e-04,&
+     5.94219398e-05, -1.21185172e-05, 1.11896550e-06,&
+     -4.27532157e-08, 3.70861611e-10, 7.06845011e-12/)
+    alpha(7,:) = (/2.10110205e-05, 2.24567656e-05, -2.24562427e-06,&
+     -2.94487376e-06, 1.00210510e-06, -1.29132080e-07,&
+     7.78615546e-09, -2.44112778e-10, 3.77320848e-12/)
+    alpha(8,:) = (/-2.77071760e-06, -4.69598237e-06, 3.25087887e-06,&
+     -9.38729079e-07, 1.39239163e-07, -1.13909329e-08,&
+     5.17850560e-10, -9.45240216e-12, -4.67272402e-14/)
+    alpha(9,:) = (/1.03823594e-07, 2.52316661e-07, -2.14539040e-07,&
+     7.38143524e-08, -1.29971368e-08, 1.26518958e-09,&
+     -6.85420397e-11, 1.83661503e-12, -1.64049236e-14/)
 
     !Reaction 2.1.8a AMJUEL 
-    alpha(1,:) = (/-2.861779556590e+01, -1.786166918005e-02, 6.391553337864e-04,&
-     -4.509415260040e-04, 7.095459017274e-05, -5.660309928918e-06,&
-     1.160186631232e-07, 7.564986067995e-09, -2.969815025786e-10/)
-    alpha(2,:) = (/-7.251997071478e-01, 3.210966054964e-03, 4.550251497787e-03,&
-      -1.882306456891e-03, 3.983133042462e-04, -4.851835293564e-05,&
-      3.404834497087e-06, -1.280839994482e-07, 1.982839967575e-09/)
-    alpha(3,:) = (/ -1.735023322687e-02, -3.112517426840e-03, 1.077863345492e-03,&
-      -2.616958968739e-04, 5.459332810644e-05, -8.635308675130e-06,&
-      8.383106368091e-07, -4.133352004945e-08, 7.872491728981e-10/)
-    alpha(4,:) = (/-3.557752804131e-03, 1.558966107388e-03, -1.037331531958e-03,&
-      2.817237174744e-04, -4.407815167942e-05, 4.646017350681e-06,&
-      -3.365654551356e-07, 1.428350791171e-08, -2.522153346435e-10/)
-    alpha(5,:) = (/-2.777882255016e-04, -9.329932857673e-05, 1.096331766957e-04,&
-      -4.567488387292e-05, 8.495787235165e-06, -7.261076273040e-07,&
-       2.326992940046e-08, 2.208089550616e-10, -1.989979386039e-11/)
-    alpha(6,:) = (/ 2.060295404466e-05, -1.283711654633e-04, 7.312311894769e-05,&
-       -1.064805149480e-05, -1.498776433806e-07, 1.199087596048e-07,&
-       -5.668079133507e-09, -1.018554043516e-10, 7.766578964142e-12/)
-    alpha(7,:) = (/ 1.593238392469e-05, 3.705503401064e-05, -2.407235857913e-05,&
-       4.915213917257e-06, -3.346609397503e-07, -4.912753691671e-09,&
-       1.302393677822e-09, -3.169013613822e-11, -1.783762758524e-13/)
-    alpha(8,:) = (/-2.116580756634e-06, -3.854172456142e-06, 2.662392026941e-06,&
-       -6.120846201882e-07, 5.663728215333e-08, -1.474221162308e-09,&
-       -7.373095178045e-11, 4.314457229158e-12, -4.791677504810e-14/)
-    alpha(9,:) = (/7.665990100168e-08, 1.400789118322e-07, -1.008951470934e-07,&
-        2.495214914834e-08, -2.678484130657e-09, 1.170138331019e-10,&
-        -1.588254701759e-13, -1.226345218681e-13, 2.329402447113e-15/)
+    !alpha(1,:) = (/-2.861779556590e+01, -1.786166918005e-02, 6.391553337864e-04,&
+    ! -4.509415260040e-04, 7.095459017274e-05, -5.660309928918e-06,&
+    ! 1.160186631232e-07, 7.564986067995e-09, -2.969815025786e-10/)
+    !alpha(2,:) = (/-7.251997071478e-01, 3.210966054964e-03, 4.550251497787e-03,&
+    !  -1.882306456891e-03, 3.983133042462e-04, -4.851835293564e-05,&
+    !  3.404834497087e-06, -1.280839994482e-07, 1.982839967575e-09/)
+    !alpha(3,:) = (/ -1.735023322687e-02, -3.112517426840e-03, 1.077863345492e-03,&
+    !  -2.616958968739e-04, 5.459332810644e-05, -8.635308675130e-06,&
+    !  8.383106368091e-07, -4.133352004945e-08, 7.872491728981e-10/)
+    !alpha(4,:) = (/-3.557752804131e-03, 1.558966107388e-03, -1.037331531958e-03,&
+    !  2.817237174744e-04, -4.407815167942e-05, 4.646017350681e-06,&
+    !  -3.365654551356e-07, 1.428350791171e-08, -2.522153346435e-10/)
+    !alpha(5,:) = (/-2.777882255016e-04, -9.329932857673e-05, 1.096331766957e-04,&
+    !  -4.567488387292e-05, 8.495787235165e-06, -7.261076273040e-07,&
+    !   2.326992940046e-08, 2.208089550616e-10, -1.989979386039e-11/)
+    !alpha(6,:) = (/ 2.060295404466e-05, -1.283711654633e-04, 7.312311894769e-05,&
+    !   -1.064805149480e-05, -1.498776433806e-07, 1.199087596048e-07,&
+    !   -5.668079133507e-09, -1.018554043516e-10, 7.766578964142e-12/)
+    !alpha(7,:) = (/ 1.593238392469e-05, 3.705503401064e-05, -2.407235857913e-05,&
+    !   4.915213917257e-06, -3.346609397503e-07, -4.912753691671e-09,&
+    !   1.302393677822e-09, -3.169013613822e-11, -1.783762758524e-13/)
+    !alpha(8,:) = (/-2.116580756634e-06, -3.854172456142e-06, 2.662392026941e-06,&
+    !   -6.120846201882e-07, 5.663728215333e-08, -1.474221162308e-09,&
+    !   -7.373095178045e-11, 4.314457229158e-12, -4.791677504810e-14/)
+    !alpha(9,:) = (/7.665990100168e-08, 1.400789118322e-07, -1.008951470934e-07,&
+    !    2.495214914834e-08, -2.678484130657e-09, 1.170138331019e-10,&
+    !    -1.588254701759e-13, -1.226345218681e-13, 2.329402447113e-15/)
   
      res = 0.
   
@@ -2008,6 +2219,61 @@ CONTAINS
     end if
   END SUBROUTINE compute_dsigmavcx_dU
 
+  ! Neutral-neutral collision reaction rate
+  SUBROUTINE compute_sigmavnn(U,sigmavnn)
+    real*8, intent(IN) :: U(:)
+    real*8             :: sigmavnn,U1,U2,U3,T0,ti,n0, kb, e_const
+    real*8             :: s0
+    real, parameter    :: tol = 1.e-10  !tolerance for U4 = 3/2*Mref*U1min*te_min/T0
+    U1 = U(1)
+    U2 = U(2)
+    U3 = U(3)
+    T0 = 50.
+    n0 = 1.e19
+    kb = 1.38064852e-23
+    e_const = 1.60217662e-19
+
+    s0 = 5.2958e-11 * 1.e-6
+    ti = T0*2/3./phys%Mref*(U3/U1 - 1./2. *U2**2/U1**2)
+    if (ti<tol) then ! basically it's a below zero check
+      !some low values
+      ti = tol
+    endif
+
+    sigmavnn = 0.
+
+    sigmavnn = s0*(ti*e_const/(1.38064852e-23))**0.25
+  END SUBROUTINE compute_sigmavnn
+
+  SUBROUTINE compute_dsigmavnn_dU(U,res)
+    real*8, intent(IN) :: U(:)
+    real*8             :: res(:),U1,U2,U3,T0,ti
+    real*8             :: dti_dU(size(U))
+    real*8             :: s0
+    real, parameter    :: tol = 1.e-10 !tolerance for U4 = 3/2*Mref*U1min*te_min/T0
+
+    !allocate(dti_dU(size(U)))
+
+    U1 = U(1)
+    U2 = U(2)
+    U3 = U(3)
+    T0 = 50.
+
+    s0 = 5.2958e-11 * 1.e-6
+
+    res = 0.
+    dti_dU = 0.
+    ti = T0*2/3. /phys%Mref * (U3/U1 - 1./2. *U2**2/U1**2)
+    if (ti>tol) then ! basically it's a below zero check
+      dti_dU(1) = dti_dU(1) + 1.*(-U3 + U2**2/U1) / U1**2
+      dti_dU(2) = dti_dU(2) - 1.*U2/U1**2
+      dti_dU(3) = dti_dU(3) + 1./U1
+      dti_dU(:) = dti_dU(:) * T0*2/3. /phys%Mref
+
+      res = (0.25 *s0 / ti**0.75) * dti_dU
+    endif !let non-linear part as zero if negative solutions
+  END SUBROUTINE compute_dsigmavnn_dU
+
   SUBROUTINE compute_eirene_rate(te,ne,alpha,rate)
     real*8, intent(IN) :: te,ne,alpha(:,:) 
     real*8, intent(OUT):: rate
@@ -2103,6 +2369,114 @@ CONTAINS
   END SUBROUTINE compute_dTloss_dU
 
 
+  SUBROUTINE compute_sigmavEiz(U,sigmavEiz)
+    real*8, intent(IN) :: U(:)
+    real*8 :: sigmavEiz,U1,U4,T0,Ery,E0,te,ne,n0
+    real*8, dimension(9,9) :: alpha
+    real, parameter :: tol = 1e-10
+    integer :: i, j
+    U1 = U(1)
+    U4 = U(4)
+    T0 = 50.
+    n0 = 1.e19
+    ne = n0*U1/1.e14
+    te = T0*2/3/phys%Mref*U4/U1
+    !if (U1<tol) U1=tol
+    !if (U4<tol) U4=tol
+    if (ne<1.1e0) ne=1.1e0
+    if (ne>2.e7) ne = 2.e7
+    if (te<0.1) te=0.1
+    if (te>1.e4) te = 1.e4
+
+    sigmavEiz = 0.
+
+    alpha(:,1) = (/-2.50812402e+01,  9.96163441e+00, -4.77618017e+00,&
+         1.63071304e+00, -3.86224646e-01,  5.90834812e-02,&
+        -5.50214904e-03,  2.82569314e-04, -6.12637364e-06/)
+    alpha(:,2) = (/1.73410814e-02, -1.57330788e-02,  2.97091760e-04,&
+         3.45781992e-03, -1.35470702e-03,  2.46767178e-04,&
+        -2.55003960e-05,  1.47937419e-06, -3.76891493e-08/)
+    alpha(:,3) = (/-1.89177715e-02,  1.84373426e-02, -3.80775886e-03,&
+         -1.18284624e-03,  5.75833588e-04, -9.70777644e-05,&
+         9.18691271e-06, -5.35799299e-07,  1.51653965e-08/)
+    alpha(:,4) = (/7.82341508e-03, -7.52650697e-03,  2.10882029e-03,&
+         -1.06633298e-05, -6.05390376e-05,  7.78447320e-06,&
+         -5.44204893e-07,  4.79775889e-08, -2.40410533e-09/)
+    alpha(:,5) = (/-1.63154981e-03,  1.44548221e-03, -4.15664835e-04,&
+         2.94249910e-05, -4.22728571e-07,  7.20587415e-07,&
+        -8.99016149e-08, -1.63703056e-09,  3.75320669e-10/)
+    alpha(:,6) = (/ 1.88643572e-04, -1.43008955e-04,  3.40709882e-05,&
+         -8.97623559e-07, -2.35247387e-09, -9.88325233e-08,&
+          8.93347501e-09,  5.73579811e-10, -6.00200317e-11/)
+    alpha(:,7) = (/-1.22470024e-05,  7.22137655e-06, -8.30018517e-07,&
+         -3.00628338e-07,  4.54414015e-08,  2.57712484e-09,&
+         -1.93796015e-10, -6.97804260e-11,  5.01115698e-12/)
+    alpha(:,8) = (/ 4.17042724e-07, -1.63374822e-07, -2.67173046e-08,&
+         2.40019846e-08, -2.85457989e-09, -1.00767541e-10,&
+         1.66441312e-11,  1.83602098e-12, -1.64199582e-13/)
+    alpha(:,9) = (/-5.77555689e-09,  1.02821579e-09,  1.14006243e-09,&
+         -4.90129725e-10,  3.86861210e-11,  6.21520030e-12,&
+         -9.52124215e-13,  1.88492217e-14,  1.25729669e-15/)
+
+    call compute_eirene_rate(te,ne,alpha,sigmavEiz)
+  
+  END SUBROUTINE compute_sigmavEiz
+
+
+  SUBROUTINE compute_dsigmavEiz_dU(U,res)
+    real*8, intent(IN) :: U(:)
+    real*8 :: res(:),sigmavEiz,U1,U4,T0,Ery,E0,te,ne,n0
+    real*8, dimension(9,9) :: alpha
+    real, parameter :: tol = 1e-10
+    integer :: i, j
+    U1 = U(1)
+    U4 = U(4)
+    T0 = 50.
+    n0 = 1.e19
+    ne = n0*U1/1.e14
+    te = T0*2/3/phys%Mref*U4/U1
+    !if (U1<tol) U1=tol
+    !if (U4<tol) U4=tol
+    if (ne<1.1e0) ne=1.1e0
+    if (ne>2.e7) ne = 2.e7
+    if (te<0.1) te=0.1
+    if (te>1.e4) te = 1.e4
+
+    res = 0.
+    
+    alpha(:,1) = (/-2.50812402e+01,  9.96163441e+00, -4.77618017e+00,&
+         1.63071304e+00, -3.86224646e-01,  5.90834812e-02,&
+        -5.50214904e-03,  2.82569314e-04, -6.12637364e-06/)
+    alpha(:,2) = (/1.73410814e-02, -1.57330788e-02,  2.97091760e-04,&
+         3.45781992e-03, -1.35470702e-03,  2.46767178e-04,&
+        -2.55003960e-05,  1.47937419e-06, -3.76891493e-08/)
+    alpha(:,3) = (/-1.89177715e-02,  1.84373426e-02, -3.80775886e-03,&
+         -1.18284624e-03,  5.75833588e-04, -9.70777644e-05,&
+         9.18691271e-06, -5.35799299e-07,  1.51653965e-08/)
+    alpha(:,4) = (/7.82341508e-03, -7.52650697e-03,  2.10882029e-03,&
+         -1.06633298e-05, -6.05390376e-05,  7.78447320e-06,&
+         -5.44204893e-07,  4.79775889e-08, -2.40410533e-09/)
+    alpha(:,5) = (/-1.63154981e-03,  1.44548221e-03, -4.15664835e-04,&
+         2.94249910e-05, -4.22728571e-07,  7.20587415e-07,&
+        -8.99016149e-08, -1.63703056e-09,  3.75320669e-10/)
+    alpha(:,6) = (/ 1.88643572e-04, -1.43008955e-04,  3.40709882e-05,&
+         -8.97623559e-07, -2.35247387e-09, -9.88325233e-08,&
+          8.93347501e-09,  5.73579811e-10, -6.00200317e-11/)
+    alpha(:,7) = (/-1.22470024e-05,  7.22137655e-06, -8.30018517e-07,&
+         -3.00628338e-07,  4.54414015e-08,  2.57712484e-09,&
+         -1.93796015e-10, -6.97804260e-11,  5.01115698e-12/)
+    alpha(:,8) = (/ 4.17042724e-07, -1.63374822e-07, -2.67173046e-08,&
+         2.40019846e-08, -2.85457989e-09, -1.00767541e-10,&
+         1.66441312e-11,  1.83602098e-12, -1.64199582e-13/)
+    alpha(:,9) = (/-5.77555689e-09,  1.02821579e-09,  1.14006243e-09,&
+         -4.90129725e-10,  3.86861210e-11,  6.21520030e-12,&
+         -9.52124215e-13,  1.88492217e-14,  1.25729669e-15/)
+
+    call compute_eirene_rate_du(U1,U4,te,ne,alpha,res)
+  
+  END SUBROUTINE compute_dsigmavEiz_dU
+
+
   SUBROUTINE compute_Tlossrec(U,Tlossrec)
     real*8, intent(IN) :: U(:)
     real*8             :: Tlossrec,U1,U4,T0
@@ -2145,6 +2519,113 @@ CONTAINS
        res = 8.*exp(Tlossrec)*((2.*T0)/(27.*phys%Mref))*res
     endif 
   END SUBROUTINE compute_dTlossrec_dU
+
+
+   SUBROUTINE compute_sigmavErec(U,sigmavErec)
+    real*8, intent(IN) :: U(:)
+    real*8 :: sigmavErec,U1,U4,T0,Ery,E0,te,ne,n0
+    real*8, dimension(9,9) :: alpha
+    real, parameter :: tol = 1e-10
+    integer :: i, j
+    U1 = U(1)
+    U4 = U(4)
+    T0 = 50.
+    n0 = 1.e19
+    ne = n0*U1/1.e14
+    te = T0*2/3/phys%Mref*U4/U1
+    !if (U1<tol) U1=tol
+    !if (U4<tol) U4=tol
+    if (ne<1.1e0) ne=1.1e0
+    if (ne>2.e7) ne = 2.e7
+    if (te<0.1) te=0.1
+    if (te>1.e4) te = 1.e4
+
+    sigmavErec = 0.
+
+    alpha(:,1) = (/-2.59245035e+01, -7.29067024e-01,  2.36392587e-02,&
+         3.64533393e-03,  1.59418465e-03, -1.21666803e-03,&
+         2.37611590e-04, -1.93097764e-05,  5.59925778e-07/)
+    alpha(:,2) = (/1.22209727e-02, -1.54032393e-02,  1.16445335e-02,&
+         -1.00582079e-03, -1.58223801e-05, -3.50307014e-04,&
+          1.17270978e-04, -1.31840149e-05,  4.97782332e-07/)
+    alpha(:,3) = (/4.27849940e-05, -3.40609378e-03, -5.84520933e-03,&
+         6.95635227e-04,  4.07369562e-04,  1.04350030e-04,&
+        -6.69518205e-05,  8.84802545e-06, -3.61501382e-07/)
+    alpha(:,4) = (/ 1.94396774e-03,  1.53224343e-03,  2.85414587e-03,&
+         -9.30505637e-04, -9.37916924e-05,  9.53616277e-06,&
+          1.18818401e-05, -2.07237071e-06,  9.46698931e-08/)
+    alpha(:,5) = (/-7.12347460e-04, -4.65842377e-04, -5.07748529e-04,&
+         2.58489629e-04,  1.49089050e-06, -6.90868188e-06,&
+        -4.38151436e-07,  2.05591999e-07, -1.14648523e-08/)
+    alpha(:,6) = (/1.30352340e-04,  5.97244875e-05,  4.21110664e-05,&
+         -3.29464390e-05,  2.24529287e-06,  8.23201901e-07,&
+         -6.93626717e-08, -7.48963265e-09,  6.77233892e-10/)
+    alpha(:,7) = (/-1.18656075e-05, -4.07084329e-06, -1.25143662e-06,&
+         2.11292402e-06, -3.15090101e-07, -2.90533105e-08,&
+         6.59224926e-09, -7.07379703e-11, -1.77649634e-11/)
+    alpha(:,8) = (/5.33445563e-07,  1.37870988e-07, -1.62655575e-08,&
+         -6.54468284e-08,  1.63196564e-08, -3.16903852e-10,&
+         -1.77888796e-10,  1.04708751e-11,  7.19919506e-14/)
+    alpha(:,9) = (/-9.34985789e-09, -1.81807973e-09,  1.07345881e-09,&
+         7.81029308e-10, -2.98409303e-10,  2.44276577e-11,&
+         1.16076211e-12, -1.87744627e-13,  3.92930028e-15/)
+
+   call compute_eirene_rate(te,ne,alpha,sigmavErec)
+
+  END SUBROUTINE compute_sigmavErec
+
+
+  SUBROUTINE compute_dsigmavErec_dU(U,res)
+    real*8, intent(IN) :: U(:)
+    real*8 :: res(:),sigmavErec,U1,U4,T0,Ery,E0,te,ne,n0
+    real*8, dimension(9,9) :: alpha
+    real, parameter :: tol = 1e-10
+    integer :: i, j
+    U1 = U(1)
+    U4 = U(4)
+    T0 = 50.
+    n0 = 1.e19
+    ne = n0*U1/1.e14
+    te = T0*2/3/phys%Mref*U4/U1
+    !if (U1<tol) U1=tol
+    !if (U4<tol) U4=tol
+    if (ne<1.1e0) ne=1.1e0
+    if (ne>2.e7) ne = 2.e7
+    if (te<0.1) te=0.1     
+
+    res = 0.
+    
+    alpha(:,1) = (/-2.59245035e+01, -7.29067024e-01,  2.36392587e-02,&
+         3.64533393e-03,  1.59418465e-03, -1.21666803e-03,&
+         2.37611590e-04, -1.93097764e-05,  5.59925778e-07/)
+    alpha(:,2) = (/1.22209727e-02, -1.54032393e-02,  1.16445335e-02,&
+         -1.00582079e-03, -1.58223801e-05, -3.50307014e-04,&
+          1.17270978e-04, -1.31840149e-05,  4.97782332e-07/)
+    alpha(:,3) = (/4.27849940e-05, -3.40609378e-03, -5.84520933e-03,&
+         6.95635227e-04,  4.07369562e-04,  1.04350030e-04,&
+        -6.69518205e-05,  8.84802545e-06, -3.61501382e-07/)
+    alpha(:,4) = (/ 1.94396774e-03,  1.53224343e-03,  2.85414587e-03,&
+         -9.30505637e-04, -9.37916924e-05,  9.53616277e-06,&
+          1.18818401e-05, -2.07237071e-06,  9.46698931e-08/)
+    alpha(:,5) = (/-7.12347460e-04, -4.65842377e-04, -5.07748529e-04,&
+         2.58489629e-04,  1.49089050e-06, -6.90868188e-06,&
+        -4.38151436e-07,  2.05591999e-07, -1.14648523e-08/)
+    alpha(:,6) = (/1.30352340e-04,  5.97244875e-05,  4.21110664e-05,&
+         -3.29464390e-05,  2.24529287e-06,  8.23201901e-07,&
+         -6.93626717e-08, -7.48963265e-09,  6.77233892e-10/)
+    alpha(:,7) = (/-1.18656075e-05, -4.07084329e-06, -1.25143662e-06,&
+         2.11292402e-06, -3.15090101e-07, -2.90533105e-08,&
+         6.59224926e-09, -7.07379703e-11, -1.77649634e-11/)
+    alpha(:,8) = (/5.33445563e-07,  1.37870988e-07, -1.62655575e-08,&
+         -6.54468284e-08,  1.63196564e-08, -3.16903852e-10,&
+         -1.77888796e-10,  1.04708751e-11,  7.19919506e-14/)
+    alpha(:,9) = (/-9.34985789e-09, -1.81807973e-09,  1.07345881e-09,&
+         7.81029308e-10, -2.98409303e-10,  2.44276577e-11,&
+         1.16076211e-12, -1.87744627e-13,  3.92930028e-15/)
+
+    call compute_eirene_rate_du(U1,U4,te,ne,alpha,res)
+
+  END SUBROUTINE compute_dsigmavErec_dU
 
 
   SUBROUTINE compute_fEiiz(U,fEiiz)
@@ -2208,7 +2689,7 @@ CONTAINS
     U5 = U(5)
     if (U1<tol) U1=tol
     if (U5<tol) U5=tol
-    fEicx = (U5*U2**2)/U1
+    fEicx = 1./2.*(U5*U2**2)/U1
   END SUBROUTINE compute_fEicx
 
 
@@ -2225,6 +2706,9 @@ CONTAINS
     res(1) = -U5*(U2/U1)**2
     res(2) = 2.*U5*U2/U1
     res(5) = (U2**2)/U1
+
+    res(:) = 1./2.*res(:)
+
   END SUBROUTINE compute_dfEicx_dU
   
 #ifdef NEUTRALP
@@ -2249,7 +2733,8 @@ CONTAINS
     CALL compute_sigmaviz(U,sigmaviz)
     CALL compute_sigmavcx(U,sigmavcx)
     Dpn = 1./(simpar%refval_time*simpar%refval_density*U1*(sigmaviz + sigmavcx))
-    Dpn = 2./3.*Dpn   
+    Dpn = 2./3.*Dpn
+    !Dpn = 10.
     !Set a threshold Dpn*|grad(Pn)| <= cs_n*n_n
     !cs_n = 0.
     !Grad_Pn = 0. 
@@ -2292,7 +2777,7 @@ CONTAINS
        res(4) = U1*(dsigmaviz_dU(4) + dsigmavcx_dU(4))
        res = -3./2*Dpn**2*res
     END IF
-  END SUBROUTINE
+  END SUBROUTINE compute_dDpn_dU
   
   SUBROUTINE computeVpn(U,Vpn)
     real*8, intent(IN) :: U(:)
@@ -2445,6 +2930,7 @@ SUBROUTINE computeAlphaCoeff(U,Q,Vpn,res)
     GammaLim = abs(cs_n*U5)
 
     res = 1./(1. + GammaDpn/GammaLim)
+    res = 1.
   END SUBROUTINE
 #endif 
 !NEUTRAL PRESSURE
@@ -2500,9 +2986,9 @@ SUBROUTINE computeAlphaCoeff(U,Q,Vpn,res)
        Etan = U5*phys%diff_nn
     end if
 
-    !if (Etan/U5 .lt. 200*simpar%refval_time/simpar%refval_length**2) then
-    !   Etan = U5*200*simpar%refval_time/simpar%refval_length**2
-    !end if
+    if (Etan/U5 .lt. 200.*simpar%refval_time/simpar%refval_length**2) then
+       Etan = U5*200*simpar%refval_time/simpar%refval_length**2
+    end if
   
   END SUBROUTINE computeEtan
 
@@ -2600,12 +3086,13 @@ SUBROUTINE computeAlphaCoeff(U,Q,Vpn,res)
   !*******************************************
   ! Compute the stabilization tensor tau
   !*******************************************
-  SUBROUTINE computeTauGaussPoints(up, uc, q, b, n, iel, ifa, isext, xy, tau)
-    real*8, intent(in)  :: up(:), uc(:), q(:), b(:), n(:), xy(:)
+  SUBROUTINE computeTauGaussPoints(up, uc, q, b, psi, n, iel, ifa, isext, xy, tau)
+    real*8, intent(in)  :: up(:),uc(:),q(:),b(:),n(:),xy(:)
+    real*8, intent(in)  :: psi
     real, intent(in)    :: isext
     integer, intent(in) :: ifa, iel
     real*8, intent(out) :: tau(:, :)
-    real*8              :: tau_aux(phys%Neq),diff_iso(phys%Neq,phys%Neq,1),diff_ani(phys%Neq,phys%Neq,1)
+    real*8              :: tau_aux(phys%Neq),psig,diff_iso(phys%Neq,phys%Neq,1),diff_ani(phys%Neq,phys%Neq,1)
 #ifdef NEUTRALP
     real*8              :: Dpn
     real*8              :: Vpn(simpar%Neq),Qpr(simpar%Ndim,simpar%Neq)
@@ -2614,7 +3101,7 @@ SUBROUTINE computeAlphaCoeff(U,Q,Vpn,res)
     real*8              :: Etan
 #endif
     integer             :: ndim
-    real*8              :: xc, yc, rad, h, aux, bn, bnorm,xyd(1,size(xy)),uu(1,size(uc)),qq(1,size(q))
+    real*8              :: xc, yc, rad, h, aux, bn, bnorm,xyd(1,size(xy)),uu(1,size(uc)),qq(1,size(q)),psipsi(size(b))
     real*8              :: U1, U2, U3, U4
     
     U1 = uc(1)
@@ -2629,8 +3116,9 @@ SUBROUTINE computeAlphaCoeff(U,Q,Vpn,res)
     xyd(1,:) = xy(:)
     uu(1,:) = uc(:)
     qq(1,:) = q(:)
+    psipsi(1) = psi
 
-    call setLocalDiff(xyd, uu, qq, diff_iso, diff_ani)
+    call setLocalDiff(xyd,uu,qq,psipsi,diff_iso,diff_ani)
     
 #ifdef NEUTRALP
     ! Compute Vpn(U^(k-1))

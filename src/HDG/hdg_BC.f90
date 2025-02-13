@@ -647,7 +647,7 @@ CONTAINS
     qsfg = matmul(refElPol%N1d,qsffl)
     
     ! Compute diffusion at faces Gauss points
-    CALL setLocalDiff(xyg,ufg,qfg,diff_iso_fac,diff_ani_fac)
+    CALL setLocalDiff(xyg,ufg,qfg,psig,diff_iso_fac,diff_ani_fac)
     if (save_tau) then
        indtausave = (ifa - 1)*refElPol%Ngauss1d+(/(i,i=1,refElPol%Ngauss1d)/)
        phys%diff_nn_Bou(indtausave) = diff_iso_fac(5,5,:)
@@ -853,7 +853,7 @@ CONTAINS
       IF (numer%stab > 1) THEN
         ! Compute tau in the Gauss points
         IF (numer%stab < 6) THEN
-          CALL computeTauGaussPoints(upg(g,:),ufg(g,:),qfg(g,:),b(g,1:2),n_g,iel,ifa,1.,xyg(g,:),tau_stab)
+          CALL computeTauGaussPoints(upg(g,:),ufg(g,:),qfg(g,:),b(g,1:2),psig(g),n_g,iel,ifa,1.,xyg(g,:),tau_stab)
         ELSE
           CALL computeTauGaussPoints_matrix(upg(g,:),ufg(g,:),b(g,1:2),n_g,xyg(g,:),1.,iel,tau_stab)
         ENDIF
@@ -904,7 +904,7 @@ CONTAINS
       IF (numer%stab > 1) THEN
         ! Compute tau in the Gauss points
         IF (numer%stab < 6) THEN
-          CALL computeTauGaussPoints(upg(g,:),ufg(g,:),qfg(g,:),b(g,1:2),n_g,iel,ifa,1.,xyg(g,:),tau_stab)
+          CALL computeTauGaussPoints(upg(g,:),ufg(g,:),qfg(g,:),b(g,1:2),psig(g),n_g,iel,ifa,1.,xyg(g,:),tau_stab)
         ELSE
           CALL computeTauGaussPoints_matrix(upg(g,:),ufg(g,:),b(g,1:2),n_g,xyg(g,:),1.,iel,tau_stab)
         ENDIF
@@ -985,7 +985,7 @@ CONTAINS
       IF (numer%stab > 1) THEN
         ! Compute tau in the Gauss points
         IF (numer%stab < 6) THEN
-          CALL computeTauGaussPoints(upg(g,:),ufg(g,:),qfg(g,:),b(g,1:2),n_g,iel,ifa,1.,xyg(g,:),tau_stab)
+          CALL computeTauGaussPoints(upg(g,:),ufg(g,:),qfg(g,:),b(g,1:2),psig(g),n_g,iel,ifa,1.,xyg(g,:),tau_stab)
         ELSE
           CALL computeTauGaussPoints_matrix(upg(g,:),ufg(g,:),b(g,1:2),n_g,xyg(g,:),1.,iel,tau_stab)
         ENDIF
@@ -1130,11 +1130,11 @@ CONTAINS
       sn = sign(1.,bn)
       delta = 1.      
       IF (abs(inc) .le. phys%bohmth) THEN
-         setval = sn*SoundSpeed/phys%bohmth*abs(inc)
+         setval = sn*SoundSpeed/phys%bohmth*abs(inc)*(abs(ufg(g,3))/(abs(ufg(g,3))+2.e-4))
       ELSE
-         IF (abs(upg(g,2)) .le. SoundSpeed) THEN
-            setval = sn*SoundSpeed
-         ELSE IF (abs(upg(g,2)) .gt. SoundSpeed) THEN
+         IF (abs(upg(g,2)) .le. SoundSpeed/abs((ufg(g,3))/(abs(ufg(g,3))+2.e-4))) THEN
+            setval = sn*SoundSpeed*(abs(ufg(g,3))/(abs(ufg(g,3))+2.e-4))
+         ELSE IF (abs(upg(g,2)) .gt. SoundSpeed/abs((ufg(g,3))/(abs(ufg(g,3))+2.e-4))) THEN
             delta = 0.
             !setval = sn*setval
          END IF 
@@ -1151,7 +1151,7 @@ CONTAINS
       IF (numer%stab > 1) THEN
         ! Compute tau in the Gauss points
         IF (numer%stab < 6) THEN
-          CALL computeTauGaussPoints(upg(g,:),ufg(g,:),qfg(g,:),b(g,1:2),n_g,iel,ifa,1.,xyg(g,:),tau_stab)
+          CALL computeTauGaussPoints(upg(g,:),ufg(g,:),qfg(g,:),b(g,1:2),psig(g),n_g,iel,ifa,1.,xyg(g,:),tau_stab)
         ELSE
           CALL computeTauGaussPoints_matrix(upg(g,:),ufg(g,:),b(g,1:2),n_g,xyg(g,:),1.,iel,tau_stab)
         ENDIF
@@ -1714,7 +1714,7 @@ CONTAINS
     real*8           :: W3(Neq), dW3_dU(Neq,Neq), QdW3(Ndim,Neq)
     real*8           :: W4(Neq), dW4_dU(Neq,Neq), QdW4(Ndim,Neq)
 #ifdef NEUTRAL
-    real*8           :: dDnn_dU(Neq)
+    real*8           :: E,theta,RN,dDnn_dU(Neq)
 #endif
 #ifdef NEUTRALP
     real*8           :: Dpn,GammaLim
@@ -2130,6 +2130,16 @@ CONTAINS
 
 
 #ifdef NEUTRAL
+      ! Reflection coefficient from TRIM
+      E = 1./2.*1./simpar%refval_charge*simpar%refval_mass*(simpar%refval_speed*upfg(2))**2
+      theta = 180./acos(-1.D0)*acos(abs(bn))
+      call compute_RN(E,theta,RN)
+      !RN = 1.
+      !IF (iel==18 .or. iel==17 .or. iel==233 .or. iel==232 .or. iel==364 .or. iel==365 .or. iel==348 .or. iel==347 ) THEN 
+      !   WRITE(6,*) 'E = ', E
+      !   WRITE(6,*) 'theta = ', theta
+      !   WRITE(6,*) 'RN = ', RN
+      !END IF
 #ifndef NEUTRALP
       ! Linearization Dnn
       call compute_dDnn_dU(ufg,dDnn_dU)
@@ -2157,23 +2167,40 @@ CONTAINS
     SELECT CASE (bc)
 
     CASE (bc_Bohm)
-       recycling_coeff =  phys%Re
+       recycling_coeff =  phys%Re*RN
        puff_coeff = 0.
        pump_coeff = 0.
     CASE (bc_BohmPump)
-       recycling_coeff =  min(0.9928,phys%Re)
-       if (switch%testcase .ge. 50 .and. switch%testcase .le. 59) recycling_coeff = 0.95
-       !recycling_coeff = 0.
+       if (switch%testcase .ge. 50 .and. switch%testcase .le. 59) recycling_coeff = min(0.95,phys%Re)     ! WEST
+       if (switch%testcase .ge. 70 .and. switch%testcase .le. 79) recycling_coeff = min(0.9,phys%Re)      ! SPARC
+       if (switch%testcase .ge. 80 .and. switch%testcase .le. 89) recycling_coeff = min(0.9928,phys%Re)   ! ITER
+       recycling_coeff = recycling_coeff*RN
        puff_coeff = 0.
-       pump_coeff = 1. - recycling_coeff
+       if (phys%cryopump .gt. 0.) then
+          pump_coeff = phys%cryopump/(Mesh%pump_area*phys%lscale**2)/(simpar%refval_diffusion)*phys%lscale
+       else
+          pump_coeff = 1. - recycling_coeff
+       endif       
     CASE (bc_BohmPuff) 
-       recycling_coeff =  phys%Re
+       recycling_coeff =  phys%Re*RN
        puff_coeff = phys%puff/simpar%refval_density/(Mesh%puff_area*phys%lscale**2)/(simpar%refval_diffusion)*phys%lscale
+       !if (phys%puff_slope .gt. 0.) then
+          ! Linear ramp-up of puff in time
+       !   puff_coeff = min(1.e22,phys%puff + phys%puff_slope*time%it)/simpar%refval_density/(Mesh%puff_area*phys%lscale**2)/(simpar%refval_diffusion)*phys%lscale
+       !end if
        pump_coeff = 0.
     CASE DEFAULT
       WRITE (6,*) "Error: wrong boundary type"
       STOP
     END SELECT
+
+    !IF (iel==18 .or. iel==17 .or. iel==233 .or. iel==232 .or. iel==364 .or. iel==365 .or. iel==348 .or. iel==347 ) THEN
+    !     WRITE(6,*) 'iel = ', iel
+    !     WRITE(6,*) 'E = ', E
+    !     WRITE(6,*) 'theta = ', theta
+    !     WRITE(6,*) 'RN = ', RN
+    !     WRITE(6,*) 'recycling_coeff =', recycling_coeff
+    !END IF
 
 #ifdef SAVEFLUX
     ! ********************
@@ -2197,19 +2224,24 @@ CONTAINS
     ! Neutral flux contribution
 #ifdef NEUTRAL
 #ifndef NEUTRALP
-    flgflux_neutral = diffiso(5,5)*(Qpr(1,5)*ng(1) + Qpr(2,5)*ng(2))
+    flgflux_neutral = diffiso(5,5)*(Qpr(1,5)*ng(1) + Qpr(2,5)*ng(2)) !+ diffiso(5,5)/upfg(7)*ufg(5)*2./(3.*phys%Mref)*dot_product(matmul(Qpr,Vveci),ng)
 #else
-    flgflux_neutral = 2./(3.*phys%Mref)*Dpn*(gmpn(1)*ng(1) + gmpn(2)*ng(2))*GammaLim
-#endif
-#ifndef NEUTRALGAMMA
-    ! Pump                                                                                                                                                                            
-    flgflux_neutral = flgflux_neutral + pump_coeff*ufg(5)*upfg(2)*bn
+    flgflux_neutral = abs(2./(3.*phys%Mref)*Dpn*(abs(gmpn(1))*ng(1) + abs(gmpn(2))*ng(2))*GammaLim)
 #endif
 #ifdef NEUTRALGAMMA
     flgflux_neutral = flgflux_neutral - ufg(6)*bn
-    ! Pump
-    flgflux_neutral = flgflux_neutral - pump_coeff*ufg(6)*bn
 #endif
+    ! Pump
+    if (phys%cryopump .gt. 0) then
+       flgflux_neutral = flgflux_neutral + pump_coeff*ufg(5)
+    else
+#ifndef NEUTRALGAMMA
+       flgflux_neutral = flgflux_neutral + pump_coeff*ufg(5)*upfg(2)*bn
+#endif
+#ifdef NEUTRALGAMMA
+       flgflux_neutral = flgflux_neutral - pump_coeff*ufg(6)*bn
+#endif
+    endif
     ! Dimensionalizing and multiplying by the surface under this gauss point
     flgflux_neutral = flgflux_neutral*2.*PI*dline*simpar%refval_density*simpar%refval_speed*simpar%refval_length**2
 #endif
@@ -2243,7 +2275,12 @@ CONTAINS
        DO j=1,Neq
           indj = ind_asf + j
           kmult = dDnn_dU(j)*Qpr(idm,k)*ng(idm)*NiNi
+          ! GradTi Q(k-1)*dVi_dU(U(k-1)) 
+          !kmult = kmult + diffiso(k,k)/upfg(7)*ufg(5)*2./(3.*phys%Mref)*Taui(idm,j)*ng(idm)*NiNi
           elMat%All(ind_ff(indi),ind_ff(indj),iel) = elMat%All(ind_ff(indi),ind_ff(indj),iel) - kmult
+          ! GradTi Vi(U(k-1))
+          !kmult = diffiso(k,k)/upfg(7)*ufg(5)*2./(3.*phys%Mref)*Vveci(j)*ng(idm)*NiNi
+          !elMat%Alq(ind_ff(indi),ind_fG(idm+(j-1)*Ndim+ind_ash),iel)=elMat%Alq(ind_ff(indi),ind_fG(idm+(j-1)*Ndim+ind_ash),iel) - kmult
        END DO
        kmultf = dot_product(dDnn_dU,ufg)*(Qpr(idm,k)*ng(idm))*Ni 
        elMat%fh(ind_ff(indi),iel) = elMat%fh(ind_ff(indi),iel) - kmultf
@@ -2282,19 +2319,25 @@ CONTAINS
 #ifdef BOHMRHS
     elMat%fh(ind_ff(indi),iel) = elMat%fh(ind_ff(indi),iel) - recycling_coeff*(ufg(2)*bn - diffiso(1,1)*(Qpr(1,1)*(ng(1) - bn*bg(1)) + Qpr(2,1)*(ng(2) - bn*bg(2))))*Ni
 #endif
+
     ! Puff
     elMat%fh(ind_ff(indi),iel) = elMat%fh(ind_ff(indi),iel) - puff_coeff*Ni
     ! Pump
+    if (phys%cryopump .gt. 0.) then
+       indj = ind_asf + 5
+       elMat%All(ind_ff(indi),ind_ff(indj),iel) = elMat%All(ind_ff(indi),ind_ff(indj),iel) - pump_coeff*NiNi
+    else
 #ifndef NEUTRALGAMMA
-    DO j=1,5  
-       indj = ind_asf + j
-       elMat%All(ind_ff(indi),ind_ff(indj),iel) = elMat%All(ind_ff(indi),ind_ff(indj),iel) - pump_coeff*Abohm(k,j)*NiNi*bn
-    END DO
+       DO j=1,5  
+          indj = ind_asf + j
+          elMat%All(ind_ff(indi),ind_ff(indj),iel) = elMat%All(ind_ff(indi),ind_ff(indj),iel) - pump_coeff*Abohm(k,j)*NiNi*bn
+       END DO
     !elMat%fh(ind_ff(indi),iel) = elMat%fh(ind_ff(indi),iel) + 5.e-4*Ni
 #else
-    indj = ind_asf + 6
-    elMat%All(ind_ff(indi),ind_ff(indj),iel) = elMat%All(ind_ff(indi),ind_ff(indj),iel) + pump_coeff*NiNi*bn
+      indj = ind_asf + 6
+      elMat%All(ind_ff(indi),ind_ff(indj),iel) = elMat%All(ind_ff(indi),ind_ff(indj),iel) + pump_coeff*NiNi*bn
 #endif
+    endif
 
 #ifdef NEUTRALGAMMA
     ! Convective neutral flux

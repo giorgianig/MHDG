@@ -138,8 +138,9 @@ MODULE types
     real*8, allocatable     :: diff_elems(:)          ! Diffusion to limit rho in the flagged elements[Number of elements]
     real*8, allocatable     :: scdiff_nodes(:, :)      ! Shock capturing diffusion in each node [Number of elements,Number of nodes per element]
     real*8                 :: xmax, xmin, ymax, ymin    ! Limit of the GLOBAL matrix, across mpi partitions
-    real*8                  :: puff_area         ! area of the puff bounday condition
-    real*8                  :: core_area         ! area of the puff bounday condition
+    real*8                  :: puff_area         ! area of the puff boundary condition
+    real*8                  :: pump_area         ! area of the pump boundary condition
+    real*8                  :: core_area         ! area of the puff boundary condition
     real*8,allocatable      :: Xg(:,:)               ! 2D Gauss point coordinates
     real*8,allocatable      :: Xgf(:,:)              ! 1D Gauss point coordinates at interior faces
     real*8,allocatable      :: Xgb(:,:)          ! 1D Gauss point  coordinates at boundary faces
@@ -227,6 +228,9 @@ MODULE types
     real*8          :: Potfloat
     ! Coefficients for the neutral equations
     real*8          :: diff_nn            ! Diffusion in the neutral equation
+    real*8,dimension(22)   :: E           ! Energy values from TRIM
+    real*8,dimension(19)   :: theta       ! Incidence angle values from TRIM
+    real*8,dimension(22,19):: RN_DW       ! Reflection coefficient for neutrals from TRIM, (E,theta) grid
     real*8,allocatable:: diff_nn_Vol(:)   ! Diffusion in the neutral equation at 2D Gauss points
     real*8,allocatable:: diff_nn_Fac(:)   ! Diffusion in the neutral equation at 1D Gauss points on interior faces
     real*8,allocatable:: diff_nn_Bou(:)   ! Diffusion in the neutral equation at 1D Gauss points on boundary faces 
@@ -236,6 +240,7 @@ MODULE types
     real*8          :: Re                 ! Recycling for the neutral equation
     real*8          :: puff               ! Puff coefficient
     real*8          :: puff_slope         ! Puff increment coefficient (only for moving equilibrium for ITER)
+    real*8          :: cryopump           ! Cryopump speed
     real*8,pointer  :: puff_exp(:)        ! Puff experimental coefficient (only for moving equilibriums)
     real*8,pointer  :: n_li(:)            ! Central line integrated density (only for moving equilibriums)
     real*8,pointer  :: n_lit(:)           ! Central line integrated density target (only for moving equilibriums)
@@ -303,6 +308,7 @@ MODULE types
     logical :: ripple   ! To activate ripple
     logical :: ohmicsrc ! Set to TRUE to consider ohmic source of energy
     logical :: ME       ! Set to TRUE to allow magnetic equilibrium evolution in time
+    logical :: Kotov    ! Set to TRUE to allow Neutral-Neutral collisions in the neutral model
     logical :: driftdia ! Set to TRUE to consider diamagnetic drift
     logical :: driftexb ! Set to TRUE to consider ExB drift
     logical :: steady

@@ -150,6 +150,16 @@ CONTAINS
         WRITE (6, *) "Done! "
       END IF
     ENDIF
+    CALL computePumpArea()
+#ifdef PARALL
+  CALL MPI_ALLREDUCE(MPI_IN_PLACE, Mesh%pump_area, 1, MPI_REAL8, MPI_SUM, MPI_COMM_WORLD, ierr)
+#endif
+    IF (MPIvar%glob_id .eq. 0) THEN
+      IF (utils%printint > 0) THEN
+        WRITE (6, *) "Pump area:  ", Mesh%pump_area*phys%lscale*phys%lscale, " m^2"
+        WRITE (6, *) "Done! "
+      END IF
+    ENDIF
   END SUBROUTINE mesh_preprocess
 
   !********************
@@ -745,5 +755,46 @@ CONTAINS
 
   END SUBROUTINE computeCoreArea
 
+
+   SUBROUTINE computePumpArea()
+  real*8   :: Xf(refElPol%Nfacenodes,2),xyg(refElPol%NGauss1D,2),xyg_d(refElPol%NGauss1D,2),dline
+  integer  :: i,el,fa,fl,g
+  real*8   :: xyDerNorm_g
+
+
+  Mesh%pump_area = 0.
+
+    DO i = 1, Mesh%Nextfaces
+
+        fl = Mesh%boundaryFlag(i)
+
+#ifdef PARALL
+      IF (fl .eq. 0) CYCLE
+#endif
+
+          IF (phys%bcflags(fl) .ne. bc_BohmPump) THEN
+            CYCLE
+          END IF
+
+          el = Mesh%extfaces(i,1)
+          fa = Mesh%extfaces(i,2)
+          Xf = Mesh%X(Mesh%T(el,refElPol%face_nodes(fa,:)),:)
+          xyg = matmul(refElPol%N1D,Xf)
+          xyg_d = matmul(refElPol%Nxi1D,Xf)
+#ifdef PARALL
+          IF (Mesh%ghostElems(el) .eq. 0) THEN
+#endif
+             DO g = 1, refElPol%NGauss1D
+                 xyDerNorm_g = norm2(xyg_d(g,:))
+                 dline = refElPol%gauss_weights1D(g)*xyDerNorm_g
+                 dline = dline*xyg(g,1)
+                 Mesh%pump_area = Mesh%pump_area + 2*pi*dline
+             END DO
+#ifdef PARALL
+          END IF
+#endif
+    END DO
+
+  END SUBROUTINE computePumpArea
 
 END MODULE preprocess

@@ -490,9 +490,9 @@ PROGRAM MHDG
           ! ReLoad magnetic field and Jtor
           CALL load_magnetic_field()
           CALL loadJtorMap()
-          if (switch%testcase .ge. 80 .and. switch%testcase .le. 89) then
-             CALL SetPuff()
-          endif
+          !if (switch%testcase .ge. 80 .and. switch%testcase .le. 89) then
+          CALL SetPuff()
+          !endif
         endif
 
         ! compute dt
