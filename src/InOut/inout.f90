@@ -373,6 +373,7 @@ CONTAINS
     ! Save q safety_factor
     call HDF5_array1D_saving(file_id, phys%safety_factor, size(phys%safety_factor), 'safety_factor')
     ! Save toroidal current
+    call HDF5_real_saving(file_id, phys%I_p, 'Ip')
     call HDF5_array1D_saving(file_id, phys%Jtor, size(phys%Jtor), 'Jtor')
     ! Save magnetic perturbation and related fields
     if ((switch%rmp).or.(switch%ripple)) then
@@ -558,7 +559,8 @@ CONTAINS
 
       ! Create geometry parameters group
       CALL HDF5_group_create('geometry', group_id1, group_id2, ierr)
-      call HDF5_real_saving(group_id2, geom%R0, 'Major_radius')
+      call HDF5_real_saving(group_id2, phys%r_axis, 'Major_radius')
+      call HDF5_real_saving(group_id2, geom%a, 'Minor_radius')
       call HDF5_real_saving(group_id2, geom%q, 'Safety_factor')
       call HDF5_group_close(group_id2, ierr)
 
@@ -574,8 +576,19 @@ CONTAINS
       call HDF5_real_saving(group_id2, magn%ellip, 'Ellipticity')
       call HDF5_group_close(group_id2, ierr)
 
-      call HDF5_group_close(group_id1, ierr)
+      ! Create PID controller parameters group
+      if (switch%ME) then
+         if (switch%PID) then
+            CALL HDF5_group_create('controller', group_id1, group_id2, ierr)
+            call HDF5_real_saving(group_id2, controller%err, 'err')
+            call HDF5_real_saving(group_id2, controller%int_err, 'int_err')
+            call HDF5_real_saving(group_id2, controller%dedt, 'dedt')
+            call HDF5_array1d_saving(group_id2, controller%actuator, time%nts, 'actuator')
+            call HDF5_group_close(group_id2, ierr)
+         endif
+      endif
 
+      call HDF5_group_close(group_id1, ierr)
 
     end subroutine save_simulation_parameters
 
@@ -898,6 +911,16 @@ CONTAINS
           CALL HDF5_array1D_reading(group_id2, phys%n_lit, 'n_lit')
           CALL HDF5_group_close(group_id2, ierr)
        END IF
+       IF (switch%PID) THEN
+          CALL HDF5_group_open(group_id,'controller', group_id2, ierr)
+          IF (ierr >= 0) THEN
+            call HDF5_real_reading(group_id2, controller%err, 'err')
+            call HDF5_real_reading(group_id2, controller%int_err, 'int_err')
+            call HDF5_real_reading(group_id2, controller%dedt, 'dedt')
+            call HDF5_array1d_reading(group_id2, controller%actuator, 'actuator')
+            call HDF5_group_close(group_id2, ierr)
+          ENDIF
+       ENDIF
     END IF
     CALL HDF5_group_close(group_id, ierr)
 

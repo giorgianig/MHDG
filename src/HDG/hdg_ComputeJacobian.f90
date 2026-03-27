@@ -67,7 +67,7 @@ SUBROUTINE HDG_computeJacobian()
   real*8,allocatable    :: qres(:,:)
   real*8                :: Bel(refElPol%Nnodes2d,3),fluxel(refElPol%Nnodes2d),psiel(refElPol%Nnodes2d),qsfel(refElPol%Nnodes2d),Bfl(refElPol%Nfacenodes,3),psifl(refElPol%Nfacenodes),qsffl(refElPol%Nfacenodes)
   real*8                :: Jtorel(refElPol%Nnodes2d)
-  real*8                :: n,El_n,nn,El_nn,totaln,S_ECRH,Sel_ECRH
+  real*8                :: n,El_n,nn,El_nn,totaln,S_ICRH,Sel_ICRH,S_ECRH,Sel_ECRH
   real*8                :: diff_nn_Vol_el(refElPol%NGauss2D),v_nn_Vol_el(refElPol%NGauss2D,Mesh%Ndim),Xg_el(refElPol%NGauss2D,Mesh%Ndim)
   real*8                :: diff_nn_Fac_el(refElPol%Nfaces*refElPol%NGauss1D),v_nn_Fac_el(refElPol%Nfaces*refElPol%NGauss1D,Mesh%Ndim)
 #endif
@@ -1122,19 +1122,20 @@ CONTAINS
   !   Loop in elements in 2D
   !************************************
   !$OMP PARALLEL DEFAULT(SHARED) &
-  !$OMP PRIVATE(iel,ifa,iface,inde,indf,Xel,Xfl,i,qe,qef,ue,uef,uf,u0e,Bel,Bfl,fluxel,psiel,psifl,qsfel,qsffl,isdir,Jtorel,El_n,El_nn,Sel_ECRH) &
+  !$OMP PRIVATE(iel,ifa,iface,inde,indf,Xel,Xfl,i,qe,qef,ue,uef,uf,u0e,Bel,Bfl,fluxel,psiel,psifl,qsfel,qsffl,isdir,Jtorel,El_n,El_nn,Sel_ICRH,Sel_ECRH) &
   !$OMP PRIVATE(Xg_el,diff_nn_Vol_el,diff_nn_Fac_el,v_nn_Vol_el,v_nn_Fac_el,xy_g_save,xy_g_save_el,tau_save,tau_save_el)  
   allocate(Xel(Mesh%Nnodesperelem,2))
   allocate(Xfl(refElPol%Nfacenodes,2))
 
   n = 0.
   nn = 0.
+  S_ICRH = 0.
   S_ECRH = 0.
   phys%v_pmax = 0.
   
   !IF (phys%v_p .lt. 0.) CALL setPinch(ures)
 
-  !$OMP DO SCHEDULE(STATIC) REDUCTION(+:n,nn,S_ECRH)
+  !$OMP DO SCHEDULE(STATIC) REDUCTION(+:n,nn,S_ICRH,S_ECRH)
   DO iel = 1,N2D
 
     ! Coordinates of the nodes of the element
@@ -1165,7 +1166,7 @@ CONTAINS
     u0e = u0res(inde,:,:)
 
     ! Compute the matrices for the element
-    CALL elemental_matrices_volume(iel,Xel,Bel,fluxel,psiel,qsfel,qe,ue,u0e,Jtorel,El_n,El_nn,Sel_ECRH,diff_nn_Vol_el,v_nn_Vol_el,Xg_el)
+    CALL elemental_matrices_volume(iel,Xel,Bel,fluxel,psiel,qsfel,qe,ue,u0e,Jtorel,El_n,El_nn,Sel_ICRH,Sel_ECRH,diff_nn_Vol_el,v_nn_Vol_el,Xg_el)
     if (save_tau) then
        inddiff_nn_Vol = (iel - 1)*refElPol%NGauss2D+(/(i,i=1,refElPol%NGauss2D)/)
        phys%diff_nn_Vol(inddiff_nn_Vol) = diff_nn_Vol_el
@@ -1179,6 +1180,7 @@ CONTAINS
 #endif
       n  = n + El_n
       nn = nn + El_nn
+      S_ICRH = S_ICRH + Sel_ICRH
       S_ECRH = S_ECRH + Sel_ECRH
 #ifdef PARALL
     ENDIF
@@ -1255,6 +1257,7 @@ CONTAINS
 #ifdef PARALL
     CALL MPI_ALLREDUCE(MPI_IN_PLACE, n, 1, MPI_REAL8, MPI_SUM, MPI_COMM_WORLD, ierr)
     CALL MPI_ALLREDUCE(MPI_IN_PLACE, nn, 1, MPI_REAL8, MPI_SUM, MPI_COMM_WORLD, ierr)
+    CALL MPI_ALLREDUCE(MPI_IN_PLACE, S_ICRH, 1, MPI_REAL8, MPI_SUM, MPI_COMM_WORLD, ierr)
     CALL MPI_ALLREDUCE(MPI_IN_PLACE, S_ECRH, 1, MPI_REAL8, MPI_SUM, MPI_COMM_WORLD, ierr)
     CALL MPI_ALLREDUCE(MPI_IN_PLACE, phys%v_pmax, 1, MPI_REAL8, MPI_MIN, MPI_COMM_WORLD, ierr)
 #endif
@@ -1265,12 +1268,18 @@ CONTAINS
         WRITE(6,*) 'D_e = ', phys%ME_diff_e*simpar%refval_length**2/simpar%refval_time
         WRITE(6,*) 'Max v_p = ', phys%v_pmax*simpar%refval_speed
      endif 
+     if (switch%pinch .gt. 0) then
+        WRITE(6,*) 'Max v_p = ', phys%v_pmax*simpar%refval_speed
+     endif
      totaln = n + nn
      WRITE(6,*) 'n = ',n
      WRITE(6,*) 'nn = ',nn
      WRITE(6,*) 'total n = ',totaln
+     WRITE(6,*) 'S_ICRH = ',S_ICRH*simpar%refval_specenergydens/simpar%refval_time*simpar%refval_mass*1.e-6
      WRITE(6,*) 'S_ECRH = ',S_ECRH*simpar%refval_specenergydens/simpar%refval_time*simpar%refval_mass*1.e-6
    ENDIF
+
+   !WRITE(6,*) 'Max LZ = ', phys%max_LZ
 
   deallocate (ures,lres,u0res)
   deallocate (qres)
@@ -1302,13 +1311,13 @@ CONTAINS
   !***************************************************
   ! Volume computation in 2D
   !***************************************************
-  SUBROUTINE elemental_matrices_volume(iel,Xel,Bel,fluxel,psiel,qsfel,qe,ue,u0e,Jtorel,El_n,El_nn,Sel_ECRH,diff_nn_Vol_el,v_nn_Vol_el,Xg_el)
+  SUBROUTINE elemental_matrices_volume(iel,Xel,Bel,fluxel,psiel,qsfel,qe,ue,u0e,Jtorel,El_n,El_nn,Sel_ICRH,Sel_ECRH,diff_nn_Vol_el,v_nn_Vol_el,Xg_el)
     integer,intent(IN)            :: iel
     real*8,intent(IN)             :: Xel(:,:)
     real*8,intent(IN)             :: Bel(:,:),fluxel(:),psiel(:),qsfel(:),Jtorel(:)
     real*8,intent(IN)             :: qe(:,:)
     real*8,intent(IN)             :: ue(:,:),u0e(:,:,:)
-    real*8,intent(OUT)            :: El_n,El_nn,Sel_ECRH
+    real*8,intent(OUT)            :: El_n,El_nn,Sel_ICRH,Sel_ECRH
     real*8,intent(OUT)            :: diff_nn_Vol_el(Ng2D),v_nn_Vol_el(Ng2D,ndim),Xg_el(Ng2D,ndim)
     integer*4                     :: g,NGauss,i,j,k
     real*8                        :: dvolu
@@ -1349,6 +1358,7 @@ CONTAINS
     force = 0.
     El_n  = 0.
     El_nn  = 0.
+    Sel_ICRH = 0.
     Sel_ECRH = 0.
     Pi = 3.1415926535
     !***********************************
@@ -1418,7 +1428,7 @@ CONTAINS
     
     ! Some sources to limit low density and temeprauture values
     !DO g=1, Ng2d
-    !   IF (ueg(g,1) .lt. 1.e-7) force(g,1) = 1.e-7 - ueg(g,1) !Th at n = 1.00E+12 [m^(-3)]
+    !   IF (ueg(g,1) .lt. 3.e-7) force(g,1) = 3.e-7 - ueg(g,1) !Th at n = 1.00E+12 [m^(-3)]
     !   IF (upg(g,7) .lt. 6.e-4) force(g,3) = 1.3736e-7*3./2.*phys%Mref*ueg(g,1)*(6.e-4 - upg(g,7)) !Th at Ti 0.03 eV 
     !   IF (upg(g,8) .lt. 6.e-4) force(g,4) = 1.3736e-7*3./2.*phys%Mref*ueg(g,1)*(6.e-4 - upg(g,8)) !Th at Te 0.03 eV
     !   IF (ueg(g,5) .gt. 1.e+0) force(g,5) = 1.e+0 - ueg(g,5) !Th at nEe
@@ -1439,14 +1449,14 @@ CONTAINS
         ENDIF
         ! WEST CASE with analytical Gaussian sources on density and energies, no puff.
         IF (switch%testcase == 52) THEN
-          sigma = phys%sigma_source
+          sigma = phys%heating_sigmar
           x0 = 0.
           A = (phys%lscale**2)/sqrt((2*Pi*sigma**2))
           IF (fluxg(g) .le. phys%fluxg_trunc) THEN
             force(g,1) = phys%density_source*A*exp(-((fluxg(g) - x0)**2)/(2*sigma**2))
 #ifdef TEMPERATURE
-            force(g,3) = phys%ener_source_e*A*exp(-((fluxg(g) - x0)**2)/(2*sigma**2))
-            force(g,4) = phys%ener_source_ee*A*exp(-((fluxg(g) - x0)**2)/(2*sigma**2))
+            force(g,3) = phys%heating_power_i*A*exp(-((fluxg(g) - x0)**2)/(2*sigma**2))
+            force(g,4) = phys%heating_power_e*A*exp(-((fluxg(g) - x0)**2)/(2*sigma**2))
 #endif
           ENDIF
 !#ifdef NEUTRAL
@@ -1472,6 +1482,37 @@ CONTAINS
         ENDIF
       END DO
     END IF
+
+    ! Some sources for SPARC cases
+    IF (switch%testcase .ge. 70 .and. switch%testcase .le. 79) THEN
+       !A_i = min(phys%heating_power_i,phys%heating_power_i*time%it/200.)/2./PI**2/phys%heating_sigmar/phys%heating_sigmaz/(phys%r_axis + phys%heating_dr)
+       A_i = phys%heating_power_i/2./PI**2/phys%heating_sigmar/phys%heating_sigmaz/(phys%r_axis + phys%heating_dr)
+       A_e = phys%heating_power_e/2./PI**2/phys%heating_sigmar/phys%heating_sigmaz/(phys%r_axis + phys%heating_dr)
+       IF (switch%testcase .eq. 76) THEN
+          IF (time%it*time%dt*simpar%refval_time+0.8 .ge. 7 .and. time%it*time%dt*simpar%refval_time+0.8 .le. 12.2) THEN
+             IF (time%it*time%dt*simpar%refval_time+0.8 .ge. 7 .and. time%it*time%dt*simpar%refval_time+0.8 .le. 8) THEN
+                A_i = A_i*(time%it*time%dt*simpar%refval_time+0.8 - 7)
+                !WRITE(6,*) 'time it =', time%it
+                !WRITE(6,*) 'time dt = ', time%dt
+                !WRITE(6,*) 'refval time = ', simpar%refval_time
+                !WRITE(6,*) 'time increment = ', time%it*time%dt*simpar%refval_time
+             ELSEIF (time%it*time%dt*simpar%refval_time+0.8 .ge. 12 .and. time%it*time%dt*simpar%refval_time+0.8 .le. 12.2) THEN
+                A_i = A_i - A_i/0.2*(time%it*time%dt*simpar%refval_time+0.8 - 12)
+             ENDIF
+          ELSE
+             A_i = 0.
+          ENDIF
+       ENDIF
+       IF (A_i .gt. 0. .or. A_e .gt. 0.) THEN
+          DO g = 1,Ng2D
+             IF (Psig(g) .lt. 1.) THEN   ! Only confined plasma region
+                force(g,3) = A_i*exp(-((xy(g,1)-(phys%r_axis+phys%heating_dr))**2)/(phys%heating_sigmar**2) - ((xy(g,2)-(phys%z_axis+phys%heating_dz))**2)/(phys%heating_sigmaz**2))
+                force(g,4) = A_e*exp(-((xy(g,1)-(phys%r_axis+phys%heating_dr))**2)/(phys%heating_sigmar**2) - ((xy(g,2)-(phys%z_axis+phys%heating_dz))**2)/(phys%heating_sigmaz**2))
+             ENDIF
+          END DO
+       ENDIF
+    ENDIF
+
     
     ! Some sources for ITER cases    
     IF (switch%testcase .ge. 80) THEN
@@ -1482,42 +1523,42 @@ CONTAINS
        fluxg = (fluxg - min_flux2D)/(max_flux2D - min_flux2D)
        DO g = 1,Ng2d 
           IF (switch%testcase == 81) THEN
-             sigma = phys%sigma_source
+             sigma = phys%heating_sigmar
              x0 = 0.
              A = (phys%lscale**2)/sqrt((2*Pi*sigma**2))
              ! Only energy sources: density from neutral model
              IF (fluxg(g) .le. phys%fluxg_trunc) THEN
 #ifdef NEUTRAL   
 #ifdef TEMPERATURE
-                force(g,3) = phys%ener_source_e*A*exp(-((fluxg(g)-x0)**2)/(2*sigma**2))
-                force(g,4) = phys%ener_source_ee*A*exp(-((fluxg(g)-x0)**2)/(2*sigma**2))
+                force(g,3) = phys%heating_power_i*A*exp(-((fluxg(g)-x0)**2)/(2*sigma**2))
+                force(g,4) = phys%heating_power_e*A*exp(-((fluxg(g)-x0)**2)/(2*sigma**2))
 #endif
 #endif
              ENDIF
           ELSE IF (switch%testcase == 82) THEN
-             sigma = phys%sigma_source
+             sigma = phys%heating_sigmar
              A = (phys%lscale**2)/sqrt((2*Pi*sigma**2))
              ! Only energy sources: density from neutral model
 #ifdef NEUTRAL
 #ifdef TEMPERATURE
-             force(g,3) = phys%ener_source_e*A*exp(-((fluxg(g) - x0)**2)/(2*sigma**2))
-             force(g,4) = phys%ener_source_ee*A*exp(-((fluxg(g) - x0)**2)/(2*sigma**2))
+             force(g,3) = phys%heating_power_i*A*exp(-((fluxg(g) - x0)**2)/(2*sigma**2))
+             force(g,4) = phys%heating_power_e*A*exp(-((fluxg(g) - x0)**2)/(2*sigma**2))
 #endif
 #endif
           ELSE IF (switch%testcase == 87) THEN
              x0 = 6.6
-             sigma = phys%sigma_source
+             sigma = phys%heating_sigmar
              IF (switch%ME == .TRUE.) THEN
                 it0_ECRH = 200
                 dt_ECRH = simpar%refval_time*time%dt*(time%it - it0_ECRH) + simpar%refval_time*time%dt
                 IF (dt_ECRH .le. 5) THEN
-                   A_e = 1./(2.*Pi*0.5*sigma**2.)/(2.*Pi*x0)*phys%ener_source_ee*(dt_ECRH/5)*simpar%refval_time/simpar%refval_specenergydens/simpar%refval_mass
+                   A_e = 1./(2.*Pi*0.5*sigma**2.)/(2.*Pi*x0)*phys%heating_power_e*(dt_ECRH/5)*simpar%refval_time/simpar%refval_specenergydens/simpar%refval_mass
                 ELSE
-                   A_e = 1./(2.*Pi*0.5*sigma**2.)/(2.*Pi*x0)*phys%ener_source_ee*simpar%refval_time/simpar%refval_specenergydens/simpar%refval_mass
+                   A_e = 1./(2.*Pi*0.5*sigma**2.)/(2.*Pi*x0)*phys%heating_power_e*simpar%refval_time/simpar%refval_specenergydens/simpar%refval_mass
                 END IF
              ELSE
-                A_i = 1./(2.*Pi*0.5*sigma**2.)/(2.*Pi*x0)*phys%ener_source_e*simpar%refval_time/simpar%refval_specenergydens/simpar%refval_mass
-                A_e = 1./(2.*Pi*0.5*sigma**2.)/(2.*Pi*x0)*phys%ener_source_ee*simpar%refval_time/simpar%refval_specenergydens/simpar%refval_mass
+                A_i = 1./(2.*Pi*0.5*sigma**2.)/(2.*Pi*x0)*phys%heating_power_i*simpar%refval_time/simpar%refval_specenergydens/simpar%refval_mass
+                A_e = 1./(2.*Pi*0.5*sigma**2.)/(2.*Pi*x0)*phys%heating_power_e*simpar%refval_time/simpar%refval_specenergydens/simpar%refval_mass
              END IF
              ! ECRH source 
 #ifdef TEMPERATURE
@@ -1527,14 +1568,14 @@ CONTAINS
            ELSE IF (switch%testcase == 88) THEN
              ! NBI source
              x0 = 6.2
-             sigma = phys%sigma_source
+             sigma = phys%heating_sigmar
              A = 1./(2.*Pi*0.5*sigma**2.)/(2.*Pi*x0)*phys%density_source*simpar%refval_time/simpar%refval_density
              force(g,1) = A*exp(-((xy(g,1)*phys%lscale - x0)**2)/(2*(0.5*sigma)**2) - ((xy(g,2)*phys%lscale - 0.5)**2)/(2*sigma**2))
 #ifdef TEMPERATURE
              ! ECRH source
              x0 = 6.6
-             sigma = phys%sigma_source
-             A = 1./(2.*Pi*0.5*sigma**2.)/(2.*Pi*x0)*phys%ener_source_ee*simpar%refval_time/simpar%refval_specenergydens/simpar%refval_mass
+             sigma = phys%heating_sigmar
+             A = 1./(2.*Pi*0.5*sigma**2.)/(2.*Pi*x0)*phys%heating_power_e*simpar%refval_time/simpar%refval_specenergydens/simpar%refval_mass
              force(g,4) = A*exp(-((xy(g,1)*phys%lscale - x0)**2)/(2*(0.5*sigma)**2) - ((xy(g,2)*phys%lscale - 0.5)**2)/(2*sigma**2))
 #endif
           ENDIF
@@ -1603,6 +1644,7 @@ CONTAINS
       ! Check if total density is costant
       El_n  = El_n  + ueg(g,1)*2*3.1416*dvolu*phys%lscale**3
       El_nn = El_nn + ueg(g,5)*2*3.1416*dvolu*phys%lscale**3
+      Sel_ICRH = Sel_ICRH + force(g,3)*2*Pi*dvolu*phys%lscale**3
       Sel_ECRH = Sel_ECRH + force(g,4)*2*Pi*dvolu*phys%lscale**3
 
       ! x and y derivatives of the shape functions
@@ -2112,10 +2154,12 @@ CONTAINS
     real*8                    :: Vpn(Neq),dVpn_dU(Neq,Neq),dDpn_dU(Neq),gmpn(Ndim),Taupn(Ndim,Neq)
 #endif
 #ifdef NEUTRALGAMMA
-    real*8                    :: Etan,fGammaN
-    real*8                    :: Vun(Neq),dfGammaN_dU(Neq),gmGamman(Ndim)
+    real*8                    :: Etan,fGammaN,fEiN
+    real*8                    :: Vun(Neq),dEtan_dU(Neq),dfGammaN_dU(Neq),dfEiN_dU(Neq),gmGamman(Ndim)
     real*8                    :: dVun_dU(Neq,Neq),GGn(Neq,Neq),TauGamman(Ndim,Neq)
 #endif
+    real*8                    :: cooling_factor
+    real*8                    :: dcooling_factor_dU(Neq)
 #endif
     real*8                    :: Sn(Neq,Neq),Sn0(Neq)
 #endif
@@ -2135,7 +2179,7 @@ CONTAINS
     CALL jacobianMatrices(ue,A)
     
     ! Jacobian for pinch term
-    CALL computePinch(ue,b,psi,qsf,APinch)
+    CALL computePinch(ue,b,psi,qsf,diffiso(1,1),APinch)
 
     ! Compute Q^T^(k-1)
     Qpr = reshape(qe,(/Ndim,Neq/))
@@ -2228,6 +2272,7 @@ CONTAINS
     CALL GimpMatrixN(ue,divb,GGn)
     ! Viscosity term
     CALL computeEtan(ue,Etan)
+    CALL compute_dEtan_dU(ue,dEtan_dU)
     CALL computeVun(ue,Vun)
     CALL compute_dVun_dU(ue,dVun_dU)
 
@@ -2274,6 +2319,10 @@ CONTAINS
     call compute_dfEirec_dU(ue,dfEirec_dU)
     call compute_fEicx(ue,fEicx)
     call compute_dfEicx_dU(ue,dfEicx_dU)
+#ifdef NEUTRALGAMMA
+    call compute_fEiN(ue,fEiN)
+    call compute_dfEiN_dU(ue,dfEiN_dU)
+#endif
     !Neutral Source Terms needed in the electron energy equation
     call compute_Tloss(ue,Tloss)
     call compute_dTloss_dU(ue,dTloss_dU)
@@ -2284,6 +2333,14 @@ CONTAINS
     call compute_sigmavErec(ue,sigmavErec)
     call compute_dsigmavEiz_dU(ue,dsigmavEiz_dU)
     call compute_dsigmavErec_dU(ue,dsigmavErec_dU)
+    if (switch%impurity_radiation) then
+       CALL compute_cooling_factor(ue,cooling_factor)
+       CALL compute_dcooling_factor_dU(ue,dcooling_factor_dU)
+       phys%max_LZ = max(phys%max_LZ,cooling_factor)
+    else
+       cooling_factor = 0.
+       dcooling_factor_dU = 0.
+    endif 
 #endif
 
     !Assembly the matrix for neutral sources
@@ -2291,11 +2348,12 @@ CONTAINS
 #ifdef NEUTRALGAMMA
      call assemblyNeutral(ue,niz,dniz_dU,nrec,dnrec_dU,sigmaviz,dsigmaviz_dU,sigmavrec,dsigmavrec_dU,&
       &fGammacx,dfGammacx_dU,fGammarec,dfGammarec_dU,fGammaN,dfGammaN_dU,sigmavcx,dsigmavcx_dU,fEiiz,&
-      &dfEiiz_dU,fEirec,dfEirec_dU,fEicx,dfEicx_dU,Tloss,dTloss_dU,Tlossrec,dTlossrec_dU,sigmavEiz,dsigmavEiz_dU,sigmavErec,dsigmavErec_dU,Sn,Sn0)
+      &dfEiiz_dU,fEirec,dfEirec_dU,fEicx,dfEicx_dU,fEiN,dfEiN_dU,Tloss,dTloss_dU,Tlossrec,dTlossrec_dU,&
+      &sigmavEiz,dsigmavEiz_dU,sigmavErec,dsigmavErec_dU,cooling_factor,dcooling_factor_dU,Sn,Sn0)
 #else
     call assemblyNeutral(ue,niz,dniz_dU,nrec,dnrec_dU,sigmaviz,dsigmaviz_dU,sigmavrec,dsigmavrec_dU,&
-      &fGammacx,dfGammacx_dU,fGammarec,dfGammarec_dU,sigmavcx,dsigmavcx_dU,fEiiz,&
-      &dfEiiz_dU,fEirec,dfEirec_dU,fEicx,dfEicx_dU,Tloss,dTloss_dU,Tlossrec,dTlossrec_dU,sigmavEiz,dsigmavEiz_dU,sigmavErec,dsigmavErec_dU,Sn,Sn0)
+      &fGammacx,dfGammacx_dU,fGammarec,dfGammarec_dU,sigmavcx,dsigmavcx_dU,fEiiz,dfEiiz_dU,fEirec,dfEirec_dU,fEicx,dfEicx_dU,&
+      &Tloss,dTloss_dU,Tlossrec,dTlossrec_dU,sigmavEiz,dsigmavEiz_dU,sigmavErec,dsigmavErec_dU,cooling_factor,dcooling_factor_dU,Sn,Sn0)
 #endif
 #else
     call assemblyNeutral(ue,niz,dniz_dU,nrec,dnrec_dU,fGammacx,dfGammacx_dU,fGammarec,dfGammarec_dU,Sn,Sn0)
@@ -2476,12 +2534,14 @@ CONTAINS
                DO k = 1,Ndim
                    z = i+(k-1)*Neq+(j-1)*Neq*Ndim
                    Auu(:,:,i+(j-1)*Neq) = Auu(:,:,i+(j-1)*Neq) + Etan*TauGamman(k,j)*NxyzNi(:,:,k)
+                   !Auu(:,:,i+(j-1)*Neq) = Auu(:,:,i+(j-1)*Neq) + (dEtan_dU(j)*gmGamman(k) + Etan*TauGamman(k,j))*NxyzNi(:,:,k)
                    Auq(:,:,z) = Auq(:,:,z) + Etan*Vun(j)*NxyzNi(:,:,k)
                END DO
             END DO
             ! RHS
             DO k = 1,Ndim
                rhs(:,i) = rhs(:,i) + Etan*dot_product(TauGamman(k,:),ue)*Nxyzg(:,k)
+               !rhs(:,i) = rhs(:,i) + (dot_product(dEtan_dU,ue)*gmGamman(k) + Etan*dot_product(TauGamman(k,:),ue))*Nxyzg(:,k)
             END DO
 #endif
 #endif
@@ -2711,7 +2771,7 @@ CONTAINS
 #endif
 #ifdef NEUTRALGAMMA
       real*8                    :: Etan,fGammaN
-      real*8                    :: Vun(Neq),dfGammaN_dU(Neq),gmGamman(Ndim)
+      real*8                    :: Vun(Neq),dEtan_dU(Neq),dfGammaN_dU(Neq),gmGamman(Ndim)
       real*8                    :: dVun_dU(Neq,Neq),TauGamman(Ndim,Neq)
 #endif
 #endif
@@ -2723,7 +2783,7 @@ CONTAINS
       CALL jacobianMatrices(uf,A)
 
       ! Jacobian for pinch term
-      CALL computePinch(uf,b,psi,qsf,APinch)  
+      CALL computePinch(uf,b,psi,qsf,diffiso(1,1),APinch)  
    
       ! Compute Q^T^(k-1)
       Qpr = reshape(qf,(/Ndim,Neq/))
@@ -2791,6 +2851,7 @@ CONTAINS
 #ifdef NEUTRALGAMMA
     ! Viscosity term
     CALL computeEtan(uf,Etan)
+    CALL compute_dEtan_dU(uf,dEtan_dU)
     CALL computeVun(uf,Vun)
     CALL compute_dVun_dU(uf,dVun_dU)
 
@@ -3014,6 +3075,7 @@ CONTAINS
              DO k = 1,Ndim
                 ind_kf = k + (j - 1)*Ndim + ind_ash
                 kmult = Etan*TauGamman(k,j)*NNif*n(k)
+                !kmult = (dEtan_dU(j)*gmGamman(k) +  Etan*TauGamman(k,j))*NNif*n(k)
                 elMat%Aul(ind_fe(ind_if),ind_ff(ind_jf),iel) = elMat%Aul(ind_fe(ind_if),ind_ff(ind_jf),iel) - kmult
                 elMat%All(ind_ff(ind_if),ind_ff(ind_jf),iel) = elMat%All(ind_ff(ind_if),ind_ff(ind_jf),iel) - kmult
                 kmult = Etan*Vun(j)*NNif*n(k)
@@ -3024,6 +3086,7 @@ CONTAINS
           ! RHS
           !kmultf = Etan*dot_product(matmul(transpose(TauGamman),n),uf)*Nif
           kmultf = Etan*(dot_product(TauGamman(1,:),uf)*n(1) + dot_product(TauGamman(2,:),uf)*n(2))*Nif
+          !kmultf = (dot_product(dEtan_dU,uf)*(gmGamman(1)*n(1) + gmGamman(2)*n(2)) + Etan*(dot_product(TauGamman(1,:),uf)*n(1) + dot_product(TauGamman(2,:),uf)*n(2)))*Nif
           elMat%S(ind_fe(ind_if),iel) = elMat%S(ind_fe(ind_if),iel) - kmultf
           elMat%fh(ind_ff(ind_if),iel) = elMat%fh(ind_ff(ind_if),iel) - kmultf
 #endif
@@ -3099,7 +3162,7 @@ CONTAINS
 #endif
 #ifdef NEUTRALGAMMA
       real*8                    :: Etan,fGammaN
-      real*8                    :: Vun(Neq),dfGammaN_dU(Neq),gmGamman(Ndim)
+      real*8                    :: Vun(Neq),dEtan_dU(Neq),dfGammaN_dU(Neq),gmGamman(Ndim)
       real*8                    :: dVun_dU(Neq,Neq),TauGamman(Ndim,Neq)
 #endif
 #endif
@@ -3111,7 +3174,7 @@ CONTAINS
       CALL jacobianMatrices(uf,A)
 
       ! Jacobian matrices Pinch
-      CALL computePinch(uf,b,psi,qsf,APinch)
+      CALL computePinch(uf,b,psi,qsf,diffiso(1,1),APinch)
 
       ! Compute Q^T^(k-1)
       Qpr = reshape(qf,(/Ndim,Neq/))
@@ -3180,6 +3243,7 @@ CONTAINS
 #ifdef NEUTRALGAMMA
     ! Viscosity term
     CALL computeEtan(uf,Etan)
+    CALL compute_dEtan_dU(uf,dEtan_dU)
     CALL computeVun(uf,Vun)
     CALL compute_dVun_dU(uf,dVun_dU)
 
@@ -3403,6 +3467,7 @@ END IF
              DO k = 1,Ndim
                 ind_kf = k + (j - 1)*Ndim + ind_ash
                 kmult = Etan*TauGamman(k,j)*NNif*n(k)
+                !kmult = (dEtan_dU(j)*gmGamman(k) + Etan*TauGamman(k,j))*NNif*n(k)
                 elMat%Aul(ind_fe(ind_if),ind_ff(ind_jf),iel) = elMat%Aul(ind_fe(ind_if),ind_ff(ind_jf),iel) - kmult
                 kmult = Etan*Vun(j)*NNif*n(k)
                 elMat%Auq(ind_fe(ind_if),ind_fg(ind_kf),iel) = elMat%Auq(ind_fe(ind_if),ind_fg(ind_kf),iel) - kmult
@@ -3411,6 +3476,7 @@ END IF
           ! RHS
           !kmultf = Etan*dot_product(matmul(transpose(TauGamman),n),uf)*Nif
           kmultf = Etan*(dot_product(TauGamman(1,:),uf)*n(1) + dot_product(TauGamman(2,:),uf)*n(2))*Nif
+          !kmultf = (dot_product(dEtan_dU,uf)*(gmGamman(1)*n(1) + gmGamman(2)*n(2)) + Etan*(dot_product(TauGamman(1,:),uf)*n(1) + dot_product(TauGamman(2,:),uf)*n(2)))*Nif
           elMat%S(ind_fe(ind_if),iel) = elMat%S(ind_fe(ind_if),iel) - kmultf
 #endif
 #endif
@@ -3477,11 +3543,12 @@ END IF
 #ifdef NEUTRALGAMMA
   SUBROUTINE assemblyNeutral(U,niz,dniz_dU,nrec,dnrec_dU,sigmaviz,dsigmaviz_dU,sigmavrec,dsigmavrec_dU,&
        &fGammacx,dfGammacx_dU,fGammarec,dfGammarec_dU,fGammaN,dfGammaN_dU,sigmavcx,dsigmavcx_dU,fEiiz,&
-       &dfEiiz_dU,fEirec,dfEirec_dU,fEicx,dfEicx_dU,Tloss,dTloss_dU,Tlossrec,dTlossrec_dU,sigmavEiz,dsigmavEiz_dU,sigmavErec,dsigmavErec_dU,Sn,Sn0)
+       &dfEiiz_dU,fEirec,dfEirec_dU,fEicx,dfEicx_dU,fEiN,dfEiN_dU,Tloss,dTloss_dU,Tlossrec,dTlossrec_dU,&
+       &sigmavEiz,dsigmavEiz_dU,sigmavErec,dsigmavErec_dU,cooling_factor,dcooling_factor_dU,Sn,Sn0)
 #else
   SUBROUTINE assemblyNeutral(U,niz,dniz_dU,nrec,dnrec_dU,sigmaviz,dsigmaviz_dU,sigmavrec,dsigmavrec_dU,&
-      &fGammacx,dfGammacx_dU,fGammarec,dfGammarec_dU,sigmavcx,dsigmavcx_dU,fEiiz,&
-      &dfEiiz_dU,fEirec,dfEirec_dU,fEicx,dfEicx_dU,Tloss,dTloss_dU,Tlossrec,dTlossrec_dU,sigmavEiz,dsigmavEiz_dU,sigmavErec,dsigmavErec_dU,Sn,Sn0)
+      &fGammacx,dfGammacx_dU,fGammarec,dfGammarec_dU,sigmavcx,dsigmavcx_dU,fEiiz,dfEiiz_dU,fEirec,dfEirec_dU,fEicx,dfEicx_dU,&
+      &Tloss,dTloss_dU,Tlossrec,dTlossrec_dU,sigmavEiz,dsigmavEiz_dU,sigmavErec,dsigmavErec_dU,cooling_factor,dcooling_factor_dU,Sn,Sn0)
 #endif
 #else
     SUBROUTINE assemblyNeutral(U,niz,dniz_dU,nrec,dnrec_dU,fGammacx,dfGammacx_dU,fGammarec,dfGammarec_dU,Sn,Sn0)
@@ -3498,13 +3565,18 @@ END IF
       real*8, intent(IN) :: sigmaviz,sigmavrec,sigmavcx,fEiiz,fEirec,fEicx,Tloss,Tlossrec,sigmavEiz,sigmavErec
       real*8, intent(IN) :: dsigmaviz_dU(:),dsigmavrec_dU(:),dsigmavcx_dU(:),dTloss_dU(:),dTlossrec_dU(:),dsigmavEiz_dU(:),dsigmavErec_dU(:)
       real*8, intent(IN) :: dfEiiz_dU(:),dfEirec_dU(:),dfEicx_dU(:)
+#ifdef NEUTRALGAMMA
+      real*8, intent(IN) :: fEiN
+      real*8, intent(IN) :: dfEiN_dU(:) 
+#endif
+      real*8, INTENT(IN) :: cooling_factor,dcooling_factor_dU(:)
 #endif
       real*8             :: ad,ad4,Eth,RE,Sn(:,:),Sn0(:),Ti,Te
 
       Sn   = 0.
       Sn0  = 0.
       !RE   = 0.2
-      RE   = 1.
+      RE   = 0.
       Eth = 13.6 ! eV
       ad   = 1.3737e12
       ad4  = (ad*1.6e-19)/((1.3839e4**2)*3.35e-27)
@@ -3517,34 +3589,46 @@ END IF
 
 
       !Assembly Source Terms in plasma density equation
-      Sn(1,1)   = ad*(-dniz_dU(1)*sigmaviz + dnrec_dU(1)*sigmavrec)
-      Sn(1,5)   = ad*(-dniz_dU(5)*sigmaviz)
+      Sn(1,:)   = ad*(-dniz_dU(:)*sigmaviz + dnrec_dU(:)*sigmavrec) 
+      !Sn(1,1)   = ad*(-dniz_dU(1)*sigmaviz + dnrec_dU(1)*sigmavrec)
+      !Sn(1,5)   = ad*(-dniz_dU(5)*sigmaviz)
 #ifdef TEMPERATURE
-      Sn(1,1)   = Sn(1,1) + ad*(-niz*dsigmaviz_dU(1) + nrec*dsigmavrec_dU(1))
-      Sn(1,4)   = Sn(1,4) + ad*(-niz*dsigmaviz_dU(4) + nrec*dsigmavrec_dU(4))
+      Sn(1,:)   = Sn(1,:) + ad*(-niz*dsigmaviz_dU(:) + nrec*dsigmavrec_dU(:))
+      !Sn(1,1)   = Sn(1,1) + ad*(-niz*dsigmaviz_dU(1) + nrec*dsigmavrec_dU(1))
+      !Sn(1,4)   = Sn(1,4) + ad*(-niz*dsigmaviz_dU(4) + nrec*dsigmavrec_dU(4))
 #endif
       !Assembly Source Terms in plasma momentum equation
-      Sn(2,1)   = ad*(dfGammarec_dU(1)*sigmavrec)
-      Sn(2,2)   = ad*(dfGammacx_dU(2)*sigmavcx + dfGammarec_dU(2)*sigmavrec)
-      Sn(2,5)   = ad*(dfGammacx_dU(5)*sigmavcx)
+      Sn(2,:)   = ad*(dfGammacx_dU(:)*sigmavcx + dfGammarec_dU(:)*sigmavrec)
+      !Sn(2,1)   = ad*(dfGammarec_dU(1)*sigmavrec)
+      !Sn(2,2)   = ad*(dfGammacx_dU(2)*sigmavcx + dfGammarec_dU(2)*sigmavrec)
+      !Sn(2,5)   = ad*(dfGammacx_dU(5)*sigmavcx)
 #ifdef NEUTRALGAMMA
-      Sn(2,1)   = Sn(2,1) - ad*(dfGammaN_dU(1)*sigmaviz + dfGammaN_dU(1)*sigmavcx)
-      Sn(2,6)   = Sn(2,6) - ad*(dfGammaN_dU(6)*sigmaviz + dfGammaN_dU(6)*sigmavcx)
+      Sn(2,:)   = Sn(2,:) - ad*(dfGammaN_dU(:)*sigmaviz + dfGammaN_dU(:)*sigmavcx)
+      !Sn(2,1)   = Sn(2,1) - ad*(dfGammaN_dU(1)*sigmaviz + dfGammaN_dU(1)*sigmavcx)
+      !Sn(2,6)   = Sn(2,6) - ad*(dfGammaN_dU(6)*sigmaviz + dfGammaN_dU(6)*sigmavcx)
 #endif
 #ifdef TEMPERATURE
-      Sn(2,1)   = Sn(2,1) + ad*( fGammacx*dsigmavcx_dU(1) + fGammarec*dsigmavrec_dU(1))
-      Sn(2,4)   = Sn(2,4) + ad*( fGammacx*dsigmavcx_dU(4) + fGammarec*dsigmavrec_dU(4))
+      Sn(2,:)   = Sn(2,:) + ad*( fGammacx*dsigmavcx_dU(:) + fGammarec*dsigmavrec_dU(:))
+      !Sn(2,1)   = Sn(2,1) + ad*( fGammacx*dsigmavcx_dU(1) + fGammarec*dsigmavrec_dU(1))
+      !Sn(2,4)   = Sn(2,4) + ad*( fGammacx*dsigmavcx_dU(4) + fGammarec*dsigmavrec_dU(4))
 #ifdef NEUTRALGAMMA
-      Sn(2,1)   = Sn(2,1) - ad*(fGammaN*dsigmaviz_dU(1) + fGammaN*dsigmavcx_dU(1))
-      Sn(2,4)   = Sn(2,4) - ad*(fGammaN*dsigmaviz_dU(4) + fGammaN*dsigmavcx_dU(4))
+      Sn(2,:)   = Sn(2,:) - ad*(fGammaN*dsigmaviz_dU(:) + fGammaN*dsigmavcx_dU(:))
+      !Sn(2,1)   = Sn(2,1) - ad*(fGammaN*dsigmaviz_dU(1) + fGammaN*dsigmavcx_dU(1))
+      !Sn(2,4)   = Sn(2,4) - ad*(fGammaN*dsigmaviz_dU(4) + fGammaN*dsigmavcx_dU(4))
 #endif
       !Assembly Source Terms in ion energy equation
-      Sn(3,1)   = ad*( - RE*fEiiz*dsigmaviz_dU(1) + dfEirec_dU(1)*sigmavrec + fEirec*dsigmavrec_dU(1) +&
-        &dfEicx_dU(1)*sigmavcx + fEicx*dsigmavcx_dU(1))
-      Sn(3,2)   = ad*(dfEicx_dU(2)*sigmavcx )
-      Sn(3,3)   = ad*(-RE*dfEiiz_dU(3)*sigmaviz + dfEirec_dU(3)*sigmavrec)
-      Sn(3,4)   = ad*(-RE*fEiiz*dsigmaviz_dU(4) + fEirec*dsigmavrec_dU(4) + fEicx*dsigmavcx_dU(4))
-      Sn(3,5)   = ad*(-RE*dfEiiz_dU(5)*sigmaviz + dfEicx_dU(5)*sigmavcx)
+      Sn(3,:)   = ad*( - RE*dfEiiz_dU(:)*sigmaviz + dfEirec_dU(:)*sigmavrec + dfEicx_dU(:)*sigmavcx -&
+           &RE*fEiiz*dsigmaviz_dU(:) + fEirec*dsigmavrec_dU(:) + fEicx*dsigmavcx_dU(:))
+#ifdef NEUTRALGAMMA
+      Sn(3,:)   = Sn(3,:) - ad*(dfEiN_dU(:)*sigmaviz + dfEiN_dU(:)*sigmavcx +&
+           &fEiN*dsigmaviz_dU(:) + fEiN*dsigmavcx_dU(:))
+#endif
+      !Sn(3,1)   = ad*( - RE*fEiiz*dsigmaviz_dU(1) + dfEirec_dU(1)*sigmavrec + fEirec*dsigmavrec_dU(1) +&
+      !  &dfEicx_dU(1)*sigmavcx + fEicx*dsigmavcx_dU(1))
+      !Sn(3,2)   = ad*(dfEicx_dU(2)*sigmavcx )
+      !Sn(3,3)   = ad*(-RE*dfEiiz_dU(3)*sigmaviz + dfEirec_dU(3)*sigmavrec)
+      !Sn(3,4)   = ad*(-RE*fEiiz*dsigmaviz_dU(4) + fEirec*dsigmavrec_dU(4) + fEicx*dsigmavcx_dU(4))
+      !Sn(3,5)   = ad*(-RE*dfEiiz_dU(5)*sigmaviz + dfEicx_dU(5)*sigmavcx)
       !Assembly Source Terms in electron energy equation
       !Sn(4,1)   = ad4*(dniz_dU(1)*sigmaviz*Tloss + niz*dsigmaviz_dU(1)*Tloss + niz*sigmaviz*dTloss_dU(1) +&
       !  &dnrec_dU(1)*sigmavrec*Tlossrec + nrec*dsigmavrec_dU(1)*Tlossrec + nrec*sigmavrec*dTlossrec_dU(1))
@@ -3556,6 +3640,10 @@ END IF
            &dnrec_dU(:)*sigmavErec + nrec*dsigmavErec_dU(:))
       ! Electron potential energy loss
       Sn(4,:) = Sn(4,:) -ad4*Eth*(dnrec_dU(:)*sigmavrec + nrec*dsigmavrec_dU(:))
+      if (switch%impurity_radiation) then
+         ! Cooling factor term
+         Sn(4,:) = Sn(4,:) + phys%impurity_concentration*ad4*(nrec*dcooling_factor_dU(:)+dnrec_dU(:)*cooling_factor)
+      endif
 #endif
       !Assembly Source Terms in neutral density equation
       Sn(5,:) = -Sn(1,:)
@@ -3584,6 +3672,10 @@ END IF
       ! Ion energy equation
       Sn0(3)    = ad*(RE*fEiiz*sigmaviz - fEirec*sigmavrec - fEicx*sigmavcx)
       Sn0(3)    = Sn0(3) + ad*(RE*fEiiz*dot_product(dsigmaviz_dU,U) - fEirec*dot_product(dsigmavrec_dU,U))
+#ifdef NEUTRALGAMMA
+      Sn0(3)    = Sn0(3) + ad*(fEiN*sigmaviz + fEiN*sigmavcx)
+      Sn0(3)    = Sn0(3) + ad*(fEiN*dot_product(dsigmaviz_dU,U))
+#endif
       ! Electron energy equation
       !Sn0(4)    = ad4*(-niz*sigmaviz*Tloss - nrec*sigmavrec*Tlossrec)
       !Sn0(4)    = Sn0(4) + ad4*(-niz*dot_product(dsigmaviz_dU,U)*Tloss - nrec*dot_product(dsigmavrec_dU,U)*Tlossrec)
@@ -3592,6 +3684,10 @@ END IF
       Sn0(4)    = Sn0(4) + ad4*(-niz*dot_product(dsigmavEiz_dU,U) - nrec*dot_product(dsigmavErec_dU,U))
       ! Electron potential energy loss
       Sn0(4)    = Sn0(4) + ad4*Eth*(nrec*sigmavrec + nrec*dot_product(dsigmavrec_dU,U))
+      if (switch%impurity_radiation) then
+         ! Cooling factor term
+         Sn0(4)    = Sn0(4) + phys%impurity_concentration*ad4*(-nrec*cooling_factor)
+      endif
 #endif
       ! Neutral Sources
       Sn0(5)    = -Sn0(1)

@@ -170,6 +170,8 @@ CONTAINS
 
           ! Circular case with limiter
           R0 = geom%R0
+          phys%r_axis = R0
+          geom%a = (xmax-xmin)/2
           q = geom%q
           B0 = 2!*0.1522
           xr = xx*phys%lscale
@@ -204,7 +206,8 @@ CONTAINS
     real*8, pointer, dimension(:)     :: q
     real*8, allocatable, dimension(:) :: xvec, yvec, psi
     real*8                            :: x, y, t
-    real*8                            :: Br, Bz, Bt, flux, psiSep, qn
+    real*8                            :: minor_radius, r_axis, z_axis, Br, Bz, Bt, flux, psiAixs, psiSep, qn
+    integer                           :: min_ind(2)
 
     character(LEN=1000) :: fname
     character(50)  :: npr,nid,nit
@@ -241,12 +244,11 @@ CONTAINS
         ENDIF
         CALL HDF5_open(fname, file_id, IERR)
     elseif (switch%testcase>=70 .and. switch%testcase<80) then
-        ! SPARC case                                                                                                                                        
-        if (switch%ME .eq. .FALSE.) then !if not a moving equilibrium simulation                                                                                  
-            !fname = 'SPARC_1791.h5'
-            fname = 'SPARC_91003_0000.h5'
+        ! SPARC case                                                                                                      
+        if (switch%ME .eq. .FALSE.) then !if not a moving equilibrium simulation                                                
+          fname = input%Bfield_path
         else
-            fname = 'B_field_exp/SPARC_91003'
+            fname = input%Bfield_PATH(:len(input%Bfield_path)-3)
             write(nit, "(i10)") int(time%it + 1)
             nit = trim(adjustl(nit))
             k = INDEX(nit, " ") -1
@@ -258,6 +260,8 @@ CONTAINS
         CALL HDF5_open(fname, file_id, IERR)
         CALL HDF5_integer_reading(file_id, ip, 'ip')
         CALL HDF5_integer_reading(file_id, jp, 'jp')
+        !WRITE(6,*) 'Number of points i direction = ', ip
+        !WRITE(6,*) 'Number of points j direction = ', jp
     elseif (switch%testcase>=80 .and. switch%testcase<90) then
         ! ITER case
     		  if (switch%ME .eq. .FALSE.) then !if not a moving equilibrium simulation
@@ -286,9 +290,13 @@ CONTAINS
     ALLOCATE (Br2D(ip, jp))
     ALLOCATE (Bz2D(ip, jp))
     ALLOCATE (Bphi2D(ip, jp))
-    ALLOCATE (q(96))
+    ALLOCATE (q(101))
     CALL HDF5_array2D_reading(file_id, r2D, 'r2D')
     CALL HDF5_array2D_reading(file_id, z2D, 'z2D')
+    CALL HDF5_real_reading(file_id, r_axis, 'r_axis')
+    CALL HDF5_real_reading(file_id, z_axis, 'z_axis')
+    CALL HDF5_real_reading(file_id, minor_radius, 'minor_radius')
+    CALL HDF5_real_reading(file_id, psiAxis, 'psiAxis')
     CALL HDF5_real_reading(file_id, psiSep, 'psiSep')
     CALL HDF5_array2D_reading(file_id, flux2D, 'flux2D')
     CALL HDF5_array2D_reading(file_id, Br2D, 'Br2D')
@@ -301,9 +309,19 @@ CONTAINS
     r2D = r2D/phys%lscale
     z2D = z2D/phys%lscale
 
+    ! Allocate minor radius
+    geom%a = minor_radius
+
     ! Min and Max flux for inizialization
     !phys%Flux2Dmin = minval(flux2D)
     !phys%Flux2Dmax = maxval(flux2D)
+
+    !finding axis
+    !min_ind = MINLOC(flux2D)
+    !phys%r_axis = r2D(min_ind(1),min_ind(2))
+    !phys%z_axis = z2D(min_ind(1),min_ind(2))
+    phys%r_axis = r_axis/phys%lscale
+    phys%z_axis = z_axis/phys%lscale
 
     ! Interpolate
     ALLOCATE (xvec(jp))
@@ -342,13 +360,15 @@ CONTAINS
     CALL MPI_ALLREDUCE(MPI_IN_PLACE, phys%Flux2Dmin, 1, MPI_DOUBLE_PRECISION, MPI_MIN, MPI_COMM_WORLD, ierr)
 #ENDIF 
   
+    phys%psiAxis = psiAxis
+    phys%psiSep = psiSep
     ! Magnetic flux normalized to separatrix: PSI
-    phys%magnetic_psi = (phys%magnetic_flux - phys%Flux2Dmin)/(psiSep - phys%Flux2Dmin) 
+    phys%magnetic_psi = (phys%magnetic_flux - phys%psiAxis)/(psiSep - phys%psiAxis) 
 
     ! Interpoalte the safety factor q in function of PSI
-    ipsi = 96
+    ipsi = 101
     ALLOCATE(psi(ipsi))
-    psi = (/(0.01*(i - 1), i=1, 96)/)
+    psi = (/(0.01*(i - 1), i=1, 101)/)
     DO i = 1, Mesh%Nnodes
       x = phys%magnetic_psi(i)
       qn = interp1d(ipsi, psi, q, x, 1e-12)
@@ -362,6 +382,12 @@ CONTAINS
       END DO
 #endif
     END DO
+
+    ! Print basic inforomation about the equilibrium
+    IF (MPIvar%glob_id .eq. 0) THEN
+          write(6,*) 'Magnetic Axis position (R,Z) = ', phys%r_axis*phys%lscale, phys%z_axis*phys%lscale
+          write(6,*) 'Minor radius = ', geom%a
+    ENDIF
 
     ! Free memory
     DEALLOCATE (Br2D, Bz2D, Bphi2D, q, xvec, yvec)
@@ -883,11 +909,10 @@ CONTAINS
         CALL HDF5_open(fname, file_id, IERR)
      elseif (switch%testcase>=70 .and. switch%testcase<80) then
         ! SPARC case                                                                                                                                         
-        if(switch%ME .eq. .FALSE.) then !if not a moving equilibrium simulation                                                                        
-          !fname = 'SPARC_1791_Jtor.h5'
-          fname = 'SPARC_91003_Jtor_0000.h5'
+        if(switch%ME .eq. .FALSE.) then !if not a moving equilibrium simulation                                                      
+          fname = input%Jtor_path
         else
-          fname = 'B_field_exp/SPARC_91003_Jtor'
+          fname = input%Jtor_path(:len(input%Jtor_path)-3)
           write(nit, "(i10)") int(time%it + 1)
           nit = trim(adjustl(nit))
           k = INDEX(nit, " ") -1
@@ -1189,14 +1214,14 @@ CONTAINS
         WRITE(6,*) 'nli = ', nli, 'E+19 [m^-2]'
         WRITE(6,*) n_la, '[m^-3]'
 #endif
-        ! Upgrade puff                                                                                                                                                     
+        ! Upgrade puff                                                                                                                             
         n_Gw = phys%I_p/(pi*a**2)*10.*simpar%refval_density
         phys%n_li(time%it+1) = nli
-        nlit = phys%n_li(1) + (phys%puff_slope/simpar%refval_density - phys%n_li(1))/(8.55 - 0.5)*(phys%I_p - 0.5)
+        nlit = phys%n_li(1) + (phys%puff_slope/simpar%refval_density - phys%n_li(1))/(8.55 - 0.8)*(phys%I_p - 0.8)
         phys%n_lit(time%it+1) =  nlit
         IF (time%it .eq. 0) THEN
            !phys%puff_exp(time%it+1) = max(sign(1.,1. - nli/nlit)*100.*simpar%refval_density*abs(nlit - nli), 0., 1.e20)
-           phys%puff_exp(time%it+1) = phys%puff + sign(1.,1. - nli/nlit)*60.*simpar%refval_density*abs(nlit - nli)
+           phys%puff_exp(time%it+1) = phys%puff + sign(1.,1. - nli/nlit)*120.*simpar%refval_density*abs(nlit - nli)
            phys%puff = phys%puff_exp(time%it+1)
         ELSE
            IF (phys%I_p .lt. 8.5) THEN
@@ -1207,11 +1232,14 @@ CONTAINS
               nslope = (phys%n_li(time%it+1) - phys%n_li(time%it))/(phys%n_lit(time%it+1) - phys%n_lit(time%it))
               Af = sign(1.,phys%n_lit(time%it+1) - phys%n_lit(time%it))
            ELSE
-              nslope =  phys%n_li(time%it+1)/phys%n_li(time%it) ! (phys%n_li(time%it+1) - phys%n_li(time%it))/(phys%n_li(time%it) - phys%n_li(time%it-1))
-              Af = 20.
+              !nslope =  phys%n_li(time%it+1)/phys%n_li(time%it) ! (phys%n_li(time%it+1) - phys%n_li(time%it))/(phys%n_li(time%it) - phys%n_li(time%it-1))
+              !Af = 20.
+              nslope = (phys%n_li(time%it+1) - phys%n_li(time%it))/(phys%n_lit(time%it+1) - phys%n_lit(time%it))
+              nslope = MIN(1.1, MAX(0.9, nslope))
+              Af = sign(1.,phys%n_lit(time%it+1) - phys%n_lit(time%it))
            END IF
            !WRITE(6,*) 'nslope = ', nslope
-           phys%puff_exp(time%it+1) = max(phys%puff_exp(time%it) + sign(1.,1. - nli/nlit)*60.*simpar%refval_density*abs(nlit - nli) + 15.*Af*simpar%refval_density*(1 - nslope), 0.)
+           phys%puff_exp(time%it+1) = max(phys%puff_exp(time%it) + sign(1.,1. - nli/nlit)*120.*simpar%refval_density*abs(nlit - nli) + 40.*Af*simpar%refval_density*(1 - nslope), 0.)
            phys%puff = phys%puff_exp(time%it+1)
        END IF
        IF (MPIvar%glob_id .eq. 0) THEN
@@ -1325,5 +1353,239 @@ CONTAINS
     END IF
           
   END SUBROUTINE SetPuff
+
+  SUBROUTINE set_impurity_concentration()
+    real*8      :: q_th,q_on,max_q_perp,deltaq,tau_d,beta,act,alpha
+    real*8      :: err,int_err,dedt_raw,dedt,dcZ
+    real*8      :: amp,Kp,Ki,Kd
+
+   
+    !q_th = 5. ! Limit at 5 MW/m^2
+    !q_on = 0.95
+    max_q_perp = 0.
+    !Kp = controller%Kp ! 3.5e-4
+    !Ki = controller%Ki ! 1.e-11
+    !Kd = controller%Kd ! 2.5e2
+
+    CALL compute_max_q_perp(max_q_perp)
+    IF (MPIvar%glob_id .eq. 0) THEN
+       WRITE(6,*) 'Max Heat Flux = ', max_q_perp, 'E+00 [MW/m^2]'
+    END IF
+
+    ! ==========================================
+    ! PID Controller for impurity seeding
+    ! ==========================================
+    if (switch%PID) then
+
+       ! --- Parameters ---
+       q_th = controller%target_value             ! heat flux threshold in MW/m^2
+       q_on = 0.95*q_th                           ! smooth activation start point
+       deltaq = q_th - q_on                       ! delta q used for activation
+       Kp = controller%Kp                         ! proportional gain
+       Ki = controller%Ki                         ! integral gain
+       Kd = controller%Kd                         ! derivative gain
+       tau_d = 9.0*time%dt                        ! derivative filter time constant
+       beta = 5.0                                 ! steepness of tanh activation
+       
+       ! Initiliaze error and integral error at the first time step
+       if (time%it == 0) then
+          controller%err = 0.
+          controller%int_err = 0.
+       endif
+
+
+       ! --- Decrease controller strength of 10x ---
+       ! Useful for stability if you start the simulation from a point
+       ! where you are very far from the target value (+ 100%)
+       amp = 1 - 0.45*(1 + tanh(beta*(max_q_perp - 1.5*q_th)/(0.5*q_th)));
+       Kp = Kp
+       Ki = Ki
+       Kd = Kd
+
+       ! --- Smooth activation ---
+       act = 0.5*(1.0 + tanh(beta*(max_q_perp - (q_on + deltaq/2.0))/deltaq))
+       act = min(max(act, 0.0), 1.0)
+
+       ! --- Error ---
+       err = max_q_perp - q_th
+
+       ! --- Integral (scaled by activation --> windup prevention) ---
+       !int_err = controller%int_err + act*err*time%dt
+       int_err = controller%int_err + err*time%dt
+
+       ! --- Derivative (filtered) ---
+       dedt_raw = (err - controller%err)/time%dt
+       alpha = time%dt/(act*tau_d + time%dt)
+       dedt = (1.0 - alpha)*controller%dedt + alpha*dedt_raw
+
+       ! --- PID incremental actuator update ---
+       dcZ = (Kp*err + Ki*int_err + Kd*dedt)
+       if (dcZ > 0.0) then
+          dcZ = act*dcZ
+       endif
+       !dcZ = act*(Kp*err + Kd*dedt + Ki*int_err)
+
+       ! --- Update actuator with hard limit ---
+       controller%actuator(time%it+1) = max(controller%actuator(time%it) + dcZ, 0.0)
+
+       ! --- Update physical variable ---
+       phys%impurity_concentration = controller%actuator(time%it+1)
+
+       ! --- Store history for the next timestep ---
+       controller%err = err
+       controller%int_err = int_err
+       controller%dedt = dedt
+
+       ! ===============
+       ! OLD CONTROLLER
+       ! ===============
+       ! Controller activation
+       !if (max_q_perp > q_on*q_th) then ! Activation only if q_perp > 5 MW
+       !   ! Error inside active region
+       !   err = max_q_perp - q_th
+       !
+       !   ! Integral 
+       !   int_err = controller%int_err + err*time%dt
+       !
+       !   ! Derivative
+       !   dedt = (err - controller%err)/time%dt
+       !
+       !   ! Incremental PID
+       !   if (controller%actuator(time%it) .eq. 0.) then
+       !      dcZ = max(2.e-5, Kp*err + Ki*int_err + Kd*dedt)
+       !   else
+       !      dcZ = Kp*err + Ki*int_err + Kd*dedt
+       !   endif
+       !else
+       !   int_err = 0.
+       !endif
+
+       !! Store history
+       !controller%err = err
+       !controller%int_err = int_err
+       !controller%actuator(time%it+1) = max(controller%actuator(time%it) + dcZ, 0.)
+       !phys%impurity_concentration = controller%actuator(time%it+1)
+    
+       IF (MPIvar%glob_id .eq. 0) THEN
+          WRITE(6,'(" Kp = ", ES15.6)') Kp
+          WRITE(6,'(" Ki = ", ES15.6)') Ki
+          WRITE(6,'(" Kd = ", ES15.6)') Kd
+          WRITE(6,'(" act = ", ES15.6)') act
+          WRITE(6,'(" err = ", ES15.6)') err
+          WRITE(6,'(" int_err = ", ES15.6)') int_err
+          WRITE(6,'(" dedt_raw = ", ES15.6)') dedt_raw
+          WRITE(6,'(" alpha = ", ES15.6)') alpha
+          WRITE(6,'(" de/dt = ", ES15.6)') dedt
+          WRITE(6,'(" Kp*err = ", ES15.6)') Kp*err
+          WRITE(6,'(" Ki*int_err = ", ES15.6)') Ki*int_err
+          WRITE(6,'(" Kd*de/dt = ", ES15.6)') Kd*dedt
+          WRITE(6,'(" dcZ = ", ES15.6)') dcZ
+          WRITE(6,'(" cZ = ", ES15.6)') controller%actuator(time%it+1)
+       END IF
+
+    endif
+
+  END SUBROUTINE set_impurity_concentration
+
+
+  SUBROUTINE compute_max_q_perp(max_q)
+    integer                  :: i,g,ifa,Fi,iel,Neq,Npfl,Ng1d,ierr
+    integer                  :: nod(refElPol%Nfacenodes),ind_uf(refElPol%Nfacenodes*phys%neq)
+    real*8                   :: Bmod_nod(refElPol%Nfacenodes)
+    real*8                   :: xyDerNorm_g,bn,n,u,Ti,Te,q
+    real*8                   :: Xf(Mesh%Nnodesperface,simpar%Ndim),Bfl(refElPol%Nfacenodes,3),b_nod(refElPol%Nfacenodes,3),uf(refElPol%Nfacenodes,phys%neq),up(refElPol%Nfacenodes,phys%neq)
+    real*8                   :: b_g(refElPol%Ngauss1d,3),ufg(refElPol%Ngauss1d,phys%neq),xyg(refElPol%Ngauss1d,2),xyder(refElPol%Ngauss1d,2),t_g(simpar%Ndim),n_g(simpar%Ndim)
+    real*8, intent(out)      :: max_q
+    
+    Neq = phys%Neq
+    Npfl = refElPol%Nfacenodes
+    q = 0.
+    max_q = 0.
+
+    ! Loop in external faces
+    DO ifa = 1,Mesh%Nextfaces
+
+       ! Global numbering of this face
+       Fi = ifa + Mesh%Nintfaces
+       
+       ! Element to which this face belongs
+       iel = Mesh%extfaces(ifa,1)
+
+       ! Nodes in local numbering
+       nod = refElPol%Face_nodes(Mesh%extfaces(ifa,2),:)
+
+       ! Coordinates of the nodes of the face
+       Xf = Mesh%X(Mesh%T(iel,nod),:)
+
+       ! Magnetic field of the nodes of the face
+       Bfl = phys%B(Mesh%T(iel,nod),:) 
+
+       ! Magnetic field norm and direction at element nodes
+       Bmod_nod = SQRT(Bfl(:,1)**2 + Bfl(:,2)**2 + Bfl(:,3)**2)
+       b_nod(:,1) = Bfl(:,1)/Bmod_nod
+       b_nod(:,2) = Bfl(:,2)/Bmod_nod
+       b_nod(:,3) = Bfl(:,3)/Bmod_nod
+
+       ! Number of Gauss points
+       Ng1d = refElPol%Ngauss1d
+
+       ! Gauss points position
+       xyg = MATMUL(refElPol%N1D,Xf)
+
+       ! Shape function derivatives at Gauss points
+       xyDer = MATMUL(refElPol%Nxi1D,Xf)
+
+       ! Indices                                                                                                                                         
+       ind_uf = (Fi - 1)*Neq*Npfl + (/(i,i=1,Neq*Npfl)/)
+
+       ! Solution of the nodes of the face
+       uf = TRANSPOSE(RESHAPE(sol%u_tilde(ind_uf),[Neq,Npfl]))
+       
+       ! Solution at face Gauss points
+       ufg = MATMUL(refElPol%N1D,uf)
+
+       ! Magnetic field norm and direction at Gauss points
+       b_g = MATMUL(refElPol%N1d,b_nod)
+
+#ifdef PARALL
+       IF (Mesh%ghostFaces(Fi) .EQ. 0) THEN
+#endif
+          ! Loop in 1D Gauss point
+          DO g=1,Ng1d
+             
+             ! Try to avoid heat flux spikes at the knee in SPARC geometry
+             ! Just work for diverted phase of shot #91003 and during heating ramp-up
+             IF (xyg(g,1)*phys%lscale < 1.5 .AND. xyg(g,2)*phys%lscale < -1.09 .OR. xyg(g,1)*phys%lscale > 1.5 .AND. xyg(g,2)*phys%lscale < -1.21) THEN
+                ! Calculate unit normal to the boundary
+                xyDerNorm_g = NORM2(xyDer(g,:))
+                t_g = xyDer(g,:)/xyDerNorm_g
+                n_g = [t_g(2),-t_g(1)]
+                bn = dot_PRODUCT(b_g(g,1:2),n_g)
+
+                ! Calculate heat flux
+                n = ufg(g,1)
+                u = ufg(g,2)/ufg(g,1)
+                Ti = abs(2/(3*phys%Mref)*(ufg(g,3)/ufg(g,1) - 0.5*ufg(g,2)**2/ufg(g,1)**2))
+                Te = abs(2/(3*phys%Mref)*ufg(g,4)/ufg(g,1))
+
+                q = (phys%Mref*phys%Gmbohm*u*n*Ti + 0.5*n*u**3 + phys%Mref*phys%Gmbohme*u*n*Te)*bn          
+                max_q = max(max_q,q)
+             ENDIF
+
+          END DO ! Loop on Gauss points
+#ifdef PARALL
+       ENDIF
+#endif  
+
+    END DO ! Loop on exterior faces
+
+    ! Calculate q in physical units [MW/m^2]                                                                                                                              
+    max_q = simpar%refval_density*simpar%refval_speed**2*simpar%refval_mass*simpar%refval_length/simpar%refval_time*max_q/1.e6
+    
+#ifdef PARALL    
+    CALL MPI_ALLREDUCE(MPI_IN_PLACE, max_q, 1, MPI_REAL8, MPI_MAX, MPI_COMM_WORLD, ierr)
+#endif
+    
+  END SUBROUTINE
 
 END MODULE Magnetic_field

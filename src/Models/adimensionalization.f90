@@ -18,7 +18,7 @@ SUBROUTINE adimensionalization()
 
   ! Reference values
   real*8, parameter :: L0 = 1.901e-3         ! Length scale [m]
-  real*8, parameter :: t0 = 1.374e-07        ! Time scale [s]
+  real*8, parameter :: t0 = 1.3736e-07       ! Time scale [s]
   ! *** Temperature scale [eV]. It corresponds to the background temperature
   real*8           :: Tev                    ! Temperature scale [eV].
 
@@ -143,10 +143,18 @@ SUBROUTINE adimensionalization()
   phys%diff_vort = phys%diff_vort/D0
   phys%diff_pot = phys%diff_pot/D0
   phys%diff_nn = phys%diff_nn/D0
+  phys%diff_nn_min = phys%diff_nn_min/D0
   switch%diffmin = switch%diffmin/D0  
 
   ! Pinch velocity
   phys%v_p = phys%v_p/u0
+  ! additional heating coefficients
+  phys%heating_power_i = phys%heating_power_i*t0/n0/mi/u0**2/L0**3
+  phys%heating_power_e = phys%heating_power_e*t0/n0/mi/u0**2/L0**3
+  phys%heating_dr    = phys%heating_dr/L0
+  phys%heating_dz    = phys%heating_dz/L0
+  phys%heating_sigmar    = phys%heating_sigmar/L0
+  phys%heating_sigmaz    = phys%heating_sigmaz/L0
 
   ! Curvature drift coefficient
   phys%dfcoef = 2*Tev*t0/(L0**2*B0)

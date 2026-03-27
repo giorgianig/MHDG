@@ -441,7 +441,7 @@ CONTAINS
 #endif
         ! tangency
         ntang = .TRUE.
-        inc = bn/norm2(b(g,1:2))
+        inc = Bn/norm2(b(g,1:2))
 
         setval = ufg(g,2)
 
@@ -1093,7 +1093,7 @@ CONTAINS
 #endif
       ! tangency
       ntang = .TRUE.
-      inc = bn/norm2(b(g,1:2))
+      inc = bn!/norm2(b(g,1:2))
 
 #ifdef NGAMMA
       setval = ufg(g,2)
@@ -1130,14 +1130,22 @@ CONTAINS
       sn = sign(1.,bn)
       delta = 1.      
       IF (abs(inc) .le. phys%bohmth) THEN
-         setval = sn*SoundSpeed/phys%bohmth*abs(inc)*(abs(ufg(g,3))/(abs(ufg(g,3))+2.e-4))
+         IF (ufg(g,3) .lt. 0 .or. ufg(g,4) .lt. 0) THEN
+            setval = 0.
+         ELSE
+            setval = sn*SoundSpeed/phys%bohmth*abs(inc)*(abs(ufg(g,3))/(abs(ufg(g,3))+2.e-4))
+         END IF
       ELSE
-         IF (abs(upg(g,2)) .le. SoundSpeed/abs((ufg(g,3))/(abs(ufg(g,3))+2.e-4))) THEN
-            setval = sn*SoundSpeed*(abs(ufg(g,3))/(abs(ufg(g,3))+2.e-4))
-         ELSE IF (abs(upg(g,2)) .gt. SoundSpeed/abs((ufg(g,3))/(abs(ufg(g,3))+2.e-4))) THEN
-            delta = 0.
-            !setval = sn*setval
-         END IF 
+         IF (ufg(g,3) .lt. 0 .or. ufg(g,4) .lt. 0) THEN
+            setval = 0.
+         ELSE
+            IF (abs(upg(g,2)) .le. SoundSpeed/abs((ufg(g,3))/(abs(ufg(g,3))+2.e-4))) THEN
+               setval = sn*SoundSpeed*(abs(ufg(g,3))/(abs(ufg(g,3))+2.e-4))
+            ELSE IF (abs(upg(g,2)) .gt. SoundSpeed/abs((ufg(g,3))/(abs(ufg(g,3))+2.e-4))) THEN
+               delta = 0.
+               !setval = sn*setval
+            END IF
+         END IF
          !if (numer%bohmtypebc.eq.1) then
          !  delta=1
          !endif
@@ -1875,7 +1883,7 @@ CONTAINS
       CALL jacobianMatricesBohm(ufg,Abohm)
 
       ! Jacobian matrix for pinch part
-      CALL computePinch(ufg,bg,psig,qsfg,APinch)
+      CALL computePinch(ufg,bg,psig,qsfg,diffiso(1,1),APinch)
 
       gmi = dot_product(matmul(Qpr,Vveci),bg)  ! scalar
       gme = dot_product(matmul(Qpr,Vvece),bg)             ! scalar
@@ -1886,7 +1894,8 @@ CONTAINS
       DO i = 1,2
         indi = ind_asf + i
         IF (i == 1) THEN
-           IF (upfg(7) .ge. 6.e-10) THEN
+           !IF (upfg(7) .ge. 6.e-10) THEN
+           !coefi = coefi*(abs(ufg(3))/(abs(ufg(3))+2.e-4))
            DO j = 1,Neq
             indj = ind_asf + j
             elMat%All(ind_ff(indi + 2),ind_ff(indj),iel) = elMat%All(ind_ff(indi + 2),ind_ff(indj),iel) + Abohm(i,j)*NiNi*bn
@@ -1898,9 +1907,10 @@ CONTAINS
             END DO
           END DO
           elMat%fh(ind_ff(indi+2),iel) = elMat%fh(ind_ff(indi+2),iel) - coefi*Alphai*( dot_product (matmul(transpose(Taui),bg),ufg)  )*Ni*bn
-          END IF
+          !END IF
         ELSE
-          IF (upfg(8) .ge. 6.e-10) THEN
+          !IF (upfg(8) .ge. 6.e-10) THEN
+          !coefe = coefe*(abs(ufg(3))/(abs(ufg(3))+2.e-4))
           DO j = 1,Neq
             indj = ind_asf + j
             elMat%All(ind_ff(indi + 2),ind_ff(indj),iel) = elMat%All(ind_ff(indi + 2),ind_ff(indj),iel) + Abohm(i,j)*NiNi*bn
@@ -1913,7 +1923,7 @@ CONTAINS
           END DO
           elMat%fh(ind_ff(indi+2),iel) = elMat%fh(ind_ff(indi+2),iel) - coefe*Alphae*( dot_product (matmul(transpose(Taue),bg),ufg)  )*Ni*bn
           END IF
-        ENDIF
+        !ENDIF
       END DO
     !END IF ! tangency
 #endif
@@ -2134,12 +2144,6 @@ CONTAINS
       E = 1./2.*1./simpar%refval_charge*simpar%refval_mass*(simpar%refval_speed*upfg(2))**2
       theta = 180./acos(-1.D0)*acos(abs(bn))
       call compute_RN(E,theta,RN)
-      !RN = 1.
-      !IF (iel==18 .or. iel==17 .or. iel==233 .or. iel==232 .or. iel==364 .or. iel==365 .or. iel==348 .or. iel==347 ) THEN 
-      !   WRITE(6,*) 'E = ', E
-      !   WRITE(6,*) 'theta = ', theta
-      !   WRITE(6,*) 'RN = ', RN
-      !END IF
 #ifndef NEUTRALP
       ! Linearization Dnn
       call compute_dDnn_dU(ufg,dDnn_dU)
@@ -2176,11 +2180,7 @@ CONTAINS
        if (switch%testcase .ge. 80 .and. switch%testcase .le. 89) recycling_coeff = min(0.9928,phys%Re)   ! ITER
        recycling_coeff = recycling_coeff*RN
        puff_coeff = 0.
-       if (phys%cryopump .gt. 0.) then
-          pump_coeff = phys%cryopump/(Mesh%pump_area*phys%lscale**2)/(simpar%refval_diffusion)*phys%lscale
-       else
-          pump_coeff = 1. - recycling_coeff
-       endif       
+       pump_coeff = phys%cryopump/(Mesh%pump_area*phys%lscale**2)/(simpar%refval_diffusion)*phys%lscale       
     CASE (bc_BohmPuff) 
        recycling_coeff =  phys%Re*RN
        puff_coeff = phys%puff/simpar%refval_density/(Mesh%puff_area*phys%lscale**2)/(simpar%refval_diffusion)*phys%lscale
@@ -2232,16 +2232,7 @@ CONTAINS
     flgflux_neutral = flgflux_neutral - ufg(6)*bn
 #endif
     ! Pump
-    if (phys%cryopump .gt. 0) then
-       flgflux_neutral = flgflux_neutral + pump_coeff*ufg(5)
-    else
-#ifndef NEUTRALGAMMA
-       flgflux_neutral = flgflux_neutral + pump_coeff*ufg(5)*upfg(2)*bn
-#endif
-#ifdef NEUTRALGAMMA
-       flgflux_neutral = flgflux_neutral - pump_coeff*ufg(6)*bn
-#endif
-    endif
+    flgflux_neutral = flgflux_neutral + pump_coeff*ufg(5)
     ! Dimensionalizing and multiplying by the surface under this gauss point
     flgflux_neutral = flgflux_neutral*2.*PI*dline*simpar%refval_density*simpar%refval_speed*simpar%refval_length**2
 #endif
@@ -2323,21 +2314,12 @@ CONTAINS
     ! Puff
     elMat%fh(ind_ff(indi),iel) = elMat%fh(ind_ff(indi),iel) - puff_coeff*Ni
     ! Pump
-    if (phys%cryopump .gt. 0.) then
-       indj = ind_asf + 5
-       elMat%All(ind_ff(indi),ind_ff(indj),iel) = elMat%All(ind_ff(indi),ind_ff(indj),iel) - pump_coeff*NiNi
-    else
-#ifndef NEUTRALGAMMA
-       DO j=1,5  
-          indj = ind_asf + j
-          elMat%All(ind_ff(indi),ind_ff(indj),iel) = elMat%All(ind_ff(indi),ind_ff(indj),iel) - pump_coeff*Abohm(k,j)*NiNi*bn
-       END DO
-    !elMat%fh(ind_ff(indi),iel) = elMat%fh(ind_ff(indi),iel) + 5.e-4*Ni
-#else
-      indj = ind_asf + 6
-      elMat%All(ind_ff(indi),ind_ff(indj),iel) = elMat%All(ind_ff(indi),ind_ff(indj),iel) + pump_coeff*NiNi*bn
+    indj = ind_asf + 5
+    elMat%All(ind_ff(indi),ind_ff(indj),iel) = elMat%All(ind_ff(indi),ind_ff(indj),iel) - pump_coeff*NiNi
+#ifdef NEUTRALGAMMA ! Pump out neutral momentum associated to cryopump
+    indj = ind_asf + 6
+    elMat%All(ind_ff(indi),ind_ff(indj),iel) = elMat%All(ind_ff(indi),ind_ff(indj),iel) - pump_coeff*NiNi*bn
 #endif
-    endif
 
 #ifdef NEUTRALGAMMA
     ! Convective neutral flux

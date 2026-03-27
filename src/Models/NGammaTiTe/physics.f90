@@ -165,6 +165,24 @@ CONTAINS
                          0.6456, 0.6741, 0.7026, 0.7381, 0.7737, 0.8327, 0.9419, 1.0000/)
 #endif
 
+    ! Impurity coefficients for cooling factor
+    IF (switch%impurity_radiation) THEN
+       ! 1D fit in loglog space for Neon in the range of 0.2 eV to 4e3 eV
+       IF (phys%impurity_name == 'Ne') THEN
+          !phys%alpha_cooling_factor = (/-3.12587052e+01, 8.97539684e+00, 7.29587879e+00, -6.95653952e+00, -2.21442537e+01,&
+          !                               1.96646240e+01, 2.20458554e+01, -2.78043902e+01, -3.16804832e+00, 1.63746535e+01,&
+          !                              -6.30400364e+00, -2.50286964e+00, 2.89904469e+00, -8.47610271e-01, -1.08869885e-01,&
+          !                               1.77346783e-01, -7.34820780e-02, 1.85616610e-02,-3.25254232e-03, 4.10671875e-04,&
+          !                              -3.75061697e-05, 2.42784120e-06, -1.05949794e-07, 2.80101916e-09, -3.39351939e-11/)
+          phys%alpha_cooling_factor = (/-3.14226634755088e+01, 9.38307403470455e+00, 1.13205461409582e+01, -1.53126050121043e+01, -3.41486051140446e+01,&
+                                         6.11482519922265e+01, -4.57664151558038e+00, -4.69498016547927e+01, 3.12173561470545e+01, 3.02954626554720e+00,&
+                                        -1.23463401522552e+01, 5.66156288155631e+00, -2.42625781199415e-01, -8.49276472183019e-01, 4.49443806320222e-01,&
+                                        -1.24365050791888e-01, 2.09413452432604e-02, -1.88761269840526e-03, -2.23534440448730e-05, 3.29904291606934e-05,&
+                                        -5.02176353449714e-06, 4.24480218724012e-07, -2.19511008435486e-08, 6.53620765723223e-10, -8.65028662528563e-12/)
+       ELSE
+          WRITE(6,*) 'Warning: cooling factor not defined for impurity ', TRIM(phys%impurity_name)
+       ENDIF
+    ENDIF
   END SUBROUTINE
 
   !*******************************************
@@ -183,7 +201,7 @@ CONTAINS
     ua(:,5) = abs(up(:,11))
 #endif
 #ifdef NEUTRALGAMMA
-    ua(:,6) = abs(up(:,11))*up(:,12)
+    ua(:,6) = abs(max(up(:,11),1.e-7))*up(:,12)
 #endif
 
   END SUBROUTINE phys2cons
@@ -224,7 +242,7 @@ CONTAINS
     up(:,11) = abs(U5)                                                ! density neutral
 #endif
 #ifdef NEUTRALGAMMA
-    up(:,12) = ua(:,6)/abs(U5)                                             ! u parallel neutral
+    up(:,12) = ua(:,6)/abs(max(U5,1.e-7))                                             ! u parallel neutral
 #endif
 
     ! Set threshold for low density and temperature
@@ -410,6 +428,12 @@ CONTAINS
 #else
       A(5, 6) = 1.
       
+      !A(6, 1) = 2./3.*U(5)*(- U(3)/U(1)**2 + U(2)**2/U(1)**3)
+      !A(6, 2) = - 2./3.*U(5)*U(2)/U(1)**2
+      !A(6, 3) = 2./3.*U(5)/U(1)
+      !A(6, 5) = - U(6)**2/U(5)**2 + 2./3.*(U(3)/U(1) - 1./2.*U(2)**2/U(1)**2)
+      !A(6, 6) = 2.*U(6)/U(5)
+      
       A(6, 1) = 2./3.*max(1.e-7,U(5))*(- U(3)/U(1)**2 + U(2)**2/U(1)**3)
       A(6, 2) = - 2./3.*max(1.e-7,U(5))*U(2)/U(1)**2
       A(6, 3) = 2./3.*max(1.e-7,U(5))/U(1)
@@ -481,6 +505,12 @@ CONTAINS
 #else
       An(5, 6) = 1.
 
+      !An(6, 1) = 2./3.*U(5)*(- U(3)/U(1)**2 + U(2)**2/U(1)**3)
+      !An(6, 2) = - 2./3.*U(5)*U(2)/U(1)**2
+      !An(6, 3) = 2./3.*U(5)/U(1)
+      !An(6, 5) = - U(6)**2/U(5)**2 + 2./3.*(U(3)/U(1) - 1./2.*U(2)**2/U(1)**2)
+      !An(6, 6) = 2.*U(6)/U(5)
+
       An(6, 1) = 2./3.*max(1.e-7,U(5))*(- U(3)/U(1)**2 + U(2)**2/U(1)**3)
       An(6, 2) = - 2./3.*max(1.e-7,U(5))*U(2)/U(1)**2
       An(6, 3) = 2./3.*max(1.e-7,U(5))/U(1)
@@ -545,9 +575,9 @@ CONTAINS
     !A(1, 5) = A(1,5) + RE*U(3)*U(2)/U(1)**2 - 1./2.*(U(2)/U(1))**3
 
     ! Pinch flux
-    A(5, 1) = -U(5)*U(2)/U(1)**2
-    A(5, 2) = U(5)/U(1)
-    A(5, 5) = U(2)/U(1)     
+    !A(5, 1) = -U(5)*U(2)/U(1)**2
+    !A(5, 2) = U(5)/U(1)
+    !A(5, 5) = U(2)/U(1)     
 #endif
   END SUBROUTINE jacobianMatricesBohm
 
@@ -620,7 +650,7 @@ CONTAINS
     real*8, intent(in)  		:: u(:,:),q(:,:)
     real*8, intent(in)                  :: psi(:)
     real*8, intent(out)		 :: d_iso(:, :, :), d_ani(:, :, :)
-    real*8		              :: iperdiff(size(xy, 1)), psi1=0.994, psi2=1.012, sigma=1.e3
+    real*8		              :: iperdiff(size(u, 1)), d_iper, D0, MF, Dtime
 #ifdef NEUTRAL
     integer             		:: i
     real*8				            :: Ery = 13.6, cs_n, DnnTh
@@ -642,80 +672,77 @@ CONTAINS
     !*****************************
     ! Diagonal terms
     !*****************************
-    d_iso(1, 1, :) = phys%diff_n
-    d_iso(2, 2, :) = phys%diff_u
-    d_iso(3, 3, :) = phys%diff_e
-    d_iso(4, 4, :) = phys%diff_ee
-    ! SPARC testcases
-    if (switch%testcase .gt. 74) then
-       if (switch%testcase .eq. 75) then 
-          DO i=1,size(u,1)
-             d_iso(1, 1, i) = max(switch%diffmin,phys%diff_n - (phys%diff_n - switch%diffmin)/time%nts*time%it,phys%diff_n*((tanh(-(psi(i) - 0.992)*1.5e3) + 1.)/2. + (tanh((psi(i) - 1.008)*1.5e3) + 1.)/2.))
-             d_iso(2, 2, i) = max(switch%diffmin,phys%diff_u - (phys%diff_u - switch%diffmin)/time%nts*time%it,phys%diff_u*((tanh(-(psi(i) - 0.992)*1.5e3) + 1.)/2. + (tanh((psi(i) - 1.008)*1.5e3) + 1.)/2.))
-             d_iso(3, 3, i) = max(switch%diffmin,phys%diff_e - (phys%diff_e - switch%diffmin)/time%nts*time%it,phys%diff_e*((tanh(-(psi(i) - 0.992)*1.5e3) + 1.)/2. + (tanh((psi(i) - 1.008)*1.5e3) + 1.)/2.))
-             d_iso(4, 4, i) = max(switch%diffmin,phys%diff_e - (phys%diff_ee - switch%diffmin)/time%nts*time%it,phys%diff_ee*((tanh(-(psi(i) - 0.992)*1.5e3) + 1.)/2. + (tanh((psi(i) - 1.008)*1.5e3) + 1.)/2.))
-          END DO
-       else if (switch%testcase .eq. 76) then
-          DO i=1,size(u,1)
-             d_iso(1, 1, i) = max(switch%diffmin,phys%diff_n - (phys%diff_n - switch%diffmin)/time%nts*time%it,phys%diff_n*((tanh(-(psi(i) - psi1)*sigma) + 1.)/2. + (tanh((psi(i) - psi2)*sigma) + 1.)/2.))
-             d_iso(2, 2, i) = max(switch%diffmin,phys%diff_u - (phys%diff_u - switch%diffmin)/time%nts*time%it,phys%diff_u*((tanh(-(psi(i) - psi1)*sigma) + 1.)/2. + (tanh((psi(i) - psi2)*sigma) + 1.)/2.))
-             d_iso(3, 3, i) = max(switch%diffmin,phys%diff_e - (phys%diff_e - switch%diffmin)/time%nts*time%it,phys%diff_e*((tanh(-(psi(i) - psi1)*sigma) + 1.)/2. +(tanh((psi(i) - psi2)*sigma) + 1.)/2.))
-             d_iso(4, 4, i) = max(switch%diffmin,phys%diff_e - (phys%diff_ee - switch%diffmin)/time%nts*time%it,phys%diff_ee*((tanh(-(psi(i) - psi1)*sigma) + 1.)/2 + (tanh((psi(i) - psi2)*sigma) + 1.)/2.))
-          END DO
-       else if (switch%testcase .eq. 77) then
-          DO i=1,size(u,1)
-              d_iso(3, 3, i) = max(switch%diffmin,phys%diff_e*((tanh(-(psi(i) - psi1)*sigma) + 1.)/2. + (tanh((psi(i) - psi2)*sigma) + 1.)/2.))
-             d_iso(4, 4, i) = max(switch%diffmin,phys%diff_ee*((tanh(-(psi(i) - psi1)*sigma) + 1.)/2. + (tanh((psi(i) - psi2)*sigma) + 1.)/2.))
-          END DO
-       else if (switch%testcase .eq. 78) then
-          DO i=1,size(u,1)
-             d_iso(1, 1, i) = max(switch%diffmin,phys%diff_n*((tanh(-(psi(i) - psi1)*sigma) + 1.)/2. + (tanh((psi(i) - psi2)*sigma) + 1.)/2.))
-             d_iso(2, 2, i) = max(switch%diffmin,phys%diff_u*((tanh(-(psi(i) - psi1)*sigma) + 1.)/2. + (tanh((psi(i) - psi2)*sigma) + 1.)/2.))
-             d_iso(3, 3, i) = max(switch%diffmin,phys%diff_e*((tanh(-(psi(i) - psi1)*sigma) + 1.)/2. + (tanh((psi(i) - psi2)*sigma) + 1.)/2.))
-             d_iso(4, 4, i) = max(switch%diffmin,phys%diff_ee*((tanh(-(psi(i) - psi1)*sigma) + 1.)/2. + (tanh((psi(i) - psi2)*sigma) + 1.)/2.))
-          END DO
-       end if
+    !d_iper = 0.*min(minval(u(:,3)/u(:,1)), minval(u(:,4)/u(:,1)))
+    d_iso(1, 1, :) = phys%diff_n !+ abs(0.5*(sign(1.0,d_iper) - 1)*d_iper) 
+    d_iso(2, 2, :) = phys%diff_u !+ abs(0.5*(sign(1.0,d_iper) - 1)*d_iper)
+    d_iso(3, 3, :) = phys%diff_e !+ abs(0.5*(sign(1.0,d_iper) - 1)*d_iper)
+    d_iso(4, 4, :) = phys%diff_ee !+ abs(0.5*(sign(1.0,d_iper) - 1)*d_iper)
+    ! Impose transport barrier
+    if (phys%ntbs > 0) then   ! Now D goes to diffmin in the trasport barrier in ntbs time steps
+       DO i=1,size(u,1)
+          d_iso(1, 1, i) = max(switch%diffmin,phys%diff_n - (phys%diff_n - switch%diffmin)/phys%ntbs*time%it,phys%diff_n*((tanh(-(psi(i) - phys%psi1)*phys%sigmapsi) + 1.)/2. + (tanh((psi(i) - phys%psi2)*phys%sigmapsi) + 1.)/2.))
+          d_iso(2, 2, i) = max(switch%diffmin,phys%diff_u - (phys%diff_u - switch%diffmin)/phys%ntbs*time%it,phys%diff_u*((tanh(-(psi(i) - phys%psi1)*phys%sigmapsi) + 1.)/2. + (tanh((psi(i) - phys%psi2)*phys%sigmapsi) + 1.)/2.))
+          d_iso(3, 3, i) = max(switch%diffmin,phys%diff_e - (phys%diff_e - switch%diffmin)/phys%ntbs*time%it,phys%diff_e*((tanh(-(psi(i) - phys%psi1)*phys%sigmapsi) + 1.)/2. + (tanh((psi(i) - phys%psi2)*phys%sigmapsi) + 1.)/2.))
+          d_iso(4, 4, i) = max(switch%diffmin,phys%diff_e - (phys%diff_ee - switch%diffmin)/phys%ntbs*time%it,phys%diff_ee*((tanh(-(psi(i) - phys%psi1)*phys%sigmapsi) + 1.)/2. + (tanh((psi(i) - phys%psi2)*phys%sigmapsi) + 1.)/2.))
+       END DO
+    else
+       DO i=1,size(u,1)
+          d_iso(1, 1, i) = max(switch%diffmin,phys%diff_n*((tanh(-(psi(i) - phys%psi1)*phys%sigmapsi) + 1.)/2. + (tanh((psi(i) - phys%psi2)*phys%sigmapsi) + 1.)/2.))
+          d_iso(2, 2, i) = max(switch%diffmin,phys%diff_u*((tanh(-(psi(i) - phys%psi1)*phys%sigmapsi) + 1.)/2. + (tanh((psi(i) - phys%psi2)*phys%sigmapsi) + 1.)/2.))
+          d_iso(3, 3, i) = max(switch%diffmin,phys%diff_e*((tanh(-(psi(i) - phys%psi1)*phys%sigmapsi) + 1.)/2. + (tanh((psi(i) - phys%psi2)*phys%sigmapsi) + 1.)/2.))
+          d_iso(4, 4, i) = max(switch%diffmin,phys%diff_ee*((tanh(-(psi(i) - phys%psi1)*phys%sigmapsi) + 1.)/2. + (tanh((psi(i) - phys%psi2)*phys%sigmapsi) + 1.)/2.))
+       END DO
     end if
+    ! Moving Equilibrium section
     if (switch%ME .eq. .TRUE.) then
        if (switch%testcase .eq. 74) then
-          d_iso(1,1,:) = max(switch%diffmin,phys%diff_n - 1.7*simpar%refval_time/simpar%refval_length**2*(tanh((phys%I_p - 0.5)/5.)))
-          d_iso(2,2,:) = max(switch%diffmin,phys%diff_u - 1.7*simpar%refval_time/simpar%refval_length**2*(tanh((phys%I_p - 0.5)/5.)))
-          d_iso(3,3,:) = max(switch%diffmin,phys%diff_e - 1.7*simpar%refval_time/simpar%refval_length**2*(tanh((phys%I_p - 0.5)/5.)))
-          d_iso(4,4,:) = max(switch%diffmin,phys%diff_ee - 1.7*simpar%refval_time/simpar%refval_length**2*(tanh((phys%I_p - 0.5)/5.)))
+          MF = 0.95
+          d_iso(1,1,:) = max(switch%diffmin,phys%diff_n - MF*simpar%refval_time/simpar%refval_length**2*(tanh((phys%I_p - 0.8)/5.)))
+          d_iso(2,2,:) = max(switch%diffmin,phys%diff_u - MF*simpar%refval_time/simpar%refval_length**2*(tanh((phys%I_p - 0.8)/5.)))
+          d_iso(3,3,:) = max(switch%diffmin,phys%diff_e - MF*simpar%refval_time/simpar%refval_length**2*(tanh((phys%I_p - 0.8)/5.)))
+          d_iso(4,4,:) = max(switch%diffmin,phys%diff_ee - MF*simpar%refval_time/simpar%refval_length**2*(tanh((phys%I_p - 0.8)/5.)))
        else if (switch%testcase .eq. 75) then
-          d_iso(1,1,:) = max(switch%diffmin,phys%diff_n - 1.7*simpar%refval_time/simpar%refval_length**2*(tanh((phys%I_p - 0.5)/3.9)))
-          d_iso(2,2,:) = max(switch%diffmin,phys%diff_u - 1.7*simpar%refval_time/simpar%refval_length**2*(tanh((phys%I_p - 0.5)/3.9)))
-          d_iso(3,3,:) = max(switch%diffmin,phys%diff_e - 1.7*simpar%refval_time/simpar%refval_length**2*(tanh((phys%I_p - 0.5)/3.9)))
-          d_iso(4,4,:) = max(switch%diffmin,phys%diff_ee - 1.7*simpar%refval_time/simpar%refval_length**2*(tanh((phys%I_p - 0.5)/3.9)))
+          if (phys%I_p .lt. 8.) then
+             d_iso(1,1,:) = max(switch%diffmin,phys%diff_n - 1.7*simpar%refval_time/simpar%refval_length**2*(tanh((phys%I_p - 0.5)/5.)))
+             d_iso(2,2,:) = max(switch%diffmin,phys%diff_u - 1.7*simpar%refval_time/simpar%refval_length**2*(tanh((phys%I_p - 0.5)/5.)))
+             d_iso(3,3,:) = max(switch%diffmin,phys%diff_e - 1.7*simpar%refval_time/simpar%refval_length**2*(tanh((phys%I_p - 0.5)/5.)))
+             d_iso(4,4,:) = max(switch%diffmin,phys%diff_ee - 1.7*simpar%refval_time/simpar%refval_length**2*(tanh((phys%I_p - 0.5)/5.)))
+          else
+             D0 = phys%diff_n - 1.7*simpar%refval_time/simpar%refval_length**2*(tanh((8 - 0.5)/5.))
+             d_iso(1,1,:) = D0 - (D0 - 0.3*simpar%refval_time/simpar%refval_length**2)/0.5*(phys%I_p - 8) 
+             d_iso(2,2,:) = d_iso(1,1,:)
+             d_iso(3,3,:) = d_iso(1,1,:)
+             d_iso(4,4,:) = d_iso(1,1,:)
+          end if
+       else if (switch%testcase .eq. 76) then
+          MF = 1.71 !2.565 !1.71
+          !MF = 1.71 + 0.01*(time%it - 1600.)/2
+          !MF = max(1.71, 2.21 - 0.01*(time%it - 1700.)/2) !2.565
+          !WRITE(6,*) 'MF = ', MF
+          d_iso(1,1,:) = max(switch%diffmin,simpar%refval_time/simpar%refval_length**2*MF/phys%I_p)
+          d_iso(2,2,:) = d_iso(1,1,:)
+          d_iso(3,3,:) = d_iso(1,1,:)
+          d_iso(4,4,:) = d_iso(1,1,:)
+       else if (switch%testcase .eq. 77) then
+          MF = 1.2825
+          D0 = 0.2
+          Dtime = MF/phys%I_p
+          if (Dtime >= D0) then 
+             d_iso(1,1,:) = max(switch%diffmin,simpar%refval_time/simpar%refval_length**2*MF/phys%I_p)
+          else
+             d_iso(1,1,:) = max(switch%diffmin,simpar%refval_time/simpar%refval_length**2&
+                                *D0*(1 - 2.5*(D0 - Dtime)*(tanh(phys%sigmapsi*(psi - phys%psi1)) + 1)&
+                                + 2.5*(D0 - Dtime)*(tanh(phys%sigmapsi*(psi - phys%psi2)) + 1)))
+          endif
+          d_iso(2,2,:) = d_iso(1,1,:)
+          d_iso(3,3,:) = d_iso(1,1,:)
+          d_iso(4,4,:) = d_iso(1,1,:)
        end if
-       phys%ME_diff_n = d_iso(1,1,1)
-       phys%ME_diff_u = d_iso(2,2,1)
-       phys%ME_diff_e = d_iso(3,3,1)
-       phys%ME_diff_ee = d_iso(4,4,1)
-    end if
-    ! ITER testcases
-    if (switch%ME .eq. .TRUE.  .AND. switch%testcase .gt. 84) then
-       if (switch%testcase .eq. 85) then !Iter core-edge with evolving equilibria plus diffusion decrease
-          d_iso(1, 1, :) = phys%diff_n - (phys%diff_n - 0.5*simpar%refval_time/simpar%refval_length**2)/14.65*(phys%I_p - 0.35)
-          d_iso(2, 2, :) = phys%diff_u - (phys%diff_u - 0.5*simpar%refval_time/simpar%refval_length**2)/14.65*(phys%I_p - 0.35)
-          d_iso(3, 3, :) = phys%diff_e - (phys%diff_e - 0.5*simpar%refval_time/simpar%refval_length**2)/14.65*(phys%I_p - 0.35)
-          d_iso(4, 4, :) = phys%diff_ee - (phys%diff_ee - 0.5*simpar%refval_time/simpar%refval_length**2)/14.65*(phys%I_p - 0.35)
-      else if (switch%testcase .eq. 86) then
-          d_iso(1,1,:) = max(switch%diffmin,phys%diff_n - 2.18*simpar%refval_time/simpar%refval_length**2*(tanh((phys%I_p - 0.35)/5.)))
-          d_iso(2,2,:) = max(switch%diffmin,phys%diff_u - 2.18*simpar%refval_time/simpar%refval_length**2*(tanh((phys%I_p - 0.35)/5.)))
-          d_iso(3,3,:) = max(switch%diffmin,phys%diff_e - 2.18*simpar%refval_time/simpar%refval_length**2*(tanh((phys%I_p - 0.35)/5.)))
-          d_iso(4,4,:) = max(switch%diffmin,phys%diff_ee - 2.18*simpar%refval_time/simpar%refval_length**2*(tanh((phys%I_p - 0.35)/5.)))
-      else if (switch%testcase .eq. 87) then
-          d_iso(1,1,:) = max(switch%diffmin,phys%diff_n - 2.38*simpar%refval_time/simpar%refval_length**2*(tanh((phys%I_p - 0.35)/5.)))
-          d_iso(2,2,:) = max(switch%diffmin,phys%diff_u - 2.38*simpar%refval_time/simpar%refval_length**2*(tanh((phys%I_p - 0.35)/5.)))
-          d_iso(3,3,:) = max(switch%diffmin,phys%diff_e - 2.0134*simpar%refval_time/simpar%refval_length**2*(tanh((phys%I_p - 0.35)/5.)))
-          d_iso(4,4,:) = max(switch%diffmin,phys%diff_ee - 2.0134*simpar%refval_time/simpar%refval_length**2*(tanh((phys%I_p - 0.35)/5.)))
-      endif
-      phys%ME_diff_n = d_iso(1,1,1)
-      phys%ME_diff_u = d_iso(2,2,1)
-      phys%ME_diff_e = d_iso(3,3,1)
-      phys%ME_diff_ee = d_iso(4,4,1)
-    endif  
+       phys%ME_diff_n = minval(d_iso(1,1,:))
+       phys%ME_diff_u = minval(d_iso(2,2,:))
+       phys%ME_diff_e = minval(d_iso(3,3,:))
+       phys%ME_diff_ee = minval(d_iso(4,4,:))
+    end if  
 #ifndef NEUTRALP
 #ifdef NEUTRAL
     !d_iso(5, 5, :) = phys%diff_nn
@@ -733,10 +760,10 @@ CONTAINS
     END DO
     if (switch%Kotov .eq. .false.) then
        ! NO KOTOV
-       Dnn = simpar%refval_charge*max(simpar%refval_temperature*2./(3.*phys%Mref)*(U3/U1 - 1./2.*(U2/U1)**2),0.1)/(simpar%refval_mass*simpar%refval_density*(U1*(sigmaviz + sigmavcx)))
+       Dnn = simpar%refval_charge*max(simpar%refval_temperature*2./(3.*phys%Mref)*(U3/U1 - 1./2.*(U2/U1)**2),2.)/(simpar%refval_mass*simpar%refval_density*(U1*(sigmaviz + sigmavcx)))
     else
        ! WITH KOTOV
-       Dnn = simpar%refval_charge*max(simpar%refval_temperature*2./(3.*phys%Mref)*(U3/U1 - 1./2.*(U2/U1)**2),0.1)/(simpar%refval_mass*simpar%refval_density*(U1*(sigmaviz + sigmavcx) + max(1.e-7,U5)*sigmavnn))   
+       Dnn = simpar%refval_charge*max(simpar%refval_temperature*2./(3.*phys%Mref)*(U3/U1 - 1./2.*(U2/U1)**2),2.)/(simpar%refval_mass*simpar%refval_density*(U1*(sigmaviz + sigmavcx) + max(1.e-7,U5)*sigmavnn))   
     end if
     Dnn = Dnn*simpar%refval_time/simpar%refval_length**2
     !Dnn(:) = Dnn(:)*(1 + (Dnn(:)/phys%diff_nn)**20)**(-1./20)
@@ -744,7 +771,8 @@ CONTAINS
     !Set a threshold on Dnn
     DO i=1,size(Dnn,1)
        if (Dnn(i) .gt.  phys%diff_nn) d_iso(5,5,i) = phys%diff_nn
-       if (Dnn(i) .lt. 200*simpar%refval_time/simpar%refval_length**2) d_iso(5,5,i) = 200*simpar%refval_time/simpar%refval_length**2
+       !if (Dnn(i) .lt. 200.*simpar%refval_time/simpar%refval_length**2) d_iso(5,5,i) = 200.*simpar%refval_time/simpar%refval_length**2
+       if (Dnn(i) .lt.  phys%diff_nn_min) d_iso(5,5,i) = phys%diff_nn_min
        !d_iso(5,5,i)= d_iso(5,5,i)*(1 + (d_iso(5,5,i)/phys%diff_nn)**1)**(-1./1)
        !if (Dnn(i) .lt.  100*d_iso(1,1,i)) d_iso(5,5,i) = 19
        !if (Dnn(i) .lt. 50*simpar%refval_time/simpar%refval_length**2) d_iso(5,5,i) = 50*simpar%refval_time/simpar%refval_length**2
@@ -768,73 +796,58 @@ CONTAINS
     !****************************
     ! D ANISOTROPIC
     !***************************
-    d_ani(1, 1, :) = phys%diff_n
-    d_ani(2, 2, :) = phys%diff_u
-    d_ani(3, 3, :) = phys%diff_e
-    d_ani(4, 4, :) = phys%diff_ee
-    ! SPARC testcases                                                                                                                                                                               
-    if (switch%testcase .gt. 74) then
-        if (switch%testcase .eq. 75) then
-          DO i=1,size(u,1)
-             d_ani(1, 1, i) = max(switch%diffmin,phys%diff_n - (phys%diff_n - switch%diffmin)/time%nts*time%it,phys%diff_n*((tanh(-(psi(i) - 0.992)*1.5e3) + 1.)/2. + (tanh((psi(i) - 1.008)*1.5e3) + 1.)/2.))
-             d_ani(2, 2, i) = max(switch%diffmin,phys%diff_u - (phys%diff_u - switch%diffmin)/time%nts*time%it,phys%diff_u*((tanh(-(psi(i) - 0.992)*1.5e3) + 1.)/2. + (tanh((psi(i) - 1.008)*1.5e3) + 1.)/2.))
-             d_ani(3, 3, i) = max(switch%diffmin,phys%diff_e - (phys%diff_e - switch%diffmin)/time%nts*time%it,phys%diff_e*((tanh(-(psi(i) - 0.992)*1.5e3) + 1.)/2. + (tanh((psi(i) - 1.008)*1.5e3) + 1.)/2.))
-             d_ani(4, 4, i) = max(switch%diffmin,phys%diff_e - (phys%diff_ee - switch%diffmin)/time%nts*time%it,phys%diff_ee*((tanh(-(psi(i) - 0.992)*1.5e3) + 1.)/2. + (tanh((psi(i) - 1.008)*1.5e3) + 1.)/2.))
-          END DO
-       else if (switch%testcase .eq. 76) then
-          DO i=1,size(u,1)
-             d_ani(1, 1, i) = max(switch%diffmin,phys%diff_n - (phys%diff_n - switch%diffmin)/time%nts*time%it,phys%diff_n*((tanh(-(psi(i) - 0.995)*1.5e3) + 1.)/2. + (tanh((psi(i) - 1.005)*1.5e3) + 1.)/2.))
-            d_ani(2, 2, i) = max(switch%diffmin,phys%diff_u - (phys%diff_u - switch%diffmin)/time%nts*time%it,phys%diff_u*((tanh(-(psi(i) - 0.995)*1.5e3) + 1.)/2. +\
- (tanh((psi(i) - 1.005)*1.5e3) + 1.)/2.))
-             d_ani(3, 3, i) = max(switch%diffmin,phys%diff_e - (phys%diff_e - switch%diffmin)/time%nts*time%it,phys%diff_e*((tanh(-(psi(i) - 0.995)*1.5e3) + 1.)/2. + (tanh((psi(i) - 1.005)*1.5e3) + 1.)/2.))
-             d_ani(4, 4, i) = max(switch%diffmin,phys%diff_e - (phys%diff_ee - switch%diffmin)/time%nts*time%it,phys%diff_ee*((tanh(-(psi(i) - 0.995)*1.5e3) + 1.)/2 + (tanh((psi(i) - 1.005)*1.5e3) + 1.)/2.))
-          END DO
-       else if (switch%testcase .eq. 77) then
-          DO i=1,size(u,1)
-             d_ani(3, 3, i) = max(switch%diffmin,phys%diff_e*((tanh(-(psi(i) - psi1)*sigma) + 1.)/2. + (tanh((psi(i) - psi2)*sigma) + 1.)/2.))
-             d_ani(4, 4, i) = max(switch%diffmin,phys%diff_ee*((tanh(-(psi(i) - psi1)*sigma) + 1.)/2. + (tanh((psi(i) - psi2)*sigma) + 1.)/2.))
-          END DO
-       else if (switch%testcase .eq. 78) then
-          DO i=1,size(u,1)
-             d_ani(1, 1, i) = max(switch%diffmin,phys%diff_n*((tanh(-(psi(i) - psi1)*sigma) + 1.)/2. + (tanh((psi(i) - psi2)*sigma) + 1.)/2.))
-             d_ani(2, 2, i) = max(switch%diffmin,phys%diff_u*((tanh(-(psi(i) - psi1)*sigma) + 1.)/2. + (tanh((psi(i) - psi2)*sigma) + 1.)/2.))
-             d_ani(3, 3, i) = max(switch%diffmin,phys%diff_e*((tanh(-(psi(i) - psi1)*sigma) + 1.)/2. + (tanh((psi(i) - psi2)*sigma) + 1.)/2.))
-             d_ani(4, 4, i) = max(switch%diffmin,phys%diff_ee*((tanh(-(psi(i) - psi1)*sigma) + 1.)/2. + (tanh((psi(i) - psi2)*sigma) + 1.)/2.))
-          END DO
-       end if
+    d_ani(1, 1, :) = phys%diff_n !+ abs(0.5*(sign(1.0,d_iper) - 1)*d_iper)
+    d_ani(2, 2, :) = phys%diff_u !+ abs(0.5*(sign(1.0,d_iper) - 1)*d_iper)
+    d_ani(3, 3, :) = phys%diff_e !+ abs(0.5*(sign(1.0,d_iper) - 1)*d_iper)
+    d_ani(4, 4, :) = phys%diff_ee !+ abs(0.5*(sign(1.0,d_iper) - 1)*d_iper)
+    ! Impose transport barrier                                                                                                                                                                                                
+    if (phys%ntbs > 0) then   ! Now D goes to diffmin in the trasport barrier in ntbs time steps                                                                                                                           
+       DO i=1,size(u,1)
+          d_ani(1, 1, i) = max(switch%diffmin,phys%diff_n - (phys%diff_n - switch%diffmin)/phys%ntbs*time%it,phys%diff_n*((tanh(-(psi(i) - phys%psi1)*phys%sigmapsi) + 1.)/2. + (tanh((psi(i) - phys%psi2)*phys%sigmapsi) + 1.)/2.))
+          d_ani(2, 2, i) = max(switch%diffmin,phys%diff_u - (phys%diff_u - switch%diffmin)/phys%ntbs*time%it,phys%diff_u*((tanh(-(psi(i) - phys%psi1)*phys%sigmapsi) + 1.)/2. + (tanh((psi(i) - phys%psi2)*phys%sigmapsi) + 1.)/2.))
+          d_ani(3, 3, i) = max(switch%diffmin,phys%diff_e - (phys%diff_e - switch%diffmin)/phys%ntbs*time%it,phys%diff_e*((tanh(-(psi(i) - phys%psi1)*phys%sigmapsi) + 1.)/2. + (tanh((psi(i) - phys%psi2)*phys%sigmapsi) + 1.)/2.))
+          d_ani(4, 4, i) = max(switch%diffmin,phys%diff_e - (phys%diff_ee - switch%diffmin)/phys%ntbs*time%it,phys%diff_ee*((tanh(-(psi(i) - phys%psi1)*phys%sigmapsi) + 1.)/2. + (tanh((psi(i) - phys%psi2)*phys%sigmapsi) + 1.)/2.))
+       END DO
+    else
+       DO i=1,size(u,1)
+          d_ani(1, 1, i) = max(switch%diffmin,phys%diff_n*((tanh(-(psi(i) - phys%psi1)*phys%sigmapsi) + 1.)/2. + (tanh((psi(i) - phys%psi2)*phys%sigmapsi) + 1.)/2.))
+          d_ani(2, 2, i) = max(switch%diffmin,phys%diff_u*((tanh(-(psi(i) - phys%psi1)*phys%sigmapsi) + 1.)/2. + (tanh((psi(i) - phys%psi2)*phys%sigmapsi) + 1.)/2.))
+          d_ani(3, 3, i) = max(switch%diffmin,phys%diff_e*((tanh(-(psi(i) - phys%psi1)*phys%sigmapsi) + 1.)/2. + (tanh((psi(i) - phys%psi2)*phys%sigmapsi) + 1.)/2.))
+          d_ani(4, 4, i) = max(switch%diffmin,phys%diff_ee*((tanh(-(psi(i) - phys%psi1)*phys%sigmapsi) + 1.)/2. + (tanh((psi(i) - phys%psi2)*phys%sigmapsi) + 1.)/2.))
+       END DO
     end if
+    ! Moving Equilibrium section
     if (switch%ME .eq. .TRUE.) then
        if (switch%testcase .eq. 74) then
-          d_ani(1,1,:) = max(switch%diffmin,phys%diff_n - 1.7*simpar%refval_time/simpar%refval_length**2*(tanh((phys%I_p - 0.5)/5.)))
-          d_ani(2,2,:) = max(switch%diffmin,phys%diff_u - 1.7*simpar%refval_time/simpar%refval_length**2*(tanh((phys%I_p - 0.5)/5.)))
-          d_ani(3,3,:) = max(switch%diffmin,phys%diff_e - 1.7*simpar%refval_time/simpar%refval_length**2*(tanh((phys%I_p - 0.5)/5.)))
-          d_ani(4,4,:) = max(switch%diffmin,phys%diff_ee - 1.7*simpar%refval_time/simpar%refval_length**2*(tanh((phys%I_p - 0.5)/5.)))
+          d_ani(1,1,:) = max(switch%diffmin,phys%diff_n - MF*simpar%refval_time/simpar%refval_length**2*(tanh((phys%I_p - 0.8)/5.)))
+          d_ani(2,2,:) = max(switch%diffmin,phys%diff_u - MF*simpar%refval_time/simpar%refval_length**2*(tanh((phys%I_p - 0.8)/5.)))
+          d_ani(3,3,:) = max(switch%diffmin,phys%diff_e - MF*simpar%refval_time/simpar%refval_length**2*(tanh((phys%I_p - 0.8)/5.)))
+          d_ani(4,4,:) = max(switch%diffmin,phys%diff_ee - MF*simpar%refval_time/simpar%refval_length**2*(tanh((phys%I_p - 0.8)/5.)))
        else if (switch%testcase .eq. 75) then
-          d_ani(1,1,:) = max(switch%diffmin,phys%diff_n - 1.7*simpar%refval_time/simpar%refval_length**2*(tanh((phys%I_p - 0.5)/3.9)))
-          d_ani(2,2,:) = max(switch%diffmin,phys%diff_u - 1.7*simpar%refval_time/simpar%refval_length**2*(tanh((phys%I_p - 0.5)/3.9)))
-          d_ani(3,3,:) = max(switch%diffmin,phys%diff_e - 1.7*simpar%refval_time/simpar%refval_length**2*(tanh((phys%I_p - 0.5)/3.9)))
-          d_ani(4,4,:) = max(switch%diffmin,phys%diff_ee - 1.7*simpar%refval_time/simpar%refval_length**2*(tanh((phys%I_p - 0.5)/3.9)))
+          if (phys%I_p .lt. 8) then
+             d_ani(1,1,:) = max(switch%diffmin,phys%diff_n - 1.7*simpar%refval_time/simpar%refval_length**2*(tanh((phys%I_p - 0.5)/5.)))
+             d_ani(2,2,:) = max(switch%diffmin,phys%diff_u - 1.7*simpar%refval_time/simpar%refval_length**2*(tanh((phys%I_p - 0.5)/5.)))
+             d_ani(3,3,:) = max(switch%diffmin,phys%diff_e - 1.7*simpar%refval_time/simpar%refval_length**2*(tanh((phys%I_p - 0.5)/5.)))
+             d_ani(4,4,:) = max(switch%diffmin,phys%diff_ee - 1.7*simpar%refval_time/simpar%refval_length**2*(tanh((phys%I_p - 0.5)/5.)))
+          else
+             D0= phys%diff_n - 1.7*simpar%refval_time/simpar%refval_length**2*(tanh((8 - 0.5)/5.))
+             d_ani(1,1,:) = D0 - (D0 - 0.3*simpar%refval_time/simpar%refval_length**2)/0.5*(phys%I_p - 8)
+             d_ani(2,2,:) = d_ani(1,1,:)
+             d_ani(3,3,:) = d_ani(1,1,:)
+             d_ani(4,4,:) = d_ani(1,1,:)
+          end if
+       else if (switch%testcase .eq. 76) then
+          d_ani(1,1,:) = max(switch%diffmin,simpar%refval_time/simpar%refval_length**2*MF/phys%I_p)
+          d_ani(2,2,:) = d_ani(1,1,:)
+          d_ani(3,3,:) = d_ani(1,1,:)
+          d_ani(4,4,:) = d_ani(1,1,:)
+       else if (switch%testcase .eq. 77) then
+          d_ani(1,1,:) = d_iso(1,1,:)
+          d_ani(2,2,:) = d_iso(2,2,:)
+          d_ani(3,3,:) = d_iso(3,3,:)
+          d_ani(4,4,:) = d_iso(4,4,:)
        end if
-    end if
-    ! ITER testcases
-    if (switch%ME .eq. .TRUE. .AND. switch%testcase .gt. 84) then !Iter core-edge with evolving equilibria plus diffusion decrease
-       if (switch%testcase .eq. 85) then
-         d_ani(1, 1, :) = phys%diff_n - (phys%diff_n - 0.5*simpar%refval_time/simpar%refval_length**2)/14.65*(phys%I_p - 0.35)
-         d_ani(2, 2, :) = phys%diff_u - (phys%diff_u - 0.5*simpar%refval_time/simpar%refval_length**2)/14.65*(phys%I_p - 0.35)
-         d_ani(3, 3, :) = phys%diff_e - (phys%diff_e - 0.5*simpar%refval_time/simpar%refval_length**2)/14.65*(phys%I_p - 0.35)
-         d_ani(4, 4, :) = phys%diff_ee - (phys%diff_ee - 0.5*simpar%refval_time/simpar%refval_length**2)/14.65*(phys%I_p - 0.35)
-       else if (switch%testcase .eq. 86) then
-          d_ani(1,1,:) = max(switch%diffmin,phys%diff_n - 2.18*simpar%refval_time/simpar%refval_length**2*(tanh((phys%I_p - 0.35)/5.)))
-          d_ani(2,2,:) = max(switch%diffmin,phys%diff_u - 2.18*simpar%refval_time/simpar%refval_length**2*(tanh((phys%I_p - 0.35)/5.)))
-          d_ani(3,3,:) = max(switch%diffmin,phys%diff_e - 2.18*simpar%refval_time/simpar%refval_length**2*(tanh((phys%I_p - 0.35)/5.)))
-          d_ani(4,4,:) = max(switch%diffmin,phys%diff_ee - 2.18*simpar%refval_time/simpar%refval_length**2*(tanh((phys%I_p - 0.35)/5.)))
-       else if (switch%testcase .eq. 87) then
-          d_ani(1,1,:) = max(switch%diffmin,phys%diff_n - 2.38*simpar%refval_time/simpar%refval_length**2*(tanh((phys%I_p - 0.35)/5.)))
-          d_ani(2,2,:) = max(switch%diffmin,phys%diff_u - 2.38*simpar%refval_time/simpar%refval_length**2*(tanh((phys%I_p - 0.35)/5.)))
-          d_ani(3,3,:) = max(switch%diffmin,phys%diff_e - 2.0134*simpar%refval_time/simpar%refval_length**2*(tanh((phys%I_p - 0.35)/5.)))
-          d_ani(4,4,:) = max(switch%diffmin,phys%diff_ee - 2.0134*simpar%refval_time/simpar%refval_length**2*(tanh((phys%I_p - 0.35)/5.)))
-       endif
-    endif  
+    end if 
 #ifdef NEUTRAL
     d_ani(5,5,:) = 0.
 #endif
@@ -844,10 +857,46 @@ CONTAINS
     !*****************************
     ! No non-diagonal terms defined for this model
     call computeIperDiffusion(xy,u, iperdiff)
-    d_iso(1, 1, :) = d_iso(1, 1, :)+iperdiff
-    d_iso(2, 2, :) = d_iso(2, 2, :)+iperdiff
-    d_iso(3, 3, :) = d_iso(3, 3, :)+iperdiff
-    d_iso(4, 4, :) = d_iso(4, 4, :)+iperdiff
+    iperdiff = 0.
+    !d_iper = min(minval(u(:,3)/u(:,1)), minval(u(:,4)/u(:,1)))
+    !iperdiff = 0.*abs(0.5*(sign(1.0,d_iper) - 1)*d_iper)
+    !d_iso(1, 1, :) = sign(1.0,d_iper)*(d_iso(1, 1, :) + iperdiff)
+    !d_iso(2, 2, :) = sign(1.0,d_iper)*(d_iso(2, 2, :) + iperdiff)
+    !d_iso(3, 3, :) = sign(1.0,d_iper)*(d_iso(3, 3, :) + iperdiff)
+    !d_iso(4, 4, :) = sign(1.0,d_iper)*(d_iso(4, 4, :) + iperdiff)
+    !d_ani(1, 1, :) = sign(1.0,d_iper)*(d_ani(1, 1, :) + iperdiff)
+    !d_ani(2, 2, :) = sign(1.0,d_iper)*(d_ani(2, 2, :) + iperdiff)
+    !d_ani(3, 3, :) = sign(1.0,d_iper)*(d_ani(3, 3, :) + iperdiff)
+    !d_ani(4, 4, :) = sign(1.0,d_iper)*(d_ani(4, 4, :) + iperdiff)
+    if (minval(u(:,3:4)) < 0.0 ) then
+       iperdiff = 2.*simpar%refval_time/simpar%refval_length**2 ! Before 6.5
+    else
+       !iperdiff = max(1.0 - u(:,3)/(u(:,3) + 2.e-4), 1.0 - u(:,3)/(u(:,3) + 2.e-4))
+       !where (iperdiff >= 0.01)
+       !   iperdiff = 1.5*iperdiff*simpar%refval_time/simpar%refval_length**2
+       !elsewhere
+       !   iperdiff = 0.0
+       !end where
+       do i=1,size(u,1)
+          iperdiff(i) = max(1 - u(i,3)/(u(i,3) + 3.e-4), 1 - u(i,4)/(u(i,4) + 3.e-4))
+          if (iperdiff(i) .ge. 0.01) then
+             iperdiff(i) = 2.*iperdiff(i)*simpar%refval_time/simpar%refval_length**2 ! Before 5.5
+             !iperdiff(i) = 1.2*simpar%refval_time/simpar%refval_length**2
+          else
+             iperdiff(i) = 0.
+          end if
+       end do
+    endif
+    ! Add some more iperdeff as function of psi starting from a psi2 limit
+    !iperdiff = iperdiff + 4.*(simpar%refval_time/simpar%refval_length**2)*(tanh((psi - phys%psi2)*phys%sigmapsi)+1)/2
+    !if (maxval(psi) > phys%psi2) then
+    !   WRITE(6,*) 'Iperdiff supplement = ', 0.1*(tanh((psi - phys%psi2)*phys%sigmapsi)+1)/2
+    !   WRITE(6,*) 'Iperdiff = ', iperdiff*simpar%refval_length**2/simpar%refval_time
+    !endif
+    d_iso(1, 1, :) = d_iso(1, 1, :) + iperdiff
+    d_iso(2, 2, :) = d_iso(2, 2, :) + iperdiff
+    d_iso(3, 3, :) = d_iso(3, 3, :) + iperdiff  
+    d_iso(4, 4, :) = d_iso(4, 4, :) + iperdiff
     d_ani(1, 1, :) = d_ani(1, 1, :) + iperdiff
     d_ani(2, 2, :) = d_ani(2, 2, :) + iperdiff
     d_ani(3, 3, :) = d_ani(3, 3, :) + iperdiff
@@ -861,6 +910,7 @@ CONTAINS
   SUBROUTINE setLocalDiffSplitTerms(u, D)
     real*8, intent(IN)    :: u(:)
     real*8, intent(OUT)   :: D(:)
+    real*8                :: D0,MF,Dtime
 
     ! Reference case: diffusion from param file
     D(1) = phys%diff_n
@@ -872,15 +922,42 @@ CONTAINS
     ! SPARC core-edge with evolving equilibria plus diffusion decrease                                                                                                                             
     if (switch%ME .eq. .TRUE.  .AND. switch%testcase .gt. 70 .AND. switch%testcase .lt. 80) then
        if (switch%testcase .eq. 74) then
-          D(1) = max(switch%diffmin,phys%diff_n - 1.7*simpar%refval_time/simpar%refval_length**2*(tanh((phys%I_p - 0.5)/5.)))
+          MF = 0.95
+          D(1) = max(switch%diffmin,phys%diff_n - MF*simpar%refval_time/simpar%refval_length**2*(tanh((phys%I_p - 0.8)/5.)))
           D(2) = D(1)
           D(3) = D(1)
           D(4) = D(1)
        else if (switch%testcase .eq. 75) then
-          D(1) = max(switch%diffmin,phys%diff_n - 1.7*simpar%refval_time/simpar%refval_length**2*(tanh((phys%I_p - 0.5)/3.9)))
+          if (phys%I_p .lt. 8) then
+             D(1) = max(switch%diffmin,phys%diff_n - 1.7*simpar%refval_time/simpar%refval_length**2*(tanh((phys%I_p - 0.5)/5.)))
+          else
+             D0 = phys%diff_n - 1.7*simpar%refval_time/simpar%refval_length**2*(tanh((8 - 0.5)/5.))
+             D(1) = D0 - (D0 - 0.3*simpar%refval_time/simpar%refval_length**2)/0.5*(phys%I_p - 8)
+          end if
           D(2) = D(1)
           D(3) = D(1)
           D(4) = D(1)
+       else if (switch%testcase .eq. 76) then
+           MF = 1.71 !2.565 !1.71
+           !MF = 1.71 + 0.01*(time%it - 1600.)/2
+           !MF = max(1.71, 2.21 - 0.01*(time%it - 1700.)/2) !2.565
+           D(1) = max(switch%diffmin, simpar%refval_time/simpar%refval_length**2*MF/phys%I_p)
+           D(2) = D(1)
+           D(3) = D(1)
+           D(4) = D(1)
+       !else if (switch%testcase .eq. 77) then
+           !MF = 1.2825
+           !D0 = 0.2
+           !Dtime = MF/phys%I_p
+           !if (Dtime > D0) then
+           !   D(1) = max(switch%diffmin, simpar%refval_time/simpar%refval_length**2*MF/phys%I_p)
+           !else 
+           !   D(1) = max(switch%diffmin, simpar%refval_time/simpar%refval_length**2&
+           !              *D0*(1 - 2.5*(D0 - Dtime)*(tanh(phys%sigmapsi*(psi - phys%psi1)) + 1)&
+           !               + 2.5*(D0 - Dtime)*(tanh(phys%sigmapsi*(psi - phys%psi2)) + 1)))
+           !D(2) = D(1)
+           !D(3) = D(1)
+           !D(4) = D(1)
        end if
     endif
     ! ITER core-edge with evolving equilibria plus diffusion decrease
@@ -948,7 +1025,7 @@ CONTAINS
 												xcorn(3) =  4.02837
 												ycorn(3) =  3.588
 												xcorn(4) =  5.74627
-												ycorn(4) =  4.51401
+												ycorn(4) =  4.5401
 										CASE DEFAULT
 												WRITE (6, *) "Case not valid"
 												STOP
@@ -1081,8 +1158,8 @@ CONTAINS
 
     ! SPARC testcase
     IF (switch%testcase .ge. 70 .and. switch%testcase .lt. 80) THEN
-       R0 = 1.8495
-       a = 0.57
+       R0 = phys%r_axis*phys%lscale
+       a = geom%a
     ! ITER testcase
     ELSE IF (switch%testcase .ge. 80 .and. switch%testcase .lt. 90) THEN
        R0 = 6.2
@@ -1098,11 +1175,11 @@ CONTAINS
 
   END SUBROUTINE
 
-  SUBROUTINE computePinch(U,b,psi,q,APinch)
-    real*8, intent(IN)     :: U(:),b(:),psi,q
+  SUBROUTINE computePinch(U,b,psi,q,D,APinch)
+    real*8, intent(IN)     :: U(:),b(:),psi,q,D
     real*8, intent(OUT)    :: APinch(:,:)
     real*8                 :: v_p,bnorm(2)
-    real*8                 :: nu,nu_star,f_nu,nu_th,D(4)
+    real*8                 :: nu,nu_star,f_nu,nu_th
   
     ! Inintialize matrix and parameters
     APinch = 0.
@@ -1123,15 +1200,15 @@ CONTAINS
           ! normalized electorn collisionality 
           ! Tuned as in JINTRAC (see E. Militello-Asp NF 2022)
           f_nu = 0.
-          IF (psi .le. 0.95) THEN ! Apply just in the closed field line region (MUST balance BC for PFR )
+          IF (psi .le. 0.96) THEN ! Apply just in the closed field line region (MUST balance BC for PFR )
              CALL computeNuth(nu_th)
              CALL computeCollisionality(U,q,nu) 
-             CALL setLocalDiffSplitTerms(U, D)
-             D = D*simpar%refval_length**2/simpar%refval_time
+             !CALL setLocalDiffSplitTerms(U, D)
+             !D = D*simpar%refval_length**2/simpar%refval_time
              nu_Star = nu/nu_th
              nu_star = min(nu/nu_th,10.)
              f_nu = exp(1 - nu_star)
-             v_p = f_nu*0.5*D(1)*sqrt(abs(psi))!*((1 - tanh((0.9 - psi)/0.02))/2.)
+             v_p = f_nu*0.5*D*simpar%refval_length**2/simpar%refval_time*sqrt(abs(psi))!*((1 - tanh((0.9 - psi)/0.02))/2.)
              v_p = phys%v_p*v_p
           END IF
        CASE DEFAULT
@@ -1142,8 +1219,8 @@ CONTAINS
     phys%v_pmax = min(phys%v_pmax,v_p)
 
     ! Assembly Pinch Matrix
-    APinch(1,1) = v_p*bnorm(2) 
-    APinch(1,2) = v_p*(-bnorm(1))
+    APinch(1:4,1) = v_p*bnorm(2) 
+    APinch(1:4,2) = v_p*(-bnorm(1))
 
   END SUBROUTINE
     
@@ -1241,8 +1318,8 @@ CONTAINS
     real*8 :: res, aux
     real, parameter :: tol = 1e-5
     aux = U(3)/U(1) - 0.5*U(2)**2/U(1)**2
-    if ((2./(3.*phys%Mref)*aux > 1.) .and. (switch%testcase .ne. 2)) then
-      res = (1.*3.*phys%Mref/2)**(phys%epn)
+    if ((2./(3.*phys%Mref)*aux > 2.) .and. (switch%testcase .ne. 2)) then
+      res = (2.*3.*phys%Mref/2)**(phys%epn)
     else
       if (aux<tol) aux = tol
       res = aux**phys%epn
@@ -1254,8 +1331,8 @@ CONTAINS
     real*8 :: res, aux
     real, parameter :: tol = 1e-5
     aux = U(4)/U(1)
-    if ((2./(3.*phys%Mref)*aux > 1.) .and. (switch%testcase .ne. 2)) then
-      res = (1.*3.*phys%Mref/2)**(phys%epn)
+    if ((2./(3.*phys%Mref)*aux > 2.) .and. (switch%testcase .ne. 2)) then
+      res = (2.*3.*phys%Mref/2)**(phys%epn)
     else
       if (aux<tol) aux = tol
       res = aux**phys%epn
@@ -1268,7 +1345,7 @@ CONTAINS
     real*8             :: aux
     real, parameter :: tol = 1e-5
     aux = U(3)/U(1) - 0.5*U(2)**2/U(1)**2
-    if ((2./(3.*phys%Mref)*aux > 1.) .and. (switch%testcase .ne. 2)) then !! don't apply flux limiter if it is a convergence test
+    if ((2./(3.*phys%Mref)*aux > 2.) .and. (switch%testcase .ne. 2)) then !! don't apply flux limiter if it is a convergence test
       res = 0.
     else
       if (aux<0) aux = tol
@@ -1286,7 +1363,7 @@ CONTAINS
     real*8             :: aux
     real, parameter :: tol = 1e-5
     aux = U(4)/U(1)
-    if ((2./(3.*phys%Mref)*aux > 1.) .and. (switch%testcase .ne. 2)) then !! don't apply flux limiter if it is a convergence test
+    if ((2./(3.*phys%Mref)*aux > 2.) .and. (switch%testcase .ne. 2)) then !! don't apply flux limiter if it is a convergence test
       res = 0.
     else
       if (aux<0) aux = tol
@@ -1405,13 +1482,17 @@ CONTAINS
     real*8, intent(IN)   :: E,theta
     real*8, intent(OUT)  :: RN
     integer              :: ip, jp
+    real*8               :: E_clipped, theta_clipped
 
     RN = 1.
 
     ip = size(phys%E)
     jp = size(phys%theta)
 
-    RN = interpolate(ip, phys%E, jp, phys%theta, phys%RN_DW, E, theta, 1e-12)
+    E_clipped = max(1e-8,min(1e3-1e-8,E))
+    theta_clipped = max(1e-8,min(90-1e-8,theta))
+
+    RN = interpolate(ip, phys%E, jp, phys%theta, phys%RN_DW, E_clipped, theta_clipped, 1e-12)
 
   END SUBROUTINE compute_RN
 
@@ -1431,22 +1512,25 @@ CONTAINS
         call compute_sigmavnn(U,sigmavnn)
         ! calculation of temperature before limitation
         ti = simpar%refval_temperature*2./(3.*phys%Mref)*(U(3)/U(1) - 1./2.*(U(2)/U(1))**2)
-        ti = max(simpar%refval_temperature*2./(3.*phys%Mref)*(U(3)/U(1) - 1./2.*(U(2)/U(1))**2),0.1)
+        ti = max(simpar%refval_temperature*2./(3.*phys%Mref)*(U(3)/U(1) - 1./2.*(U(2)/U(1))**2),2.)
         !call softplus_deriv(ti, ti_min,soft_deriv)   
          !call softplus(ti,ti_min)
         ! Calculation of Dnn before limitation
-        ! NO KOTOV
-        Dnn = simpar%refval_charge*ti/(simpar%refval_mass*simpar%refval_density*(U(1)*(sigmaviz + sigmavcx)))*simpar%refval_time/simpar%refval_length**2
-        ! WITH KOTOV
-        !Dnn = simpar%refval_charge*ti/(simpar%refval_mass*simpar%refval_density*(U(1)*(sigmaviz + sigmavcx) + U(5)*sigmavnn))*simpar%refval_time/simpar%refval_length**2
+        if (switch%kotov .eq. .false.) then   ! NO KOTOV
+           Dnn = simpar%refval_charge*ti/(simpar%refval_mass*simpar%refval_density*(U(1)*(sigmaviz + sigmavcx)))*simpar%refval_time/simpar%refval_length**2
+        else ! WITH KOTOV
+           Dnn = simpar%refval_charge*ti/(simpar%refval_mass*simpar%refval_density*(U(1)*(sigmaviz + sigmavcx) + U(5)*sigmavnn))*simpar%refval_time/simpar%refval_length**2
+        end if
         !call double_softplus_deriv(Dnn,10.*phys%diff_n,phys%diff_nn,double_soft_deriv)   !to check the mulptiplier for Dnn_min
 
         ! ti derivative
         dti_du(:) = 0.
-        dti_du(1) = -U(3)/U(1)**2+U(2)**2/U(1)**3
-        dti_du(2) = -U(2)/U(1)**2
-        dti_du(3) = 1./U(1)
-        dti_du(:) = dti_du(:)*simpar%refval_temperature*2./(3.*phys%Mref)
+        if (ti .ge. 2.) then
+           dti_du(1) = -U(3)/U(1)**2+U(2)**2/U(1)**3
+           dti_du(2) = -U(2)/U(1)**2
+           dti_du(3) = 1./U(1)
+           dti_du(:) = dti_du(:)*simpar%refval_temperature*2./(3.*phys%Mref)
+        endif
 
         ! atomic rates derivatives
         call compute_dsigmaviz_dU(U,dsigmaviz_dU)
@@ -1465,7 +1549,8 @@ CONTAINS
         !Dnn_dU(:) = Dnn_dU(:)*simpar%refval_time/simpar%refval_length**2*double\_soft_deriv
         CALL setLocalDiffSplitTerms(U,D)
 
-        IF (Dnn .le. phys%diff_nn .AND. Dnn .gt. 200.*simpar%refval_time/simpar%refval_length**2) THEN
+        IF (Dnn .le. phys%diff_nn .AND. Dnn .gt. phys%diff_nn_min) THEN
+        !IF (Dnn .le. phys%diff_nn .AND. Dnn .gt. 200.*simpar%refval_time/simpar%refval_length**2) THEN 
            if (switch%Kotov .eq. .FALSE.) THEN
               ! NO KOTOV
               ! ti part
@@ -1492,7 +1577,6 @@ CONTAINS
      endif
   END SUBROUTINE  compute_dDnn_dU
 #endif
-        
 
 
   SUBROUTINE compute_niz(U,niz)
@@ -2219,6 +2303,44 @@ CONTAINS
     end if
   END SUBROUTINE compute_dsigmavcx_dU
 
+  SUBROUTINE compute_cooling_factor(U,res)
+    REAL*8, INTENT(IN) :: U(:)
+    REAL*8             :: res,U1,U4,T0,te
+    REAL*8, PARAMETER    :: tol = 1.e-20 !tolerance for U4 = 3/2*Mref*U1min*te_min/T0
+    U1 = U(1)
+    U4 = U(4)
+    T0 = 50.
+
+    res = 0.
+    IF ((U1>tol) .AND. (U4>tol)) THEN ! basically it's a below zero check
+      te = T0*2/3./phys%Mref*U4/U1
+      te = max(0.2,min(te,4.e3))
+      CALL compute_eirene_rate_1D(te,phys%alpha_cooling_factor,res)
+    ENDIF
+   
+  ENDSUBROUTINE compute_cooling_factor
+
+  
+  SUBROUTINE compute_dcooling_factor_dU(U,res)
+    REAL*8, INTENT(IN) :: U(:)
+    REAL*8             :: res(:),U1,U4,T0,te
+    REAL*8, PARAMETER  :: tol = 1.e-20 !tolerance for U4 = 3/2*Mref*U1min*te_min/T0
+
+    U1 = U(1)
+    U4 = U(4)
+    T0 = 50.
+
+    res = 0.
+    IF ((U1>tol) .AND. (U4>tol)) THEN ! basically it's a below zero check
+       te = T0*2/3./phys%Mref*U4/U1
+       if (te >= 0.2 .and. te<= 4.e3) then 
+          CALL compute_eirene_rate_du_1D(U1,U4,te,phys%alpha_cooling_factor,res)
+          res = res!/simpar%refval_charge
+       endif
+    ENDIF
+  ENDSUBROUTINE compute_dcooling_factor_dU
+
+
   ! Neutral-neutral collision reaction rate
   SUBROUTINE compute_sigmavnn(U,sigmavnn)
     real*8, intent(IN) :: U(:)
@@ -2234,8 +2356,8 @@ CONTAINS
     e_const = 1.60217662e-19
 
     s0 = 5.2958e-11 * 1.e-6
-    ti = T0*2/3./phys%Mref*(U3/U1 - 1./2. *U2**2/U1**2)
-    if (ti<tol) then ! basically it's a below zero check
+    ti = max(T0*2/3./phys%Mref*(U3/U1 - 1./2. *U2**2/U1**2),2.)
+    if (ti< tol) then ! basically it's a below zero check
       !some low values
       ti = tol
     endif
@@ -2263,8 +2385,8 @@ CONTAINS
 
     res = 0.
     dti_dU = 0.
-    ti = T0*2/3. /phys%Mref * (U3/U1 - 1./2. *U2**2/U1**2)
-    if (ti>tol) then ! basically it's a below zero check
+    ti = max(T0*2/3. /phys%Mref * (U3/U1 - 1./2. *U2**2/U1**2),2.)
+    if (ti .ge. 2.) then ! basically it's a below zero check
       dti_dU(1) = dti_dU(1) + 1.*(-U3 + U2**2/U1) / U1**2
       dti_dU(2) = dti_dU(2) - 1.*U2/U1**2
       dti_dU(3) = dti_dU(3) + 1./U1
@@ -2316,6 +2438,39 @@ CONTAINS
     rate_du = rate_du*rate
   
   END SUBROUTINE compute_eirene_rate_du  
+
+  SUBROUTINE compute_eirene_rate_1D(te,alpha,rate)
+    real*8, intent(IN) :: te,alpha(:) 
+    real*8, intent(OUT):: rate
+    integer :: i
+
+    rate = 0.
+    do i=1,size(alpha,1)
+          rate = rate + alpha(i)*log(te)**(i-1)
+    end do
+    
+    rate = exp(rate)/1.e6
+
+  END SUBROUTINE compute_eirene_rate_1D
+
+  SUBROUTINE compute_eirene_rate_du_1D(U1,U4,te,alpha,rate_du)
+    real*8, intent(IN) :: U1,U4,te,alpha(:)
+    real*8 :: rate
+    real*8, intent(OUT):: rate_du(:)
+    integer :: i
+
+    call compute_eirene_rate_1D(te,alpha,rate)
+
+    rate_du = 0.
+
+    do i=1,size(alpha,1)
+       rate_du(1) = rate_du(1)+alpha(i)*(i-1)*log(te)**(i-2)*(-1./U1)
+       rate_du(4) = rate_du(4)+alpha(i)*(i-1)*log(te)**(i-2)*(1./U4)
+    end do
+
+    rate_du = rate_du*rate
+
+  END SUBROUTINE compute_eirene_rate_du_1D
 
   !SUBROUTINE compute_eirene_rate_dne(U1,U4,te,ne,alpha,rate_du)
   !  real*8, intent(IN) :: U1,U4,te,ne,alpha(:,:)
@@ -2630,27 +2785,34 @@ CONTAINS
 
   SUBROUTINE compute_fEiiz(U,fEiiz)
     real*8, intent(IN) :: U(:)
-    real*8             :: fEiiz,U3,U5
-    real,parameter :: tol = 1e-10
+    real*8             :: fEiiz,U1,U2,U3,U5
+    real,parameter :: tol = 1e-20
+    U1 = U(1)
+    U2 = U(2)
     U3 = U(3)
     U5 = U(5)
     if (U3<tol) U3=tol
     if (U5<tol) U5=tol
-    fEiiz = U3*U5
+    !fEiiz = U3*U5
+    fEiiz = U5*(U3 - 0.5*U2**2/U1)
   END SUBROUTINE compute_fEiiz
 
 
   SUBROUTINE compute_dfEiiz_dU(U,res)
     real*8, intent(IN) :: U(:)
-    real*8             :: res(:),U3,U5
-    real,parameter :: tol = 1e-10
+    real*8             :: res(:),U1,U2,U3,U5
+    real,parameter :: tol = 1e-20
+    U1 = U(1)
+    U2 = U(2)
     U3 = U(3)
     U5 = U(5)
     if (U3<tol) U3=tol
     if (U5<tol) U5=tol
     res = 0.
+    res(1) = 0.5*U5*(U2/U1)**2
+    res(2) = - U5*U2/U1
     res(3) = U5
-    res(5) = U3
+    res(5) = U3 - 0.5*U2**2/U1
   END SUBROUTINE compute_dfEiiz_dU
 
 
@@ -2710,6 +2872,42 @@ CONTAINS
     res(:) = 1./2.*res(:)
 
   END SUBROUTINE compute_dfEicx_dU
+
+
+#ifdef NEUTRALGAMMA
+    SUBROUTINE compute_fEiN(U,fEiN)
+    real*8, intent(IN) :: U(:)
+    real*8             :: fEiN,U1,U5,U6
+    real,parameter :: tol = 1e-7
+    U1 = U(1)
+    U5 = U(5)
+    U6 = U(6)
+    !if (U1<tol) U1=tol
+    if (U5<tol) U5=tol
+    fEiN = 1./2.*(U1*U6**2)/U5
+  END SUBROUTINE compute_fEiN
+
+
+  SUBROUTINE compute_dfEiN_dU(U,res)
+    real*8, intent(IN) :: U(:)
+    real*8             :: res(:),U1,U5,U6
+    real, parameter    :: tol = 1e-7
+    U1 = U(1)
+    U5 = U(5)
+    U6 = U(6)
+    !if (U1<tol) U1=tol
+    if (U5<tol) U5=tol
+    res = 0.
+   
+    res(1) = U6**2/U5
+    res(5) = -U1*(U6/U5)**2
+    res(6) = 2.*U1*U6/U5
+
+    res(:) = 1./2.*res(:)
+
+  END SUBROUTINE compute_dfEiN_dU
+#endif
+
   
 #ifdef NEUTRALP
   SUBROUTINE computeDpn(U,Q,Vpn,Dpn)
@@ -2950,7 +3148,7 @@ SUBROUTINE computeAlphaCoeff(U,Q,Vpn,res)
     U1 = U(1)
     U2 = U(2)
     U3 = U(3)
-    U5 = U(5)
+    U5 = max(U(5),1.e-7)
 
     Gn(6, 1) = 2./3.*U5*(- U3/U1**2 + U2**2/U1**3)
     Gn(6, 2) = - 2./3.*U5*U2/U1**2
@@ -2965,7 +3163,7 @@ SUBROUTINE computeAlphaCoeff(U,Q,Vpn,res)
     real*8, intent(IN) :: U(:)
     real*8, intent(OUT):: Etan
     real*8             :: U1,U2,U3,U4,U5,U6
-    real*8             :: Tn,sigmavcx
+    real*8             :: Tn,sigmavcx,sigmavnn
     
     Etan = 0.
 
@@ -2973,22 +3171,31 @@ SUBROUTINE computeAlphaCoeff(U,Q,Vpn,res)
     U2 = U(2)
     U3 = U(3)
     U4 = U(4)
-    U5 = U(5)
+    U5 = max(U(5),1.e-7)
     U6 = U(6)
 
     CALL compute_sigmavcx(U,sigmavcx)
     
     Tn = simpar%refval_temperature*2./(3.*phys%Mref)*(U3/U1 - 1./2.*(U2/U1)**2) 
-    Etan = simpar%refval_density*U5*simpar%refval_charge*max(Tn,0.1)/(simpar%refval_mass*simpar%refval_density*U1*sigmavcx)
+    if (switch%Kotov .eq. .true.) then ! WITH KOTOV
+       CALL compute_sigmavnn(U,sigmavnn)
+       Etan = simpar%refval_density*U5*simpar%refval_charge*max(Tn,0.1)/(simpar%refval_mass*simpar%refval_density*(U1*sigmavcx + U5*sigmavnn))
+    else ! NO KOTOV                                                                                                                                                                                                            
+       Etan = simpar%refval_density*U5*simpar%refval_charge*max(Tn,0.1)/(simpar%refval_mass*simpar%refval_density*U1*sigmavcx)
+    end if
     Etan = Etan*simpar%refval_time/simpar%refval_length**2/simpar%refval_density
 
     if (Etan/U5 .gt. phys%diff_nn) then
        Etan = U5*phys%diff_nn
     end if
 
-    if (Etan/U5 .lt. 200.*simpar%refval_time/simpar%refval_length**2) then
-       Etan = U5*200*simpar%refval_time/simpar%refval_length**2
+    if (Etan/U5 .lt. phys%diff_nn_min) then
+       Etan = U5*phys%diff_nn_min
     end if
+
+    !if (Etan/U5 .lt. 200.*simpar%refval_time/simpar%refval_length**2) then
+    !   Etan = U5*200.*simpar%refval_time/simpar%refval_length**2
+    !end if
   
   END SUBROUTINE computeEtan
 
@@ -3006,30 +3213,32 @@ SUBROUTINE computeAlphaCoeff(U,Q,Vpn,res)
     U2 = U(2)
     U3 = U(3)
     U4 = U(4)
-    U5 = U(5)
+    U5 = max(U(5),1.e-7)
     U6 = U(6)
 
     ! Neutral temperature
     Tn = simpar%refval_temperature*2./(3.*phys%Mref)*(U3/U1 - 1./2.*(U2/U1)**2)
 
-    ! Neutral pressure derivatives                                                                                                                   
+    ! Neutral pressure derivatives                                                                                                              
     dPn_dU(1) = U5*(-U3/U1**2+U2**2/U1**3)
     dPn_dU(2) = U5*(-U2/U1**2)
     dPn_dU(3) = U5/U1
     dPn_dU(5) = U3/U1 - 1./2.*U2**2/U1**2
     dPn_dU(:) = simpar%refval_density*simpar%refval_temperature*2./(3.*phys%Mref)*dPn_dU(:)
 
-    ! Atomic rates derivatives                                                                                                                     
+    ! Atomic rates derivatives 
+    call compute_sigmavcx(U,sigmavcx)
     call compute_dsigmavcx_dU(U,dsigmavcx_dU)
 
     CALL computeEtan(U,Etan)
     
-    IF (Etan/U5 .le. phys%diff_nn .AND. Etan/U5 .gt. 200*simpar%refval_time/simpar%refval_length**2) THEN
+    !IF (Etan/U5 .le. phys%diff_nn .AND. Etan/U5 .gt. phys%diff_nn_min) THEN
+    IF (Etan/U5 .le. phys%diff_nn .AND. Etan/U5 .gt. 200.*simpar%refval_time/simpar%refval_length**2) THEN
        ! Neutral pressure part                                                                                        
        dEtan_dU(:) = dEtan_dU(:) + dPn_dU(:)*simpar%refval_charge/(simpar%refval_mass*simpar%refval_density*U1*sigmavcx)
-       ! Density part                                                                                                                                  
+       ! Density part                                                                                                                      
        dEtan_dU(1) = dEtan_dU(1) - simpar%refval_density*U1*Tn*simpar%refval_charge/(simpar%refval_mass*simpar%refval_density*U1**2*sigmavcx)
-       ! Atomic rates part                                                                                                                       
+       ! Atomic rates part                                                                                                                   
        dEtan_dU(:) = dEtan_dU(:) - simpar%refval_density*U1*Tn*simpar%refval_charge/(simpar%refval_mass*simpar%refval_density*U1*sigmavcx**2)*dsigmavcx_dU(:)
        ! Dimensionless
        dEtan_dU(:) = dEtan_dU(:)*simpar%refval_time/simpar%refval_length**2/simpar%refval_density
@@ -3044,7 +3253,7 @@ SUBROUTINE computeAlphaCoeff(U,Q,Vpn,res)
  
     Vun = 0.
     
-    U5 = U(5)
+    U5 = max(U(5),1.e-7)
     U6 = U(6)
 
     Vun(5) = - U6/U5**2
@@ -3059,7 +3268,7 @@ SUBROUTINE computeAlphaCoeff(U,Q,Vpn,res)
 
     dVun_dU = 0.
 
-    U5 = U(5)
+    U5 = max(U(5),1.e-7)
     U6 = U(6)
 
     dVun_dU(5, 5) = 2.*U6/U5**3
@@ -3202,15 +3411,15 @@ SUBROUTINE computeAlphaCoeff(U,Q,Vpn,res)
         phys%lscale/geom%R0*abs(bn)*phys%diff_pari*up(7)**2.5, phys%lscale/geom%R0*abs(bn)*phys%diff_pare*up(8)**2.5)
 
     elseif (numer%stab == 5) then
-      if (abs(isext - 1.) .lt. 1e-12) then
+      !if (abs(isext - 1.) .lt. 1e-12) then
         ! exterior faces
-        tau_aux = abs((4*uc(2)*bn)/uc(1))
-      else
+      !  tau_aux = abs((4*uc(2)*bn)/uc(1))
+      !else
         tau_aux = max(abs(5./3.*up(2)*bn), abs(0.3*bn*(3*uc(1) + sqrt(abs(10*uc(3)*uc(1) + 10*uc(4)*uc(1) - 5*uc(2)**2)))/uc(1)))
 !#ifdef NEUTRALP 
 !        tau_aux(5) = max(abs(5./3.*up(2)*bn), abs(0.3*bn*(3*uc(5) + sqrt(abs(10*uc(3)/uc(1)*uc(5)**2 - 5*(uc(5)*uc(2)/uc(1))**2)))/uc(5)))
 !#endif      
-      endif
+      !endif
 #ifdef TOR3D
       if (abs(n(3)) > 0.1) then
         ! Poloidal face
@@ -3228,19 +3437,19 @@ SUBROUTINE computeAlphaCoeff(U,Q,Vpn,res)
       else
 #endif
         ! Toroidal face
-        tau_aux(1) = tau_aux(1) + 6.*diff_iso(1,1,1)
-        tau_aux(2) = tau_aux(2) + 6.*diff_iso(2,2,1)
-        tau_aux(3) = tau_aux(3) + 6.*diff_iso(3,3,1) + abs(bn)*phys%diff_pari*(min(1.,up(7)))**2.5*bnorm/uc(1)*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
-        tau_aux(4) = tau_aux(4) + 6.*diff_iso(4,4,1) + abs(bn)*phys%diff_pare*(min(1.,up(8)))**2.5*bnorm/uc(1)*refElPol%ndeg/Mesh%elemSize(iel)/phys%lscale
+        tau_aux(1) = tau_aux(1) + diff_iso(1,1,1)*refElPol%ndeg/Mesh%elemSize(iel)
+        tau_aux(2) = tau_aux(2) + diff_iso(2,2,1)*refElPol%ndeg/Mesh%elemSize(iel)
+        tau_aux(3) = tau_aux(3) + diff_iso(3,3,1) + abs(bn)*phys%diff_pari*(min(2.,up(7)))**2.5*bnorm/uc(1)*refElPol%ndeg/Mesh%elemSize(iel)!/phys%lscale
+        tau_aux(4) = tau_aux(4) + diff_iso(4,4,1) + abs(bn)*phys%diff_pare*(min(2.,up(8)))**2.5*bnorm/uc(1)*refElPol%ndeg/Mesh%elemSize(iel)!/phys%lscale
 #ifndef NEUTRALP
 #ifdef NEUTRAL
-        tau_aux(5) = tau_aux(5) + diff_iso(5,5,1) !phys%diff_nn !numer%tau(5) 
+        tau_aux(5) = max(numer%tau(5), tau_aux(5) + diff_iso(5,5,1))*refElPol%ndeg/Mesh%elemSize(iel) !phys%diff_nn !numer%tau(5) 
 #endif
 #else
         tau_aux(5) = tau_aux(5) + numer%tau(5) !Dpn
 #endif
 #ifdef NEUTRALGAMMA
-        tau_aux(6) = tau_aux(6) + Etan/uc(5)         ! diff_iso(5,5,1)
+        tau_aux(6) = max(numer%tau(6), tau_aux(6) + Etan/max(uc(5),1.e-7))*refElPol%ndeg/Mesh%elemSize(iel)         ! diff_iso(5,5,1)
 #endif
 !        ! Toroidal face
 !        tau_aux(1) = tau_aux(1) +  diff_iso(1,1,1)

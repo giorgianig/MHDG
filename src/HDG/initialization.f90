@@ -106,6 +106,9 @@ CONTAINS
        ALLOCATE(phys%puff_exp(time%nts))
        ALLOCATE(phys%n_li(time%nts))
        ALLOCATE(phys%n_lit(time%nts))
+       IF (switch%PID) THEN
+          ALLOCATE(controller%actuator(time%nts))
+       ENDIF
     END IF
     IF (switch%saveTau) THEN
        ALLOCATE(phys%diff_nn_Vol(Mesh%Nelems*refElPol%NGauss2D))
@@ -144,6 +147,12 @@ CONTAINS
        phys%puff_exp = 0.
        phys%n_li = 0.
        phys%n_lit = 0.
+       IF (switch%PID) THEN
+          controller%err = 0.
+          controller%int_err = 0.
+          controller%dedt = 0.
+          controller%actuator = 0.
+       ENDIF
     END IF
     IF (switch%saveTau) THEN
        phys%diff_nn_Vol = 0.

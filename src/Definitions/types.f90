@@ -199,10 +199,14 @@ MODULE types
     real*8, pointer :: B(:, :)            ! Magnetic field, Br,Bz,Bphi [n of nodes  x 3]
     real*8          :: B0                 ! Reference value for the magnetic field [Tesla]
     real*8, pointer :: magnetic_flux(:)   ! Magnetic flux   [n of nodes]
+    real*8          :: psiAxis            ! Magnetic flux at magnetic axis
+    real*8          :: psiSep             ! Magnetic flux at magnetic separatrix
     real*8, pointer :: magnetic_psi(:)    ! Magnetic flux normalized to separatrix magnetic flux   [n of nodes]
     real*8, pointer :: safety_factor(:)   ! Safety factor profile as a function of psi   [n of nodes]
     real*8          :: Flux2Dmin          ! Minimum of the magnetic flux, across the MPI partitions
     real*8          :: Flux2Dmax          ! Maximum of the magnetic flux, across the MPI partitions
+    real*8          :: r_axis             ! R-coordinate of magnetic axis
+    real*8          :: z_axis             ! Z-coordinate of magnetic axis
     real*8, pointer :: Bperturb(:, :)     ! Magnetic perturbation, Br,Bz,Bphi [n of nodes  x 3]
     real*8          :: Tbg                ! Background temperature in the isothermal model
     real*8, pointer :: Jtor(:)            ! Toroidal Current
@@ -226,8 +230,16 @@ MODULE types
     real*8          :: etapar
     real*8          :: c1, c2             ! coefficients coming from the adimensionalization
     real*8          :: Potfloat
+    ! Coefficients for energy heating
+    real*8          :: heating_power_i      ! Ion energy source for WEST and ITER (2D, case 52 and 81)                                                                                                                                               
+    real*8          :: heating_power_e      ! Electron source for WEST and ITER (2D, case 52 and 81)  
+    real*8          :: heating_dr           ! displacement of the soruce from magnetic axis in r direction
+    real*8          :: heating_dz           ! displacement of the soruce from magnetic axis in z direction
+    real*8          :: heating_sigmar       ! width of the soruce from magnetic axis in r direction
+    real*8          :: heating_sigmaz       ! width of the soruce from magnetic axis in z direction
     ! Coefficients for the neutral equations
     real*8          :: diff_nn            ! Diffusion in the neutral equation
+    real*8          :: diff_nn_min        ! Low limit for neutral diffusion and viscosity
     real*8,dimension(22)   :: E           ! Energy values from TRIM
     real*8,dimension(19)   :: theta       ! Incidence angle values from TRIM
     real*8,dimension(22,19):: RN_DW       ! Reflection coefficient for neutrals from TRIM, (E,theta) grid
@@ -247,10 +259,16 @@ MODULE types
     real*8          :: part_source        ! Particle source for ITER
     real*8          :: ener_source        ! Particle source for ITER
     real*8          :: density_source     ! Density source for WEST (2D, case 52)
-    real*8          :: ener_source_e      ! Ion energy source for WEST and ITER (2D, case 52 and 81)
-    real*8          :: ener_source_ee     ! Electron source for WEST and ITER (2D, case 52 and 81)
-    real*8          :: sigma_source       ! Sigma for the gaussian sources for WEST and ITER (2D, case 52 and 81)
     real*8          :: fluxg_trunc        ! Value of the NORMALISED magnetic flux at which to truncate the gaussian sources for WEST (2D, case 52), refer to Source_shape.m file
+    ! Impurity radiation parameters
+    character(LEN=5):: impurity_name      ! Name of the impurity selected from the atomic symbol
+    real*8          :: impurity_concentration ! Impurity concentration as a fraction of the electron density
+    real*8          :: max_LZ
+    ! Transport barrier coefficients
+    integer         :: ntbs               ! Number of time steps needed to decease transport coefficients to diffmin inside the transport barrier
+    real            :: psi1               ! Normalized psi value corresponding to the bottom limit of the transport barrier
+    real            :: psi2               ! Normalized psi value correspoindim to the upper limit of the transport barrier
+    real            :: sigmapsi           ! Buffering region width back and forth the transport barrier
     ! Diffusion coefficients ITER evolving equilibrium
     real*8          :: ME_diff_n
     real*8          :: ME_diff_u
@@ -269,6 +287,8 @@ MODULE types
     real*8, dimension(9,9):: alpha_iz     ! Coefficients for ionization coefficients spline from EIRENE, (te,ne) grid
     real*8, dimension(9,9):: alpha_rec     ! Coefficients for recompination coefficients spline from EIRENE, (te,ne) grid
 #endif
+    ! Coefficient for impurity cooling facotr
+    REAL*8, dimension(25)     :: alpha_cooling_factor
   END TYPE Physics_type
 
   !*******************************************************
@@ -277,6 +297,7 @@ MODULE types
   TYPE Geometry_type
     integer     :: ndim     ! Number of dimensions of the problem (can be different from the ndim of the mesh)
     real*8      :: R0       ! Major radius at the magnetic axis
+    real*8      :: a        ! Minor radius
     real*8      :: q        ! Safety factor
   END TYPE Geometry_type
 
@@ -341,7 +362,20 @@ MODULE types
     ! 1 -add sinusoidal perturbation
     ! 2 -add density blob
     logical :: logrho   ! solve for the density logarithm instead of density
+    logical :: impurity_radiation ! Add impurity radiation as a cooling factor
+    logical :: PID   ! Activate PID controller
   END TYPE Switches_type
+
+  !***************************************************************
+  ! Paths: type for storing paths to load inputs and sotre outputs
+  !***************************************************************
+  TYPE Inputs_type
+     CHARACTER(len=1000) :: Bfield_path ! where do we read magnetic field from (WEST cases so far)
+     CHARACTER(len=1000) :: Jtor_path ! where do we read plasma current from (WEST cases so far)
+     CHARACTER(len=1000) :: save_folder ! where to save last solution
+     CHARACTER(len=1000) :: puff_path ! where do we read puff boundary condition from
+  END TYPE Inputs_type
+
 
   !*******************************************************
   ! Time: type for the time stepping information
@@ -390,6 +424,20 @@ MODULE types
     integer        :: bohmtypebc ! Implementation of the Bohm bc for Gamma
     real*8         :: exbdump ! Dumping for ExB drifts
   END TYPE Numeric_type
+
+  !*******************************************************
+  ! Controller: type for PID controller 
+  !*******************************************************
+  TYPE Controller_type
+     real*8                  :: target_value
+     real*8                  :: err
+     real*8                  :: int_err
+     real*8                  :: dedt
+     real*8, pointer         :: actuator(:)
+     real*8                  :: Kp
+     real*8                  :: Ki
+     real*8                  :: Kd
+  END TYPE Controller_type
 
   !*******************************************************
   ! Utilities: type for printing/debugging/saving...

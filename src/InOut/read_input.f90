@@ -27,6 +27,8 @@ SUBROUTINE READ_input()
   real*8  :: epn, Mref, diff_pari, diff_e, Gmbohm, Gmbohme
   real*8  :: diff_pare, diff_ee, tie, dumpnr, tmax, tol
   real*8  :: diff_vort, diff_pot, etapar, c1, c2, Potfloat,diagsource(10)
+  integer :: ntbs
+  real*8  :: psi1, psi2, sigmapsi
   character(100) :: msg
   character(20)  :: kmethd, ptype
 
@@ -34,7 +36,11 @@ SUBROUTINE READ_input()
   character(len=20) :: aggr_prol, par_aggr_alg, aggr_ord, aggr_filter, csolve, csbsolve, cmat
   integer           :: jsweeps, novr, fill, jsweeps2, novr2, fill2, outer_sweeps, maxlevs, csize, cfill, cjswp
   real*8            :: thrsol, thrsol2, mncrratio, athres, cthres
-  real*8            :: exbdump, part_source,ener_source, density_source, ener_source_e, ener_source_ee, sigma_source, fluxg_trunc
+  real*8            :: heating_power_i, heating_power_e, heating_dr, heating_dz, heating_sigmar, heating_sigmaz
+  real*8            :: exbdump, part_source, density_source, ener_source, fluxg_trunc
+
+  ! Info for input and output
+  CHARACTER(len = 1000) :: Bfield_path, Jtor_path, save_folder, puff_path
 
   ! RMP and Ripple
   logical     :: RMP, Ripple
@@ -43,7 +49,7 @@ SUBROUTINE READ_input()
 
   ! Neutral and Ohmic heating
   logical     :: OhmicSrc, Kotov
-  real*8      :: Pohmic,diff_nn,Re,puff,puff_slope,cryopump
+  real*8      :: Pohmic,diff_nn,diff_nn_min,Re,puff,puff_slope,cryopump
   
   ! Moving Equilibrium
   logical     :: ME
@@ -51,16 +57,29 @@ SUBROUTINE READ_input()
   ! Pinch
   integer     :: pinch
 
+  ! Impurity radiation
+  logical               :: impurity_radiation
+  character(len=5)      :: impurity_name
+  real*8                :: impurity_concentration
+
+  ! Controller
+  logical               :: PID
+  real*8                :: target_value, Kp, Ki, Kd
+
   ! Defining the variables to READ from the file
-  NAMELIST /SWITCH_LST/ steady, time_init, axisym, init, driftdia, driftexb, testcase, OhmicSrc, ME, pinch, Kotov, RMP, Ripple, psdtime, diffred, diffmin, &
-    & shockcp, limrho, difcor, thresh, filter, decoup, ckeramp, saveNR, saveTau, fixdPotLim, dirivortcore,dirivortlim, convvort,pertini,&
-    & logrho,bxgradb
+  NAMELIST /SWITCH_LST/ steady, time_init, axisym, init, driftdia, driftexb, testcase, OhmicSrc, ME, pinch, Kotov, impurity_radiation, PID,&
+    &RMP,Ripple, psdtime, diffred, diffmin, shockcp, limrho, difcor, thresh, filter, decoup, ckeramp, saveNR, saveTau, fixdPotLim, dirivortcore,&
+    &dirivortlim, convvort,pertini,logrho,bxgradb
+  NAMELIST /INPUT_LST/ Bfield_path, Jtor_path, save_folder,puff_path
   NAMELIST /NUMER_LST/ tau,nrp,tNR,tTM,div,sc_coe,sc_sen,minrho,so_coe,df_coe,dc_coe,thr,thrpre,stab,dumpnr,ntor,ptor,tmax,npartor,bohmtypebc,exbdump
   NAMELIST /GEOM_LST/ R0, q
   NAMELIST /MAGN_LST/ amp_rmp,nbCoils_rmp,torElongCoils_rmp,parite,nbRow,amp_ripple,nbCoils_ripple,triang,ellip ! RMP and Ripple
   NAMELIST /TIME_LST/ dt0, nts, tfi, tsw, tis
-  NAMELIST /PHYS_LST/ diff_n, diff_u, diff_e, diff_ee, diff_vort, v_p, diff_nn, Re, puff, puff_slope, cryopump, density_source, ener_source_e, ener_source_ee, sigma_source, fluxg_trunc, part_source,ener_source, Pohmic, Tbg, bcflags, bohmth,&
-    &Gmbohm, Gmbohme, a, Mref, tie, diff_pari, diff_pare, diff_pot, epn, etapar, Potfloat,diagsource
+  NAMELIST /PHYS_LST/ diff_n, diff_u, diff_e, diff_ee, diff_vort, v_p, diff_nn, diff_nn_min, ntbs, psi1, psi2, sigmapsi, heating_power_i, heating_power_e,&
+       &heating_dr, heating_dz, heating_sigmar, heating_sigmaz, Re, puff, puff_slope, cryopump, impurity_name, impurity_concentration, density_source,&
+       &fluxg_trunc, part_source, ener_source, Pohmic, Tbg, bcflags, bohmth, Gmbohm, Gmbohme, a, Mref, tie, diff_pari, diff_pare, diff_pot, epn, etapar,&
+       &Potfloat,diagsource
+  NAMELIST /PID_LST/ target_value, Kp, Ki, Kd
   NAMELIST /UTILS_LST/ PRINTint, dotiming, freqdisp, freqsave
   NAMELIST /LSSOLV_LST/ sollib, lstiming, itmax, itrace, rest, istop, tol, kmethd, ptype,&
     &smther, jsweeps,&
@@ -73,15 +92,24 @@ SUBROUTINE READ_input()
   diagsource = 0.
   OPEN (uinput, file='param.txt', status='unknown')
   READ (uinput, SWITCH_LST)
+  READ (uinput, INPUT_LST)
   READ (uinput, NUMER_LST)
   READ (uinput, GEOM_LST)
   READ (uinput, MAGN_LST)
   READ (uinput, TIME_LST)
   READ (uinput, PHYS_LST)
+  READ (uinput, PID_LST)
   READ (uinput, UTILS_LST)
   READ (uinput, LSSOLV_LST)
   CLOSE (uinput)
 
+  IF (impurity_radiation) THEN
+     IF ((TRIM(ADJUSTL(impurity_name)) .NE. 'Ne') ) THEN
+        PRINT *, 'Only Neon is allowed for impurity radiation so far. Stopping'
+        STOP
+     ENDIF
+  ENDIF
+  
   ! Storing at the right place
   switch%steady           = steady
   switch%time_init        = time_init
@@ -94,6 +122,8 @@ SUBROUTINE READ_input()
   switch%ME               = ME
   switch%pinch            = pinch
   switch%Kotov            = Kotov
+  switch%impurity_radiation = impurity_radiation
+  switch%PID              = PID
   switch%RMP              = RMP
   switch%Ripple           = Ripple
   switch%psdtime          = psdtime
@@ -115,6 +145,10 @@ SUBROUTINE READ_input()
   switch%pertini          = pertini
   switch%logrho           = logrho
   switch%bxgradb          = bxgradb
+  input%Bfield_path       = TRIM(ADJUSTL(Bfield_path))
+  input%Jtor_path         = TRIM(ADJUSTL(Jtor_path))
+  input%save_folder       = TRIM(ADJUSTL(save_folder))
+  input%puff_path         = TRIM(ADJUSTL(puff_path))
   numer%tau               = tau
   numer%nrp               = nrp
   numer%tNR               = tNR
@@ -159,14 +193,24 @@ SUBROUTINE READ_input()
   phys%diff_vort          = diff_vort
   phys%v_p                = v_p
   phys%diff_nn            = diff_nn
+  phys%diff_nn_min        = diff_nn_min
+  phys%ntbs               = ntbs
+  phys%psi1               = psi1
+  phys%psi2               = psi2
+  phys%sigmapsi           = sigmapsi
+  phys%heating_power_i    = heating_power_i
+  phys%heating_power_e    = heating_power_e
+  phys%heating_dr         = heating_dr
+  phys%heating_dz         = heating_dz
+  phys%heating_sigmar     = heating_sigmar
+  phys%heating_sigmaz     = heating_sigmaz
   phys%Re                 = Re
   phys%puff               = puff
   phys%puff_slope         = puff_slope
   phys%cryopump           = cryopump
+  phys%impurity_name      = TRIM(ADJUSTL(impurity_name))
+  phys%impurity_concentration = impurity_concentration
   phys%density_source     = density_source
-  phys%ener_source_e      = ener_source_e
-  phys%ener_source_ee     = ener_source_ee
-  phys%sigma_source       = sigma_source
   phys%fluxg_trunc        = fluxg_trunc
   phys%part_source        = part_source
   phys%ener_source        = ener_source
@@ -186,6 +230,10 @@ SUBROUTINE READ_input()
   phys%etapar             = etapar
   phys%Potfloat           = Potfloat
   phys%diagsource         = diagsource
+  controller%target_value = target_value
+  controller%Kp           = Kp
+  controller%Ki           = Ki
+  controller%Kd           = Kd
   utils%PRINTint          = printint
   utils%timing            = dotiming
   utils%freqdisp          = freqdisp
@@ -328,12 +376,24 @@ SUBROUTINE READ_input()
 #ifdef NEUTRAL
     PRINT *, '                - Kotov model for Neutral-Neutral collisions          ', switch%Kotov    
     PRINT *, '                - diffusion in the neutral equation:                  ', phys%diff_nn
+    PRINT *, '                - minimum diffusion and viscosity in neutral model:   ', phys%diff_nn_min
+    PRINT *, '                - time steps to transport barrier onset:              ', phys%ntbs
+    PRINT *, '                - right psi boundary for transport barrier:           ', phys%psi1
+    PRINT *, '                - left psi boundary for transport barrier:            ', phys%psi2
+    PRINT *, '                - buffering region coefficient for transport barrier: ', phys%sigmapsi
     PRINT *, '                - recycling coefficient in the neutral equation:      ', phys%Re
     PRINT *, '                - puff coefficient in the neutral equation:           ', phys%puff
     if (switch%ME) then
        PRINT *, '             - puff increment slope:                               ', phys%puff_slope
     endif 
     PRINT *, '                - cryopump speed:                                     ', phys%cryopump
+    if (switch%impurity_radiation) then
+       PRINT *, '                - impurity name:                                     ', TRIM(ADJUSTL(phys%impurity_name))
+       PRINT *, '                - impurity concentration:                            ', phys%impurity_concentration
+    endif
+    if (switch%PID) then
+       PRINT*, '                 - PID controller active                            '
+    endif
     PRINT *, '                - particle source at core:                            ', part_source
     PRINT *, '                - energy source at core:                              ', ener_source
 #endif

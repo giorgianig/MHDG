@@ -21,8 +21,10 @@ MODULE globals
   TYPE(Geometry_type), target :: geom
   TYPE(Magnetic_type), target :: magn
   TYPE(Switches_type), target :: switch
+  TYPE(Inputs_type), TARGET :: input
   TYPE(Time_type), target :: time
   TYPE(Numeric_type), target :: numer
+  TYPE(Controller_type), target :: controller
   TYPE(Utils_type), target :: utils
   TYPE(Lssolver_type), target :: lssolver
   TYPE(Elmat_type), target :: elmat

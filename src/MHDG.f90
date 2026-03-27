@@ -249,6 +249,7 @@ PROGRAM MHDG
               WRITE(6,*) 'Puff is experimental'
             ENDIF
               CALL SetPuff()
+              CALL set_impurity_concentration()
          END IF
 #endif
 
@@ -492,8 +493,10 @@ PROGRAM MHDG
           CALL loadJtorMap()
           !if (switch%testcase .ge. 80 .and. switch%testcase .le. 89) then
           CALL SetPuff()
+          CALL set_impurity_concentration()
           !endif
         endif
+        
 
         ! compute dt
         ! CALL compute_dt(errlstime)
